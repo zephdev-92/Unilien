@@ -1,10 +1,10 @@
-# Handi-Lien
+# UniLien
 
 Application web de gestion pour les services d'aide à domicile et auxiliaires de vie.
 
 ## 📋 Description
 
-Handi-Lien est une plateforme complète permettant de gérer efficacement les équipes d'auxiliaires de vie, leurs plannings, leurs interventions et leur conformité réglementaire.
+Unilien est une plateforme complète permettant de gérer efficacement les équipes d'auxiliaires de vie, leurs plannings, leurs interventions et leur conformité réglementaire.
 
 ### Fonctionnalités principales
 
