@@ -67,6 +67,64 @@ npm run dev
 L'application nécessite un projet Supabase configuré. Obtenez vos clés API depuis :
 https://app.supabase.com/project/_/settings/api
 
+## 🔄 CI/CD avec GitHub Actions
+
+Le projet est configuré avec plusieurs workflows GitHub Actions :
+
+### Workflows disponibles
+
+#### 🧪 CI (Intégration Continue)
+- **Déclencheurs** : Push sur `main`/`master`/`develop` et Pull Requests
+- **Actions** :
+  - Lint du code avec ESLint
+  - Exécution des tests unitaires
+  - Génération du rapport de couverture
+  - Vérification TypeScript
+  - Build de l'application
+  - Upload des artifacts
+
+#### 🚀 Deploy (Déploiement)
+- **Déclencheurs** : Push sur `main`/`master` ou manuel
+- **Actions** :
+  - Build de production
+  - Upload des artifacts de production
+  - Déploiement (à configurer selon votre plateforme)
+
+#### ✅ PR Checks (Vérifications des Pull Requests)
+- **Déclencheurs** : Ouverture/mise à jour de Pull Requests
+- **Actions** :
+  - Vérification de la qualité du code
+  - Tests avec couverture
+  - Rapport de taille du bundle
+  - Tests d'accessibilité
+
+#### 🤖 Dependabot
+- Mises à jour automatiques des dépendances npm (hebdomadaire)
+- Mises à jour des GitHub Actions (mensuel)
+
+### Configuration des secrets GitHub
+
+Pour que les workflows fonctionnent correctement, configurez les secrets suivants dans votre repository GitHub (`Settings > Secrets and variables > Actions`) :
+
+**Secrets obligatoires :**
+- `VITE_SUPABASE_URL` : URL de votre projet Supabase
+- `VITE_SUPABASE_ANON_KEY` : Clé publique anonyme Supabase
+- `VITE_APP_URL` : URL de votre application (ex: https://votre-app.com)
+
+**Secrets optionnels (selon la plateforme de déploiement) :**
+- `CODECOV_TOKEN` : Token pour l'upload de couverture vers Codecov
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` : Pour Vercel
+- `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` : Pour Netlify
+
+### Badges de statut
+
+Ajoutez ces badges en haut de votre README pour afficher le statut des workflows :
+
+```markdown
+![CI](https://github.com/votre-username/unilien/workflows/CI/badge.svg)
+![Deploy](https://github.com/votre-username/unilien/workflows/Deploy%20to%20Production/badge.svg)
+```
+
 ## 📄 Licence
 
 Projet privé - Tous droits réservés

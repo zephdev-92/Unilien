@@ -1,0 +1,7 @@
+export { WelcomeCard } from './WelcomeCard'
+export { UpcomingShiftsWidget } from './UpcomingShiftsWidget'
+export { RecentLogsWidget } from './RecentLogsWidget'
+export { QuickActionsWidget } from './QuickActionsWidget'
+export { StatsWidget } from './StatsWidget'
+export { TeamWidget } from './TeamWidget'
+export { ComplianceWidget } from './ComplianceWidget'

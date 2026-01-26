@@ -1,0 +1,57 @@
+import { Navigate } from 'react-router-dom'
+import { Box, Text, Center, Spinner } from '@chakra-ui/react'
+import { useAuth } from '@/hooks/useAuth'
+import { DashboardLayout } from './DashboardLayout'
+import { EmployerDashboard } from './EmployerDashboard'
+import { EmployeeDashboard } from './EmployeeDashboard'
+import { CaregiverDashboard } from './CaregiverDashboard'
+
+export function Dashboard() {
+  const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
+
+  // Loading state
+  if (!isInitialized || isLoading) {
+    return (
+      <Center minH="100vh">
+        <Box textAlign="center">
+          <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
+          <Text fontSize="lg" color="gray.600">
+            Chargement...
+          </Text>
+        </Box>
+      </Center>
+    )
+  }
+
+  // Not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Profile not loaded
+  if (!profile) {
+    return (
+      <DashboardLayout title="Tableau de bord">
+        <Center py={12}>
+          <Box textAlign="center">
+            <Text fontSize="lg" color="gray.600" mb={4}>
+              Chargement du profil...
+            </Text>
+            <Spinner size="lg" color="brand.500" />
+          </Box>
+        </Center>
+      </DashboardLayout>
+    )
+  }
+
+  // Render role-specific dashboard
+  return (
+    <DashboardLayout title="Tableau de bord">
+      {userRole === 'employer' && <EmployerDashboard profile={profile} />}
+      {userRole === 'employee' && <EmployeeDashboard profile={profile} />}
+      {userRole === 'caregiver' && <CaregiverDashboard profile={profile} />}
+    </DashboardLayout>
+  )
+}
+
+export default Dashboard
