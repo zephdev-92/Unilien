@@ -1,0 +1,28 @@
+# Code Owners
+# Ces utilisateurs seront automatiquement demandés pour review sur les PRs
+# Remplacez @your-username par votre nom d'utilisateur GitHub
+
+# Propriétaire global par défaut
+* @your-username
+
+# Configuration et CI/CD
+/.github/ @your-username
+/.github/workflows/ @zephdev-92
+/vite.config.ts @zephdev-92
+/vitest.config.ts @zephdev-92
+/tsconfig*.json @zephdev-92
+/eslint.config.js @zephdev-92
+
+# Logique de conformité (critique pour le métier)
+/src/lib/compliance/ @zephdev-92
+/src/services/complianceService.ts @zephdev-92
+/src/components/compliance/ @zephdev-92
+
+# Authentification et sécurité
+/src/lib/supabase/ @zephdev-92
+/src/components/auth/ @zephdev-92
+/src/stores/authStore.ts @zephdev-92
+
+# Documentation
+/docs/ @zephdev-92
+/*.md @zephdev-92

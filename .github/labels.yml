@@ -1,0 +1,145 @@
+# Configuration des labels GitHub
+# Peut être utilisé avec github-label-sync ou manuellement
+
+# Types
+- name: bug
+  color: d73a4a
+  description: Quelque chose ne fonctionne pas correctement
+
+- name: enhancement
+  color: a2eeef
+  description: Nouvelle fonctionnalité ou amélioration
+
+- name: documentation
+  color: 0075ca
+  description: Améliorations ou ajouts à la documentation
+
+- name: question
+  color: d876e3
+  description: Question ou demande d'information
+
+# Priorités
+- name: "priority: critical"
+  color: b60205
+  description: Doit être traité immédiatement
+
+- name: "priority: high"
+  color: d93f0b
+  description: Priorité haute
+
+- name: "priority: medium"
+  color: fbca04
+  description: Priorité moyenne
+
+- name: "priority: low"
+  color: 0e8a16
+  description: Priorité basse
+
+# Statuts
+- name: "status: in progress"
+  color: yellow
+  description: Travail en cours
+
+- name: "status: blocked"
+  color: red
+  description: Bloqué en attente de quelque chose
+
+- name: "status: ready for review"
+  color: green
+  description: Prêt pour review
+
+- name: "status: needs info"
+  color: purple
+  description: Besoin de plus d'informations
+
+# Domaines
+- name: "area: frontend"
+  color: 1d76db
+  description: Interface utilisateur / React
+
+- name: "area: backend"
+  color: 0052cc
+  description: Backend / Supabase
+
+- name: "area: compliance"
+  color: c5def5
+  description: Logique de conformité
+
+- name: "area: auth"
+  color: 5319e7
+  description: Authentification et sécurité
+
+- name: "area: planning"
+  color: bfd4f2
+  description: Gestion du planning
+
+- name: "area: tests"
+  color: fef2c0
+  description: Tests unitaires/intégration
+
+# Taille estimée
+- name: "size: xs"
+  color: 3cbf00
+  description: Très petite tâche (< 1h)
+
+- name: "size: s"
+  color: 5ebf00
+  description: Petite tâche (1-4h)
+
+- name: "size: m"
+  color: 7fbf00
+  description: Tâche moyenne (4-8h)
+
+- name: "size: l"
+  color: a0bf00
+  description: Grande tâche (1-3 jours)
+
+- name: "size: xl"
+  color: c2bf00
+  description: Très grande tâche (3+ jours)
+
+# Dépendances
+- name: dependencies
+  color: 0366d6
+  description: Mises à jour de dépendances
+
+- name: npm
+  color: cb3837
+  description: Dépendances npm
+
+- name: github-actions
+  color: 2088ff
+  description: GitHub Actions workflows
+
+# Autres
+- name: "good first issue"
+  color: 7057ff
+  description: Bon pour les nouveaux contributeurs
+
+- name: "help wanted"
+  color: 008672
+  description: Besoin d'aide externe
+
+- name: duplicate
+  color: cfd3d7
+  description: Cette issue existe déjà
+
+- name: wontfix
+  color: ffffff
+  description: Ne sera pas traité
+
+- name: breaking change
+  color: d93f0b
+  description: Changement incompatible avec versions précédentes
+
+- name: accessibility
+  color: 84b6eb
+  description: Accessibilité (a11y)
+
+- name: performance
+  color: d4c5f9
+  description: Optimisation des performances
+
+- name: security
+  color: ee0701
+  description: Problème de sécurité
