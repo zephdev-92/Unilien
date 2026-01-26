@@ -11,9 +11,8 @@ import {
   getRemainingWeeklyHours,
   getRemainingDailyHours,
   getWeeklyRestStatus,
-  getComplianceSummary,
 } from '@/lib/compliance'
-import { addDays, subDays, format, startOfWeek, endOfWeek } from 'date-fns'
+import { addDays, subDays, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export interface EmployeeComplianceStatus {
@@ -85,10 +84,19 @@ async function getShiftsForPeriod(
   }
 
   // Filtrer par employeur et mapper
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || [])
-    .filter((s: any) => s.contract?.employer_id === employerId)
-    .map((s: any): ShiftForValidation => ({
+  type ShiftRow = {
+    id: string
+    contract_id: string
+    date: string
+    start_time: string
+    end_time: string
+    break_duration: number | null
+    status: string
+    contract: { employee_id: string; employer_id: string } | null
+  }
+  return (data as ShiftRow[] || [])
+    .filter((s) => s.contract?.employer_id === employerId)
+    .map((s): ShiftForValidation => ({
       id: s.id,
       contractId: s.contract_id,
       employeeId: s.contract?.employee_id || '',
@@ -131,11 +139,16 @@ async function getActiveEmployees(employerId: string): Promise<
     return []
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((c: any) => ({
+  type ContractRow = {
+    id: string
+    employee_id: string
+    weekly_hours: number
+    employee: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null
+  }
+  return (data as ContractRow[] || []).map((c) => ({
     employeeId: c.employee_id,
     employeeName: `${c.employee?.first_name || ''} ${c.employee?.last_name || ''}`.trim(),
-    avatarUrl: c.employee?.avatar_url,
+    avatarUrl: c.employee?.avatar_url ?? undefined,
     contractId: c.id,
     weeklyHours: c.weekly_hours,
   }))

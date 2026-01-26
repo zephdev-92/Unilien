@@ -31,7 +31,7 @@ export function calculateShiftDuration(
   endTime: string,
   breakDuration: number = 0
 ): number {
-  let startMinutes = timeToMinutes(startTime)
+  const startMinutes = timeToMinutes(startTime)
   let endMinutes = timeToMinutes(endTime)
 
   // Si l'intervention passe minuit
@@ -104,7 +104,7 @@ export function calculateNightHours(
   const NIGHT_START = 21 * 60 // 21h en minutes
   const NIGHT_END = 6 * 60 // 6h en minutes
 
-  let startMinutes = timeToMinutes(startTime)
+  const startMinutes = timeToMinutes(startTime)
   let endMinutes = timeToMinutes(endTime)
 
   // Gestion du passage à minuit

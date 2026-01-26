@@ -25,11 +25,27 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (employerId) {
-      setIsLoading(true)
-      getActiveAuxiliariesForEmployer(employerId)
-        .then(setAuxiliaries)
-        .finally(() => setIsLoading(false))
+    if (!employerId) return
+
+    let cancelled = false
+
+    const loadData = async () => {
+      try {
+        const data = await getActiveAuxiliariesForEmployer(employerId)
+        if (!cancelled) {
+          setAuxiliaries(data)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      cancelled = true
     }
   }, [employerId])
 

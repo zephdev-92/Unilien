@@ -218,7 +218,7 @@ export function suggestAlternatives(
         const minStartM = prevEndM
 
         // Ajuster la date si nécessaire
-        let suggestionDate = new Date(previousShift.date)
+        const suggestionDate = new Date(previousShift.date)
         if (minStartH >= 24) {
           minStartH -= 24
           suggestionDate.setDate(suggestionDate.getDate() + 1)

@@ -33,11 +33,27 @@ export function TeamPage() {
 
   // Charger les auxiliaires
   useEffect(() => {
-    if (profile?.id && userRole === 'employer') {
-      setIsLoadingData(true)
-      getAuxiliariesForEmployer(profile.id)
-        .then(setAuxiliaries)
-        .finally(() => setIsLoadingData(false))
+    if (!profile?.id || userRole !== 'employer') return
+
+    let cancelled = false
+
+    const loadData = async () => {
+      try {
+        const data = await getAuxiliariesForEmployer(profile.id)
+        if (!cancelled) {
+          setAuxiliaries(data)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingData(false)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      cancelled = true
     }
   }, [profile?.id, userRole])
 

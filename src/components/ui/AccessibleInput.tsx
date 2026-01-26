@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId } from 'react'
 import {
   Field,
   Input,
@@ -44,7 +44,8 @@ export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps
     ref
   ) => {
     // Génération automatique d'un ID unique
-    const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).slice(2, 9)}`
+    const generatedId = useId()
+    const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, '-')}-${generatedId}`
 
     const isInvalid = !!error
 

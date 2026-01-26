@@ -116,7 +116,7 @@ export function LogbookPage() {
       setHasMore(result.hasMore)
 
       // Also update unread count
-      const unread = await getUnreadCount(employerId, profile.id)
+      const unread = await getUnreadCount(resolvedEmployerId, profile.id)
       setUnreadCount(unread)
     } catch (error) {
       console.error('Erreur chargement cahier de liaison:', error)
@@ -130,14 +130,14 @@ export function LogbookPage() {
     if (profile && isInitialized && resolvedEmployerId) {
       loadEntries(true)
     }
-  }, [profile, isInitialized, filters, resolvedEmployerId])
+  }, [profile, isInitialized, filters, resolvedEmployerId, loadEntries])
 
   // Handle page changes for "load more"
   useEffect(() => {
     if (page > 1) {
       loadEntries(false)
     }
-  }, [page])
+  }, [page, loadEntries])
 
   const handleFiltersChange = (newFilters: LogEntryFilters) => {
     setFilters(newFilters)

@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId } from 'react'
 import {
   Field,
   NativeSelect,
@@ -61,7 +61,8 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
     },
     ref
   ) => {
-    const selectId = id || `select-${label.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).slice(2, 9)}`
+    const generatedId = useId()
+    const selectId = id || `select-${label.toLowerCase().replace(/\s+/g, '-')}-${generatedId}`
 
     const isInvalid = !!error
 

@@ -16,13 +16,11 @@ import { AccessibleButton } from '@/components/ui'
 
 interface ComplianceAlertProps {
   result: ComplianceResult
-  showSuggestions?: boolean
   onDismiss?: () => void
 }
 
 export function ComplianceAlert({
   result,
-  showSuggestions: _showSuggestions = false,
   onDismiss,
 }: ComplianceAlertProps) {
   if (result.valid && result.warnings.length === 0) {

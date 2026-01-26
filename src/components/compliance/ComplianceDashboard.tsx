@@ -3,7 +3,7 @@
  * Vue d'ensemble par employé et par semaine
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Stack,
@@ -48,13 +48,7 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [showHelp, setShowHelp] = useState(false)
 
-  useEffect(() => {
-    if (employerId) {
-      loadData()
-    }
-  }, [employerId, selectedDate])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
       const [overviewData, historyData] = await Promise.all([
@@ -66,7 +60,13 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [employerId, selectedDate])
+
+  useEffect(() => {
+    if (employerId) {
+      loadData()
+    }
+  }, [employerId, loadData])
 
   function navigateWeek(direction: 'prev' | 'next') {
     setSelectedDate((prev) =>

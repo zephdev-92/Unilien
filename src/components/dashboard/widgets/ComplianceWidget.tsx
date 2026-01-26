@@ -32,11 +32,27 @@ export function ComplianceWidget({ employerId }: ComplianceWidgetProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (employerId) {
-      setIsLoading(true)
-      getWeeklyComplianceOverview(employerId)
-        .then(setOverview)
-        .finally(() => setIsLoading(false))
+    if (!employerId) return
+
+    let cancelled = false
+
+    const loadData = async () => {
+      try {
+        const data = await getWeeklyComplianceOverview(employerId)
+        if (!cancelled) {
+          setOverview(data)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      cancelled = true
     }
   }, [employerId])
 
