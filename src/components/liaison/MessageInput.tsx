@@ -56,7 +56,7 @@ export function MessageInput({
   const [isSending, setIsSending] = useState(false)
   const [isVoiceMode, setIsVoiceMode] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Auto-resize textarea
   useEffect(() => {

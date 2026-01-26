@@ -144,7 +144,7 @@ function NotificationItem({
             <Text
               fontWeight={notification.isRead ? 'normal' : 'semibold'}
               fontSize="sm"
-              noOfLines={1}
+              lineClamp={1}
               cursor={notification.actionUrl ? 'pointer' : 'default'}
               onClick={notification.actionUrl ? onClick : undefined}
               _hover={notification.actionUrl ? { textDecoration: 'underline' } : {}}
@@ -166,7 +166,7 @@ function NotificationItem({
           <Text
             fontSize="sm"
             color="gray.600"
-            noOfLines={2}
+            lineClamp={2}
             cursor={notification.actionUrl ? 'pointer' : 'default'}
             onClick={notification.actionUrl ? onClick : undefined}
           >
