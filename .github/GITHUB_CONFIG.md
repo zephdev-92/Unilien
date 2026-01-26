@@ -18,7 +18,7 @@ Cette documentation décrit l'organisation du dossier `.github` et les configura
 ├── dependabot.yml               # Configuration Dependabot
 ├── labels.yml                   # Configuration des labels GitHub
 ├── pull_request_template.md    # Template pour les Pull Requests
-├── README.md                    # Ce fichier
+├── GITHUB_CONFIG.md             # Ce fichier
 └── SETUP.md                     # Guide de configuration détaillé
 ```
 
