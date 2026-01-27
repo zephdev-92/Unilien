@@ -46,15 +46,17 @@ export async function getAuxiliariesForEmployer(
       hourly_rate,
       start_date,
       end_date,
-      employee:profiles!employee_id(
-        id,
-        first_name,
-        last_name,
-        phone,
-        avatar_url
-      ),
+      employee_id,
       employee_profile:employees!employee_id(
-        qualifications
+        profile_id,
+        qualifications,
+        profile:profiles!profile_id(
+          id,
+          first_name,
+          last_name,
+          phone,
+          avatar_url
+        )
       )
     `)
     .eq('employer_id', employerId)
@@ -84,15 +86,17 @@ export async function getActiveAuxiliariesForEmployer(
       hourly_rate,
       start_date,
       end_date,
-      employee:profiles!employee_id(
-        id,
-        first_name,
-        last_name,
-        phone,
-        avatar_url
-      ),
+      employee_id,
       employee_profile:employees!employee_id(
-        qualifications
+        profile_id,
+        qualifications,
+        profile:profiles!profile_id(
+          id,
+          first_name,
+          last_name,
+          phone,
+          avatar_url
+        )
       )
     `)
     .eq('employer_id', employerId)
@@ -117,8 +121,10 @@ export async function getAuxiliaryDetails(
     .from('contracts')
     .select(`
       *,
-      employee:profiles!employee_id(*),
-      employee_profile:employees!employee_id(*)
+      employee_profile:employees!employee_id(
+        *,
+        profile:profiles!profile_id(*)
+      )
     `)
     .eq('id', contractId)
     .single()
@@ -164,7 +170,7 @@ export async function getAuxiliaryDetails(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contractAny = contractData as any
   return {
-    profile: mapProfileFromDb(contractAny.employee),
+    profile: mapProfileFromDb(contractAny.employee_profile?.profile),
     employee: mapEmployeeFromDb(contractAny.employee_profile),
     contract: mapContractFromDb(contractAny),
     stats: {
@@ -277,13 +283,12 @@ export async function terminateContract(
 export async function searchAuxiliaryByEmail(
   email: string
 ): Promise<{ id: string; firstName: string; lastName: string } | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, role')
     .eq('email', email.toLowerCase().trim())
     .eq('role', 'employee')
-    .single()
+    .maybeSingle()
 
   if (error || !data) {
     return null
@@ -300,12 +305,13 @@ export async function searchAuxiliaryByEmail(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapAuxiliaryFromDb(data: any): AuxiliarySummary {
+  const profile = data.employee_profile?.profile
   return {
-    id: data.employee?.id || '',
-    firstName: data.employee?.first_name || '',
-    lastName: data.employee?.last_name || '',
-    phone: data.employee?.phone || undefined,
-    avatarUrl: data.employee?.avatar_url || undefined,
+    id: profile?.id || data.employee_id || '',
+    firstName: profile?.first_name || '',
+    lastName: profile?.last_name || '',
+    phone: profile?.phone || undefined,
+    avatarUrl: profile?.avatar_url || undefined,
     qualifications: data.employee_profile?.qualifications || [],
     contractType: data.contract_type,
     contractStatus: data.status,

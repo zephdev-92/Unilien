@@ -10,6 +10,7 @@ export interface Database {
           role: 'employer' | 'employee' | 'caregiver'
           first_name: string
           last_name: string
+          email: string | null
           phone: string | null
           avatar_url: string | null
           accessibility_settings: Record<string, unknown>
@@ -21,6 +22,7 @@ export interface Database {
           role: 'employer' | 'employee' | 'caregiver'
           first_name: string
           last_name: string
+          email?: string | null
           phone?: string | null
           avatar_url?: string | null
           accessibility_settings?: Record<string, unknown>
@@ -32,6 +34,7 @@ export interface Database {
           role?: 'employer' | 'employee' | 'caregiver'
           first_name?: string
           last_name?: string
+          email?: string | null
           phone?: string | null
           avatar_url?: string | null
           accessibility_settings?: Record<string, unknown>

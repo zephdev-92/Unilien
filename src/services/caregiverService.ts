@@ -365,6 +365,31 @@ export async function removeCaregiverFromEmployer(
 // ============================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCaregiverWithProfileFromDb(data: any): CaregiverWithProfile {
+  return {
+    profileId: data.profile_id,
+    employerId: data.employer_id,
+    permissions: data.permissions || {
+      canViewPlanning: false,
+      canEditPlanning: false,
+      canViewLiaison: false,
+      canWriteLiaison: false,
+      canManageTeam: false,
+      canExportData: false,
+    },
+    relationship: data.relationship || undefined,
+    createdAt: new Date(data.created_at),
+    profile: {
+      firstName: data.profile?.first_name || '',
+      lastName: data.profile?.last_name || '',
+      email: data.profile?.email || '',
+      phone: data.profile?.phone || undefined,
+      avatarUrl: data.profile?.avatar_url || undefined,
+    },
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapCaregiverFromDb(data: any): Caregiver {
   return {
     profileId: data.profile_id,
