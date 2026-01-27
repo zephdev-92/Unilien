@@ -103,7 +103,7 @@ export function SignupForm() {
       setSuccess(true)
       // Rediriger après un délai pour laisser le temps de lire le message
       setTimeout(() => {
-        navigate('/login')
+        navigate('/login?registered=true')
       }, 3000)
     }
   }

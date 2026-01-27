@@ -11,7 +11,7 @@ import {
   Alert,
   IconButton,
 } from '@chakra-ui/react'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { AccessibleInput, AccessibleButton } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -31,6 +31,8 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginForm() {
   const { signIn, isLoading, error } = useAuth()
+  const [searchParams] = useSearchParams()
+  const justRegistered = searchParams.get('registered') === 'true'
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -73,6 +75,17 @@ export function LoginForm() {
             Accédez à votre espace Unilien
           </Text>
         </Box>
+
+        {/* Message post-inscription */}
+        {justRegistered && (
+          <Alert.Root status="info" borderRadius="md">
+            <Alert.Indicator />
+            <Alert.Description>
+              Votre compte a bien été créé. Veuillez vérifier votre boîte mail
+              (et vos spams) pour confirmer votre adresse email avant de vous connecter.
+            </Alert.Description>
+          </Alert.Root>
+        )}
 
         {/* Message d'erreur */}
         {error && (
