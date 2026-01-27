@@ -67,6 +67,10 @@ const roleOptions = [
     value: 'employee',
     label: 'Auxiliaire de vie',
   },
+  {
+    value: 'caregiver',
+    label: 'Aidant familial',
+  },
 ]
 
 export function SignupForm() {
