@@ -78,7 +78,6 @@ export function SignupForm() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [success, setSuccess] = useState(false)
 
   const {
     register,
@@ -100,38 +99,8 @@ export function SignupForm() {
     })
 
     if (result.success) {
-      setSuccess(true)
-      // Rediriger après un délai pour laisser le temps de lire le message
-      setTimeout(() => {
-        navigate('/login?registered=true')
-      }, 3000)
+      navigate('/login?registered=true')
     }
-  }
-
-  if (success) {
-    return (
-      <Box
-        maxW="md"
-        mx="auto"
-        mt={8}
-        p={8}
-        borderWidth="1px"
-        borderRadius="lg"
-        boxShadow="lg"
-        bg="white"
-      >
-        <Alert.Root status="success" borderRadius="md" flexDirection="column" py={6}>
-          <Alert.Indicator boxSize={10} mb={4} />
-          <Heading as="h2" size="md" mb={2}>
-            Inscription réussie !
-          </Heading>
-          <Alert.Description textAlign="center">
-            Un email de confirmation vous a été envoyé. Veuillez vérifier votre
-            boîte de réception pour activer votre compte.
-          </Alert.Description>
-        </Alert.Root>
-      </Box>
-    )
   }
 
   return (
