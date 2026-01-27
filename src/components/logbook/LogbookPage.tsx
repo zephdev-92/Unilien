@@ -15,6 +15,7 @@ import {
   type LogEntryFilters,
   type LogEntryWithAuthor,
 } from '@/services/logbookService'
+import { supabase } from '@/lib/supabase/client'
 import {
   getCaregiver,
   getCaregiverEmployerId,
@@ -41,18 +42,48 @@ export function LogbookPage() {
   const [isResolvingEmployer, setIsResolvingEmployer] = useState(false)
   const [accessDenied, setAccessDenied] = useState(false)
 
-  // Resolve employerId for caregivers
+  // Resolve employerId based on role
   useEffect(() => {
     async function resolveEmployer() {
-      if (!profile || profile.role !== 'caregiver') {
-        // For employers and employees, use their profile.id directly
-        setResolvedEmployerId(profile?.id || null)
+      if (!profile) {
+        setResolvedEmployerId(null)
         return
       }
 
+      // Employer: use own id
+      if (profile.role === 'employer') {
+        setResolvedEmployerId(profile.id)
+        return
+      }
+
+      // Employee: resolve employer from active contract
+      if (profile.role === 'employee') {
+        setIsResolvingEmployer(true)
+        try {
+          const { data } = await supabase
+            .from('contracts')
+            .select('employer_id')
+            .eq('employee_id', profile.id)
+            .eq('status', 'active')
+            .limit(1)
+            .maybeSingle()
+
+          if (data) {
+            setResolvedEmployerId(data.employer_id)
+          } else {
+            setAccessDenied(true)
+          }
+        } catch {
+          setAccessDenied(true)
+        } finally {
+          setIsResolvingEmployer(false)
+        }
+        return
+      }
+
+      // Caregiver: resolve employer from caregiver record
       setIsResolvingEmployer(true)
       try {
-        // Get caregiver data including permissions
         const caregiver = await getCaregiver(profile.id)
 
         if (!caregiver) {
@@ -62,13 +93,11 @@ export function LogbookPage() {
 
         setCaregiverPermissions(caregiver.permissions)
 
-        // Check if caregiver has permission to view liaison
         if (!caregiver.permissions.canViewLiaison) {
           setAccessDenied(true)
           return
         }
 
-        // Get the employer ID associated with this caregiver
         const empId = await getCaregiverEmployerId(profile.id)
         setResolvedEmployerId(empId)
       } catch (error) {
