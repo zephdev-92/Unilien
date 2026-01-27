@@ -9,6 +9,7 @@ import {
   Badge,
   VisuallyHidden,
 } from '@chakra-ui/react'
+import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
 import { MessageBubble } from './MessageBubble'
@@ -132,13 +133,47 @@ export function LiaisonPage() {
   const typingControlRef = useRef<{ setTyping: (v: boolean) => void; unsubscribe: () => void } | null>(null)
   const isInitialLoad = useRef(true)
 
-  // Resolve employerId for caregivers
+  // Resolve employerId based on role
   useEffect(() => {
     async function resolveEmployer() {
-      if (!profile || profile.role !== 'caregiver') {
-        setResolvedEmployerId(profile?.id || null)
+      if (!profile) {
+        setResolvedEmployerId(null)
         return
       }
+
+      // Employer: use own id
+      if (profile.role === 'employer') {
+        setResolvedEmployerId(profile.id)
+        return
+      }
+
+      // Employee: resolve employer from active contract
+      if (profile.role === 'employee') {
+        setIsResolvingEmployer(true)
+        try {
+          const { data } = await supabase
+            .from('contracts')
+            .select('employer_id')
+            .eq('employee_id', profile.id)
+            .eq('status', 'active')
+            .limit(1)
+            .maybeSingle()
+
+          if (data) {
+            setResolvedEmployerId(data.employer_id)
+          } else {
+            setAccessDenied(true)
+          }
+        } catch {
+          setAccessDenied(true)
+        } finally {
+          setIsResolvingEmployer(false)
+        }
+        return
+      }
+
+      // Caregiver: resolve employer from caregiver record
+      if (profile.role !== 'caregiver') return
 
       setIsResolvingEmployer(true)
       try {
