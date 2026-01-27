@@ -125,10 +125,12 @@ async function getActiveEmployees(employerId: string): Promise<
       id,
       employee_id,
       weekly_hours,
-      employee:profiles!employee_id(
-        first_name,
-        last_name,
-        avatar_url
+      employee_profile:employees!employee_id(
+        profile:profiles!profile_id(
+          first_name,
+          last_name,
+          avatar_url
+        )
       )
     `)
     .eq('employer_id', employerId)
@@ -139,16 +141,17 @@ async function getActiveEmployees(employerId: string): Promise<
     return []
   }
 
+  type ProfileData = { first_name: string | null; last_name: string | null; avatar_url: string | null } | null
   type ContractRow = {
     id: string
     employee_id: string
     weekly_hours: number
-    employee: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null
+    employee_profile: { profile: ProfileData } | null
   }
   return (data as ContractRow[] || []).map((c) => ({
     employeeId: c.employee_id,
-    employeeName: `${c.employee?.first_name || ''} ${c.employee?.last_name || ''}`.trim(),
-    avatarUrl: c.employee?.avatar_url ?? undefined,
+    employeeName: `${c.employee_profile?.profile?.first_name || ''} ${c.employee_profile?.profile?.last_name || ''}`.trim(),
+    avatarUrl: c.employee_profile?.profile?.avatar_url ?? undefined,
     contractId: c.id,
     weeklyHours: c.weekly_hours,
   }))

@@ -134,10 +134,12 @@ async function getActiveContracts(
       employee_id,
       contract_type,
       hourly_rate,
-      employee:profiles!employee_id(
-        id,
-        first_name,
-        last_name
+      employee_profile:employees!employee_id(
+        profile:profiles!profile_id(
+          id,
+          first_name,
+          last_name
+        )
       )
     `)
     .eq('employer_id', employerId)
@@ -273,8 +275,8 @@ function calculateEmployeeDeclaration(
 
   return {
     employeeId: contract.employee_id,
-    firstName: contract.employee?.first_name || '',
-    lastName: contract.employee?.last_name || '',
+    firstName: contract.employee_profile?.profile?.first_name || '',
+    lastName: contract.employee_profile?.profile?.last_name || '',
     contractId: contract.id,
     contractType: contract.contract_type,
     hourlyRate,

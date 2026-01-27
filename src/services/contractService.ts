@@ -30,9 +30,11 @@ export async function getContractsForEmployer(
     .from('contracts')
     .select(`
       *,
-      employee:profiles!employee_id(
-        first_name,
-        last_name
+      employee_profile:employees!employee_id(
+        profile:profiles!profile_id(
+          first_name,
+          last_name
+        )
       )
     `)
     .eq('employer_id', employerId)
@@ -61,10 +63,10 @@ function mapContractFromDb(data: any): ContractWithEmployee {
     status: data.status,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
-    employee: data.employee
+    employee: data.employee_profile?.profile
       ? {
-          firstName: data.employee.first_name,
-          lastName: data.employee.last_name,
+          firstName: data.employee_profile.profile.first_name,
+          lastName: data.employee_profile.profile.last_name,
         }
       : undefined,
   }
