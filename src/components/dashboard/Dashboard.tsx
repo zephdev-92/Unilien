@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { Box, Text, Center, Spinner } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
+import { useShiftReminders } from '@/hooks/useShiftReminders'
 import { DashboardLayout } from './DashboardLayout'
 import { EmployerDashboard } from './EmployerDashboard'
 import { EmployeeDashboard } from './EmployeeDashboard'
@@ -8,6 +9,9 @@ import { CaregiverDashboard } from './CaregiverDashboard'
 
 export function Dashboard() {
   const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
+
+  // Créer les rappels de shift pour les auxiliaires
+  useShiftReminders(profile?.id, userRole ?? undefined)
 
   // Loading state
   if (!isInitialized || isLoading) {

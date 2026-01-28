@@ -198,6 +198,11 @@ export type NotificationType =
   | 'contract_created'        // Nouveau contrat créé
   | 'contract_terminated'     // Contrat terminé
   | 'logbook_urgent'          // Entrée urgente au cahier de liaison
+  | 'logbook_entry_directed'  // Entrée cahier destinée à un membre spécifique
+  | 'permissions_updated'     // Permissions aidant modifiées
+  | 'shift_modified'          // Intervention modifiée (horaire/date)
+  | 'absence_requested'       // Demande d'absence reçue
+  | 'absence_resolved'        // Absence approuvée ou refusée
   | 'system'                  // Notification système
 
 // Priorité de notification

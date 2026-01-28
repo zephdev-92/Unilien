@@ -85,6 +85,11 @@ const typeConfig: Record<NotificationType, { icon: string; color: string }> = {
   contract_created: { icon: '📝', color: 'green' },
   contract_terminated: { icon: '📋', color: 'red' },
   logbook_urgent: { icon: '🚨', color: 'red' },
+  logbook_entry_directed: { icon: '📌', color: 'blue' },
+  permissions_updated: { icon: '🔑', color: 'purple' },
+  shift_modified: { icon: '✏️', color: 'orange' },
+  absence_requested: { icon: '🏥', color: 'orange' },
+  absence_resolved: { icon: '📋', color: 'green' },
   system: { icon: '🔔', color: 'gray' },
 }
 

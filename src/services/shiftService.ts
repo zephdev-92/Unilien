@@ -4,6 +4,7 @@ import {
   getProfileName,
   createShiftCreatedNotification,
   createShiftCancelledNotification,
+  createShiftModifiedNotification,
 } from '@/services/notificationService'
 
 export async function getShifts(
@@ -149,6 +150,34 @@ export async function updateShift(
   if (error) {
     console.error('Erreur mise à jour shift:', error)
     throw new Error(error.message)
+  }
+
+  // Notifier l'auxiliaire si l'horaire/date a changé (pas un simple changement de status)
+  const scheduleChanged = updates.date || updates.startTime || updates.endTime
+  if (scheduleChanged && updates.status !== 'cancelled') {
+    try {
+      const { data: shift } = await supabase
+        .from('shifts')
+        .select('date, start_time, contract_id')
+        .eq('id', shiftId)
+        .single()
+      if (shift) {
+        const { data: contract } = await supabase
+          .from('contracts')
+          .select('employee_id')
+          .eq('id', shift.contract_id)
+          .single()
+        if (contract) {
+          await createShiftModifiedNotification(
+            contract.employee_id,
+            new Date(shift.date),
+            shift.start_time
+          )
+        }
+      }
+    } catch (err) {
+      console.error('Erreur notification shift modifié:', err)
+    }
   }
 
   // Notifier l'auxiliaire si l'intervention est annulée

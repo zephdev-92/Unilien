@@ -3,6 +3,7 @@ import type { LogEntry, UserRole, Attachment } from '@/types'
 import {
   getProfileName,
   createUrgentLogEntryNotification,
+  createLogEntryDirectedNotification,
 } from '@/services/notificationService'
 
 // ============================================
@@ -157,6 +158,19 @@ export async function createLogEntry(
   if (error) {
     console.error('Erreur création entrée cahier:', error)
     throw new Error(error.message)
+  }
+
+  // Notifier le destinataire spécifique si entrée dirigée (non urgente)
+  if (data.recipientId && data.importance !== 'urgent') {
+    try {
+      const authorName = await getProfileName(authorId)
+      const preview = data.content.length > 80
+        ? data.content.substring(0, 80) + '…'
+        : data.content
+      await createLogEntryDirectedNotification(data.recipientId, authorName, preview)
+    } catch (err) {
+      console.error('Erreur notification logbook dirigée:', err)
+    }
   }
 
   // Notifier tous les membres de l'équipe si entrée urgente

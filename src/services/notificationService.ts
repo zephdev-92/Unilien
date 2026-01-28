@@ -730,6 +730,153 @@ export async function createUrgentLogEntryNotification(
 }
 
 // ============================================
+// PERMISSIONS NOTIFICATIONS
+// ============================================
+
+export async function createPermissionsUpdatedNotification(
+  caregiverId: string,
+  employerName: string
+): Promise<Notification | null> {
+  try {
+    return await createNotification({
+      userId: caregiverId,
+      type: 'permissions_updated',
+      priority: 'normal',
+      title: 'Permissions modifiées',
+      message: `${employerName} a mis à jour vos permissions d'accès.`,
+      actionUrl: '/dashboard',
+      data: { employerName },
+    })
+  } catch (err) {
+    console.error('Erreur notification permissions:', err)
+    return null
+  }
+}
+
+// ============================================
+// SHIFT MODIFIED NOTIFICATION
+// ============================================
+
+export async function createShiftModifiedNotification(
+  employeeId: string,
+  shiftDate: Date,
+  startTime: string
+): Promise<Notification | null> {
+  try {
+    const formattedDate = shiftDate.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+
+    return await createNotification({
+      userId: employeeId,
+      type: 'shift_modified',
+      priority: 'normal',
+      title: 'Intervention modifiée',
+      message: `L'intervention du ${formattedDate} a été modifiée. Nouvel horaire : ${startTime}.`,
+      actionUrl: '/planning',
+      data: { shiftDate: shiftDate.toISOString(), startTime },
+    })
+  } catch (err) {
+    console.error('Erreur notification shift modifié:', err)
+    return null
+  }
+}
+
+// ============================================
+// ABSENCE NOTIFICATIONS
+// ============================================
+
+const absenceTypeLabels: Record<string, string> = {
+  sick: 'maladie',
+  vacation: 'congé',
+  training: 'formation',
+  unavailable: 'indisponibilité',
+  emergency: 'urgence',
+}
+
+export async function createAbsenceRequestedNotification(
+  employerId: string,
+  employeeName: string,
+  absenceType: string,
+  startDate: Date,
+  endDate: Date
+): Promise<Notification | null> {
+  try {
+    const label = absenceTypeLabels[absenceType] || absenceType
+    const start = startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    const end = endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+
+    return await createNotification({
+      userId: employerId,
+      type: 'absence_requested',
+      priority: 'normal',
+      title: 'Demande d\'absence',
+      message: `${employeeName} a déclaré une absence (${label}) du ${start} au ${end}.`,
+      actionUrl: '/planning',
+      data: { employeeName, absenceType, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+    })
+  } catch (err) {
+    console.error('Erreur notification demande absence:', err)
+    return null
+  }
+}
+
+export async function createAbsenceResolvedNotification(
+  employeeId: string,
+  status: 'approved' | 'rejected',
+  startDate: Date,
+  endDate: Date
+): Promise<Notification | null> {
+  try {
+    const start = startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    const end = endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
+    const statusLabel = status === 'approved' ? 'approuvée' : 'refusée'
+
+    return await createNotification({
+      userId: employeeId,
+      type: 'absence_resolved',
+      priority: 'high',
+      title: `Absence ${statusLabel}`,
+      message: `Votre demande d'absence du ${start} au ${end} a été ${statusLabel}.`,
+      actionUrl: '/planning',
+      data: { status, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+    })
+  } catch (err) {
+    console.error('Erreur notification absence résolue:', err)
+    return null
+  }
+}
+
+// ============================================
+// LOGBOOK DIRECTED NOTIFICATION
+// ============================================
+
+export async function createLogEntryDirectedNotification(
+  recipientId: string,
+  authorName: string,
+  contentPreview: string
+): Promise<Notification | null> {
+  try {
+    const preview = contentPreview.substring(0, 100) + (contentPreview.length > 100 ? '...' : '')
+
+    return await createNotification({
+      userId: recipientId,
+      type: 'logbook_entry_directed',
+      priority: 'normal',
+      title: 'Nouvelle entrée au cahier',
+      message: `${authorName} vous a adressé une note : ${preview}`,
+      actionUrl: '/logbook',
+      data: { authorName, contentPreview: preview },
+    })
+  } catch (err) {
+    console.error('Erreur notification logbook dirigée:', err)
+    return null
+  }
+}
+
+// ============================================
 // EXPORTED HELPER
 // ============================================
 

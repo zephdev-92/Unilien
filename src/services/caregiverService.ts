@@ -4,6 +4,7 @@ import {
   getProfileName,
   createTeamMemberAddedNotification,
   createTeamMemberRemovedNotification,
+  createPermissionsUpdatedNotification,
 } from '@/services/notificationService'
 
 // ============================================
@@ -176,6 +177,13 @@ export async function updateCaregiverPermissions(
 
   const updatedPermissions = { ...current, ...permissions }
 
+  // Récupérer l'employeur pour la notification
+  const { data: caregiver } = await supabase
+    .from('caregivers')
+    .select('employer_id')
+    .eq('profile_id', profileId)
+    .single()
+
   const { error } = await supabase
     .from('caregivers')
     .update({ permissions: updatedPermissions })
@@ -184,6 +192,16 @@ export async function updateCaregiverPermissions(
   if (error) {
     console.error('Erreur mise à jour permissions:', error)
     throw new Error(error.message)
+  }
+
+  // Notifier l'aidant
+  if (caregiver) {
+    try {
+      const employerName = await getProfileName(caregiver.employer_id)
+      await createPermissionsUpdatedNotification(profileId, employerName)
+    } catch (err) {
+      console.error('Erreur notification permissions modifiées:', err)
+    }
   }
 }
 
@@ -351,6 +369,14 @@ export async function updateCaregiver(
   if (error) {
     console.error('Erreur mise à jour aidant:', error)
     throw new Error('Erreur lors de la mise à jour de l\'aidant.')
+  }
+
+  // Notifier l'aidant que ses permissions ont été modifiées
+  try {
+    const employerName = await getProfileName(employerId)
+    await createPermissionsUpdatedNotification(caregiverProfileId, employerName)
+  } catch (err) {
+    console.error('Erreur notification permissions modifiées:', err)
   }
 }
 
