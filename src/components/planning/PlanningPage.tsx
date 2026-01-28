@@ -221,6 +221,7 @@ export function PlanningPage() {
         onClose={() => setSelectedAbsence(null)}
         absence={selectedAbsence}
         userRole={profile.role}
+        userId={profile.id}
         onSuccess={() => {
           loadShifts()
           setSelectedAbsence(null)

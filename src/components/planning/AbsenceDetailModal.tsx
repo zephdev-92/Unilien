@@ -12,7 +12,7 @@ import {
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AccessibleButton } from '@/components/ui'
-import { updateAbsenceStatus, deleteAbsence } from '@/services/absenceService'
+import { updateAbsenceStatus, cancelAbsence } from '@/services/absenceService'
 import type { Absence, UserRole } from '@/types'
 
 const absenceTypeLabels: Record<Absence['absenceType'], string> = {
@@ -40,6 +40,7 @@ interface AbsenceDetailModalProps {
   onClose: () => void
   absence: Absence | null
   userRole: UserRole
+  userId: string
   onSuccess: () => void
 }
 
@@ -48,6 +49,7 @@ export function AbsenceDetailModal({
   onClose,
   absence,
   userRole,
+  userId,
   onSuccess,
 }: AbsenceDetailModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -93,7 +95,7 @@ export function AbsenceDetailModal({
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      await deleteAbsence(absence.id)
+      await cancelAbsence(absence.id, userId)
       onSuccess()
       onClose()
     } catch (error) {

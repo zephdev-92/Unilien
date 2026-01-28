@@ -198,6 +198,44 @@ export async function updateAbsenceStatus(
 }
 
 // ============================================
+// CANCEL ABSENCE (pour l'employé)
+// ============================================
+
+export async function cancelAbsence(
+  absenceId: string,
+  employeeId: string
+): Promise<void> {
+  // Vérifier que l'absence appartient à l'employé et est en pending
+  const { data: absence, error: fetchError } = await supabase
+    .from('absences')
+    .select('employee_id, status')
+    .eq('id', absenceId)
+    .single()
+
+  if (fetchError || !absence) {
+    throw new Error('Absence non trouvée')
+  }
+
+  if (absence.employee_id !== employeeId) {
+    throw new Error('Vous ne pouvez annuler que vos propres absences')
+  }
+
+  if (absence.status !== 'pending') {
+    throw new Error('Seules les absences en attente peuvent être annulées')
+  }
+
+  const { error } = await supabase
+    .from('absences')
+    .delete()
+    .eq('id', absenceId)
+
+  if (error) {
+    console.error('Erreur annulation absence:', error)
+    throw new Error(error.message)
+  }
+}
+
+// ============================================
 // DELETE ABSENCE
 // ============================================
 

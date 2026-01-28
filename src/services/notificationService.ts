@@ -125,22 +125,15 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
 export async function createNotification(
   params: CreateNotificationParams
 ): Promise<Notification | null> {
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: params.userId,
-      type: params.type,
-      priority: params.priority || 'normal',
-      title: params.title,
-      message: params.message,
-      data: params.data || {},
-      action_url: params.actionUrl || null,
-      is_read: false,
-      is_dismissed: false,
-      expires_at: params.expiresAt?.toISOString() || null,
-    })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('create_notification', {
+    p_user_id: params.userId,
+    p_type: params.type,
+    p_title: params.title,
+    p_message: params.message,
+    p_priority: params.priority || 'normal',
+    p_data: params.data || {},
+    p_action_url: params.actionUrl || null,
+  })
 
   if (error) {
     console.error('Erreur création notification:', error)
@@ -159,30 +152,12 @@ export async function createBulkNotifications(
 ): Promise<Notification[]> {
   if (notifications.length === 0) return []
 
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert(
-      notifications.map((n) => ({
-        user_id: n.userId,
-        type: n.type,
-        priority: n.priority || 'normal',
-        title: n.title,
-        message: n.message,
-        data: n.data || {},
-        action_url: n.actionUrl || null,
-        is_read: false,
-        is_dismissed: false,
-        expires_at: n.expiresAt?.toISOString() || null,
-      }))
-    )
-    .select()
+  // Utiliser la fonction RPC pour chaque notification
+  const results = await Promise.all(
+    notifications.map((n) => createNotification(n))
+  )
 
-  if (error) {
-    console.error('Erreur création notifications en masse:', error)
-    return []
-  }
-
-  return (data || []).map(mapNotificationFromDb)
+  return results.filter((n): n is Notification => n !== null)
 }
 
 // ============================================
