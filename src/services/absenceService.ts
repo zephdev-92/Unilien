@@ -128,15 +128,17 @@ export async function createAbsence(
 
   // Notifier l'employeur via le contrat actif
   try {
-    const { data: contract } = await supabase
+    const { data: contract, error: contractError } = await supabase
       .from('contracts')
       .select('employer_id')
       .eq('employee_id', employeeId)
       .eq('status', 'active')
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (contract) {
+    if (contractError) {
+      console.error('Erreur récupération contrat pour notification absence:', contractError)
+    } else if (contract) {
       const employeeName = await getProfileName(employeeId)
       await createAbsenceRequestedNotification(
         contract.employer_id,
@@ -145,6 +147,8 @@ export async function createAbsence(
         absenceData.startDate,
         absenceData.endDate
       )
+    } else {
+      console.warn('Aucun contrat actif trouvé pour l\'employé, notification non envoyée')
     }
   } catch (err) {
     console.error('Erreur notification demande absence:', err)
