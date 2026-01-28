@@ -5,9 +5,10 @@ import {
   Textarea,
   IconButton,
   Text,
+  Badge,
   VisuallyHidden,
 } from '@chakra-ui/react'
-import { VoiceInput } from '@/components/ui'
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 
 // ============================================
 // PROPS
@@ -42,6 +43,43 @@ function SendIcon() {
   )
 }
 
+function MicIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  )
+}
+
+function MicOffIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <line x1="1" y1="1" x2="23" y2="23" />
+      <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+      <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .87-.16 1.71-.46 2.49" />
+      <line x1="12" y1="19" x2="12" y2="23" />
+      <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+  )
+}
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -54,10 +92,34 @@ export function MessageInput({
 }: MessageInputProps) {
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
-  const [isVoiceMode, setIsVoiceMode] = useState(false)
-  const [isVoiceActive, setIsVoiceActive] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Content before voice input started (to append voice transcript to)
+  const contentBeforeVoiceRef = useRef('')
+
+  // Direct speech recognition integration
+  const {
+    isSupported: isVoiceSupported,
+    isListening,
+    transcript,
+    error: voiceError,
+    startListening,
+    stopListening,
+    reset: resetVoice,
+  } = useSpeechRecognition({
+    lang: 'fr-FR',
+    continuous: true,
+    interimResults: true,
+  })
+
+  // Real-time: write transcript into the textarea as the user speaks
+  useEffect(() => {
+    if (isListening && transcript) {
+      const base = contentBeforeVoiceRef.current
+      setContent(base ? `${base} ${transcript}` : transcript)
+    }
+  }, [isListening, transcript])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -80,18 +142,16 @@ export function MessageInput({
   const handleTyping = useCallback(() => {
     onTyping?.(true)
 
-    // Clear existing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
 
-    // Set new timeout to stop typing indicator after 2 seconds
     typingTimeoutRef.current = setTimeout(() => {
       onTyping?.(false)
     }, 2000)
   }, [onTyping])
 
-  // Handle content change
+  // Handle content change (manual typing)
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value)
     handleTyping()
@@ -102,14 +162,20 @@ export function MessageInput({
     const trimmedContent = content.trim()
     if (!trimmedContent || isSending || disabled) return
 
+    // Stop voice if active
+    if (isListening) {
+      stopListening()
+      resetVoice()
+    }
+
     setIsSending(true)
     onTyping?.(false)
 
     try {
       await onSend(trimmedContent)
       setContent('')
+      contentBeforeVoiceRef.current = ''
 
-      // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
@@ -118,37 +184,30 @@ export function MessageInput({
     } finally {
       setIsSending(false)
     }
-  }, [content, isSending, disabled, onSend, onTyping])
+  }, [content, isSending, disabled, isListening, onSend, onTyping, stopListening, resetVoice])
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Send on Enter (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
   }, [handleSend])
 
-  // Handle voice transcript
-  const handleVoiceTranscript = useCallback((transcript: string) => {
-    setContent(prev => {
-      const newContent = prev ? `${prev} ${transcript}` : transcript
-      return newContent
-    })
-    // Don't close voice mode here - let the user explicitly close it
-  }, [])
-
-  // Handle voice listening change
-  const handleVoiceListeningChange = useCallback((isListening: boolean) => {
-    setIsVoiceActive(isListening)
-  }, [])
-
-  // Close voice mode explicitly
-  const closeVoiceMode = useCallback(() => {
-    setIsVoiceMode(false)
-    setIsVoiceActive(false)
-    textareaRef.current?.focus()
-  }, [])
+  // Toggle voice recognition
+  const handleVoiceToggle = useCallback(() => {
+    if (isListening) {
+      // Stopping: keep what's in the textarea, reset voice state
+      stopListening()
+      resetVoice()
+      contentBeforeVoiceRef.current = ''
+      textareaRef.current?.focus()
+    } else {
+      // Starting: remember current content, start recognition
+      contentBeforeVoiceRef.current = content
+      startListening()
+    }
+  }, [isListening, content, startListening, stopListening, resetVoice])
 
   const canSend = content.trim().length > 0 && !isSending && !disabled
 
@@ -159,67 +218,67 @@ export function MessageInput({
       borderColor="gray.200"
       p={4}
     >
-      {/* Voice mode overlay */}
-      {isVoiceMode && (
+      {/* Voice error banner */}
+      {voiceError && (
         <Box
-          position="absolute"
-          bottom="100%"
-          left={0}
-          right={0}
-          bg="blue.50"
-          p={4}
-          borderTopWidth="1px"
-          borderColor="blue.200"
-          textAlign="center"
+          bg="red.50"
+          borderRadius="md"
+          p={2}
+          mb={3}
+          borderWidth="1px"
+          borderColor="red.200"
         >
-          <Flex justify="flex-end" mb={2}>
-            <IconButton
-              aria-label="Fermer la saisie vocale"
-              variant="ghost"
-              size="sm"
-              onClick={closeVoiceMode}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </IconButton>
-          </Flex>
-          <VoiceInput
-            onTranscript={handleVoiceTranscript}
-            onListeningChange={handleVoiceListeningChange}
-            size="lg"
-            showPreview
-            autoStart
-          />
+          <Text fontSize="sm" color="red.700" role="alert">
+            {voiceError}
+          </Text>
         </Box>
       )}
 
       <Flex gap={3} align="flex-end">
-        {/* Voice input button (toggles voice mode) */}
-        <IconButton
-          aria-label="Saisie vocale"
-          variant="ghost"
-          colorPalette="blue"
-          onClick={() => setIsVoiceMode(!isVoiceMode)}
-          disabled={disabled || isSending}
-          minW="44px"
-          minH="44px"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-            <line x1="12" y1="19" x2="12" y2="23" />
-            <line x1="8" y1="23" x2="16" y2="23" />
-          </svg>
-        </IconButton>
+        {/* Voice input button */}
+        {isVoiceSupported && (
+          <Box position="relative">
+            <IconButton
+              aria-label={isListening ? 'Arrêter la saisie vocale' : 'Saisie vocale'}
+              aria-pressed={isListening}
+              variant={isListening ? 'solid' : 'ghost'}
+              colorPalette={isListening ? 'red' : 'blue'}
+              onClick={handleVoiceToggle}
+              disabled={disabled || isSending}
+              minW="44px"
+              minH="44px"
+              css={{
+                ...(isListening && {
+                  animation: 'voicePulse 1.5s ease-in-out infinite',
+                  '@keyframes voicePulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0.4)' },
+                    '70%': { boxShadow: '0 0 0 10px rgba(229, 62, 62, 0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0)' },
+                  },
+                }),
+                '@media (prefers-reduced-motion: reduce)': {
+                  animation: 'none',
+                },
+              }}
+            >
+              {isListening ? <MicOffIcon /> : <MicIcon />}
+            </IconButton>
+
+            {isListening && (
+              <Badge
+                colorPalette="red"
+                position="absolute"
+                top="-4px"
+                right="-4px"
+                borderRadius="full"
+                fontSize="2xs"
+                px={1.5}
+              >
+                REC
+              </Badge>
+            )}
+          </Box>
+        )}
 
         {/* Text input */}
         <Box flex={1} position="relative">
@@ -228,7 +287,7 @@ export function MessageInput({
             value={content}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={isListening ? 'Parlez maintenant...' : placeholder}
             disabled={disabled || isSending}
             rows={1}
             resize="none"
@@ -237,12 +296,12 @@ export function MessageInput({
             borderRadius="xl"
             py={3}
             px={4}
-            bg="gray.50"
-            borderColor="gray.200"
+            bg={isListening ? 'red.50' : 'gray.50'}
+            borderColor={isListening ? 'red.300' : 'gray.200'}
             _focus={{
               bg: 'white',
-              borderColor: 'blue.500',
-              boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)',
+              borderColor: isListening ? 'red.500' : 'blue.500',
+              boxShadow: `0 0 0 1px var(--chakra-colors-${isListening ? 'red' : 'blue'}-500)`,
             }}
             css={{
               '&::-webkit-scrollbar': {
@@ -252,10 +311,13 @@ export function MessageInput({
                 backgroundColor: 'var(--chakra-colors-gray-300)',
                 borderRadius: '3px',
               },
+              ...(isListening && {
+                transition: 'background-color 0.3s, border-color 0.3s',
+              }),
             }}
           />
 
-          {/* Character count (optional, for long messages) */}
+          {/* Character count */}
           {content.length > 500 && (
             <Text
               position="absolute"
@@ -281,9 +343,7 @@ export function MessageInput({
           minH="44px"
           borderRadius="full"
           css={{
-            // Smooth transition
             transition: 'all 0.2s',
-            // Scale up when can send
             ...(canSend && {
               transform: 'scale(1.05)',
             }),
@@ -298,15 +358,16 @@ export function MessageInput({
 
       {/* Keyboard hint */}
       <Text fontSize="xs" color="gray.400" mt={2} textAlign="center">
-        Entrée pour envoyer, Maj+Entrée pour nouvelle ligne
+        {isListening
+          ? 'Parlez... Le texte apparaît en temps réel. Cliquez sur le micro pour arrêter.'
+          : 'Entrée pour envoyer, Maj+Entrée pour nouvelle ligne'}
       </Text>
 
       {/* Screen reader announcements */}
       <VisuallyHidden>
         <div aria-live="polite" aria-atomic="true">
           {isSending && 'Envoi du message en cours...'}
-          {isVoiceMode && 'Mode saisie vocale activé'}
-          {isVoiceMode && !isVoiceActive && 'Reconnaissance vocale en pause. Cliquez sur le microphone pour reprendre.'}
+          {isListening && 'Saisie vocale activée. Parlez maintenant.'}
         </div>
       </VisuallyHidden>
     </Box>
