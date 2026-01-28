@@ -94,6 +94,8 @@ export function AbsenceRequestModal({
     setIsSubmitting(true)
     setSubmitError(null)
 
+    console.log('[AbsenceModal] Création absence pour employeeId:', employeeId)
+
     try {
       await createAbsence(employeeId, {
         absenceType: data.absenceType,
