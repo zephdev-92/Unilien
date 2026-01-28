@@ -60,7 +60,7 @@ const actionsByRole: Record<UserRole, QuickAction[]> = {
     {
       label: 'Déclarer absence',
       icon: '🏥',
-      href: '/absences/new',
+      href: '/planning?action=absence',
       description: 'Signaler une indisponibilité',
     },
   ],

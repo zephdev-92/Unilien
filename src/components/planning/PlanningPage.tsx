@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { Box, Flex, Text, Center, Spinner } from '@chakra-ui/react'
 import { startOfWeek, endOfWeek, addWeeks, subWeeks, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -9,16 +9,31 @@ import { AccessibleButton } from '@/components/ui'
 import { WeekView } from './WeekView'
 import { NewShiftModal } from './NewShiftModal'
 import { ShiftDetailModal } from './ShiftDetailModal'
+import { AbsenceRequestModal } from './AbsenceRequestModal'
+import { AbsenceDetailModal } from './AbsenceDetailModal'
 import { getShifts } from '@/services/shiftService'
-import type { Shift } from '@/types'
+import { getAbsencesForEmployee, getAbsencesForEmployer } from '@/services/absenceService'
+import type { Shift, Absence } from '@/types'
 
 export function PlanningPage() {
   const { profile, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [shifts, setShifts] = useState<Shift[]>([])
+  const [absences, setAbsences] = useState<Absence[]>([])
   const [isLoadingShifts, setIsLoadingShifts] = useState(true)
   const [isNewShiftModalOpen, setIsNewShiftModalOpen] = useState(false)
+  const [isAbsenceRequestModalOpen, setIsAbsenceRequestModalOpen] = useState(false)
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null)
+  const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null)
+
+  // Ouvrir le modal absence si ?action=absence dans l'URL
+  useEffect(() => {
+    if (searchParams.get('action') === 'absence' && profile?.role === 'employee') {
+      setIsAbsenceRequestModalOpen(true)
+      setSearchParams({}) // Nettoyer l'URL
+    }
+  }, [searchParams, profile?.role, setSearchParams])
 
   const weekStart = useMemo(
     () => startOfWeek(currentWeek, { weekStartsOn: 1 }),
@@ -34,8 +49,22 @@ export function PlanningPage() {
 
     setIsLoadingShifts(true)
     try {
-      const data = await getShifts(profile.id, profile.role, weekStart, weekEnd)
-      setShifts(data)
+      const [shiftsData, absencesData] = await Promise.all([
+        getShifts(profile.id, profile.role, weekStart, weekEnd),
+        profile.role === 'employee'
+          ? getAbsencesForEmployee(profile.id)
+          : profile.role === 'employer'
+            ? getAbsencesForEmployer(profile.id)
+            : Promise.resolve([]),
+      ])
+      setShifts(shiftsData)
+      // Filtrer les absences pour la semaine actuelle
+      const weekAbsences = absencesData.filter((absence) => {
+        const start = new Date(absence.startDate)
+        const end = new Date(absence.endDate)
+        return start <= weekEnd && end >= weekStart
+      })
+      setAbsences(weekAbsences)
     } catch (error) {
       console.error('Erreur chargement planning:', error)
     } finally {
@@ -118,15 +147,26 @@ export function PlanningPage() {
             {weekLabel}
           </Text>
 
-          {profile.role === 'employer' && (
-            <AccessibleButton
-              colorPalette="blue"
-              size="sm"
-              onClick={() => setIsNewShiftModalOpen(true)}
-            >
-              + Nouvelle intervention
-            </AccessibleButton>
-          )}
+          <Flex gap={2}>
+            {profile.role === 'employee' && (
+              <AccessibleButton
+                colorPalette="orange"
+                size="sm"
+                onClick={() => setIsAbsenceRequestModalOpen(true)}
+              >
+                + Déclarer absence
+              </AccessibleButton>
+            )}
+            {profile.role === 'employer' && (
+              <AccessibleButton
+                colorPalette="blue"
+                size="sm"
+                onClick={() => setIsNewShiftModalOpen(true)}
+              >
+                + Nouvelle intervention
+              </AccessibleButton>
+            )}
+          </Flex>
         </Flex>
 
         {/* Vue semaine */}
@@ -138,8 +178,10 @@ export function PlanningPage() {
           <WeekView
             weekStart={weekStart}
             shifts={shifts}
+            absences={absences}
             userRole={profile.role}
             onShiftClick={(shift) => setSelectedShift(shift)}
+            onAbsenceClick={(absence) => setSelectedAbsence(absence)}
           />
         )}
       </Box>
@@ -162,6 +204,26 @@ export function PlanningPage() {
         onSuccess={() => {
           loadShifts()
           setSelectedShift(null)
+        }}
+      />
+
+      {profile.role === 'employee' && (
+        <AbsenceRequestModal
+          isOpen={isAbsenceRequestModalOpen}
+          onClose={() => setIsAbsenceRequestModalOpen(false)}
+          employeeId={profile.id}
+          onSuccess={loadShifts}
+        />
+      )}
+
+      <AbsenceDetailModal
+        isOpen={selectedAbsence !== null}
+        onClose={() => setSelectedAbsence(null)}
+        absence={selectedAbsence}
+        userRole={profile.role}
+        onSuccess={() => {
+          loadShifts()
+          setSelectedAbsence(null)
         }}
       />
     </DashboardLayout>

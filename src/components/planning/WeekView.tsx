@@ -1,13 +1,15 @@
 import { Box, Grid, GridItem, Text, Stack, Badge, Flex } from '@chakra-ui/react'
-import { addDays, format, isSameDay, isToday } from 'date-fns'
+import { addDays, format, isSameDay, isToday, isWithinInterval } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import type { Shift, UserRole } from '@/types'
+import type { Shift, UserRole, Absence } from '@/types'
 
 interface WeekViewProps {
   weekStart: Date
   shifts: Shift[]
+  absences?: Absence[]
   userRole: UserRole
   onShiftClick?: (shift: Shift) => void
+  onAbsenceClick?: (absence: Absence) => void
 }
 
 const statusColors: Record<Shift['status'], string> = {
@@ -24,11 +26,44 @@ const statusLabels: Record<Shift['status'], string> = {
   absent: 'Absent',
 }
 
-export function WeekView({ weekStart, shifts, userRole, onShiftClick }: WeekViewProps) {
+const absenceStatusColors: Record<Absence['status'], string> = {
+  pending: 'orange',
+  approved: 'green',
+  rejected: 'gray',
+}
+
+const absenceStatusLabels: Record<Absence['status'], string> = {
+  pending: 'En attente',
+  approved: 'Approuvée',
+  rejected: 'Refusée',
+}
+
+const absenceTypeLabels: Record<Absence['absenceType'], string> = {
+  sick: 'Maladie',
+  vacation: 'Congé',
+  training: 'Formation',
+  unavailable: 'Indispo.',
+  emergency: 'Urgence',
+}
+
+export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftClick, onAbsenceClick }: WeekViewProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   const getShiftsForDay = (date: Date) => {
     return shifts.filter((shift) => isSameDay(new Date(shift.date), date))
+  }
+
+  const getAbsencesForDay = (date: Date) => {
+    return absences.filter((absence) => {
+      const start = new Date(absence.startDate)
+      const end = new Date(absence.endDate)
+      // Normaliser les dates pour comparer uniquement les jours
+      start.setHours(0, 0, 0, 0)
+      end.setHours(23, 59, 59, 999)
+      const checkDate = new Date(date)
+      checkDate.setHours(12, 0, 0, 0)
+      return isWithinInterval(checkDate, { start, end })
+    })
   }
 
   return (
@@ -77,7 +112,9 @@ export function WeekView({ weekStart, shifts, userRole, onShiftClick }: WeekView
       <Grid templateColumns="repeat(7, 1fr)" minH="400px">
         {days.map((day) => {
           const dayShifts = getShiftsForDay(day)
+          const dayAbsences = getAbsencesForDay(day)
           const isCurrentDay = isToday(day)
+          const hasContent = dayShifts.length > 0 || dayAbsences.length > 0
 
           return (
             <GridItem
@@ -89,7 +126,26 @@ export function WeekView({ weekStart, shifts, userRole, onShiftClick }: WeekView
               _last={{ borderRightWidth: 0 }}
             >
               <Stack gap={2}>
-                {dayShifts.length === 0 ? (
+                {/* Absences en premier */}
+                {dayAbsences.map((absence) => (
+                  <AbsenceCard
+                    key={absence.id}
+                    absence={absence}
+                    onClick={() => onAbsenceClick?.(absence)}
+                  />
+                ))}
+
+                {/* Shifts */}
+                {dayShifts.map((shift) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    userRole={userRole}
+                    onClick={() => onShiftClick?.(shift)}
+                  />
+                ))}
+
+                {!hasContent && (
                   <Text
                     fontSize="xs"
                     color="gray.400"
@@ -98,15 +154,6 @@ export function WeekView({ weekStart, shifts, userRole, onShiftClick }: WeekView
                   >
                     Aucune intervention
                   </Text>
-                ) : (
-                  dayShifts.map((shift) => (
-                    <ShiftCard
-                      key={shift.id}
-                      shift={shift}
-                      userRole={userRole}
-                      onClick={() => onShiftClick?.(shift)}
-                    />
-                  ))
                 )}
               </Stack>
             </GridItem>
@@ -165,6 +212,57 @@ function ShiftCard({ shift, onClick }: ShiftCardProps) {
         <Text fontSize="xs" color="gray.600" lineClamp={2}>
           {shift.tasks.slice(0, 2).join(', ')}
           {shift.tasks.length > 2 && ` +${shift.tasks.length - 2}`}
+        </Text>
+      )}
+    </Box>
+  )
+}
+
+interface AbsenceCardProps {
+  absence: Absence
+  onClick?: () => void
+}
+
+function AbsenceCard({ absence, onClick }: AbsenceCardProps) {
+  return (
+    <Box
+      p={2}
+      bg={`${absenceStatusColors[absence.status]}.50`}
+      borderRadius="md"
+      borderLeftWidth="3px"
+      borderLeftColor={`${absenceStatusColors[absence.status]}.500`}
+      cursor="pointer"
+      transition="all 0.2s"
+      _hover={{
+        bg: `${absenceStatusColors[absence.status]}.100`,
+        transform: 'translateY(-1px)',
+      }}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick?.()
+        }
+      }}
+    >
+      <Flex justify="space-between" align="start" mb={1}>
+        <Text fontSize="sm" fontWeight="semibold" color={`${absenceStatusColors[absence.status]}.700`}>
+          {absenceTypeLabels[absence.absenceType]}
+        </Text>
+        <Badge
+          size="sm"
+          colorPalette={absenceStatusColors[absence.status]}
+          fontSize="2xs"
+        >
+          {absenceStatusLabels[absence.status]}
+        </Badge>
+      </Flex>
+
+      {absence.reason && (
+        <Text fontSize="xs" color="gray.600" lineClamp={1}>
+          {absence.reason}
         </Text>
       )}
     </Box>
