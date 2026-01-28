@@ -96,6 +96,12 @@ export function VoiceInput({
 
   // Ref to track if we've already sent transcript
   const lastSentTranscriptRef = useRef('')
+  const transcriptRef = useRef('')
+
+  // Keep transcript ref in sync
+  useEffect(() => {
+    transcriptRef.current = transcript
+  }, [transcript])
 
   // Auto-start if requested
   useEffect(() => {
@@ -105,9 +111,15 @@ export function VoiceInput({
   }, [autoStart, isSupported, disabled, startListening])
 
   // Notify parent of listening state changes
+  // When recognition stops unexpectedly, send any pending transcript
   useEffect(() => {
+    if (!isListening && transcriptRef.current.trim() &&
+        transcriptRef.current.trim() !== lastSentTranscriptRef.current) {
+      onTranscript(transcriptRef.current.trim())
+      lastSentTranscriptRef.current = transcriptRef.current.trim()
+    }
     onListeningChange?.(isListening)
-  }, [isListening, onListeningChange])
+  }, [isListening, onListeningChange, onTranscript])
 
   // Handle button click
   const handleClick = useCallback(() => {

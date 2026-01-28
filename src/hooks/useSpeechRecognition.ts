@@ -116,11 +116,18 @@ export function useSpeechRecognition(
 
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   const finalTranscriptRef = useRef('')
+  const isListeningRef = useRef(false)
+  const shouldRestartRef = useRef(false)
+  const manualStopRef = useRef(false)
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     finalTranscriptRef.current = finalTranscript
   }, [finalTranscript])
+
+  useEffect(() => {
+    isListeningRef.current = isListening
+  }, [isListening])
 
   // Check browser support
   const isSupported = typeof window !== 'undefined' &&
@@ -145,7 +152,18 @@ export function useSpeechRecognition(
     }
 
     recognition.onend = () => {
+      // In continuous mode, auto-restart if not manually stopped
+      if (continuous && shouldRestartRef.current && !manualStopRef.current) {
+        try {
+          recognition.start()
+          return
+        } catch {
+          // Failed to restart, fall through to stop
+        }
+      }
+
       setIsListening(false)
+      shouldRestartRef.current = false
     }
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -154,12 +172,20 @@ export function useSpeechRecognition(
       switch (event.error) {
         case 'no-speech':
           errorMessage = "Aucune parole détectée. Veuillez réessayer."
+          // In continuous mode, allow restart after no-speech
+          if (continuous) return
           break
         case 'audio-capture':
           errorMessage = "Aucun microphone détecté. Vérifiez votre matériel."
+          shouldRestartRef.current = false
           break
         case 'not-allowed':
           errorMessage = "Accès au microphone refusé. Veuillez autoriser l'accès."
+          shouldRestartRef.current = false
+          break
+        case 'service-not-allowed':
+          errorMessage = "Le service de reconnaissance vocale n'est pas disponible."
+          shouldRestartRef.current = false
           break
         case 'network':
           errorMessage = "Erreur réseau. Vérifiez votre connexion."
@@ -167,9 +193,11 @@ export function useSpeechRecognition(
         case 'aborted':
           // Don't show error for manual abort
           setIsListening(false)
+          shouldRestartRef.current = false
           return
         case 'language-not-supported':
           errorMessage = "Langue non supportée."
+          shouldRestartRef.current = false
           break
         default:
           errorMessage = `Erreur de reconnaissance vocale: ${event.error}`
@@ -200,21 +228,32 @@ export function useSpeechRecognition(
       setTranscript(fullTranscript.trim())
     }
 
+    // Handle no match found
+    if ('onnomatch' in recognition) {
+      (recognition as SpeechRecognition & { onnomatch: (() => void) | null }).onnomatch = () => {
+        setError("Parole non reconnue. Veuillez réessayer.")
+      }
+    }
+
     recognitionRef.current = recognition
 
     return () => {
+      shouldRestartRef.current = false
+      manualStopRef.current = true
       recognition.abort()
     }
   }, [isSupported, lang, continuous, interimResults])
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current || isListening) return
+    if (!recognitionRef.current || isListeningRef.current) return
 
     // Reset before starting
     setTranscript('')
     setFinalTranscript('')
     finalTranscriptRef.current = ''
     setError(null)
+    manualStopRef.current = false
+    shouldRestartRef.current = continuous
 
     try {
       recognitionRef.current.start()
@@ -222,25 +261,28 @@ export function useSpeechRecognition(
       // Recognition might already be started
       console.warn('Speech recognition start error:', err)
     }
-  }, [isListening])
+  }, [continuous])
 
   const stopListening = useCallback(() => {
-    if (!recognitionRef.current || !isListening) return
+    if (!recognitionRef.current || !isListeningRef.current) return
+
+    manualStopRef.current = true
+    shouldRestartRef.current = false
 
     try {
       recognitionRef.current.stop()
     } catch (err) {
       console.warn('Speech recognition stop error:', err)
     }
-  }, [isListening])
+  }, [])
 
   const toggleListening = useCallback(() => {
-    if (isListening) {
+    if (isListeningRef.current) {
       stopListening()
     } else {
       startListening()
     }
-  }, [isListening, startListening, stopListening])
+  }, [startListening, stopListening])
 
   const reset = useCallback(() => {
     setTranscript('')

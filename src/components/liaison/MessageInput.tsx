@@ -55,6 +55,7 @@ export function MessageInput({
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [isVoiceMode, setIsVoiceMode] = useState(false)
+  const [isVoiceActive, setIsVoiceActive] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -134,13 +135,19 @@ export function MessageInput({
       const newContent = prev ? `${prev} ${transcript}` : transcript
       return newContent
     })
-    setIsVoiceMode(false)
-    textareaRef.current?.focus()
+    // Don't close voice mode here - let the user explicitly close it
   }, [])
 
   // Handle voice listening change
   const handleVoiceListeningChange = useCallback((isListening: boolean) => {
-    setIsVoiceMode(isListening)
+    setIsVoiceActive(isListening)
+  }, [])
+
+  // Close voice mode explicitly
+  const closeVoiceMode = useCallback(() => {
+    setIsVoiceMode(false)
+    setIsVoiceActive(false)
+    textareaRef.current?.focus()
   }, [])
 
   const canSend = content.trim().length > 0 && !isSending && !disabled
@@ -165,6 +172,19 @@ export function MessageInput({
           borderColor="blue.200"
           textAlign="center"
         >
+          <Flex justify="flex-end" mb={2}>
+            <IconButton
+              aria-label="Fermer la saisie vocale"
+              variant="ghost"
+              size="sm"
+              onClick={closeVoiceMode}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </IconButton>
+          </Flex>
           <VoiceInput
             onTranscript={handleVoiceTranscript}
             onListeningChange={handleVoiceListeningChange}
@@ -286,6 +306,7 @@ export function MessageInput({
         <div aria-live="polite" aria-atomic="true">
           {isSending && 'Envoi du message en cours...'}
           {isVoiceMode && 'Mode saisie vocale activé'}
+          {isVoiceMode && !isVoiceActive && 'Reconnaissance vocale en pause. Cliquez sur le microphone pour reprendre.'}
         </div>
       </VisuallyHidden>
     </Box>
