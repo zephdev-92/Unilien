@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Shift, UserRole } from '@/types'
+import {
+  getProfileName,
+  createShiftCreatedNotification,
+  createShiftCancelledNotification,
+} from '@/services/notificationService'
 
 export async function getShifts(
   profileId: string,
@@ -89,6 +94,26 @@ export async function createShift(
     throw new Error(error.message)
   }
 
+  // Notifier l'auxiliaire de la nouvelle intervention
+  try {
+    const { data: contract } = await supabase
+      .from('contracts')
+      .select('employee_id, employer_id')
+      .eq('id', contractId)
+      .single()
+    if (contract) {
+      const employerName = await getProfileName(contract.employer_id)
+      await createShiftCreatedNotification(
+        contract.employee_id,
+        shiftData.date,
+        shiftData.startTime,
+        employerName
+      )
+    }
+  } catch (err) {
+    console.error('Erreur notification shift créé:', err)
+  }
+
   return mapShiftFromDb(data)
 }
 
@@ -124,6 +149,33 @@ export async function updateShift(
   if (error) {
     console.error('Erreur mise à jour shift:', error)
     throw new Error(error.message)
+  }
+
+  // Notifier l'auxiliaire si l'intervention est annulée
+  if (updates.status === 'cancelled') {
+    try {
+      const { data: shift } = await supabase
+        .from('shifts')
+        .select('date, start_time, contract_id')
+        .eq('id', shiftId)
+        .single()
+      if (shift) {
+        const { data: contract } = await supabase
+          .from('contracts')
+          .select('employee_id')
+          .eq('id', shift.contract_id)
+          .single()
+        if (contract) {
+          await createShiftCancelledNotification(
+            contract.employee_id,
+            new Date(shift.date),
+            shift.start_time
+          )
+        }
+      }
+    } catch (err) {
+      console.error('Erreur notification shift annulé:', err)
+    }
   }
 }
 

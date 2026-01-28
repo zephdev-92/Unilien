@@ -80,7 +80,11 @@ const typeConfig: Record<NotificationType, { icon: string; color: string }> = {
   shift_cancelled: { icon: '❌', color: 'gray' },
   shift_reminder: { icon: '⏰', color: 'purple' },
   message_received: { icon: '💬', color: 'cyan' },
-  team_member_added: { icon: '👤', color: 'teal' },
+  team_member_added: { icon: '👥', color: 'teal' },
+  team_member_removed: { icon: '👤', color: 'red' },
+  contract_created: { icon: '📝', color: 'green' },
+  contract_terminated: { icon: '📋', color: 'red' },
+  logbook_urgent: { icon: '🚨', color: 'red' },
   system: { icon: '🔔', color: 'gray' },
 }
 

@@ -542,6 +542,200 @@ export async function createMessageNotification(
 }
 
 // ============================================
+// TEAM NOTIFICATIONS
+// ============================================
+
+async function getProfileName(profileId: string): Promise<string> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('first_name, last_name')
+    .eq('id', profileId)
+    .single()
+
+  if (!data) return 'Utilisateur'
+  return `${data.first_name} ${data.last_name}`.trim() || 'Utilisateur'
+}
+
+export async function createTeamMemberAddedNotification(
+  caregiverId: string,
+  employerName: string
+): Promise<Notification | null> {
+  try {
+    return await createNotification({
+      userId: caregiverId,
+      type: 'team_member_added',
+      priority: 'normal',
+      title: 'Ajout à une équipe',
+      message: `${employerName} vous a ajouté comme aidant à son équipe.`,
+      actionUrl: '/dashboard',
+    })
+  } catch (err) {
+    console.error('Erreur notification ajout aidant:', err)
+    return null
+  }
+}
+
+export async function createTeamMemberRemovedNotification(
+  caregiverId: string,
+  employerName: string
+): Promise<Notification | null> {
+  try {
+    return await createNotification({
+      userId: caregiverId,
+      type: 'team_member_removed',
+      priority: 'high',
+      title: 'Retrait d\'une équipe',
+      message: `Vous avez été retiré de l'équipe de ${employerName}.`,
+      actionUrl: '/dashboard',
+    })
+  } catch (err) {
+    console.error('Erreur notification retrait aidant:', err)
+    return null
+  }
+}
+
+// ============================================
+// CONTRACT NOTIFICATIONS
+// ============================================
+
+export async function createContractCreatedNotification(
+  employeeId: string,
+  employerName: string,
+  contractType: 'CDI' | 'CDD'
+): Promise<Notification | null> {
+  try {
+    return await createNotification({
+      userId: employeeId,
+      type: 'contract_created',
+      priority: 'normal',
+      title: 'Nouveau contrat',
+      message: `${employerName} a créé un contrat ${contractType} avec vous.`,
+      actionUrl: '/dashboard',
+      data: { employerName, contractType },
+    })
+  } catch (err) {
+    console.error('Erreur notification nouveau contrat:', err)
+    return null
+  }
+}
+
+export async function createContractTerminatedNotification(
+  employeeId: string,
+  employerName: string
+): Promise<Notification | null> {
+  try {
+    return await createNotification({
+      userId: employeeId,
+      type: 'contract_terminated',
+      priority: 'high',
+      title: 'Fin de contrat',
+      message: `Votre contrat avec ${employerName} a été terminé.`,
+      actionUrl: '/dashboard',
+      data: { employerName },
+    })
+  } catch (err) {
+    console.error('Erreur notification fin contrat:', err)
+    return null
+  }
+}
+
+// ============================================
+// SHIFT NOTIFICATIONS
+// ============================================
+
+export async function createShiftCreatedNotification(
+  employeeId: string,
+  shiftDate: Date,
+  startTime: string,
+  employerName: string
+): Promise<Notification | null> {
+  try {
+    const formattedDate = shiftDate.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+
+    return await createNotification({
+      userId: employeeId,
+      type: 'shift_created',
+      priority: 'normal',
+      title: 'Nouvelle intervention',
+      message: `Intervention planifiée chez ${employerName} le ${formattedDate} à ${startTime}.`,
+      actionUrl: '/planning',
+      data: { employerName, shiftDate: shiftDate.toISOString(), startTime },
+    })
+  } catch (err) {
+    console.error('Erreur notification shift créé:', err)
+    return null
+  }
+}
+
+export async function createShiftCancelledNotification(
+  employeeId: string,
+  shiftDate: Date,
+  startTime: string
+): Promise<Notification | null> {
+  try {
+    const formattedDate = shiftDate.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+
+    return await createNotification({
+      userId: employeeId,
+      type: 'shift_cancelled',
+      priority: 'high',
+      title: 'Intervention annulée',
+      message: `L'intervention du ${formattedDate} à ${startTime} a été annulée.`,
+      actionUrl: '/planning',
+      data: { shiftDate: shiftDate.toISOString(), startTime },
+    })
+  } catch (err) {
+    console.error('Erreur notification shift annulé:', err)
+    return null
+  }
+}
+
+// ============================================
+// LOGBOOK NOTIFICATIONS
+// ============================================
+
+export async function createUrgentLogEntryNotification(
+  userIds: string[],
+  authorName: string,
+  contentPreview: string
+): Promise<Notification[]> {
+  if (userIds.length === 0) return []
+
+  try {
+    const preview = contentPreview.substring(0, 100) + (contentPreview.length > 100 ? '...' : '')
+
+    return await createBulkNotifications(
+      userIds.map((userId) => ({
+        userId,
+        type: 'logbook_urgent' as NotificationType,
+        priority: 'urgent' as NotificationPriority,
+        title: 'Entrée urgente au cahier',
+        message: `${authorName} : ${preview}`,
+        actionUrl: '/logbook',
+        data: { authorName, contentPreview: preview },
+      }))
+    )
+  } catch (err) {
+    console.error('Erreur notification logbook urgent:', err)
+    return []
+  }
+}
+
+// ============================================
+// EXPORTED HELPER
+// ============================================
+
+export { getProfileName }
+
+// ============================================
 // HELPER: MAP FROM DB
 // ============================================
 

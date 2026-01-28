@@ -193,7 +193,11 @@ export type NotificationType =
   | 'shift_cancelled'         // Intervention annulée
   | 'shift_reminder'          // Rappel intervention à venir
   | 'message_received'        // Nouveau message liaison
-  | 'team_member_added'       // Nouvel auxiliaire ajouté
+  | 'team_member_added'       // Nouvel aidant ajouté à l'équipe
+  | 'team_member_removed'     // Aidant retiré de l'équipe
+  | 'contract_created'        // Nouveau contrat créé
+  | 'contract_terminated'     // Contrat terminé
+  | 'logbook_urgent'          // Entrée urgente au cahier de liaison
   | 'system'                  // Notification système
 
 // Priorité de notification

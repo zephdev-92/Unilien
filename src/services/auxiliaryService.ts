@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Contract, Employee, Profile } from '@/types'
+import {
+  getProfileName,
+  createContractCreatedNotification,
+  createContractTerminatedNotification,
+} from '@/services/notificationService'
 
 // Type complet pour un auxiliaire avec son profil et contrat
 export interface AuxiliaryWithDetails {
@@ -220,6 +225,14 @@ export async function createContract(
     )
   }
 
+  // Notifier l'auxiliaire du nouveau contrat
+  try {
+    const employerName = await getProfileName(employerId)
+    await createContractCreatedNotification(employeeId, employerName, contractData.contractType)
+  } catch (err) {
+    console.error('Erreur notification nouveau contrat:', err)
+  }
+
   return mapContractFromDb(data)
 }
 
@@ -271,10 +284,36 @@ export async function terminateContract(
   contractId: string,
   endDate: Date = new Date()
 ): Promise<void> {
+  // Récupérer les infos du contrat avant terminaison pour la notification
+  let employeeId: string | null = null
+  let employerName = 'Utilisateur'
+  try {
+    const { data: contract } = await supabase
+      .from('contracts')
+      .select('employee_id, employer_id')
+      .eq('id', contractId)
+      .single()
+    if (contract) {
+      employeeId = contract.employee_id
+      employerName = await getProfileName(contract.employer_id)
+    }
+  } catch {
+    // Fallback silencieux
+  }
+
   await updateContract(contractId, {
     status: 'terminated',
     endDate,
   })
+
+  // Notifier l'auxiliaire de la fin de contrat
+  if (employeeId) {
+    try {
+      await createContractTerminatedNotification(employeeId, employerName)
+    } catch (err) {
+      console.error('Erreur notification fin contrat:', err)
+    }
+  }
 }
 
 /**

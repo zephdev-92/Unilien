@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 import type { LogEntry, UserRole, Attachment } from '@/types'
+import {
+  getProfileName,
+  createUrgentLogEntryNotification,
+} from '@/services/notificationService'
 
 // ============================================
 // TYPES
@@ -153,6 +157,54 @@ export async function createLogEntry(
   if (error) {
     console.error('Erreur création entrée cahier:', error)
     throw new Error(error.message)
+  }
+
+  // Notifier tous les membres de l'équipe si entrée urgente
+  if (data.importance === 'urgent') {
+    try {
+      const authorName = await getProfileName(authorId)
+
+      // Récupérer tous les membres de l'équipe (contrats actifs + aidants)
+      const [contractsRes, caregiversRes] = await Promise.all([
+        supabase
+          .from('contracts')
+          .select('employee_id')
+          .eq('employer_id', employerId)
+          .eq('status', 'active'),
+        supabase
+          .from('caregivers')
+          .select('profile_id')
+          .eq('employer_id', employerId),
+      ])
+
+      const memberIds = new Set<string>()
+
+      // Ajouter l'employeur
+      memberIds.add(employerId)
+
+      // Ajouter les employés avec contrat actif
+      for (const c of contractsRes.data || []) {
+        memberIds.add(c.employee_id)
+      }
+
+      // Ajouter les aidants
+      for (const cg of caregiversRes.data || []) {
+        memberIds.add(cg.profile_id)
+      }
+
+      // Retirer l'auteur (il n'a pas besoin d'être notifié de sa propre entrée)
+      memberIds.delete(authorId)
+
+      if (memberIds.size > 0) {
+        await createUrgentLogEntryNotification(
+          Array.from(memberIds),
+          authorName,
+          data.content
+        )
+      }
+    } catch (err) {
+      console.error('Erreur notification logbook urgent:', err)
+    }
   }
 
   return mapLogEntryFromDb(created)

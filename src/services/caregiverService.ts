@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Caregiver, CaregiverPermissions, Shift } from '@/types'
+import {
+  getProfileName,
+  createTeamMemberAddedNotification,
+  createTeamMemberRemovedNotification,
+} from '@/services/notificationService'
 
 // ============================================
 // CAREGIVER (profil aidant)
@@ -313,6 +318,14 @@ export async function addCaregiverToEmployer(
     console.error('Erreur ajout aidant:', error)
     throw new Error('Erreur lors de l\'ajout de l\'aidant.')
   }
+
+  // Notifier l'aidant ajouté
+  try {
+    const employerName = await getProfileName(employerId)
+    await createTeamMemberAddedNotification(caregiverProfileId, employerName)
+  } catch (err) {
+    console.error('Erreur notification ajout aidant:', err)
+  }
 }
 
 /**
@@ -348,6 +361,14 @@ export async function removeCaregiverFromEmployer(
   caregiverProfileId: string,
   employerId: string
 ): Promise<void> {
+  // Récupérer le nom de l'employeur avant suppression
+  let employerName = 'Utilisateur'
+  try {
+    employerName = await getProfileName(employerId)
+  } catch {
+    // Fallback silencieux
+  }
+
   const { error } = await supabase
     .from('caregivers')
     .delete()
@@ -357,6 +378,13 @@ export async function removeCaregiverFromEmployer(
   if (error) {
     console.error('Erreur suppression aidant:', error)
     throw new Error('Erreur lors de la suppression de l\'aidant.')
+  }
+
+  // Notifier l'aidant retiré
+  try {
+    await createTeamMemberRemovedNotification(caregiverProfileId, employerName)
+  } catch (err) {
+    console.error('Erreur notification retrait aidant:', err)
   }
 }
 
