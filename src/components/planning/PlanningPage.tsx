@@ -1,12 +1,23 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { Box, Flex, Text, Center, Spinner } from '@chakra-ui/react'
-import { startOfWeek, endOfWeek, addWeeks, subWeeks, format } from 'date-fns'
+import {
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  subMonths,
+  format,
+} from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
 import { AccessibleButton } from '@/components/ui'
 import { WeekView } from './WeekView'
+import { MonthView } from './MonthView'
 import { NewShiftModal } from './NewShiftModal'
 import { ShiftDetailModal } from './ShiftDetailModal'
 import { AbsenceRequestModal } from './AbsenceRequestModal'
@@ -15,10 +26,13 @@ import { getShifts } from '@/services/shiftService'
 import { getAbsencesForEmployee, getAbsencesForEmployer } from '@/services/absenceService'
 import type { Shift, Absence } from '@/types'
 
+type ViewMode = 'week' | 'month'
+
 export function PlanningPage() {
   const { profile, isAuthenticated, isLoading, isInitialized } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [currentWeek, setCurrentWeek] = useState(new Date())
+  const [viewMode, setViewMode] = useState<ViewMode>('week')
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [shifts, setShifts] = useState<Shift[]>([])
   const [absences, setAbsences] = useState<Absence[]>([])
   const [isLoadingShifts, setIsLoadingShifts] = useState(true)
@@ -35,14 +49,27 @@ export function PlanningPage() {
     }
   }, [searchParams, profile?.role, setSearchParams])
 
+  // Calcul des dates selon le mode de vue
   const weekStart = useMemo(
-    () => startOfWeek(currentWeek, { weekStartsOn: 1 }),
-    [currentWeek]
+    () => startOfWeek(currentDate, { weekStartsOn: 1 }),
+    [currentDate]
   )
   const weekEnd = useMemo(
-    () => endOfWeek(currentWeek, { weekStartsOn: 1 }),
-    [currentWeek]
+    () => endOfWeek(currentDate, { weekStartsOn: 1 }),
+    [currentDate]
   )
+  const monthStart = useMemo(
+    () => startOfMonth(currentDate),
+    [currentDate]
+  )
+  const monthEnd = useMemo(
+    () => endOfMonth(currentDate),
+    [currentDate]
+  )
+
+  // Dates de chargement selon le mode
+  const rangeStart = viewMode === 'week' ? weekStart : monthStart
+  const rangeEnd = viewMode === 'week' ? weekEnd : monthEnd
 
   const loadShifts = useCallback(async () => {
     if (!profile) return
@@ -50,7 +77,7 @@ export function PlanningPage() {
     setIsLoadingShifts(true)
     try {
       const [shiftsData, absencesData] = await Promise.all([
-        getShifts(profile.id, profile.role, weekStart, weekEnd),
+        getShifts(profile.id, profile.role, rangeStart, rangeEnd),
         profile.role === 'employee'
           ? getAbsencesForEmployee(profile.id)
           : profile.role === 'employer'
@@ -58,19 +85,19 @@ export function PlanningPage() {
             : Promise.resolve([]),
       ])
       setShifts(shiftsData)
-      // Filtrer les absences pour la semaine actuelle
-      const weekAbsences = absencesData.filter((absence) => {
+      // Filtrer les absences pour la période actuelle
+      const periodAbsences = absencesData.filter((absence) => {
         const start = new Date(absence.startDate)
         const end = new Date(absence.endDate)
-        return start <= weekEnd && end >= weekStart
+        return start <= rangeEnd && end >= rangeStart
       })
-      setAbsences(weekAbsences)
+      setAbsences(periodAbsences)
     } catch (error) {
       console.error('Erreur chargement planning:', error)
     } finally {
       setIsLoadingShifts(false)
     }
-  }, [profile, weekStart, weekEnd])
+  }, [profile, rangeStart, rangeEnd])
 
   useEffect(() => {
     if (profile && isInitialized) {
@@ -78,9 +105,22 @@ export function PlanningPage() {
     }
   }, [profile, isInitialized, loadShifts])
 
-  const goToPreviousWeek = () => setCurrentWeek(subWeeks(currentWeek, 1))
-  const goToNextWeek = () => setCurrentWeek(addWeeks(currentWeek, 1))
-  const goToToday = () => setCurrentWeek(new Date())
+  // Navigation selon le mode
+  const goToPrevious = () => {
+    if (viewMode === 'week') {
+      setCurrentDate(subWeeks(currentDate, 1))
+    } else {
+      setCurrentDate(subMonths(currentDate, 1))
+    }
+  }
+  const goToNext = () => {
+    if (viewMode === 'week') {
+      setCurrentDate(addWeeks(currentDate, 1))
+    } else {
+      setCurrentDate(addMonths(currentDate, 1))
+    }
+  }
+  const goToToday = () => setCurrentDate(new Date())
 
   // Loading state
   if (!isInitialized || isLoading) {
@@ -99,7 +139,9 @@ export function PlanningPage() {
     return <Navigate to="/login" replace />
   }
 
-  const weekLabel = `${format(weekStart, 'd', { locale: fr })} - ${format(weekEnd, 'd MMMM yyyy', { locale: fr })}`
+  const dateLabel = viewMode === 'week'
+    ? `${format(weekStart, 'd', { locale: fr })} - ${format(weekEnd, 'd MMMM yyyy', { locale: fr })}`
+    : format(currentDate, 'MMMM yyyy', { locale: fr })
 
   return (
     <DashboardLayout title="Planning">
@@ -121,8 +163,8 @@ export function PlanningPage() {
             <AccessibleButton
               variant="outline"
               size="sm"
-              onClick={goToPreviousWeek}
-              accessibleLabel="Semaine précédente"
+              onClick={goToPrevious}
+              accessibleLabel={viewMode === 'week' ? 'Semaine précédente' : 'Mois précédent'}
             >
               ← Précédent
             </AccessibleButton>
@@ -136,15 +178,35 @@ export function PlanningPage() {
             <AccessibleButton
               variant="outline"
               size="sm"
-              onClick={goToNextWeek}
-              accessibleLabel="Semaine suivante"
+              onClick={goToNext}
+              accessibleLabel={viewMode === 'week' ? 'Semaine suivante' : 'Mois suivant'}
             >
               Suivant →
             </AccessibleButton>
           </Flex>
 
-          <Text fontSize="lg" fontWeight="semibold" color="gray.800">
-            {weekLabel}
+          {/* Sélecteur de vue */}
+          <Flex gap={1} bg="gray.100" p={1} borderRadius="md">
+            <AccessibleButton
+              size="sm"
+              variant={viewMode === 'week' ? 'solid' : 'ghost'}
+              colorPalette={viewMode === 'week' ? 'blue' : undefined}
+              onClick={() => setViewMode('week')}
+            >
+              Semaine
+            </AccessibleButton>
+            <AccessibleButton
+              size="sm"
+              variant={viewMode === 'month' ? 'solid' : 'ghost'}
+              colorPalette={viewMode === 'month' ? 'blue' : undefined}
+              onClick={() => setViewMode('month')}
+            >
+              Mois
+            </AccessibleButton>
+          </Flex>
+
+          <Text fontSize="lg" fontWeight="semibold" color="gray.800" textTransform="capitalize">
+            {dateLabel}
           </Text>
 
           <Flex gap={2}>
@@ -169,14 +231,23 @@ export function PlanningPage() {
           </Flex>
         </Flex>
 
-        {/* Vue semaine */}
+        {/* Vue planning */}
         {isLoadingShifts ? (
           <Center py={12}>
             <Spinner size="lg" color="brand.500" />
           </Center>
-        ) : (
+        ) : viewMode === 'week' ? (
           <WeekView
             weekStart={weekStart}
+            shifts={shifts}
+            absences={absences}
+            userRole={profile.role}
+            onShiftClick={(shift) => setSelectedShift(shift)}
+            onAbsenceClick={(absence) => setSelectedAbsence(absence)}
+          />
+        ) : (
+          <MonthView
+            currentDate={currentDate}
             shifts={shifts}
             absences={absences}
             userRole={profile.role}
