@@ -9,6 +9,8 @@ import { LiaisonPage } from '@/components/liaison'
 import { TeamPage } from '@/components/team'
 import { CompliancePage } from '@/pages/CompliancePage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
+import { HomePage } from '@/pages/HomePage'
+import { ContactPage } from '@/pages/ContactPage'
 import { useAuth } from '@/hooks/useAuth'
 
 // Page de chargement
@@ -43,6 +45,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <Routes>
+      {/* Page d'accueil publique */}
+      <Route path="/" element={<HomePage />} />
+
+      {/* Page de contact */}
+      <Route path="/contact" element={<ContactPage />} />
+
       {/* Routes publiques */}
       <Route
         path="/login"
@@ -116,9 +124,8 @@ function App() {
       {/* Documents - Export CESU/PAJEMPLOI */}
       <Route path="/documents" element={<DocumentsPage />} />
 
-      {/* Redirection par défaut */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* Redirection par défaut pour les routes inconnues */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
