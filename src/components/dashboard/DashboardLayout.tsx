@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { label: 'Planning', href: '/planning', icon: '📅', ariaLabel: 'Voir le planning' },
   { label: 'Messagerie', href: '/liaison', icon: '💬', ariaLabel: 'Ouvrir la messagerie en temps réel' },
   { label: 'Cahier de liaison', href: '/logbook', icon: '📝', ariaLabel: 'Ouvrir le cahier de liaison' },
-  { label: 'Paramètres', href: '/profile', icon: '⚙️', ariaLabel: 'Accéder aux paramètres' },
+  { label: 'Paramètres', href: '/settings', icon: '⚙️', ariaLabel: 'Accéder aux paramètres' },
 ]
 
 interface DashboardLayoutProps {

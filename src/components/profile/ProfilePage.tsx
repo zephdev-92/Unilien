@@ -75,7 +75,7 @@ export function ProfilePage() {
   // Profile not loaded - show message to complete profile
   if (!profile) {
     return (
-      <DashboardLayout title="Mon profil">
+      <DashboardLayout title="Paramètres">
         <Center py={12}>
           <Box textAlign="center">
             <Text fontSize="xl" fontWeight="semibold" mb={2}>
@@ -175,7 +175,7 @@ export function ProfilePage() {
   }
 
   return (
-    <DashboardLayout title="Mon profil">
+    <DashboardLayout title="Paramètres">
       <Box maxW="800px">
         <Tabs.Root defaultValue="personal" variant="line">
           <Tabs.List mb={6}>

@@ -95,8 +95,8 @@ function App() {
       {/* Dashboard - gère sa propre protection et layout */}
       <Route path="/dashboard" element={<Dashboard />} />
 
-      {/* Profil - gère sa propre protection et layout */}
-      <Route path="/profile" element={<ProfilePage />} />
+      {/* Paramètres - gère sa propre protection et layout */}
+      <Route path="/settings" element={<ProfilePage />} />
 
       {/* Planning - gère sa propre protection et layout */}
       <Route path="/planning" element={<PlanningPage />} />
