@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Contract } from '@/types'
+import type {
+  ContractDbRow,
+  ContractWithEmployeeDbRow,
+  ContractWithEmployerDbRow,
+} from '@/types/database'
 import {
   getProfileName,
   createContractCreatedNotification,
@@ -44,7 +49,7 @@ export async function getContractById(contractId: string): Promise<Contract | nu
     return null
   }
 
-  return mapContractFromDb(data)
+  return mapContractFromDb(data as ContractDbRow)
 }
 
 export async function getContractsForEmployer(
@@ -70,7 +75,7 @@ export async function getContractsForEmployer(
     return []
   }
 
-  return (data || []).map(mapContractWithEmployeeFromDb)
+  return (data || []).map((row) => mapContractWithEmployeeFromDb(row as ContractWithEmployeeDbRow))
 }
 
 export async function getContractsForEmployee(
@@ -95,16 +100,16 @@ export async function getContractsForEmployee(
     return []
   }
 
-  return (data || []).map((contract) => {
+  return (data || []).map((row) => {
+    const contract = row as ContractWithEmployerDbRow
     const mapped = mapContractFromDb(contract)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const employerProfile = (contract as any).employer_profile?.profile
+    const employerProfile = contract.employer_profile?.profile
     return {
       ...mapped,
       employee: employerProfile
         ? {
-            firstName: employerProfile.first_name,
-            lastName: employerProfile.last_name,
+            firstName: employerProfile.first_name || '',
+            lastName: employerProfile.last_name || '',
           }
         : undefined,
     }
@@ -135,8 +140,7 @@ export async function createContract(
   employeeId: string,
   contractData: ContractCreateData
 ): Promise<Contract> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('contracts')
     .insert({
       employer_id: employerId,
@@ -172,7 +176,7 @@ export async function createContract(
     console.error('Erreur notification nouveau contrat:', err)
   }
 
-  return mapContractFromDb(data)
+  return mapContractFromDb(data as ContractDbRow)
 }
 
 // ============================================================
@@ -200,8 +204,7 @@ export async function updateContract(
 
   dbUpdates.updated_at = new Date().toISOString()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('contracts')
     .update(dbUpdates)
     .eq('id', contractId)
@@ -345,8 +348,7 @@ export async function hasActiveContract(
 // MAPPING FUNCTIONS
 // ============================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapContractFromDb(data: any): Contract {
+function mapContractFromDb(data: ContractDbRow): Contract {
   return {
     id: data.id,
     employerId: data.employer_id,
@@ -362,14 +364,13 @@ function mapContractFromDb(data: any): Contract {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapContractWithEmployeeFromDb(data: any): ContractWithEmployee {
+function mapContractWithEmployeeFromDb(data: ContractWithEmployeeDbRow): ContractWithEmployee {
   return {
     ...mapContractFromDb(data),
     employee: data.employee_profile?.profile
       ? {
-          firstName: data.employee_profile.profile.first_name,
-          lastName: data.employee_profile.profile.last_name,
+          firstName: data.employee_profile.profile.first_name || '',
+          lastName: data.employee_profile.profile.last_name || '',
         }
       : undefined,
   }

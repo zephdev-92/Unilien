@@ -1,5 +1,12 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Contract, Employee, Profile } from '@/types'
+import type {
+  ContractDbRow,
+  ContractWithEmployeeDbRow,
+  ProfileDbRow,
+  EmployeeDbRow,
+  ShiftDbRow,
+} from '@/types/database'
 
 // Re-export contract functions for backward compatibility
 export {
@@ -77,7 +84,7 @@ export async function getAuxiliariesForEmployer(
     return []
   }
 
-  return (data || []).map(mapAuxiliaryFromDb)
+  return (data || []).map((row) => mapAuxiliaryFromDb(row as ContractWithEmployeeDbRow))
 }
 
 /**
@@ -118,7 +125,7 @@ export async function getActiveAuxiliariesForEmployer(
     return []
   }
 
-  return (data || []).map(mapAuxiliaryFromDb)
+  return (data || []).map((row) => mapAuxiliaryFromDb(row as ContractWithEmployeeDbRow))
 }
 
 /**
@@ -153,8 +160,7 @@ export async function getAuxiliaryDetails(
     .select('id, date, start_time, end_time, break_duration, status')
     .eq('contract_id', contractId)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shifts = (shiftsData || []) as any[]
+  const shifts = (shiftsData || []) as ShiftDbRow[]
   const totalShifts = shifts.length
   const upcomingShifts = shifts.filter(
     (s) => new Date(s.date) >= now && s.status === 'planned'
@@ -177,12 +183,11 @@ export async function getAuxiliaryDetails(
       return total + hours
     }, 0)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const contractAny = contractData as any
+  const contractRow = contractData as ContractWithEmployeeDbRow
   return {
-    profile: mapProfileFromDb(contractAny.employee_profile?.profile),
-    employee: mapEmployeeFromDb(contractAny.employee_profile),
-    contract: mapContractFromDb(contractAny),
+    profile: mapProfileFromDb(contractRow.employee_profile?.profile as ProfileDbRow),
+    employee: mapEmployeeFromDb(contractRow.employee_profile as EmployeeDbRow),
+    contract: mapContractFromDb(contractRow),
     stats: {
       totalShifts,
       upcomingShifts,
@@ -193,8 +198,7 @@ export async function getAuxiliaryDetails(
 
 // Fonctions de mapping
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapAuxiliaryFromDb(data: any): AuxiliarySummary {
+function mapAuxiliaryFromDb(data: ContractWithEmployeeDbRow): AuxiliarySummary {
   const profile = data.employee_profile?.profile
   return {
     id: profile?.id || data.employee_id || '',
@@ -213,8 +217,7 @@ function mapAuxiliaryFromDb(data: any): AuxiliarySummary {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapContractFromDb(data: any): Contract {
+function mapContractFromDb(data: ContractDbRow): Contract {
   return {
     id: data.id,
     employerId: data.employer_id,
@@ -230,16 +233,36 @@ function mapContractFromDb(data: any): Contract {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapProfileFromDb(data: any): Profile {
+function mapProfileFromDb(data: ProfileDbRow | undefined): Profile {
+  if (!data) {
+    return {
+      id: '',
+      role: 'employee',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: undefined,
+      avatarUrl: undefined,
+      accessibilitySettings: {
+        highContrast: false,
+        largeText: false,
+        reducedMotion: false,
+        screenReaderOptimized: false,
+        voiceControlEnabled: false,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+  }
+
   return {
     id: data.id,
     role: data.role,
     firstName: data.first_name,
     lastName: data.last_name,
-    email: data.email,
-    phone: data.phone,
-    avatarUrl: data.avatar_url,
+    email: data.email || '',
+    phone: data.phone || undefined,
+    avatarUrl: data.avatar_url || undefined,
     accessibilitySettings: data.accessibility_settings || {
       highContrast: false,
       largeText: false,
@@ -252,13 +275,30 @@ function mapProfileFromDb(data: any): Profile {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapEmployeeFromDb(data: any): Employee {
+function mapEmployeeFromDb(data: EmployeeDbRow | undefined): Employee {
+  if (!data) {
+    return {
+      profileId: '',
+      qualifications: [],
+      languages: [],
+      maxDistanceKm: undefined,
+      availabilityTemplate: {
+        monday: [],
+        tuesday: [],
+        wednesday: [],
+        thursday: [],
+        friday: [],
+        saturday: [],
+        sunday: [],
+      },
+    }
+  }
+
   return {
     profileId: data.profile_id,
     qualifications: data.qualifications || [],
     languages: data.languages || [],
-    maxDistanceKm: data.max_distance_km,
+    maxDistanceKm: data.max_distance_km || undefined,
     availabilityTemplate: data.availability_template || {
       monday: [],
       tuesday: [],

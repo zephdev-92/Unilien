@@ -14,6 +14,33 @@ import type {
   ExportOptions,
 } from './types'
 import { getMonthLabel } from './types'
+import type { AddressDb, ShiftDbRow } from '@/types/database'
+
+// Types pour les données de la DB
+interface EmployerDataDb {
+  firstName: string
+  lastName: string
+  address: {
+    street: string
+    city: string
+    postalCode: string
+  }
+  cesuNumber?: string
+}
+
+interface ContractForDeclarationDb {
+  id: string
+  employee_id: string
+  contract_type: 'CDI' | 'CDD'
+  hourly_rate: number
+  employee_profile?: {
+    profile?: {
+      id?: string
+      first_name?: string
+      last_name?: string
+    }
+  }
+}
 
 /**
  * Récupère les données complètes pour une déclaration mensuelle
@@ -78,16 +105,7 @@ export async function getMonthlyDeclarationData(
 /**
  * Récupère les données de l'employeur
  */
-async function getEmployerData(employerId: string): Promise<{
-  firstName: string
-  lastName: string
-  address: {
-    street: string
-    city: string
-    postalCode: string
-  }
-  cesuNumber?: string
-} | null> {
+async function getEmployerData(employerId: string): Promise<EmployerDataDb | null> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('first_name, last_name')
@@ -104,8 +122,7 @@ async function getEmployerData(employerId: string): Promise<{
 
   if (employerError || !employer) return null
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const address = employer.address as any
+  const address = employer.address as AddressDb | null
 
   return {
     firstName: profile.first_name,
@@ -125,8 +142,7 @@ async function getEmployerData(employerId: string): Promise<{
 async function getActiveContracts(
   employerId: string,
   employeeIds?: string[]
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any[]> {
+): Promise<ContractForDeclarationDb[]> {
   let query = supabase
     .from('contracts')
     .select(`
@@ -156,7 +172,7 @@ async function getActiveContracts(
     return []
   }
 
-  return data || []
+  return (data || []) as ContractForDeclarationDb[]
 }
 
 /**
@@ -166,8 +182,7 @@ async function getShiftsForPeriod(
   contractId: string,
   startDate: Date,
   endDate: Date
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any[]> {
+): Promise<ShiftDbRow[]> {
   const { data, error } = await supabase
     .from('shifts')
     .select('*')
@@ -182,17 +197,15 @@ async function getShiftsForPeriod(
     return []
   }
 
-  return data || []
+  return (data || []) as ShiftDbRow[]
 }
 
 /**
  * Calcule les données de déclaration pour un employé
  */
 function calculateEmployeeDeclaration(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  contract: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  shifts: any[]
+  contract: ContractForDeclarationDb,
+  shifts: ShiftDbRow[]
 ): EmployeeDeclarationData {
   const hourlyRate = contract.hourly_rate
   const shiftsDetails: ShiftDeclarationDetail[] = []
