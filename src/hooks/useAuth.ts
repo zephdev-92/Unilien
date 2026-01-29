@@ -56,14 +56,11 @@ export function useAuth() {
         setUser(currentSession.user)
 
         // Récupérer le profil
-        console.log('Fetching profile for user:', currentSession.user.id)
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', currentSession.user.id)
           .maybeSingle()
-
-        console.log('Profile result:', { profileData, profileError })
 
         if (profileError) {
           console.error('Erreur récupération profil:', profileError)
@@ -115,14 +112,10 @@ export function useAuth() {
               createdAt: new Date(),
               updatedAt: new Date(),
             })
-            console.log('Profil créé automatiquement pour utilisateur existant')
-          } else {
-            console.error('Erreur création profil automatique:', createError)
           }
         }
       }
     } catch (err) {
-      console.error('Erreur initialisation auth:', err)
       setError(err instanceof Error ? err.message : 'Erreur d\'initialisation')
     } finally {
       setLoading(false)
@@ -272,9 +265,6 @@ export function useAuth() {
               createdAt: new Date(),
               updatedAt: new Date(),
             })
-            console.log('Profil créé automatiquement pour utilisateur existant')
-          } else {
-            console.error('Erreur création profil automatique:', createError)
           }
         }
 
