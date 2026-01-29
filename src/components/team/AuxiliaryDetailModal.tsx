@@ -21,6 +21,8 @@ import {
   getAuxiliaryDetails,
   updateContract,
   terminateContract,
+  suspendContract,
+  resumeContract,
   type AuxiliaryWithDetails,
 } from '@/services/auxiliaryService'
 
@@ -44,6 +46,8 @@ export function AuxiliaryDetailModal({
   const [isSaving, setIsSaving] = useState(false)
   const [isTerminating, setIsTerminating] = useState(false)
   const [confirmTerminate, setConfirmTerminate] = useState(false)
+  const [isSuspending, setIsSuspending] = useState(false)
+  const [isResuming, setIsResuming] = useState(false)
 
   // Valeurs d'édition
   const [weeklyHours, setWeeklyHours] = useState(0)
@@ -98,7 +102,36 @@ export function AuxiliaryDetailModal({
     }
   }
 
+  const handleSuspend = async () => {
+    setIsSuspending(true)
+    try {
+      await suspendContract(contractId)
+      const updated = await getAuxiliaryDetails(contractId)
+      setDetails(updated)
+      onUpdate()
+    } catch (error) {
+      console.error('Erreur suspension:', error)
+    } finally {
+      setIsSuspending(false)
+    }
+  }
+
+  const handleResume = async () => {
+    setIsResuming(true)
+    try {
+      await resumeContract(contractId)
+      const updated = await getAuxiliaryDetails(contractId)
+      setDetails(updated)
+      onUpdate()
+    } catch (error) {
+      console.error('Erreur réactivation:', error)
+    } finally {
+      setIsResuming(false)
+    }
+  }
+
   const isActive = details?.contract.status === 'active'
+  const isSuspended = details?.contract.status === 'suspended'
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
@@ -152,8 +185,8 @@ export function AuxiliaryDetailModal({
                           <Text fontSize="xl" fontWeight="bold">
                             {details.profile.firstName} {details.profile.lastName}
                           </Text>
-                          <Badge colorPalette={isActive ? 'green' : 'gray'}>
-                            {isActive ? 'Actif' : 'Inactif'}
+                          <Badge colorPalette={isActive ? 'green' : isSuspended ? 'orange' : 'gray'}>
+                            {isActive ? 'Actif' : isSuspended ? 'Suspendu' : 'Inactif'}
                           </Badge>
                         </Flex>
 
@@ -360,7 +393,7 @@ export function AuxiliaryDetailModal({
             </Dialog.Body>
 
             {/* Footer avec actions */}
-            {details && isActive && (
+            {details && (isActive || isSuspended) && (
               <Dialog.Footer p={6} borderTopWidth="1px">
                 {confirmTerminate ? (
                   <Stack gap={3} w="full">
@@ -393,14 +426,36 @@ export function AuxiliaryDetailModal({
                     </Flex>
                   </Stack>
                 ) : (
-                  <Flex gap={3} justify="space-between" w="full">
-                    <AccessibleButton
-                      variant="outline"
-                      colorPalette="red"
-                      onClick={() => setConfirmTerminate(true)}
-                    >
-                      Mettre fin au contrat
-                    </AccessibleButton>
+                  <Flex gap={3} justify="space-between" w="full" flexWrap="wrap">
+                    <Flex gap={2}>
+                      <AccessibleButton
+                        variant="outline"
+                        colorPalette="red"
+                        onClick={() => setConfirmTerminate(true)}
+                      >
+                        Mettre fin au contrat
+                      </AccessibleButton>
+                      {isActive && (
+                        <AccessibleButton
+                          variant="outline"
+                          colorPalette="orange"
+                          onClick={handleSuspend}
+                          loading={isSuspending}
+                        >
+                          Suspendre
+                        </AccessibleButton>
+                      )}
+                      {isSuspended && (
+                        <AccessibleButton
+                          variant="outline"
+                          colorPalette="green"
+                          onClick={handleResume}
+                          loading={isResuming}
+                        >
+                          Réactiver
+                        </AccessibleButton>
+                      )}
+                    </Flex>
                     <AccessibleButton
                       colorPalette="blue"
                       onClick={onClose}

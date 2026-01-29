@@ -1,10 +1,15 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Contract, Employee, Profile } from '@/types'
-import {
-  getProfileName,
-  createContractCreatedNotification,
-  createContractTerminatedNotification,
-} from '@/services/notificationService'
+
+// Re-export contract functions for backward compatibility
+export {
+  createContract,
+  updateContract,
+  terminateContract,
+  suspendContract,
+  resumeContract,
+  searchEmployeeByEmail as searchAuxiliaryByEmail,
+} from '@/services/contractService'
 
 // Type complet pour un auxiliaire avec son profil et contrat
 export interface AuxiliaryWithDetails {
@@ -183,160 +188,6 @@ export async function getAuxiliaryDetails(
       upcomingShifts,
       hoursThisMonth: Math.round(hoursThisMonth * 10) / 10,
     },
-  }
-}
-
-/**
- * Crée un nouveau contrat avec un auxiliaire
- */
-export async function createContract(
-  employerId: string,
-  employeeId: string,
-  contractData: {
-    contractType: 'CDI' | 'CDD'
-    startDate: Date
-    endDate?: Date
-    weeklyHours: number
-    hourlyRate: number
-  }
-): Promise<Contract | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('contracts')
-    .insert({
-      employer_id: employerId,
-      employee_id: employeeId,
-      contract_type: contractData.contractType,
-      start_date: contractData.startDate.toISOString().split('T')[0],
-      end_date: contractData.endDate?.toISOString().split('T')[0] || null,
-      weekly_hours: contractData.weeklyHours,
-      hourly_rate: contractData.hourlyRate,
-      status: 'active',
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Erreur création contrat:', error)
-    throw new Error(
-      error.code === '23505'
-        ? 'Un contrat actif existe déjà avec cet auxiliaire'
-        : 'Erreur lors de la création du contrat'
-    )
-  }
-
-  // Notifier l'auxiliaire du nouveau contrat
-  try {
-    const employerName = await getProfileName(employerId)
-    await createContractCreatedNotification(employeeId, employerName, contractData.contractType)
-  } catch (err) {
-    console.error('Erreur notification nouveau contrat:', err)
-  }
-
-  return mapContractFromDb(data)
-}
-
-/**
- * Met à jour un contrat existant
- */
-export async function updateContract(
-  contractId: string,
-  updates: Partial<{
-    weeklyHours: number
-    hourlyRate: number
-    status: 'active' | 'terminated' | 'suspended'
-    endDate: Date
-  }>
-): Promise<void> {
-  const dbUpdates: Record<string, unknown> = {}
-
-  if (updates.weeklyHours !== undefined) {
-    dbUpdates.weekly_hours = updates.weeklyHours
-  }
-  if (updates.hourlyRate !== undefined) {
-    dbUpdates.hourly_rate = updates.hourlyRate
-  }
-  if (updates.status !== undefined) {
-    dbUpdates.status = updates.status
-  }
-  if (updates.endDate !== undefined) {
-    dbUpdates.end_date = updates.endDate.toISOString().split('T')[0]
-  }
-
-  dbUpdates.updated_at = new Date().toISOString()
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('contracts')
-    .update(dbUpdates)
-    .eq('id', contractId)
-
-  if (error) {
-    console.error('Erreur mise à jour contrat:', error)
-    throw new Error('Erreur lors de la mise à jour du contrat')
-  }
-}
-
-/**
- * Termine un contrat (soft delete)
- */
-export async function terminateContract(
-  contractId: string,
-  endDate: Date = new Date()
-): Promise<void> {
-  // Récupérer les infos du contrat avant terminaison pour la notification
-  let employeeId: string | null = null
-  let employerName = 'Utilisateur'
-  try {
-    const { data: contract } = await supabase
-      .from('contracts')
-      .select('employee_id, employer_id')
-      .eq('id', contractId)
-      .single()
-    if (contract) {
-      employeeId = contract.employee_id
-      employerName = await getProfileName(contract.employer_id)
-    }
-  } catch {
-    // Fallback silencieux
-  }
-
-  await updateContract(contractId, {
-    status: 'terminated',
-    endDate,
-  })
-
-  // Notifier l'auxiliaire de la fin de contrat
-  if (employeeId) {
-    try {
-      await createContractTerminatedNotification(employeeId, employerName)
-    } catch (err) {
-      console.error('Erreur notification fin contrat:', err)
-    }
-  }
-}
-
-/**
- * Recherche un auxiliaire par email pour l'ajouter
- */
-export async function searchAuxiliaryByEmail(
-  email: string
-): Promise<{ id: string; firstName: string; lastName: string } | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, role')
-    .eq('email', email.toLowerCase().trim())
-    .eq('role', 'employee')
-    .maybeSingle()
-
-  if (error || !data) {
-    return null
-  }
-
-  return {
-    id: data.id,
-    firstName: data.first_name,
-    lastName: data.last_name,
   }
 }
 
