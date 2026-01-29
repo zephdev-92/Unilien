@@ -42,6 +42,24 @@ const contractSchema = z.object({
     message: 'La date de fin est requise pour un CDD',
     path: ['endDate'],
   }
+).refine(
+  (data) => {
+    if (!data.startDate || !data.endDate) return true
+    return new Date(data.endDate) >= new Date(data.startDate)
+  },
+  {
+    message: 'La date de début ne peut pas être postérieure à la date de fin',
+    path: ['startDate'],
+  }
+).refine(
+  (data) => {
+    if (!data.startDate || !data.endDate) return true
+    return new Date(data.endDate) >= new Date(data.startDate)
+  },
+  {
+    message: 'La date de fin ne peut pas être antérieure à la date de début',
+    path: ['endDate'],
+  }
 )
 
 type SearchFormData = z.infer<typeof searchSchema>
