@@ -1,5 +1,5 @@
 # Configuration des labels GitHub
-# Peut être utilisé avec github-label-sync ou manuellement
+# Compatible github-label-sync
 
 # Types
 - name: bug
@@ -37,19 +37,19 @@
 
 # Statuts
 - name: "status: in progress"
-  color: yellow
+  color: f9d0c4
   description: Travail en cours
 
 - name: "status: blocked"
-  color: red
+  color: b60205
   description: Bloqué en attente de quelque chose
 
 - name: "status: ready for review"
-  color: green
+  color: 0e8a16
   description: Prêt pour review
 
 - name: "status: needs info"
-  color: purple
+  color: 5319e7
   description: Besoin de plus d'informations
 
 # Domaines
@@ -143,3 +143,4 @@
 - name: security
   color: ee0701
   description: Problème de sécurité
+
