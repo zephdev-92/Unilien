@@ -12,26 +12,46 @@ import {
   Spinner,
   Tag,
   EmptyState,
+  Tabs,
 } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { AccessibleButton } from '@/components/ui'
 import { NewContractModal } from './NewContractModal'
 import { AuxiliaryDetailModal } from './AuxiliaryDetailModal'
+import { AddCaregiverModal } from './AddCaregiverModal'
+import { EditCaregiverModal } from './EditCaregiverModal'
+import { CaregiverCard } from './CaregiverCard'
 import {
   getAuxiliariesForEmployer,
   type AuxiliarySummary,
 } from '@/services/auxiliaryService'
+import {
+  getCaregiversForEmployer,
+  removeCaregiverFromEmployer,
+  type CaregiverWithProfile,
+} from '@/services/caregiverService'
 
 export function TeamPage() {
   const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
+
+  // Auxiliaires state
   const [auxiliaries, setAuxiliaries] = useState<AuxiliarySummary[]>([])
-  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [isLoadingAuxiliaries, setIsLoadingAuxiliaries] = useState(true)
   const [isNewContractOpen, setIsNewContractOpen] = useState(false)
   const [selectedAuxiliary, setSelectedAuxiliary] = useState<AuxiliarySummary | null>(null)
-  const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [auxiliaryFilter, setAuxiliaryFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
-  // Charger les auxiliaires
+  // Caregivers state
+  const [caregivers, setCaregivers] = useState<CaregiverWithProfile[]>([])
+  const [isLoadingCaregivers, setIsLoadingCaregivers] = useState(true)
+  const [isAddCaregiverOpen, setIsAddCaregiverOpen] = useState(false)
+  const [selectedCaregiver, setSelectedCaregiver] = useState<CaregiverWithProfile | null>(null)
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<string>('auxiliaries')
+
+  // Charger les données
   useEffect(() => {
     if (!profile?.id || userRole !== 'employer') return
 
@@ -39,13 +59,18 @@ export function TeamPage() {
 
     const loadData = async () => {
       try {
-        const data = await getAuxiliariesForEmployer(profile.id)
+        const [auxData, caregiverData] = await Promise.all([
+          getAuxiliariesForEmployer(profile.id),
+          getCaregiversForEmployer(profile.id),
+        ])
         if (!cancelled) {
-          setAuxiliaries(data)
+          setAuxiliaries(auxData)
+          setCaregivers(caregiverData)
         }
       } finally {
         if (!cancelled) {
-          setIsLoadingData(false)
+          setIsLoadingAuxiliaries(false)
+          setIsLoadingCaregivers(false)
         }
       }
     }
@@ -57,9 +82,28 @@ export function TeamPage() {
     }
   }, [profile?.id, userRole])
 
-  const refreshData = () => {
+  const refreshAuxiliaries = () => {
     if (profile?.id) {
       getAuxiliariesForEmployer(profile.id).then(setAuxiliaries)
+    }
+  }
+
+  const refreshCaregivers = () => {
+    if (profile?.id) {
+      getCaregiversForEmployer(profile.id).then(setCaregivers)
+    }
+  }
+
+  const handleRemoveCaregiver = async (caregiver: CaregiverWithProfile) => {
+    if (!confirm(`Êtes-vous sûr de vouloir retirer ${caregiver.profile.firstName} ${caregiver.profile.lastName} de votre équipe ?`)) {
+      return
+    }
+
+    try {
+      await removeCaregiverFromEmployer(caregiver.profileId, caregiver.employerId)
+      refreshCaregivers()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression')
     }
   }
 
@@ -89,99 +133,172 @@ export function TeamPage() {
 
   // Filtrer les auxiliaires
   const filteredAuxiliaries = auxiliaries.filter((aux) => {
-    if (filter === 'all') return true
-    if (filter === 'active') return aux.contractStatus === 'active'
+    if (auxiliaryFilter === 'all') return true
+    if (auxiliaryFilter === 'active') return aux.contractStatus === 'active'
     return aux.contractStatus !== 'active'
   })
 
-  const activeCount = auxiliaries.filter((a) => a.contractStatus === 'active').length
-  const inactiveCount = auxiliaries.filter((a) => a.contractStatus !== 'active').length
+  const activeAuxCount = auxiliaries.filter((a) => a.contractStatus === 'active').length
+  const inactiveAuxCount = auxiliaries.filter((a) => a.contractStatus !== 'active').length
 
   return (
     <DashboardLayout title="Mon équipe">
       <Stack gap={6}>
-        {/* En-tête avec actions */}
-        <Flex
-          direction={{ base: 'column', sm: 'row' }}
-          justify="space-between"
-          align={{ base: 'stretch', sm: 'center' }}
-          gap={4}
-        >
-          <Box>
-            <Text fontSize="2xl" fontWeight="bold" color="gray.900">
-              Mes auxiliaires de vie
-            </Text>
-            <Text color="gray.600" mt={1}>
-              {activeCount} auxiliaire{activeCount > 1 ? 's' : ''} actif{activeCount > 1 ? 's' : ''}
-              {inactiveCount > 0 && ` • ${inactiveCount} inactif${inactiveCount > 1 ? 's' : ''}`}
-            </Text>
-          </Box>
+        {/* Tabs */}
+        <Tabs.Root value={activeTab} onValueChange={(e) => setActiveTab(e.value)}>
+          <Tabs.List>
+            <Tabs.Trigger value="auxiliaries">
+              Auxiliaires de vie ({auxiliaries.length})
+            </Tabs.Trigger>
+            <Tabs.Trigger value="caregivers">
+              Aidants familiaux ({caregivers.length})
+            </Tabs.Trigger>
+          </Tabs.List>
 
-          <AccessibleButton
-            colorPalette="blue"
-            onClick={() => setIsNewContractOpen(true)}
-            leftIcon={<span aria-hidden="true">+</span>}
-          >
-            Ajouter un auxiliaire
-          </AccessibleButton>
-        </Flex>
+          {/* Tab: Auxiliaires */}
+          <Tabs.Content value="auxiliaries">
+            <Stack gap={6} pt={4}>
+              {/* En-tête avec actions */}
+              <Flex
+                direction={{ base: 'column', sm: 'row' }}
+                justify="space-between"
+                align={{ base: 'stretch', sm: 'center' }}
+                gap={4}
+              >
+                <Box>
+                  <Text fontSize="xl" fontWeight="bold" color="gray.900">
+                    Mes auxiliaires de vie
+                  </Text>
+                  <Text color="gray.600" mt={1}>
+                    {activeAuxCount} actif{activeAuxCount > 1 ? 's' : ''}
+                    {inactiveAuxCount > 0 && ` • ${inactiveAuxCount} inactif${inactiveAuxCount > 1 ? 's' : ''}`}
+                  </Text>
+                </Box>
 
-        {/* Filtres */}
-        <Flex gap={2} flexWrap="wrap">
-          <FilterButton
-            isActive={filter === 'all'}
-            onClick={() => setFilter('all')}
-            count={auxiliaries.length}
-          >
-            Tous
-          </FilterButton>
-          <FilterButton
-            isActive={filter === 'active'}
-            onClick={() => setFilter('active')}
-            count={activeCount}
-          >
-            Actifs
-          </FilterButton>
-          <FilterButton
-            isActive={filter === 'inactive'}
-            onClick={() => setFilter('inactive')}
-            count={inactiveCount}
-          >
-            Inactifs
-          </FilterButton>
-        </Flex>
+                <AccessibleButton
+                  colorPalette="blue"
+                  onClick={() => setIsNewContractOpen(true)}
+                  leftIcon={<span aria-hidden="true">+</span>}
+                >
+                  Ajouter un auxiliaire
+                </AccessibleButton>
+              </Flex>
 
-        {/* Liste des auxiliaires */}
-        {isLoadingData ? (
-          <Center py={12}>
-            <Spinner size="xl" color="brand.500" />
-          </Center>
-        ) : filteredAuxiliaries.length === 0 ? (
-          <EmptyState.Root>
-            <EmptyState.Content>
-              <EmptyState.Title>
-                {auxiliaries.length === 0
-                  ? 'Aucun auxiliaire'
-                  : 'Aucun résultat'}
-              </EmptyState.Title>
-              <EmptyState.Description>
-                {auxiliaries.length === 0
-                  ? 'Ajoutez votre premier auxiliaire pour commencer à planifier les interventions.'
-                  : 'Aucun auxiliaire ne correspond aux filtres sélectionnés.'}
-              </EmptyState.Description>
-            </EmptyState.Content>
-          </EmptyState.Root>
-        ) : (
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
-            {filteredAuxiliaries.map((auxiliary) => (
-              <AuxiliaryCard
-                key={auxiliary.contractId}
-                auxiliary={auxiliary}
-                onClick={() => setSelectedAuxiliary(auxiliary)}
-              />
-            ))}
-          </SimpleGrid>
-        )}
+              {/* Filtres */}
+              <Flex gap={2} flexWrap="wrap">
+                <FilterButton
+                  isActive={auxiliaryFilter === 'all'}
+                  onClick={() => setAuxiliaryFilter('all')}
+                  count={auxiliaries.length}
+                >
+                  Tous
+                </FilterButton>
+                <FilterButton
+                  isActive={auxiliaryFilter === 'active'}
+                  onClick={() => setAuxiliaryFilter('active')}
+                  count={activeAuxCount}
+                >
+                  Actifs
+                </FilterButton>
+                <FilterButton
+                  isActive={auxiliaryFilter === 'inactive'}
+                  onClick={() => setAuxiliaryFilter('inactive')}
+                  count={inactiveAuxCount}
+                >
+                  Inactifs
+                </FilterButton>
+              </Flex>
+
+              {/* Liste des auxiliaires */}
+              {isLoadingAuxiliaries ? (
+                <Center py={12}>
+                  <Spinner size="xl" color="brand.500" />
+                </Center>
+              ) : filteredAuxiliaries.length === 0 ? (
+                <EmptyState.Root>
+                  <EmptyState.Content>
+                    <EmptyState.Title>
+                      {auxiliaries.length === 0 ? 'Aucun auxiliaire' : 'Aucun résultat'}
+                    </EmptyState.Title>
+                    <EmptyState.Description>
+                      {auxiliaries.length === 0
+                        ? 'Ajoutez votre premier auxiliaire pour commencer à planifier les interventions.'
+                        : 'Aucun auxiliaire ne correspond aux filtres sélectionnés.'}
+                    </EmptyState.Description>
+                  </EmptyState.Content>
+                </EmptyState.Root>
+              ) : (
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+                  {filteredAuxiliaries.map((auxiliary) => (
+                    <AuxiliaryCard
+                      key={auxiliary.contractId}
+                      auxiliary={auxiliary}
+                      onClick={() => setSelectedAuxiliary(auxiliary)}
+                    />
+                  ))}
+                </SimpleGrid>
+              )}
+            </Stack>
+          </Tabs.Content>
+
+          {/* Tab: Aidants familiaux */}
+          <Tabs.Content value="caregivers">
+            <Stack gap={6} pt={4}>
+              {/* En-tête avec actions */}
+              <Flex
+                direction={{ base: 'column', sm: 'row' }}
+                justify="space-between"
+                align={{ base: 'stretch', sm: 'center' }}
+                gap={4}
+              >
+                <Box>
+                  <Text fontSize="xl" fontWeight="bold" color="gray.900">
+                    Mes aidants familiaux
+                  </Text>
+                  <Text color="gray.600" mt={1}>
+                    Personnes autorisées à accéder à votre espace
+                  </Text>
+                </Box>
+
+                <AccessibleButton
+                  colorPalette="purple"
+                  onClick={() => setIsAddCaregiverOpen(true)}
+                  leftIcon={<span aria-hidden="true">+</span>}
+                >
+                  Ajouter un aidant
+                </AccessibleButton>
+              </Flex>
+
+              {/* Liste des aidants */}
+              {isLoadingCaregivers ? (
+                <Center py={12}>
+                  <Spinner size="xl" color="brand.500" />
+                </Center>
+              ) : caregivers.length === 0 ? (
+                <EmptyState.Root>
+                  <EmptyState.Content>
+                    <EmptyState.Title>Aucun aidant familial</EmptyState.Title>
+                    <EmptyState.Description>
+                      Ajoutez des membres de votre famille ou proches pour leur donner accès
+                      au planning et au cahier de liaison.
+                    </EmptyState.Description>
+                  </EmptyState.Content>
+                </EmptyState.Root>
+              ) : (
+                <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+                  {caregivers.map((caregiver) => (
+                    <CaregiverCard
+                      key={caregiver.profileId}
+                      caregiver={caregiver}
+                      onEdit={() => setSelectedCaregiver(caregiver)}
+                      onRemove={() => handleRemoveCaregiver(caregiver)}
+                    />
+                  ))}
+                </SimpleGrid>
+              )}
+            </Stack>
+          </Tabs.Content>
+        </Tabs.Root>
       </Stack>
 
       {/* Modal nouveau contrat */}
@@ -190,7 +307,7 @@ export function TeamPage() {
         onClose={() => setIsNewContractOpen(false)}
         employerId={profile?.id || ''}
         onSuccess={() => {
-          refreshData()
+          refreshAuxiliaries()
           setIsNewContractOpen(false)
         }}
       />
@@ -201,9 +318,25 @@ export function TeamPage() {
           isOpen={!!selectedAuxiliary}
           onClose={() => setSelectedAuxiliary(null)}
           contractId={selectedAuxiliary.contractId}
-          onUpdate={refreshData}
+          onUpdate={refreshAuxiliaries}
         />
       )}
+
+      {/* Modal ajouter aidant */}
+      <AddCaregiverModal
+        isOpen={isAddCaregiverOpen}
+        onClose={() => setIsAddCaregiverOpen(false)}
+        employerId={profile?.id || ''}
+        onSuccess={refreshCaregivers}
+      />
+
+      {/* Modal modifier aidant */}
+      <EditCaregiverModal
+        isOpen={!!selectedCaregiver}
+        onClose={() => setSelectedCaregiver(null)}
+        caregiver={selectedCaregiver}
+        onSuccess={refreshCaregivers}
+      />
     </DashboardLayout>
   )
 }
