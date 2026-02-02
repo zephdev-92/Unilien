@@ -9,6 +9,7 @@ import {
   AccessibilitySection,
   EmployerSection,
   EmployeeSection,
+  CaregiverSection,
 } from './sections'
 import {
   updateProfile,
@@ -171,6 +172,14 @@ export function ProfilePage() {
       ) : (
         <EmployeeSection employee={employee ?? undefined} onSave={handleSaveEmployee} />
       ),
+    })
+  }
+
+  if (userRole === 'caregiver') {
+    tabs.push({
+      value: 'caregiver',
+      label: 'Mon profil aidant',
+      content: <CaregiverSection profileId={profile.id} />,
     })
   }
 
