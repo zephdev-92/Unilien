@@ -6,6 +6,7 @@ import { DashboardLayout } from './DashboardLayout'
 import { EmployerDashboard } from './EmployerDashboard'
 import { EmployeeDashboard } from './EmployeeDashboard'
 import { CaregiverDashboard } from './CaregiverDashboard'
+import { PushPermissionBanner } from '@/components/notifications'
 
 export function Dashboard() {
   const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
@@ -51,6 +52,9 @@ export function Dashboard() {
   // Render role-specific dashboard
   return (
     <DashboardLayout title="Tableau de bord">
+      {/* Bannière d'invitation aux notifications push */}
+      <PushPermissionBanner userId={profile.id} />
+
       {userRole === 'employer' && <EmployerDashboard profile={profile} />}
       {userRole === 'employee' && <EmployeeDashboard profile={profile} />}
       {userRole === 'caregiver' && <CaregiverDashboard profile={profile} />}
