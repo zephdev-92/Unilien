@@ -9,6 +9,46 @@ import type {
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // ============================================
+// PUSH NOTIFICATION TRIGGER
+// ============================================
+
+/**
+ * Déclenche l'envoi d'une notification push via Supabase Edge Function
+ * Cette fonction est appelée après la création d'une notification en base
+ */
+async function triggerPushNotification(notification: Notification): Promise<void> {
+  try {
+    // Vérifier les préférences utilisateur
+    const prefs = await getNotificationPreferences(notification.userId)
+    if (!prefs.pushEnabled) {
+      return
+    }
+
+    // Appeler l'Edge Function pour envoyer le push
+    const { error } = await supabase.functions.invoke('send-push-notification', {
+      body: {
+        userId: notification.userId,
+        title: notification.title,
+        body: notification.message,
+        data: {
+          url: notification.actionUrl || '/',
+          notificationId: notification.id,
+          type: notification.type,
+          priority: notification.priority,
+        },
+      },
+    })
+
+    if (error) {
+      console.warn('Erreur envoi push notification:', error)
+    }
+  } catch (err) {
+    // Ne pas bloquer si le push échoue
+    console.warn('Push notification non envoyée:', err)
+  }
+}
+
+// ============================================
 // TYPES
 // ============================================
 
@@ -140,7 +180,14 @@ export async function createNotification(
     return null
   }
 
-  return mapNotificationFromDb(data)
+  const notification = mapNotificationFromDb(data)
+
+  // Déclencher le push notification en arrière-plan (non bloquant)
+  triggerPushNotification(notification).catch(() => {
+    // Ignorer les erreurs push silencieusement
+  })
+
+  return notification
 }
 
 // ============================================

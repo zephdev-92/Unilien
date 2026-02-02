@@ -49,7 +49,7 @@
   description: Prêt pour review
 
 - name: "status: needs info"
-  color: 5319e7
+  color: "5319e7"
   description: Besoin de plus d'informations
 
 # Domaines
@@ -66,7 +66,7 @@
   description: Logique de conformité
 
 - name: "area: auth"
-  color: 5319e7
+  color: "5319e7"
   description: Authentification et sécurité
 
 - name: "area: planning"

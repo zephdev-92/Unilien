@@ -17,6 +17,7 @@ coverage
 # Environment variables
 .env
 !.env.example
+.vapid-keys.json
 
 # Editor directories and files
 .vscode/*
