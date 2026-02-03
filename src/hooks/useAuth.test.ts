@@ -164,7 +164,8 @@ describe('useAuth', () => {
     })
 
     it('devrait gérer les erreurs d\'inscription', async () => {
-      const error = new Error('Email déjà utilisé')
+      // Simuler une erreur Supabase réaliste (email déjà utilisé)
+      const error = new Error('User already registered')
       mockSignUp.mockResolvedValue({
         data: { user: null, session: null },
         error,
@@ -184,7 +185,8 @@ describe('useAuth', () => {
       })
 
       expect(signUpResult!.success).toBe(false)
-      expect(signUpResult!.error).toBe('Email déjà utilisé')
+      // Message traduit en français pour l'utilisateur
+      expect(signUpResult!.error).toBe('Cette adresse email est déjà associée à un compte. Connectez-vous ou utilisez une autre adresse.')
     })
 
     it('devrait gérer le cas où l\'utilisateur n\'est pas retourné', async () => {
@@ -207,7 +209,8 @@ describe('useAuth', () => {
       })
 
       expect(signUpResult!.success).toBe(false)
-      expect(signUpResult!.error).toBe('Erreur lors de la création du compte')
+      // Message générique pour erreur inconnue
+      expect(signUpResult!.error).toBe('Une erreur est survenue lors de l\'inscription. Veuillez réessayer.')
     })
   })
 
