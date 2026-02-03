@@ -1,5 +1,12 @@
 import { supabase } from '@/lib/supabase/client'
-import type { Caregiver, CaregiverPermissions, Shift } from '@/types'
+import type {
+  Caregiver,
+  CaregiverPermissions,
+  CaregiverRelationship,
+  CaregiverLegalStatus,
+  Address,
+  Shift,
+} from '@/types'
 import {
   getProfileName,
   createTeamMemberAddedNotification,
@@ -158,6 +165,40 @@ export async function upsertCaregiver(
 
   if (error) {
     console.error('Erreur création/mise à jour aidant:', error)
+    throw new Error(error.message)
+  }
+}
+
+/**
+ * Met à jour le profil aidant (informations personnelles de l'aidant)
+ */
+export async function updateCaregiverProfile(
+  profileId: string,
+  data: {
+    relationship?: CaregiverRelationship
+    relationshipDetails?: string
+    legalStatus?: CaregiverLegalStatus
+    address?: Address
+    emergencyPhone?: string
+    availabilityHours?: string
+    canReplaceEmployer?: boolean
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('caregivers')
+    .update({
+      relationship: data.relationship || null,
+      relationship_details: data.relationshipDetails || null,
+      legal_status: data.legalStatus || null,
+      address: data.address || null,
+      emergency_phone: data.emergencyPhone || null,
+      availability_hours: data.availabilityHours || null,
+      can_replace_employer: data.canReplaceEmployer ?? false,
+    })
+    .eq('profile_id', profileId)
+
+  if (error) {
+    console.error('Erreur mise à jour profil aidant:', error)
     throw new Error(error.message)
   }
 }
@@ -457,6 +498,12 @@ function mapCaregiverFromDb(data: any): Caregiver {
       canExportData: false,
     },
     relationship: data.relationship || undefined,
+    relationshipDetails: data.relationship_details || undefined,
+    legalStatus: data.legal_status || undefined,
+    address: data.address || undefined,
+    emergencyPhone: data.emergency_phone || undefined,
+    availabilityHours: data.availability_hours || undefined,
+    canReplaceEmployer: data.can_replace_employer ?? false,
     createdAt: new Date(data.created_at),
   }
 }
