@@ -2,16 +2,33 @@
  * Page de tableau de bord de conformité
  */
 
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/dashboard'
 import { ComplianceDashboard } from '@/components/compliance'
 import { useAuth } from '@/hooks/useAuth'
 import { Center, Spinner } from '@chakra-ui/react'
+import { getCaregiver } from '@/services/caregiverService'
+import type { Caregiver } from '@/types'
 
 export function CompliancePage() {
   const { profile, isLoading } = useAuth()
+  const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
+  const [caregiverLoaded, setCaregiverLoaded] = useState(false)
 
-  if (isLoading) {
+  // Charger les données de l'aidant si nécessaire
+  useEffect(() => {
+    if (profile?.role === 'caregiver') {
+      getCaregiver(profile.id)
+        .then(setCaregiver)
+        .finally(() => setCaregiverLoaded(true))
+    }
+  }, [profile?.id, profile?.role])
+
+  // Déterminer si on attend encore le chargement
+  const isLoadingCaregiver = profile?.role === 'caregiver' && !caregiverLoaded
+
+  if (isLoading || isLoadingCaregiver) {
     return (
       <DashboardLayout>
         <Center py={12}>
@@ -21,14 +38,24 @@ export function CompliancePage() {
     )
   }
 
-  // Seuls les employeurs peuvent accéder à cette page
-  if (!profile || profile.role !== 'employer') {
+  // Employeurs ou aidants avec canExportData peuvent accéder
+  const isEmployer = profile?.role === 'employer'
+  const isCaregiverWithAccess = profile?.role === 'caregiver' && caregiver?.permissions?.canExportData
+
+  if (!profile || (!isEmployer && !isCaregiverWithAccess)) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  // ID de l'employeur pour le dashboard
+  const employerId = isEmployer ? profile.id : caregiver?.employerId
+
+  if (!employerId) {
     return <Navigate to="/dashboard" replace />
   }
 
   return (
     <DashboardLayout>
-      <ComplianceDashboard employerId={profile.id} />
+      <ComplianceDashboard employerId={employerId} />
     </DashboardLayout>
   )
 }

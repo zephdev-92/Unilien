@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Stack, Box, Text, Center, Spinner } from '@chakra-ui/react'
+import { Stack, Box, Text, Center, Spinner, SimpleGrid } from '@chakra-ui/react'
 import type { Profile, Shift, Caregiver } from '@/types'
 import {
   WelcomeCard,
   UpcomingShiftsWidget,
   RecentLogsWidget,
   QuickActionsWidget,
+  StatsWidget,
+  TeamWidget,
+  ComplianceWidget,
 } from './widgets'
 import {
   getCaregiver,
@@ -81,12 +84,18 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
   const hasAnyViewPermission =
     caregiver.permissions.canViewPlanning || caregiver.permissions.canViewLiaison
 
+  // Vérifier si l'aidant a des permissions avancées (tuteur/curateur)
+  const hasAdvancedPermissions =
+    caregiver.permissions.canManageTeam ||
+    caregiver.permissions.canEditPlanning ||
+    caregiver.permissions.canExportData
+
   return (
     <Stack gap={6}>
       <WelcomeCard profile={profile} />
 
       {/* Message si aucune permission */}
-      {!hasAnyViewPermission && (
+      {!hasAnyViewPermission && !hasAdvancedPermissions && (
         <Box p={6} bg="blue.50" borderRadius="lg" borderWidth="1px" borderColor="blue.200">
           <Text fontWeight="medium" color="blue.800" mb={2}>
             Accès limité
@@ -99,18 +108,35 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
         </Box>
       )}
 
+      {/* Stats widget pour les aidants avec permissions avancées */}
+      {hasAdvancedPermissions && (
+        <StatsWidget userRole="caregiver" profileId={profile.id} employerId={caregiver.employerId} />
+      )}
+
       {/* Actions rapides */}
       <QuickActionsWidget userRole="caregiver" permissions={caregiver.permissions} />
 
-      {/* Prochaines interventions (si permission) */}
-      {caregiver.permissions.canViewPlanning && (
-        <UpcomingShiftsWidget shifts={shifts} userRole="caregiver" />
+      {/* Widgets équipe et conformité pour les aidants avec permissions avancées */}
+      {hasAdvancedPermissions && (
+        <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
+          {caregiver.permissions.canManageTeam && (
+            <TeamWidget employerId={caregiver.employerId} />
+          )}
+          {caregiver.permissions.canExportData && (
+            <ComplianceWidget employerId={caregiver.employerId} />
+          )}
+        </SimpleGrid>
       )}
 
-      {/* Cahier de liaison récent (si permission) */}
-      {caregiver.permissions.canViewLiaison && (
-        <RecentLogsWidget employerId={caregiver.employerId} />
-      )}
+      {/* Prochaines interventions et cahier de liaison */}
+      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
+        {caregiver.permissions.canViewPlanning && (
+          <UpcomingShiftsWidget shifts={shifts} userRole="caregiver" />
+        )}
+        {caregiver.permissions.canViewLiaison && (
+          <RecentLogsWidget employerId={caregiver.employerId} />
+        )}
+      </SimpleGrid>
 
       {/* Message d'erreur si présent */}
       {error && (

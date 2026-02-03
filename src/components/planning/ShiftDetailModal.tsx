@@ -63,6 +63,7 @@ interface ShiftDetailModalProps {
   userRole: UserRole
   profileId: string
   onSuccess: () => void
+  caregiverCanEdit?: boolean // Permission canEditPlanning pour les aidants
 }
 
 export function ShiftDetailModal({
@@ -72,6 +73,7 @@ export function ShiftDetailModal({
   userRole,
   profileId,
   onSuccess,
+  caregiverCanEdit = false,
 }: ShiftDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [contract, setContract] = useState<Contract | null>(null)
@@ -84,8 +86,8 @@ export function ShiftDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
 
-  const canEdit = userRole === 'employer'
-  const canDelete = userRole === 'employer' && shift?.status === 'planned'
+  const canEdit = userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)
+  const canDelete = (userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)) && shift?.status === 'planned'
   const canValidate = (userRole === 'employer' || userRole === 'employee') && shift?.status === 'completed'
   const hasValidated = shift
     ? (userRole === 'employer' && shift.validatedByEmployer) ||

@@ -21,6 +21,7 @@ interface Stat {
 interface StatsWidgetProps {
   userRole: UserRole
   profileId: string
+  employerId?: string // Pour les aidants avec permissions avancées
 }
 
 /**
@@ -134,7 +135,7 @@ function formatCaregiverStats(stats: CaregiverStats): Stat[] {
   ]
 }
 
-export function StatsWidget({ userRole, profileId }: StatsWidgetProps) {
+export function StatsWidget({ userRole, profileId, employerId }: StatsWidgetProps) {
   const [stats, setStats] = useState<Stat[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -156,8 +157,14 @@ export function StatsWidget({ userRole, profileId }: StatsWidgetProps) {
           const employeeStats = await getEmployeeStats(profileId)
           formattedStats = formatEmployeeStats(employeeStats)
         } else if (userRole === 'caregiver') {
-          const caregiverStats = await getCaregiverStats(profileId)
-          formattedStats = formatCaregiverStats(caregiverStats)
+          // Si employerId fourni, utiliser les stats employeur (aidant avec permissions avancées)
+          if (employerId) {
+            const employerStats = await getEmployerStats(employerId)
+            formattedStats = formatEmployerStats(employerStats)
+          } else {
+            const caregiverStats = await getCaregiverStats(profileId)
+            formattedStats = formatCaregiverStats(caregiverStats)
+          }
         }
 
         setStats(formattedStats)
@@ -170,11 +177,12 @@ export function StatsWidget({ userRole, profileId }: StatsWidgetProps) {
     }
 
     loadStats()
-  }, [userRole, profileId])
+  }, [userRole, profileId, employerId])
 
   // Skeleton pour le chargement
   if (isLoading) {
-    const skeletonCount = userRole === 'caregiver' ? 2 : 4
+    // Si aidant avec employerId (permissions avancées), afficher 4 stats comme employeur
+    const skeletonCount = userRole === 'caregiver' && !employerId ? 2 : 4
 
     return (
       <Box

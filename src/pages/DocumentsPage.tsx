@@ -2,7 +2,7 @@
  * Page Documents - Export des déclarations CESU/PAJEMPLOI
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   Box,
@@ -34,6 +34,8 @@ import {
   type ExportFormat,
   type MonthlyDeclarationData,
 } from '@/lib/export'
+import { getCaregiver } from '@/services/caregiverService'
+import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
   const { profile, isLoading: authLoading } = useAuth()
@@ -43,8 +45,29 @@ export function DocumentsPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewData, setPreviewData] = useState<MonthlyDeclarationData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
+  const [isLoadingCaregiver, setIsLoadingCaregiver] = useState(false)
 
-  if (authLoading) {
+  // Charger les données de l'aidant si nécessaire
+  useEffect(() => {
+    if (profile?.role === 'caregiver') {
+      setIsLoadingCaregiver(true)
+      getCaregiver(profile.id)
+        .then(setCaregiver)
+        .finally(() => setIsLoadingCaregiver(false))
+    }
+  }, [profile?.id, profile?.role])
+
+  // ID de l'employeur pour les exports
+  const effectiveEmployerId = profile?.role === 'employer'
+    ? profile.id
+    : caregiver?.employerId
+
+  // Vérifier si l'utilisateur peut exporter
+  const canExport = profile?.role === 'employer' ||
+    (profile?.role === 'caregiver' && caregiver?.permissions?.canExportData)
+
+  if (authLoading || isLoadingCaregiver) {
     return (
       <DashboardLayout>
         <Center py={12}>
@@ -54,8 +77,8 @@ export function DocumentsPage() {
     )
   }
 
-  // Seuls les employeurs peuvent accéder
-  if (!profile || profile.role !== 'employer') {
+  // Employeurs ou aidants avec canExportData peuvent accéder
+  if (!profile || !canExport) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -70,12 +93,17 @@ export function DocumentsPage() {
 
   // Générer l'aperçu des données
   const handleGeneratePreview = async () => {
+    if (!effectiveEmployerId) {
+      setError('Impossible de déterminer l\'employeur')
+      return
+    }
+
     setIsGenerating(true)
     setError(null)
     setPreviewData(null)
 
     try {
-      const data = await getMonthlyDeclarationData(profile.id, {
+      const data = await getMonthlyDeclarationData(effectiveEmployerId, {
         declarationType,
         format: 'summary',
         year: selectedYear,

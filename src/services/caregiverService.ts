@@ -184,22 +184,36 @@ export async function updateCaregiverProfile(
     canReplaceEmployer?: boolean
   }
 ): Promise<void> {
-  const { error } = await supabase
+  const updateData = {
+    relationship: data.relationship || null,
+    relationship_details: data.relationshipDetails || null,
+    legal_status: data.legalStatus || null,
+    address: data.address || null,
+    emergency_phone: data.emergencyPhone || null,
+    availability_hours: data.availabilityHours || null,
+    can_replace_employer: data.canReplaceEmployer ?? false,
+  }
+
+  const { data: result, error, count } = await supabase
     .from('caregivers')
-    .update({
-      relationship: data.relationship || null,
-      relationship_details: data.relationshipDetails || null,
-      legal_status: data.legalStatus || null,
-      address: data.address || null,
-      emergency_phone: data.emergencyPhone || null,
-      availability_hours: data.availabilityHours || null,
-      can_replace_employer: data.canReplaceEmployer ?? false,
-    })
+    .update(updateData)
     .eq('profile_id', profileId)
+    .select()
+
+  console.log('updateCaregiverProfile - profileId:', profileId)
+  console.log('updateCaregiverProfile - updateData:', updateData)
+  console.log('updateCaregiverProfile - result:', result)
+  console.log('updateCaregiverProfile - count:', count)
+  console.log('updateCaregiverProfile - error:', error)
 
   if (error) {
     console.error('Erreur mise à jour profil aidant:', error)
     throw new Error(error.message)
+  }
+
+  // Vérifier si des lignes ont été mises à jour
+  if (!result || result.length === 0) {
+    throw new Error('Aucune donnée mise à jour. Vérifiez que vous avez les permissions nécessaires.')
   }
 }
 
@@ -257,6 +271,8 @@ export interface CaregiverWithProfile {
   profileId: string
   employerId: string
   permissions: CaregiverPermissions
+  permissionsLocked?: boolean
+  legalStatus?: CaregiverLegalStatus
   relationship?: string
   createdAt: Date
   profile: {
@@ -332,8 +348,9 @@ export async function addCaregiverToEmployer(
   employerId: string,
   caregiverProfileId: string,
   data: {
-    relationship?: string
     permissions: CaregiverPermissions
+    legalStatus?: CaregiverLegalStatus
+    permissionsLocked?: boolean
   }
 ): Promise<void> {
   // Vérifier que l'aidant n'est pas déjà lié à cet employeur
@@ -369,8 +386,9 @@ export async function addCaregiverToEmployer(
     .insert({
       profile_id: caregiverProfileId,
       employer_id: employerId,
-      relationship: data.relationship || null,
       permissions: data.permissions,
+      legal_status: data.legalStatus || null,
+      permissions_locked: data.permissionsLocked || false,
     })
 
   if (error) {
@@ -388,20 +406,32 @@ export async function addCaregiverToEmployer(
 }
 
 /**
- * Met à jour un aidant (permissions et relation)
+ * Met à jour les permissions d'un aidant
+ * Note: Si permissionsLocked est true ou legalStatus est tutor/curator, les permissions ne peuvent pas être modifiées
  */
 export async function updateCaregiver(
   caregiverProfileId: string,
   employerId: string,
   data: {
-    relationship?: string
     permissions: CaregiverPermissions
   }
 ): Promise<void> {
+  // Vérifier si les permissions sont verrouillées (par flag OU par statut juridique)
+  const { data: existingCaregiver } = await supabase
+    .from('caregivers')
+    .select('permissions_locked, legal_status')
+    .eq('profile_id', caregiverProfileId)
+    .eq('employer_id', employerId)
+    .single()
+
+  const isLegalGuardian = existingCaregiver?.legal_status === 'tutor' || existingCaregiver?.legal_status === 'curator'
+  if (existingCaregiver?.permissions_locked || isLegalGuardian) {
+    throw new Error('Les permissions de cet aidant sont verrouillées (tuteur/curateur) et ne peuvent pas être modifiées.')
+  }
+
   const { error } = await supabase
     .from('caregivers')
     .update({
-      relationship: data.relationship || null,
       permissions: data.permissions,
     })
     .eq('profile_id', caregiverProfileId)
@@ -472,6 +502,8 @@ function mapCaregiverWithProfileFromDb(data: any): CaregiverWithProfile {
       canManageTeam: false,
       canExportData: false,
     },
+    permissionsLocked: data.permissions_locked || false,
+    legalStatus: data.legal_status || undefined,
     relationship: data.relationship || undefined,
     createdAt: new Date(data.created_at),
     profile: {
@@ -497,6 +529,7 @@ function mapCaregiverFromDb(data: any): Caregiver {
       canManageTeam: false,
       canExportData: false,
     },
+    permissionsLocked: data.permissions_locked || false,
     relationship: data.relationship || undefined,
     relationshipDetails: data.relationship_details || undefined,
     legalStatus: data.legal_status || undefined,
