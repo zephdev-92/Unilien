@@ -48,12 +48,40 @@ export interface Employee {
   availabilityTemplate: AvailabilityTemplate
 }
 
+// Types de relation aidant
+export type CaregiverRelationship =
+  | 'parent'
+  | 'child'
+  | 'spouse'
+  | 'sibling'
+  | 'grandparent'
+  | 'grandchild'
+  | 'friend'
+  | 'neighbor'
+  | 'legal_guardian'
+  | 'curator'
+  | 'other'
+
+// Statut juridique aidant
+export type CaregiverLegalStatus =
+  | 'none'
+  | 'tutor'
+  | 'curator'
+  | 'safeguard_justice'
+  | 'family_caregiver'
+
 // Aidant familial
 export interface Caregiver {
   profileId: string
   employerId: string
   permissions: CaregiverPermissions
-  relationship?: string
+  relationship?: CaregiverRelationship
+  relationshipDetails?: string
+  legalStatus?: CaregiverLegalStatus
+  address?: Address
+  emergencyPhone?: string
+  availabilityHours?: string
+  canReplaceEmployer?: boolean
   createdAt: Date
 }
 
