@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import {
   Box,
@@ -13,8 +13,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
 import { AccessibleButton } from '@/components/ui'
 import { NotificationBell, NotificationsPanel } from '@/components/notifications'
+import { getCaregiver } from '@/services/caregiverService'
 
-import type { UserRole } from '@/types'
+import type { UserRole, CaregiverPermissions } from '@/types'
 
 interface NavItem {
   label: string
@@ -44,6 +45,22 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
   const location = useLocation()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false)
+  const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
+
+  // Charger les permissions de l'aidant
+  useEffect(() => {
+    if (profile?.id && userRole === 'caregiver') {
+      getCaregiver(profile.id)
+        .then((caregiver) => {
+          if (caregiver?.permissions) {
+            setCaregiverPermissions(caregiver.permissions)
+          }
+        })
+        .catch((error) => {
+          console.error('Erreur chargement permissions aidant:', error)
+        })
+    }
+  }, [profile?.id, userRole])
 
   // Notifications
   const {
@@ -197,7 +214,24 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
       >
         <Stack gap={1} p={4}>
           {navItems
-            .filter((item) => !item.roles || item.roles.includes(userRole!))
+            .filter((item) => {
+              // Si pas de restriction de rôle, visible par tous
+              if (!item.roles) return true
+              // Si le rôle de l'utilisateur est dans la liste, visible
+              if (item.roles.includes(userRole!)) return true
+              // Cas spéciaux pour les aidants avec permissions avancées
+              if (userRole === 'caregiver') {
+                // "Mon équipe" visible pour les aidants avec canManageTeam
+                if (item.href === '/team' && caregiverPermissions?.canManageTeam) {
+                  return true
+                }
+                // "Conformité" visible pour les aidants avec canExportData
+                if (item.href === '/compliance' && caregiverPermissions?.canExportData) {
+                  return true
+                }
+              }
+              return false
+            })
             .map((item) => {
               const isActive = location.pathname === item.href
               return (

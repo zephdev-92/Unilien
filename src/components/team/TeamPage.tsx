@@ -27,10 +27,12 @@ import {
   type AuxiliarySummary,
 } from '@/services/auxiliaryService'
 import {
+  getCaregiver,
   getCaregiversForEmployer,
   removeCaregiverFromEmployer,
   type CaregiverWithProfile,
 } from '@/services/caregiverService'
+import type { Caregiver } from '@/types'
 
 export function TeamPage() {
   const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
@@ -51,17 +53,56 @@ export function TeamPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<string>('auxiliaries')
 
-  // Charger les données
+  // Caregiver data (pour les aidants avec canManageTeam)
+  const [currentCaregiver, setCurrentCaregiver] = useState<Caregiver | null>(null)
+  const [isLoadingCurrentCaregiver, setIsLoadingCurrentCaregiver] = useState(userRole === 'caregiver')
+
+  // Vérifier si l'utilisateur peut gérer l'équipe
+  const isEmployer = userRole === 'employer'
+  const effectiveEmployerId = isEmployer ? profile?.id : currentCaregiver?.employerId
+
+  // Charger les données de l'aidant si c'est un caregiver
   useEffect(() => {
-    if (!profile?.id || userRole !== 'employer') return
+    if (!profile?.id || userRole !== 'caregiver') {
+      setIsLoadingCurrentCaregiver(false)
+      return
+    }
+
+    const loadCaregiverData = async () => {
+      try {
+        const caregiverData = await getCaregiver(profile.id)
+        setCurrentCaregiver(caregiverData)
+        // Si l'aidant peut gérer l'équipe, mettre l'onglet aidants par défaut
+        if (caregiverData?.permissions?.canManageTeam) {
+          setActiveTab('caregivers')
+        }
+      } catch (error) {
+        console.error('Erreur chargement données aidant:', error)
+      } finally {
+        setIsLoadingCurrentCaregiver(false)
+      }
+    }
+
+    loadCaregiverData()
+  }, [profile?.id, userRole])
+
+  // Charger les données de l'équipe
+  useEffect(() => {
+    if (!effectiveEmployerId) return
 
     let cancelled = false
 
     const loadData = async () => {
       try {
+        // Les auxiliaires sont chargés pour les employeurs et les aidants avec canManageTeam
+        const canViewAuxiliaries = isEmployer || currentCaregiver?.permissions?.canManageTeam
+        const auxPromise = canViewAuxiliaries
+          ? getAuxiliariesForEmployer(effectiveEmployerId)
+          : Promise.resolve([])
+
         const [auxData, caregiverData] = await Promise.all([
-          getAuxiliariesForEmployer(profile.id),
-          getCaregiversForEmployer(profile.id),
+          auxPromise,
+          getCaregiversForEmployer(effectiveEmployerId),
         ])
         if (!cancelled) {
           setAuxiliaries(auxData)
@@ -80,17 +121,18 @@ export function TeamPage() {
     return () => {
       cancelled = true
     }
-  }, [profile?.id, userRole])
+  }, [effectiveEmployerId, isEmployer, currentCaregiver?.permissions?.canManageTeam])
 
   const refreshAuxiliaries = () => {
-    if (profile?.id) {
-      getAuxiliariesForEmployer(profile.id).then(setAuxiliaries)
+    const canViewAuxiliaries = isEmployer || currentCaregiver?.permissions?.canManageTeam
+    if (effectiveEmployerId && canViewAuxiliaries) {
+      getAuxiliariesForEmployer(effectiveEmployerId).then(setAuxiliaries)
     }
   }
 
   const refreshCaregivers = () => {
-    if (profile?.id) {
-      getCaregiversForEmployer(profile.id).then(setCaregivers)
+    if (effectiveEmployerId) {
+      getCaregiversForEmployer(effectiveEmployerId).then(setCaregivers)
     }
   }
 
@@ -108,7 +150,7 @@ export function TeamPage() {
   }
 
   // Loading state
-  if (!isInitialized || isLoading) {
+  if (!isInitialized || isLoading || isLoadingCurrentCaregiver) {
     return (
       <Center minH="100vh">
         <Box textAlign="center">
@@ -126,8 +168,13 @@ export function TeamPage() {
     return <Navigate to="/login" replace />
   }
 
-  // Only employers can access this page
-  if (userRole !== 'employer') {
+  // Seuls les employeurs et les aidants peuvent accéder
+  if (userRole !== 'employer' && userRole !== 'caregiver') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  // Aidants: vérifier la permission canManageTeam
+  if (userRole === 'caregiver' && !currentCaregiver?.permissions?.canManageTeam) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -147,15 +194,18 @@ export function TeamPage() {
         {/* Tabs */}
         <Tabs.Root value={activeTab} onValueChange={(e) => setActiveTab(e.value)}>
           <Tabs.List>
-            <Tabs.Trigger value="auxiliaries">
-              Auxiliaires de vie ({auxiliaries.length})
-            </Tabs.Trigger>
+            {(isEmployer || currentCaregiver?.permissions?.canManageTeam) && (
+              <Tabs.Trigger value="auxiliaries">
+                Auxiliaires de vie ({auxiliaries.length})
+              </Tabs.Trigger>
+            )}
             <Tabs.Trigger value="caregivers">
               Aidants familiaux ({caregivers.length})
             </Tabs.Trigger>
           </Tabs.List>
 
-          {/* Tab: Auxiliaires */}
+          {/* Tab: Auxiliaires - Employeurs et aidants avec canManageTeam */}
+          {(isEmployer || currentCaregiver?.permissions?.canManageTeam) && (
           <Tabs.Content value="auxiliaries">
             <Stack gap={6} pt={4}>
               {/* En-tête avec actions */}
@@ -240,6 +290,7 @@ export function TeamPage() {
               )}
             </Stack>
           </Tabs.Content>
+          )}
 
           {/* Tab: Aidants familiaux */}
           <Tabs.Content value="caregivers">
@@ -301,19 +352,21 @@ export function TeamPage() {
         </Tabs.Root>
       </Stack>
 
-      {/* Modal nouveau contrat */}
-      <NewContractModal
-        isOpen={isNewContractOpen}
-        onClose={() => setIsNewContractOpen(false)}
-        employerId={profile?.id || ''}
-        onSuccess={() => {
-          refreshAuxiliaries()
-          setIsNewContractOpen(false)
-        }}
-      />
+      {/* Modal nouveau contrat - Employeurs seulement */}
+      {isEmployer && (
+        <NewContractModal
+          isOpen={isNewContractOpen}
+          onClose={() => setIsNewContractOpen(false)}
+          employerId={profile?.id || ''}
+          onSuccess={() => {
+            refreshAuxiliaries()
+            setIsNewContractOpen(false)
+          }}
+        />
+      )}
 
-      {/* Modal détails auxiliaire */}
-      {selectedAuxiliary && (
+      {/* Modal détails auxiliaire - Employeurs et aidants avec canManageTeam */}
+      {(isEmployer || currentCaregiver?.permissions?.canManageTeam) && selectedAuxiliary && (
         <AuxiliaryDetailModal
           isOpen={!!selectedAuxiliary}
           onClose={() => setSelectedAuxiliary(null)}
@@ -326,7 +379,7 @@ export function TeamPage() {
       <AddCaregiverModal
         isOpen={isAddCaregiverOpen}
         onClose={() => setIsAddCaregiverOpen(false)}
-        employerId={profile?.id || ''}
+        employerId={effectiveEmployerId || ''}
         onSuccess={refreshCaregivers}
       />
 

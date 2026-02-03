@@ -6,12 +6,20 @@ import {
   Stack,
   Flex,
   Text,
-  Input,
   Checkbox,
 } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { updateCaregiver, type CaregiverWithProfile } from '@/services/caregiverService'
-import type { CaregiverPermissions } from '@/types'
+import type { CaregiverPermissions, CaregiverLegalStatus } from '@/types'
+
+// Labels pour les statuts juridiques
+const legalStatusLabels: Record<CaregiverLegalStatus, string> = {
+  none: 'Aucun statut particulier',
+  tutor: 'Tuteur',
+  curator: 'Curateur',
+  safeguard_justice: 'Sauvegarde de justice',
+  family_caregiver: 'Aidant familial reconnu',
+}
 
 // ============================================
 // PROPS
@@ -34,7 +42,6 @@ export function EditCaregiverModal({
   caregiver,
   onSuccess,
 }: EditCaregiverModalProps) {
-  const [relationship, setRelationship] = useState('')
   const [permissions, setPermissions] = useState<CaregiverPermissions>({
     canViewPlanning: false,
     canEditPlanning: false,
@@ -46,9 +53,14 @@ export function EditCaregiverModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Vérifier si les permissions sont verrouillées (tuteur/curateur)
+  // On vérifie à la fois le flag permissionsLocked ET le legalStatus pour être sûr
+  const legalStatus = caregiver?.legalStatus
+  const isLegalGuardian = legalStatus === 'tutor' || legalStatus === 'curator'
+  const permissionsLocked = caregiver?.permissionsLocked || isLegalGuardian
+
   useEffect(() => {
     if (caregiver) {
-      setRelationship(caregiver.relationship || '')
       setPermissions(caregiver.permissions)
     }
   }, [caregiver])
@@ -66,7 +78,6 @@ export function EditCaregiverModal({
 
     try {
       await updateCaregiver(caregiver.profileId, caregiver.employerId, {
-        relationship: relationship || undefined,
         permissions,
       })
 
@@ -80,6 +91,8 @@ export function EditCaregiverModal({
   }
 
   const togglePermission = (key: keyof CaregiverPermissions) => {
+    // Ne pas permettre la modification si les permissions sont verrouillées
+    if (permissionsLocked) return
     setPermissions((prev) => ({
       ...prev,
       [key]: !prev[key],
@@ -129,27 +142,37 @@ export function EditCaregiverModal({
                   </Box>
                 )}
 
-                {/* Relation */}
-                <Box>
-                  <Text fontWeight="medium" mb={2}>
-                    Lien de parenté
-                  </Text>
-                  <Input
-                    placeholder="Ex: Fils, Fille, Conjoint, Ami..."
-                    value={relationship}
-                    onChange={(e) => setRelationship(e.target.value)}
-                  />
-                </Box>
+                {/* Statut juridique (affiché depuis la BDD) */}
+                {legalStatus && (
+                  <Box
+                    bg={permissionsLocked ? 'blue.50' : 'gray.50'}
+                    borderWidth="1px"
+                    borderColor={permissionsLocked ? 'blue.200' : 'gray.200'}
+                    borderRadius="md"
+                    p={4}
+                  >
+                    <Text color={permissionsLocked ? 'blue.700' : 'gray.700'} fontSize="sm" fontWeight="medium">
+                      Statut juridique : {legalStatusLabels[legalStatus]}
+                    </Text>
+                    {permissionsLocked && (
+                      <Text color="blue.600" fontSize="xs" mt={1}>
+                        Les permissions de cet aidant sont verrouillées en raison de son statut juridique (tuteur/curateur).
+                        Elles ne peuvent pas être modifiées.
+                      </Text>
+                    )}
+                  </Box>
+                )}
 
                 {/* Permissions */}
                 <Box>
                   <Text fontWeight="medium" mb={3}>
-                    Permissions
+                    Permissions {permissionsLocked && '(verrouillées)'}
                   </Text>
-                  <Stack gap={3}>
+                  <Stack gap={3} opacity={permissionsLocked ? 0.7 : 1}>
                     <Checkbox.Root
                       checked={permissions.canViewPlanning}
                       onCheckedChange={() => togglePermission('canViewPlanning')}
+                      disabled={permissionsLocked}
                     >
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
@@ -166,6 +189,7 @@ export function EditCaregiverModal({
                     <Checkbox.Root
                       checked={permissions.canEditPlanning}
                       onCheckedChange={() => togglePermission('canEditPlanning')}
+                      disabled={permissionsLocked}
                     >
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
@@ -182,6 +206,7 @@ export function EditCaregiverModal({
                     <Checkbox.Root
                       checked={permissions.canViewLiaison}
                       onCheckedChange={() => togglePermission('canViewLiaison')}
+                      disabled={permissionsLocked}
                     >
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
@@ -198,6 +223,7 @@ export function EditCaregiverModal({
                     <Checkbox.Root
                       checked={permissions.canWriteLiaison}
                       onCheckedChange={() => togglePermission('canWriteLiaison')}
+                      disabled={permissionsLocked}
                     >
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
@@ -212,8 +238,26 @@ export function EditCaregiverModal({
                     </Checkbox.Root>
 
                     <Checkbox.Root
+                      checked={permissions.canManageTeam}
+                      onCheckedChange={() => togglePermission('canManageTeam')}
+                      disabled={permissionsLocked}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label>
+                        <Box>
+                          <Text>Gérer l'équipe</Text>
+                          <Text fontSize="xs" color="gray.500">
+                            Ajouter ou retirer des membres de l'équipe
+                          </Text>
+                        </Box>
+                      </Checkbox.Label>
+                    </Checkbox.Root>
+
+                    <Checkbox.Root
                       checked={permissions.canExportData}
                       onCheckedChange={() => togglePermission('canExportData')}
+                      disabled={permissionsLocked}
                     >
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
