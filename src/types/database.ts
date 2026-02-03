@@ -24,12 +24,20 @@ export interface ProfileDbRow {
 // EMPLOYEE
 // ============================================================
 
+export interface DriversLicenseDb {
+  has_license: boolean
+  license_type?: 'B' | 'A' | 'C' | 'D' | 'BE' | 'other'
+  has_vehicle: boolean
+}
+
 export interface EmployeeDbRow {
   profile_id: string
   qualifications: string[] | null
   languages: string[] | null
   max_distance_km: number | null
   availability_template: Record<string, string[]> | null
+  drivers_license: DriversLicenseDb | null
+  address: AddressDb | null
   profile?: ProfileDbRow
 }
 

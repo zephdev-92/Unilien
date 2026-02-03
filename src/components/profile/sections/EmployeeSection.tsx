@@ -2,15 +2,31 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Box, Stack, Flex, Text, Badge, IconButton } from '@chakra-ui/react'
-import { AccessibleInput, AccessibleButton } from '@/components/ui'
-import type { Employee } from '@/types'
+import { Box, Stack, Flex, Text, Badge, IconButton, Switch } from '@chakra-ui/react'
+import { AccessibleInput, AccessibleButton, AccessibleSelect } from '@/components/ui'
+import type { Employee, DriversLicense } from '@/types'
 
 const employeeSchema = z.object({
   maxDistanceKm: z.number().min(1).max(100).optional(),
+  // Adresse
+  street: z.string().optional(),
+  postalCode: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d{5}$/.test(val), 'Code postal invalide (5 chiffres)'),
+  city: z.string().optional(),
 })
 
 type EmployeeFormData = z.infer<typeof employeeSchema>
+
+const licenseTypeOptions = [
+  { value: 'B', label: 'Permis B (voiture)' },
+  { value: 'A', label: 'Permis A (moto)' },
+  { value: 'C', label: 'Permis C (poids lourd)' },
+  { value: 'D', label: 'Permis D (transport en commun)' },
+  { value: 'BE', label: 'Permis BE (remorque)' },
+  { value: 'other', label: 'Autre' },
+]
 
 interface EmployeeSectionProps {
   employee?: Partial<Employee>
@@ -53,6 +69,13 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
   )
   const [newQualification, setNewQualification] = useState('')
 
+  // État pour le permis de conduire
+  const [driversLicense, setDriversLicense] = useState<DriversLicense>({
+    hasLicense: employee?.driversLicense?.hasLicense || false,
+    licenseType: employee?.driversLicense?.licenseType,
+    hasVehicle: employee?.driversLicense?.hasVehicle || false,
+  })
+
   const {
     register,
     handleSubmit,
@@ -61,6 +84,9 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       maxDistanceKm: employee?.maxDistanceKm,
+      street: employee?.address?.street || '',
+      postalCode: employee?.address?.postalCode || '',
+      city: employee?.address?.city || '',
     },
   })
 
@@ -68,10 +94,24 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
     try {
       setIsLoading(true)
       setSuccessMessage(null)
+
+      // Construire l'objet address
+      const address =
+        data.street || data.postalCode || data.city
+          ? {
+              street: data.street || '',
+              postalCode: data.postalCode || '',
+              city: data.city || '',
+              country: 'France',
+            }
+          : undefined
+
       await onSave({
-        ...data,
+        maxDistanceKm: data.maxDistanceKm,
         qualifications,
         languages,
+        driversLicense: driversLicense.hasLicense ? driversLicense : undefined,
+        address,
       })
       setSuccessMessage('Informations mises à jour avec succès')
       setTimeout(() => setSuccessMessage(null), 3000)
@@ -274,6 +314,148 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
               </Badge>
             ))}
         </Flex>
+      </Box>
+
+      {/* Permis de conduire */}
+      <Box
+        bg="white"
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor="gray.200"
+        p={6}
+      >
+        <Text fontSize="xl" fontWeight="semibold" mb={2}>
+          Permis de conduire
+        </Text>
+        <Text fontSize="sm" color="gray.600" mb={4}>
+          Indiquez si vous possédez le permis et un véhicule
+        </Text>
+
+        <Stack gap={4}>
+          <Flex
+            justify="space-between"
+            align="center"
+            p={4}
+            bg="gray.50"
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="gray.200"
+          >
+            <Box>
+              <Text fontWeight="medium">Je possède le permis de conduire</Text>
+            </Box>
+            <Switch.Root
+              checked={driversLicense.hasLicense}
+              onCheckedChange={(details) =>
+                setDriversLicense({
+                  ...driversLicense,
+                  hasLicense: details.checked,
+                  // Réinitialiser les autres champs si pas de permis
+                  licenseType: details.checked ? driversLicense.licenseType : undefined,
+                  hasVehicle: details.checked ? driversLicense.hasVehicle : false,
+                })
+              }
+            >
+              <Switch.HiddenInput aria-label="J'ai le permis de conduire" />
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+            </Switch.Root>
+          </Flex>
+
+          {driversLicense.hasLicense && (
+            <>
+              <AccessibleSelect
+                label="Type de permis"
+                options={licenseTypeOptions}
+                placeholder="Sélectionnez le type de permis"
+                value={driversLicense.licenseType || ''}
+                onChange={(e) =>
+                  setDriversLicense({
+                    ...driversLicense,
+                    licenseType: e.target.value as DriversLicense['licenseType'],
+                  })
+                }
+              />
+
+              <Flex
+                justify="space-between"
+                align="center"
+                p={4}
+                bg="gray.50"
+                borderRadius="md"
+                borderWidth="1px"
+                borderColor="gray.200"
+              >
+                <Box>
+                  <Text fontWeight="medium">Je dispose d'un véhicule personnel</Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Vous pouvez vous déplacer de manière autonome
+                  </Text>
+                </Box>
+                <Switch.Root
+                  checked={driversLicense.hasVehicle}
+                  onCheckedChange={(details) =>
+                    setDriversLicense({
+                      ...driversLicense,
+                      hasVehicle: details.checked,
+                    })
+                  }
+                >
+                  <Switch.HiddenInput aria-label="J'ai un véhicule personnel" />
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Root>
+              </Flex>
+            </>
+          )}
+        </Stack>
+      </Box>
+
+      {/* Adresse */}
+      <Box
+        bg="white"
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor="gray.200"
+        p={6}
+      >
+        <Text fontSize="xl" fontWeight="semibold" mb={2}>
+          Adresse
+        </Text>
+        <Text fontSize="sm" color="gray.600" mb={4}>
+          Votre adresse de domicile (utilisée pour calculer les distances)
+        </Text>
+
+        <Stack gap={4}>
+          <AccessibleInput
+            label="Rue"
+            placeholder="123 rue de la Paix"
+            error={errors.street?.message}
+            {...register('street')}
+          />
+
+          <Flex gap={4}>
+            <Box flex={1}>
+              <AccessibleInput
+                label="Code postal"
+                placeholder="75001"
+                maxLength={5}
+                error={errors.postalCode?.message}
+                {...register('postalCode')}
+              />
+            </Box>
+            <Box flex={2}>
+              <AccessibleInput
+                label="Ville"
+                placeholder="Paris"
+                error={errors.city?.message}
+                {...register('city')}
+              />
+            </Box>
+          </Flex>
+        </Stack>
       </Box>
 
       {/* Distance max */}
