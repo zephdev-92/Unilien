@@ -134,7 +134,17 @@ export function SignupForm() {
         {error && (
           <Alert.Root status="error" borderRadius="md">
             <Alert.Indicator />
-            <Alert.Description>{error}</Alert.Description>
+            <Alert.Description>
+              {error}
+              {error.includes('déjà associée') && (
+                <>
+                  {' '}
+                  <Link asChild color="red.700" fontWeight="semibold" textDecoration="underline">
+                    <RouterLink to="/login">Se connecter</RouterLink>
+                  </Link>
+                </>
+              )}
+            </Alert.Description>
           </Alert.Root>
         )}
 
