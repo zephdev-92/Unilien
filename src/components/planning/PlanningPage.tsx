@@ -24,7 +24,8 @@ import { AbsenceRequestModal } from './AbsenceRequestModal'
 import { AbsenceDetailModal } from './AbsenceDetailModal'
 import { getShifts } from '@/services/shiftService'
 import { getAbsencesForEmployee, getAbsencesForEmployer } from '@/services/absenceService'
-import type { Shift, Absence } from '@/types'
+import { getCaregiver, getShiftsForCaregiver } from '@/services/caregiverService'
+import type { Shift, Absence, Caregiver } from '@/types'
 
 type ViewMode = 'week' | 'month'
 
@@ -40,6 +41,31 @@ export function PlanningPage() {
   const [isAbsenceRequestModalOpen, setIsAbsenceRequestModalOpen] = useState(false)
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null)
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null)
+  const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
+
+  // Charger les données de l'aidant si c'est un caregiver
+  useEffect(() => {
+    async function loadCaregiverData() {
+      if (profile?.role === 'caregiver') {
+        try {
+          const caregiverData = await getCaregiver(profile.id)
+          setCaregiver(caregiverData)
+        } catch (error) {
+          console.error('Erreur chargement données aidant:', error)
+        }
+      }
+    }
+    loadCaregiverData()
+  }, [profile])
+
+  // Vérifier si l'utilisateur peut éditer le planning
+  const canEditPlanning = profile?.role === 'employer' ||
+    (profile?.role === 'caregiver' && caregiver?.permissions?.canEditPlanning)
+
+  // ID de l'employeur pour créer des interventions
+  const employerIdForShifts = profile?.role === 'employer'
+    ? profile.id
+    : caregiver?.employerId
 
   // Ouvrir le modal absence si ?action=absence dans l'URL
   useEffect(() => {
@@ -76,13 +102,29 @@ export function PlanningPage() {
 
     setIsLoadingShifts(true)
     try {
+      // Pour les aidants, utiliser getShiftsForCaregiver
+      let shiftsPromise: Promise<Shift[]>
+      if (profile.role === 'caregiver') {
+        shiftsPromise = getShiftsForCaregiver(profile.id, rangeStart, rangeEnd)
+      } else {
+        shiftsPromise = getShifts(profile.id, profile.role, rangeStart, rangeEnd)
+      }
+
+      // Charger les absences selon le rôle
+      let absencesPromise: Promise<Absence[]>
+      if (profile.role === 'employee') {
+        absencesPromise = getAbsencesForEmployee(profile.id)
+      } else if (profile.role === 'employer') {
+        absencesPromise = getAbsencesForEmployer(profile.id)
+      } else if (profile.role === 'caregiver' && caregiver?.employerId) {
+        absencesPromise = getAbsencesForEmployer(caregiver.employerId)
+      } else {
+        absencesPromise = Promise.resolve([])
+      }
+
       const [shiftsData, absencesData] = await Promise.all([
-        getShifts(profile.id, profile.role, rangeStart, rangeEnd),
-        profile.role === 'employee'
-          ? getAbsencesForEmployee(profile.id)
-          : profile.role === 'employer'
-            ? getAbsencesForEmployer(profile.id)
-            : Promise.resolve([]),
+        shiftsPromise,
+        absencesPromise,
       ])
       setShifts(shiftsData)
       // Filtrer les absences pour la période actuelle
@@ -97,7 +139,7 @@ export function PlanningPage() {
     } finally {
       setIsLoadingShifts(false)
     }
-  }, [profile, rangeStart, rangeEnd])
+  }, [profile, rangeStart, rangeEnd, caregiver])
 
   useEffect(() => {
     if (profile && isInitialized) {
@@ -219,7 +261,7 @@ export function PlanningPage() {
                 + Déclarer absence
               </AccessibleButton>
             )}
-            {profile.role === 'employer' && (
+            {canEditPlanning && (
               <AccessibleButton
                 colorPalette="blue"
                 size="sm"
@@ -257,11 +299,11 @@ export function PlanningPage() {
         )}
       </Box>
 
-      {profile.role === 'employer' && (
+      {canEditPlanning && employerIdForShifts && (
         <NewShiftModal
           isOpen={isNewShiftModalOpen}
           onClose={() => setIsNewShiftModalOpen(false)}
-          employerId={profile.id}
+          employerId={employerIdForShifts}
           onSuccess={loadShifts}
         />
       )}
@@ -272,6 +314,7 @@ export function PlanningPage() {
         shift={selectedShift}
         userRole={profile.role}
         profileId={profile.id}
+        caregiverCanEdit={caregiver?.permissions?.canEditPlanning}
         onSuccess={() => {
           loadShifts()
           setSelectedShift(null)

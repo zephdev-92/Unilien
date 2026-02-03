@@ -15,7 +15,7 @@ import {
   searchCaregiverByEmail,
   addCaregiverToEmployer,
 } from '@/services/caregiverService'
-import type { CaregiverPermissions } from '@/types'
+import type { CaregiverPermissions, CaregiverLegalStatus } from '@/types'
 
 // ============================================
 // PROPS
@@ -41,6 +41,25 @@ const DEFAULT_PERMISSIONS: CaregiverPermissions = {
   canExportData: false,
 }
 
+// Tous les droits activés pour tuteur/curateur
+const ALL_PERMISSIONS: CaregiverPermissions = {
+  canViewPlanning: true,
+  canEditPlanning: true,
+  canViewLiaison: true,
+  canWriteLiaison: true,
+  canManageTeam: true,
+  canExportData: true,
+}
+
+// Options de statut juridique
+const legalStatusOptions: { value: CaregiverLegalStatus | 'none'; label: string }[] = [
+  { value: 'none', label: 'Aucun statut particulier' },
+  { value: 'tutor', label: 'Tuteur' },
+  { value: 'curator', label: 'Curateur' },
+  { value: 'safeguard_justice', label: 'Sauvegarde de justice' },
+  { value: 'family_caregiver', label: 'Aidant familial reconnu' },
+]
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -52,8 +71,9 @@ export function AddCaregiverModal({
   onSuccess,
 }: AddCaregiverModalProps) {
   const [email, setEmail] = useState('')
-  const [relationship, setRelationship] = useState('')
+  const [legalStatus, setLegalStatus] = useState<CaregiverLegalStatus | 'none'>('none')
   const [permissions, setPermissions] = useState<CaregiverPermissions>(DEFAULT_PERMISSIONS)
+  const [permissionsLocked, setPermissionsLocked] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -64,10 +84,25 @@ export function AddCaregiverModal({
     email: string
   } | null>(null)
 
+  // Quand le statut juridique change, mettre à jour les permissions
+  const handleLegalStatusChange = (newStatus: CaregiverLegalStatus | 'none') => {
+    setLegalStatus(newStatus)
+    if (newStatus === 'tutor' || newStatus === 'curator') {
+      // Tuteur ou curateur : tous les droits, verrouillés
+      setPermissions(ALL_PERMISSIONS)
+      setPermissionsLocked(true)
+    } else {
+      // Autre statut : permissions par défaut, modifiables
+      setPermissions(DEFAULT_PERMISSIONS)
+      setPermissionsLocked(false)
+    }
+  }
+
   const resetForm = () => {
     setEmail('')
-    setRelationship('')
+    setLegalStatus('none')
     setPermissions(DEFAULT_PERMISSIONS)
+    setPermissionsLocked(false)
     setFoundCaregiver(null)
     setError(null)
   }
@@ -111,8 +146,9 @@ export function AddCaregiverModal({
 
     try {
       await addCaregiverToEmployer(employerId, foundCaregiver.profileId, {
-        relationship: relationship || undefined,
         permissions,
+        legalStatus: legalStatus !== 'none' ? legalStatus : undefined,
+        permissionsLocked,
       })
 
       onSuccess()
@@ -227,27 +263,63 @@ export function AddCaregiverModal({
                       </Flex>
                     </Box>
 
-                    {/* Relation */}
+                    {/* Statut juridique */}
                     <Box>
                       <Text fontWeight="medium" mb={2}>
-                        Lien de parenté (optionnel)
+                        Statut juridique
                       </Text>
-                      <Input
-                        placeholder="Ex: Fils, Fille, Conjoint, Ami..."
-                        value={relationship}
-                        onChange={(e) => setRelationship(e.target.value)}
-                      />
+                      <Box
+                        as="select"
+                        w="100%"
+                        p={2}
+                        borderWidth="1px"
+                        borderRadius="md"
+                        borderColor="gray.200"
+                        bg="white"
+                        value={legalStatus}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                          handleLegalStatusChange(e.target.value as CaregiverLegalStatus | 'none')
+                        }
+                      >
+                        {legalStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Box>
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        Important : les tuteurs et curateurs ont automatiquement tous les droits
+                      </Text>
                     </Box>
+
+                    {/* Message si permissions verrouillées */}
+                    {permissionsLocked && (
+                      <Box
+                        bg="blue.50"
+                        borderWidth="1px"
+                        borderColor="blue.200"
+                        borderRadius="md"
+                        p={3}
+                      >
+                        <Text color="blue.700" fontSize="sm" fontWeight="medium">
+                          En tant que {legalStatus === 'tutor' ? 'tuteur' : 'curateur'}, cet aidant aura automatiquement tous les droits.
+                        </Text>
+                        <Text color="blue.600" fontSize="xs" mt={1}>
+                          Ces permissions ne pourront pas être modifiées après l'ajout.
+                        </Text>
+                      </Box>
+                    )}
 
                     {/* Permissions */}
                     <Box>
                       <Text fontWeight="medium" mb={3}>
-                        Permissions
+                        Permissions {permissionsLocked && '(verrouillées)'}
                       </Text>
-                      <Stack gap={3}>
+                      <Stack gap={3} opacity={permissionsLocked ? 0.7 : 1}>
                         <Checkbox.Root
                           checked={permissions.canViewPlanning}
-                          onCheckedChange={() => togglePermission('canViewPlanning')}
+                          onCheckedChange={() => !permissionsLocked && togglePermission('canViewPlanning')}
+                          disabled={permissionsLocked}
                         >
                           <Checkbox.HiddenInput />
                           <Checkbox.Control />
@@ -263,7 +335,8 @@ export function AddCaregiverModal({
 
                         <Checkbox.Root
                           checked={permissions.canEditPlanning}
-                          onCheckedChange={() => togglePermission('canEditPlanning')}
+                          onCheckedChange={() => !permissionsLocked && togglePermission('canEditPlanning')}
+                          disabled={permissionsLocked}
                         >
                           <Checkbox.HiddenInput />
                           <Checkbox.Control />
@@ -279,7 +352,8 @@ export function AddCaregiverModal({
 
                         <Checkbox.Root
                           checked={permissions.canViewLiaison}
-                          onCheckedChange={() => togglePermission('canViewLiaison')}
+                          onCheckedChange={() => !permissionsLocked && togglePermission('canViewLiaison')}
+                          disabled={permissionsLocked}
                         >
                           <Checkbox.HiddenInput />
                           <Checkbox.Control />
@@ -295,7 +369,8 @@ export function AddCaregiverModal({
 
                         <Checkbox.Root
                           checked={permissions.canWriteLiaison}
-                          onCheckedChange={() => togglePermission('canWriteLiaison')}
+                          onCheckedChange={() => !permissionsLocked && togglePermission('canWriteLiaison')}
+                          disabled={permissionsLocked}
                         >
                           <Checkbox.HiddenInput />
                           <Checkbox.Control />
@@ -310,8 +385,26 @@ export function AddCaregiverModal({
                         </Checkbox.Root>
 
                         <Checkbox.Root
+                          checked={permissions.canManageTeam}
+                          onCheckedChange={() => !permissionsLocked && togglePermission('canManageTeam')}
+                          disabled={permissionsLocked}
+                        >
+                          <Checkbox.HiddenInput />
+                          <Checkbox.Control />
+                          <Checkbox.Label>
+                            <Box>
+                              <Text>Gérer l'équipe</Text>
+                              <Text fontSize="xs" color="gray.500">
+                                Ajouter ou retirer des membres de l'équipe
+                              </Text>
+                            </Box>
+                          </Checkbox.Label>
+                        </Checkbox.Root>
+
+                        <Checkbox.Root
                           checked={permissions.canExportData}
-                          onCheckedChange={() => togglePermission('canExportData')}
+                          onCheckedChange={() => !permissionsLocked && togglePermission('canExportData')}
+                          disabled={permissionsLocked}
                         >
                           <Checkbox.HiddenInput />
                           <Checkbox.Control />

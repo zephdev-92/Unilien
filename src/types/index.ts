@@ -75,6 +75,7 @@ export interface Caregiver {
   profileId: string
   employerId: string
   permissions: CaregiverPermissions
+  permissionsLocked?: boolean // true si tuteur/curateur - permissions non modifiables
   relationship?: CaregiverRelationship
   relationshipDetails?: string
   legalStatus?: CaregiverLegalStatus
