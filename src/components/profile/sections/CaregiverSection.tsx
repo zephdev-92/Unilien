@@ -69,11 +69,23 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
     handleSubmit,
     watch,
     reset,
+    setValue,
   } = useForm<CaregiverFormData>({
     resolver: zodResolver(caregiverSchema),
   })
 
   const relationshipValue = watch('relationship')
+
+  // Mise à jour automatique du statut juridique selon le type de relation
+  useEffect(() => {
+    if (relationshipValue === 'legal_guardian') {
+      setValue('legalStatus', 'tutor')
+    } else if (relationshipValue === 'curator') {
+      setValue('legalStatus', 'curator')
+    } else if (relationshipValue) {
+      setValue('legalStatus', 'none')
+    }
+  }, [relationshipValue, setValue])
 
   // Charger les données au montage
   useEffect(() => {
