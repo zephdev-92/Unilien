@@ -76,6 +76,20 @@ export type NotificationChangeCallback = (
 ) => void
 
 // ============================================
+// URL HELPERS
+// ============================================
+
+/**
+ * Génère l'URL du planning avec une date spécifique
+ * @param date - Date à afficher dans le planning
+ * @returns URL avec paramètre date (ex: /planning?date=2026-03-01)
+ */
+function getPlanningUrlWithDate(date: Date): string {
+  const dateStr = date.toISOString().split('T')[0] // Format YYYY-MM-DD
+  return `/planning?date=${dateStr}`
+}
+
+// ============================================
 // COMPLIANCE THRESHOLDS
 // ============================================
 
@@ -534,7 +548,7 @@ export async function createShiftReminderNotification(
     priority: 'normal',
     title: 'Rappel intervention',
     message: `Intervention avec ${employeeName} prévue ${formattedDate} à ${startTime}.`,
-    actionUrl: '/planning',
+    actionUrl: getPlanningUrlWithDate(shiftDate),
     data: {
       employeeName,
       shiftId,
@@ -684,7 +698,7 @@ export async function createShiftCreatedNotification(
       priority: 'normal',
       title: 'Nouvelle intervention',
       message: `Intervention planifiée chez ${employerName} le ${formattedDate} à ${startTime}.`,
-      actionUrl: '/planning',
+      actionUrl: getPlanningUrlWithDate(shiftDate),
       data: { employerName, shiftDate: shiftDate.toISOString(), startTime },
     })
   } catch (err) {
@@ -711,7 +725,7 @@ export async function createShiftCancelledNotification(
       priority: 'high',
       title: 'Intervention annulée',
       message: `L'intervention du ${formattedDate} à ${startTime} a été annulée.`,
-      actionUrl: '/planning',
+      actionUrl: getPlanningUrlWithDate(shiftDate),
       data: { shiftDate: shiftDate.toISOString(), startTime },
     })
   } catch (err) {
@@ -797,7 +811,7 @@ export async function createShiftModifiedNotification(
       priority: 'normal',
       title: 'Intervention modifiée',
       message: `L'intervention du ${formattedDate} a été modifiée. Nouvel horaire : ${startTime}.`,
-      actionUrl: '/planning',
+      actionUrl: getPlanningUrlWithDate(shiftDate),
       data: { shiftDate: shiftDate.toISOString(), startTime },
     })
   } catch (err) {
@@ -836,7 +850,7 @@ export async function createAbsenceRequestedNotification(
       priority: 'normal',
       title: 'Demande d\'absence',
       message: `${employeeName} a déclaré une absence (${label}) du ${start} au ${end}.`,
-      actionUrl: '/planning',
+      actionUrl: getPlanningUrlWithDate(startDate),
       data: { employeeName, absenceType, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
     })
   } catch (err) {
@@ -862,7 +876,7 @@ export async function createAbsenceResolvedNotification(
       priority: 'high',
       title: `Absence ${statusLabel}`,
       message: `Votre demande d'absence du ${start} au ${end} a été ${statusLabel}.`,
-      actionUrl: '/planning',
+      actionUrl: getPlanningUrlWithDate(startDate),
       data: { status, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
     })
   } catch (err) {
