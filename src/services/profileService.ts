@@ -232,22 +232,63 @@ export async function getEmployee(profileId: string): Promise<Employee | null> {
 
   if (!data) return null
 
+  // Mapper drivers_license si présent
+  const driversLicense = data.drivers_license
+    ? {
+        hasLicense: data.drivers_license.has_license,
+        licenseType: data.drivers_license.license_type,
+        hasVehicle: data.drivers_license.has_vehicle,
+      }
+    : undefined
+
+  // Mapper address si présent
+  const address = data.address
+    ? {
+        street: data.address.street || '',
+        city: data.address.city || '',
+        postalCode: data.address.postalCode || '',
+        country: 'France',
+      }
+    : undefined
+
   return {
     profileId: data.profile_id,
     qualifications: data.qualifications || [],
     languages: data.languages || [],
     maxDistanceKm: data.max_distance_km || undefined,
     availabilityTemplate: data.availability_template as Employee['availabilityTemplate'],
+    driversLicense,
+    address,
   }
 }
 
 export async function upsertEmployee(profileId: string, data: Partial<Employee>) {
+  // Mapper driversLicense vers le format DB
+  const driversLicenseDb = data.driversLicense
+    ? {
+        has_license: data.driversLicense.hasLicense,
+        license_type: data.driversLicense.licenseType || null,
+        has_vehicle: data.driversLicense.hasVehicle,
+      }
+    : null
+
+  // Mapper address vers le format DB
+  const addressDb = data.address
+    ? {
+        street: data.address.street || null,
+        city: data.address.city || null,
+        postalCode: data.address.postalCode || null,
+      }
+    : null
+
   const payload = {
     profile_id: profileId,
     qualifications: data.qualifications || [],
     languages: data.languages || [],
     max_distance_km: data.maxDistanceKm || null,
     availability_template: data.availabilityTemplate || {},
+    drivers_license: driversLicenseDb,
+    address: addressDb,
   }
 
   const { error } = await supabase

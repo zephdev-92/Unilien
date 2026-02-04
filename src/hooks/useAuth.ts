@@ -13,6 +13,51 @@ interface SignUpData {
   phone?: string
 }
 
+/**
+ * Convertit les erreurs d'inscription Supabase en messages utilisateur clairs
+ */
+function getSignUpErrorMessage(err: unknown): string {
+  if (!(err instanceof Error)) {
+    return 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.'
+  }
+
+  const message = err.message.toLowerCase()
+
+  // Email déjà utilisé (notre marker personnalisé)
+  if (err.message === 'EMAIL_ALREADY_EXISTS') {
+    return 'Cette adresse email est déjà associée à un compte. Connectez-vous ou utilisez une autre adresse.'
+  }
+
+  // Erreur Supabase: User already registered
+  if (message.includes('user already registered') || message.includes('already been registered')) {
+    return 'Cette adresse email est déjà associée à un compte. Connectez-vous ou utilisez une autre adresse.'
+  }
+
+  // Erreur Supabase: Email rate limit
+  if (message.includes('email rate limit') || message.includes('rate limit')) {
+    return 'Trop de tentatives d\'inscription. Veuillez patienter quelques minutes avant de réessayer.'
+  }
+
+  // Erreur Supabase: Invalid email
+  if (message.includes('invalid email') || message.includes('email not valid')) {
+    return 'L\'adresse email saisie n\'est pas valide.'
+  }
+
+  // Erreur Supabase: Password too weak
+  if (message.includes('password') && (message.includes('weak') || message.includes('short'))) {
+    return 'Le mot de passe est trop faible. Utilisez au moins 8 caractères avec majuscule, minuscule et chiffre.'
+  }
+
+  // Erreur réseau
+  if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
+    return 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.'
+  }
+
+  // Erreur par défaut avec le message original pour debug
+  console.error('Erreur inscription non mappée:', err.message)
+  return 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.'
+}
+
 interface SignInData {
   email: string
   password: string
@@ -172,6 +217,13 @@ export function useAuth() {
           throw signUpError
         }
 
+        // Vérifier si l'utilisateur existe déjà (Supabase retourne un user sans session)
+        // Quand l'email existe déjà et que la confirmation n'est pas faite,
+        // Supabase retourne un user avec identities vide
+        if (authData.user && authData.user.identities?.length === 0) {
+          throw new Error('EMAIL_ALREADY_EXISTS')
+        }
+
         if (!authData.user) {
           throw new Error('Erreur lors de la création du compte')
         }
@@ -181,7 +233,7 @@ export function useAuth() {
 
         return { success: true, user: authData.user }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Erreur lors de l\'inscription'
+        const message = getSignUpErrorMessage(err)
         setError(message)
         return { success: false, error: message }
       } finally {

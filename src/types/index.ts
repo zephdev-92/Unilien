@@ -39,6 +39,13 @@ export interface Employer {
   emergencyContacts: EmergencyContact[]
 }
 
+// Permis de conduire
+export interface DriversLicense {
+  hasLicense: boolean
+  licenseType?: 'B' | 'A' | 'C' | 'D' | 'BE' | 'other'
+  hasVehicle: boolean
+}
+
 // Auxiliaire de vie
 export interface Employee {
   profileId: string
@@ -46,6 +53,8 @@ export interface Employee {
   languages: string[]
   maxDistanceKm?: number
   availabilityTemplate: AvailabilityTemplate
+  driversLicense?: DriversLicense
+  address?: Address
 }
 
 // Types de relation aidant
