@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { sanitizeText } from '@/lib/sanitize'
 import type { LiaisonMessageWithSender, UserRole } from '@/types'
 
 // ============================================
@@ -150,7 +151,7 @@ export const MessageBubble = memo(function MessageBubble({
           >
             {/* Message text */}
             <Text fontSize="md" whiteSpace="pre-wrap">
-              {message.content}
+              {sanitizeText(message.content)}
             </Text>
 
             {/* Edited indicator */}
