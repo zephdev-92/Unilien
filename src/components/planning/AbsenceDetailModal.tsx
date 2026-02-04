@@ -186,6 +186,74 @@ export function AbsenceDetailModal({
                   </>
                 )}
 
+                {absence.absenceType === 'sick' && (
+                  <>
+                    <Separator />
+                    <Box>
+                      <Text fontSize="sm" color="gray.500" mb={1}>
+                        Arrêt de travail
+                      </Text>
+                      {absence.justificationUrl ? (
+                        <Flex
+                          align="center"
+                          gap={3}
+                          p={3}
+                          bg="green.50"
+                          borderRadius="md"
+                          borderWidth="1px"
+                          borderColor="green.200"
+                        >
+                          <Box color="green.600">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                              <polyline points="9 15 12 18 15 15" />
+                              <line x1="12" y1="12" x2="12" y2="18" />
+                            </svg>
+                          </Box>
+                          <Box flex={1}>
+                            <Text fontSize="sm" fontWeight="medium" color="green.800">
+                              Justificatif fourni
+                            </Text>
+                          </Box>
+                          <AccessibleButton
+                            as="a"
+                            href={absence.justificationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="sm"
+                            colorPalette="green"
+                            variant="outline"
+                          >
+                            Voir
+                          </AccessibleButton>
+                        </Flex>
+                      ) : (
+                        <Flex
+                          align="center"
+                          gap={3}
+                          p={3}
+                          bg="orange.50"
+                          borderRadius="md"
+                          borderWidth="1px"
+                          borderColor="orange.200"
+                        >
+                          <Box color="orange.500">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="8" x2="12" y2="12" />
+                              <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                          </Box>
+                          <Text fontSize="sm" color="orange.700">
+                            Aucun justificatif fourni
+                          </Text>
+                        </Flex>
+                      )}
+                    </Box>
+                  </>
+                )}
+
                 <Separator />
 
                 <Box>
