@@ -19,10 +19,22 @@ export { getMonthlyDeclarationData } from './declarationService'
 
 // Générateurs
 export { generateCesuCsv, generateCesuSummary } from './cesuGenerator'
+export { generateCesuPdf } from './cesuPdfGenerator'
 
 // Fonction utilitaire pour télécharger un fichier
 export function downloadExport(result: { filename: string; content: string; mimeType: string }): void {
-  // Ajouter BOM pour UTF-8 (support Excel français)
+  // Pour les PDF (data URI), ouvrir directement
+  if (result.mimeType === 'application/pdf' && result.content.startsWith('data:')) {
+    const link = document.createElement('a')
+    link.href = result.content
+    link.download = result.filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    return
+  }
+
+  // Pour les autres formats (CSV, TXT), ajouter BOM pour UTF-8
   const BOM = '\uFEFF'
   const blob = new Blob([BOM + result.content], { type: result.mimeType })
   const url = URL.createObjectURL(blob)
