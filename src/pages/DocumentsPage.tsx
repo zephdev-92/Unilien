@@ -26,6 +26,7 @@ import {
   getMonthlyDeclarationData,
   generateCesuCsv,
   generateCesuSummary,
+  generateCesuPdf,
   downloadExport,
   MONTHS_FR,
   type ExportFormat,
@@ -128,7 +129,17 @@ export function DocumentsPage() {
   const handleDownload = (format: ExportFormat) => {
     if (!previewData) return
 
-    const result = format === 'csv' ? generateCesuCsv(previewData) : generateCesuSummary(previewData)
+    let result
+    switch (format) {
+      case 'pdf':
+        result = generateCesuPdf(previewData)
+        break
+      case 'csv':
+        result = generateCesuCsv(previewData)
+        break
+      default:
+        result = generateCesuSummary(previewData)
+    }
 
     if (result.success) {
       downloadExport(result)
@@ -362,31 +373,45 @@ export function DocumentsPage() {
                     <Text fontWeight="semibold" mb={3}>
                       Télécharger
                     </Text>
-                    <HStack gap={4}>
+                    <VStack gap={3}>
                       <Button
                         colorPalette="brand"
                         size="lg"
-                        flex={1}
-                        onClick={() => handleDownload('csv')}
+                        width="100%"
+                        onClick={() => handleDownload('pdf')}
                       >
-                        Fichier CSV
+                        Document PDF
                         <Text fontSize="xs" ml={2} opacity={0.8}>
-                          (pour tableur)
+                          (recommandé)
                         </Text>
                       </Button>
-                      <Button
-                        variant="outline"
-                        colorPalette="brand"
-                        size="lg"
-                        flex={1}
-                        onClick={() => handleDownload('summary')}
-                      >
-                        Récapitulatif texte
-                        <Text fontSize="xs" ml={2} opacity={0.8}>
-                          (copier-coller)
-                        </Text>
-                      </Button>
-                    </HStack>
+                      <HStack gap={4} width="100%">
+                        <Button
+                          variant="outline"
+                          colorPalette="brand"
+                          size="lg"
+                          flex={1}
+                          onClick={() => handleDownload('csv')}
+                        >
+                          Fichier CSV
+                          <Text fontSize="xs" ml={2} opacity={0.8}>
+                            (tableur)
+                          </Text>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          colorPalette="gray"
+                          size="lg"
+                          flex={1}
+                          onClick={() => handleDownload('summary')}
+                        >
+                          Texte
+                          <Text fontSize="xs" ml={2} opacity={0.8}>
+                            (copier-coller)
+                          </Text>
+                        </Button>
+                      </HStack>
+                    </VStack>
                   </Box>
 
                   {/* Aide */}
