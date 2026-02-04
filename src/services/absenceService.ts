@@ -7,6 +7,82 @@ import {
 } from '@/services/notificationService'
 
 // ============================================
+// JUSTIFICATIF (arrêt de travail) UPLOAD
+// ============================================
+
+const JUSTIFICATIONS_BUCKET = 'justifications'
+const MAX_JUSTIFICATION_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_JUSTIFICATION_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]
+
+export interface JustificationUploadResult {
+  url: string
+}
+
+/**
+ * Valide un fichier justificatif (arrêt de travail)
+ */
+export function validateJustificationFile(file: File): { valid: boolean; error?: string } {
+  if (!ALLOWED_JUSTIFICATION_TYPES.includes(file.type)) {
+    return {
+      valid: false,
+      error: 'Format non supporté. Utilisez PDF, JPG, PNG ou WebP.',
+    }
+  }
+
+  if (file.size > MAX_JUSTIFICATION_SIZE) {
+    return {
+      valid: false,
+      error: 'Le fichier est trop volumineux. Taille maximum : 5 Mo.',
+    }
+  }
+
+  return { valid: true }
+}
+
+/**
+ * Upload un justificatif et retourne l'URL publique
+ */
+export async function uploadJustification(
+  employeeId: string,
+  file: File
+): Promise<JustificationUploadResult> {
+  // Valider le fichier
+  const validation = validateJustificationFile(file)
+  if (!validation.valid) {
+    throw new Error(validation.error)
+  }
+
+  // Générer un nom de fichier unique
+  const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf'
+  const fileName = `${employeeId}/${Date.now()}.${fileExt}`
+
+  // Upload le fichier
+  const { error: uploadError } = await supabase.storage
+    .from(JUSTIFICATIONS_BUCKET)
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false,
+    })
+
+  if (uploadError) {
+    console.error('Erreur upload justificatif:', uploadError)
+    throw new Error('Erreur lors de l\'upload du justificatif.')
+  }
+
+  // Obtenir l'URL publique
+  const { data: urlData } = supabase.storage
+    .from(JUSTIFICATIONS_BUCKET)
+    .getPublicUrl(fileName)
+
+  return { url: urlData.publicUrl }
+}
+
+// ============================================
 // GET ABSENCES FOR EMPLOYEE
 // ============================================
 
@@ -106,6 +182,7 @@ export async function createAbsence(
     startDate: Date
     endDate: Date
     reason?: string
+    justificationUrl?: string
   }
 ): Promise<Absence | null> {
   const { data, error } = await supabase
@@ -116,6 +193,7 @@ export async function createAbsence(
       start_date: absenceData.startDate.toISOString().split('T')[0],
       end_date: absenceData.endDate.toISOString().split('T')[0],
       reason: absenceData.reason || null,
+      justification_url: absenceData.justificationUrl || null,
       status: 'pending',
     })
     .select()
