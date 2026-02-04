@@ -154,7 +154,10 @@ export function AbsenceRequestModal({
 
       // Upload du justificatif (obligatoire pour les arrêts maladie)
       if (justificationFile && data.absenceType === 'sick') {
-        const uploadResult = await uploadJustification(employeeId, justificationFile)
+        const uploadResult = await uploadJustification(employeeId, justificationFile, {
+          absenceType: data.absenceType,
+          startDate: new Date(data.startDate),
+        })
         justificationUrl = uploadResult.url
       }
 

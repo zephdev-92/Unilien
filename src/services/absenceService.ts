@@ -23,6 +23,43 @@ export interface JustificationUploadResult {
   url: string
 }
 
+export interface JustificationUploadOptions {
+  /** Type d'absence pour personnaliser le nom du fichier */
+  absenceType?: 'sick' | 'vacation' | 'training' | 'unavailable' | 'emergency'
+  /** Date de début de l'absence (utilisée pour le nom du fichier) */
+  startDate?: Date
+}
+
+/**
+ * Génère un nom de fichier significatif pour le justificatif
+ * Pour les arrêts maladie : arret_YYYY_MM_DD.ext
+ * Pour les autres types : justificatif_YYYY_MM_DD.ext
+ */
+function generateJustificationFileName(
+  employeeId: string,
+  fileExt: string,
+  options?: JustificationUploadOptions
+): string {
+  const date = options?.startDate || new Date()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const dateStr = `${year}_${month}_${day}`
+
+  // Nom du fichier selon le type d'absence
+  let baseName: string
+  if (options?.absenceType === 'sick') {
+    baseName = `arret_${dateStr}`
+  } else {
+    baseName = `justificatif_${dateStr}`
+  }
+
+  // Ajout d'un timestamp pour éviter les collisions
+  const timestamp = Date.now()
+
+  return `${employeeId}/${baseName}_${timestamp}.${fileExt}`
+}
+
 /**
  * Valide un fichier justificatif (arrêt de travail)
  */
@@ -46,10 +83,14 @@ export function validateJustificationFile(file: File): { valid: boolean; error?:
 
 /**
  * Upload un justificatif et retourne l'URL publique
+ * @param employeeId - ID de l'employé
+ * @param file - Fichier à uploader
+ * @param options - Options pour personnaliser le nom du fichier
  */
 export async function uploadJustification(
   employeeId: string,
-  file: File
+  file: File,
+  options?: JustificationUploadOptions
 ): Promise<JustificationUploadResult> {
   // Valider le fichier
   const validation = validateJustificationFile(file)
@@ -57,9 +98,9 @@ export async function uploadJustification(
     throw new Error(validation.error)
   }
 
-  // Générer un nom de fichier unique
+  // Générer un nom de fichier significatif
   const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf'
-  const fileName = `${employeeId}/${Date.now()}.${fileExt}`
+  const fileName = generateJustificationFileName(employeeId, fileExt, options)
 
   // Upload le fichier
   const { error: uploadError } = await supabase.storage
