@@ -1,5 +1,5 @@
 /**
- * Page Documents - Export des déclarations CESU/PAJEMPLOI
+ * Page Documents - Export des déclarations CESU et gestion des documents
  */
 
 import { useState, useEffect } from 'react'
@@ -19,6 +19,7 @@ import {
   Alert,
   Separator,
   Grid,
+  Tabs,
 } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard'
 import { useAuth } from '@/hooks/useAuth'
@@ -33,6 +34,7 @@ import {
   type MonthlyDeclarationData,
 } from '@/lib/export'
 import { getCaregiver } from '@/services/caregiverService'
+import { DocumentManagementSection } from '@/components/documents'
 import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
@@ -158,279 +160,318 @@ export function DocumentsPage() {
               Documents et Déclarations
             </Heading>
             <Text color="gray.600">
-              Générez les fichiers pour vos déclarations CESU
+              Gérez vos documents et générez les fichiers pour vos déclarations CESU
             </Text>
           </Box>
 
-          {/* Sélection du type et de la période */}
-          <Card.Root>
-            <Card.Body>
+          {/* Navigation par onglets */}
+          <Tabs.Root defaultValue="declarations" variant="enclosed">
+            <Tabs.List>
+              <Tabs.Trigger value="declarations">
+                Déclarations CESU
+              </Tabs.Trigger>
+              <Tabs.Trigger value="documents">
+                Gestion des documents
+              </Tabs.Trigger>
+            </Tabs.List>
+
+            {/* Onglet Déclarations CESU */}
+            <Tabs.Content value="declarations" pt={6}>
               <VStack gap={6} align="stretch">
-                {/* Période */}
-                <Box>
-                  <Text fontWeight="semibold" mb={3}>
-                    Période à déclarer
-                  </Text>
-                  <HStack gap={4}>
-                    {/* Mois */}
-                    <Box flex={2}>
-                      <Text fontSize="sm" color="gray.600" mb={2}>
-                        Mois
-                      </Text>
-                      <HStack gap={2} flexWrap="wrap">
-                        {monthsFirstRow.map((month, index) => (
-                          <Button
-                            key={index}
-                            size="sm"
-                            variant={selectedMonth === index + 1 ? 'solid' : 'ghost'}
-                            colorPalette={selectedMonth === index + 1 ? 'brand' : 'gray'}
-                            onClick={() => setSelectedMonth(index + 1)}
-                          >
-                            {month.slice(0, 3)}
-                          </Button>
-                        ))}
-                      </HStack>
-                      <HStack gap={2} flexWrap="wrap" mt={2}>
-                        {monthsSecondRow.map((month, index) => (
-                          <Button
-                            key={index + 6}
-                            size="sm"
-                            variant={selectedMonth === index + 7 ? 'solid' : 'ghost'}
-                            colorPalette={selectedMonth === index + 7 ? 'brand' : 'gray'}
-                            onClick={() => setSelectedMonth(index + 7)}
-                          >
-                            {month.slice(0, 3)}
-                          </Button>
-                        ))}
-                      </HStack>
-                    </Box>
-
-                    {/* Année */}
-                    <Box flex={1}>
-                      <Text fontSize="sm" color="gray.600" mb={2}>
-                        Année
-                      </Text>
-                      <VStack gap={2}>
-                        {years.map((year) => (
-                          <Button
-                            key={year}
-                            size="sm"
-                            variant={selectedYear === year ? 'solid' : 'ghost'}
-                            colorPalette={selectedYear === year ? 'brand' : 'gray'}
-                            onClick={() => setSelectedYear(year)}
-                            width="100%"
-                          >
-                            {year}
-                          </Button>
-                        ))}
-                      </VStack>
-                    </Box>
-                  </HStack>
-                </Box>
-
-                <Separator />
-
-                {/* Bouton de génération */}
-                <Button
-                  colorPalette="brand"
-                  size="lg"
-                  onClick={handleGeneratePreview}
-                  loading={isGenerating}
-                  loadingText="Génération en cours..."
-                >
-                  Générer l'aperçu pour {MONTHS_FR[selectedMonth - 1]} {selectedYear}
-                </Button>
-              </VStack>
-            </Card.Body>
-          </Card.Root>
-
-          {/* Message d'erreur */}
-          {error && (
-            <Alert.Root status="warning">
-              <Alert.Indicator />
-              <Alert.Title>{error}</Alert.Title>
-            </Alert.Root>
-          )}
-
-          {/* Aperçu et téléchargement */}
-          {previewData && (
-            <Card.Root>
-              <Card.Header>
-                <HStack justify="space-between">
-                  <Box>
-                    <Card.Title>
-                      Récapitulatif CESU - {previewData.periodLabel}
-                    </Card.Title>
-                    <Card.Description>
-                      {previewData.totalEmployees} employé{previewData.totalEmployees > 1 ? 's' : ''} •{' '}
-                      {previewData.totalHours.toFixed(2).replace('.', ',')} heures
-                    </Card.Description>
-                  </Box>
-                  <Badge colorPalette="green" size="lg">
-                    Prêt à exporter
-                  </Badge>
-                </HStack>
-              </Card.Header>
-
-              <Card.Body>
-                <VStack gap={6} align="stretch">
-                  {/* Résumé employeur */}
-                  <Box p={4} bg="gray.50" borderRadius="md">
-                    <Text fontWeight="semibold" mb={2}>
-                      Employeur
-                    </Text>
-                    <Text>
-                      {previewData.employerFirstName} {previewData.employerLastName}
-                    </Text>
-                    <Text fontSize="sm" color="gray.600">
-                      {previewData.employerAddress}
-                    </Text>
-                    {previewData.cesuNumber && (
-                      <Text fontSize="sm" color="gray.600">
-                        N° CESU: {previewData.cesuNumber}
-                      </Text>
-                    )}
-                  </Box>
-
-                  {/* Tableau des employés */}
-                  <Box>
-                    <Text fontWeight="semibold" mb={3}>
-                      Détail par employé
-                    </Text>
-                    <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
-                      {previewData.employees.map((employee) => {
-                        const totalMajorations = employee.sundayMajoration + employee.holidayMajoration +
-                          employee.nightMajoration + employee.overtimeMajoration
-
-                        return (
-                          <Card.Root key={employee.employeeId} variant="outline">
-                            <Card.Body p={4}>
-                              <HStack justify="space-between" mb={3}>
-                                <Text fontWeight="semibold">
-                                  {employee.firstName} {employee.lastName}
-                                </Text>
-                                <Badge>{employee.contractType}</Badge>
-                              </HStack>
-
-                              <Grid templateColumns="1fr 1fr" gap={2} fontSize="sm">
-                                <Text color="gray.600">Heures totales:</Text>
-                                <Text fontWeight="medium" textAlign="right">
-                                  {employee.totalHours.toFixed(2).replace('.', ',')} h
-                                </Text>
-
-                                <Text color="gray.600">Interventions:</Text>
-                                <Text fontWeight="medium" textAlign="right">
-                                  {employee.shiftsCount}
-                                </Text>
-
-                                <Text color="gray.600">Salaire de base:</Text>
-                                <Text fontWeight="medium" textAlign="right">
-                                  {employee.basePay.toFixed(2).replace('.', ',')} €
-                                </Text>
-
-                                {totalMajorations > 0 && (
-                                  <>
-                                    <Text color="gray.600">Majorations:</Text>
-                                    <Text fontWeight="medium" textAlign="right">
-                                      {totalMajorations.toFixed(2).replace('.', ',')} €
-                                    </Text>
-                                  </>
-                                )}
-
-                                <Separator gridColumn="span 2" my={1} />
-
-                                <Text fontWeight="semibold">Total brut:</Text>
-                                <Text fontWeight="bold" textAlign="right" color="brand.600">
-                                  {employee.totalGrossPay.toFixed(2).replace('.', ',')} €
-                                </Text>
-                              </Grid>
-                            </Card.Body>
-                          </Card.Root>
-                        )
-                      })}
-                    </Grid>
-                  </Box>
-
-                  {/* Total général */}
-                  <Box p={4} bg="brand.50" borderRadius="md">
-                    <HStack justify="space-between">
+                {/* Sélection de la période */}
+                <Card.Root>
+                  <Card.Body>
+                    <VStack gap={6} align="stretch">
+                      {/* Période */}
                       <Box>
-                        <Text fontWeight="semibold">Total général</Text>
-                        <Text fontSize="sm" color="gray.600">
-                          {previewData.totalHours.toFixed(2).replace('.', ',')} heures travaillées
+                        <Text fontWeight="semibold" mb={3}>
+                          Période à déclarer
                         </Text>
+                        <HStack gap={4}>
+                          {/* Mois */}
+                          <Box flex={2}>
+                            <Text fontSize="sm" color="gray.600" mb={2}>
+                              Mois
+                            </Text>
+                            <HStack gap={2} flexWrap="wrap">
+                              {monthsFirstRow.map((month, index) => (
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant={selectedMonth === index + 1 ? 'solid' : 'ghost'}
+                                  colorPalette={selectedMonth === index + 1 ? 'brand' : 'gray'}
+                                  onClick={() => setSelectedMonth(index + 1)}
+                                >
+                                  {month.slice(0, 3)}
+                                </Button>
+                              ))}
+                            </HStack>
+                            <HStack gap={2} flexWrap="wrap" mt={2}>
+                              {monthsSecondRow.map((month, index) => (
+                                <Button
+                                  key={index + 6}
+                                  size="sm"
+                                  variant={selectedMonth === index + 7 ? 'solid' : 'ghost'}
+                                  colorPalette={selectedMonth === index + 7 ? 'brand' : 'gray'}
+                                  onClick={() => setSelectedMonth(index + 7)}
+                                >
+                                  {month.slice(0, 3)}
+                                </Button>
+                              ))}
+                            </HStack>
+                          </Box>
+
+                          {/* Année */}
+                          <Box flex={1}>
+                            <Text fontSize="sm" color="gray.600" mb={2}>
+                              Année
+                            </Text>
+                            <VStack gap={2}>
+                              {years.map((year) => (
+                                <Button
+                                  key={year}
+                                  size="sm"
+                                  variant={selectedYear === year ? 'solid' : 'ghost'}
+                                  colorPalette={selectedYear === year ? 'brand' : 'gray'}
+                                  onClick={() => setSelectedYear(year)}
+                                  width="100%"
+                                >
+                                  {year}
+                                </Button>
+                              ))}
+                            </VStack>
+                          </Box>
+                        </HStack>
                       </Box>
-                      <Text fontSize="2xl" fontWeight="bold" color="brand.600">
-                        {previewData.totalGrossPay.toFixed(2).replace('.', ',')} €
-                      </Text>
-                    </HStack>
-                  </Box>
 
-                  <Separator />
+                      <Separator />
 
-                  {/* Boutons de téléchargement */}
-                  <Box>
-                    <Text fontWeight="semibold" mb={3}>
-                      Télécharger
-                    </Text>
-                    <VStack gap={3}>
+                      {/* Bouton de génération */}
                       <Button
                         colorPalette="brand"
                         size="lg"
-                        width="100%"
-                        onClick={() => handleDownload('pdf')}
+                        onClick={handleGeneratePreview}
+                        loading={isGenerating}
+                        loadingText="Génération en cours..."
                       >
-                        Document PDF
-                        <Text fontSize="xs" ml={2} opacity={0.8}>
-                          (recommandé)
-                        </Text>
+                        Générer l'aperçu pour {MONTHS_FR[selectedMonth - 1]} {selectedYear}
                       </Button>
-                      <HStack gap={4} width="100%">
-                        <Button
-                          variant="outline"
-                          colorPalette="brand"
-                          size="lg"
-                          flex={1}
-                          onClick={() => handleDownload('csv')}
-                        >
-                          Fichier CSV
-                          <Text fontSize="xs" ml={2} opacity={0.8}>
-                            (tableur)
-                          </Text>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          colorPalette="gray"
-                          size="lg"
-                          flex={1}
-                          onClick={() => handleDownload('summary')}
-                        >
-                          Texte
-                          <Text fontSize="xs" ml={2} opacity={0.8}>
-                            (copier-coller)
-                          </Text>
-                        </Button>
-                      </HStack>
                     </VStack>
-                  </Box>
+                  </Card.Body>
+                </Card.Root>
 
-                  {/* Aide */}
-                  <Alert.Root status="info">
+                {/* Message d'erreur */}
+                {error && (
+                  <Alert.Root status="warning">
                     <Alert.Indicator />
-                    <Box>
-                      <Alert.Title>Comment déclarer ?</Alert.Title>
-                      <Alert.Description>
-                        Rendez-vous sur{' '}
-                        <Text as="span" fontWeight="semibold">cesu.urssaf.fr</Text>
-                        {' '}et utilisez le fichier CSV ou les informations du récapitulatif
-                        pour remplir votre déclaration mensuelle.
-                      </Alert.Description>
-                    </Box>
+                    <Alert.Title>{error}</Alert.Title>
                   </Alert.Root>
-                </VStack>
-              </Card.Body>
-            </Card.Root>
-          )}
+                )}
+
+                {/* Aperçu et téléchargement */}
+                {previewData && (
+                  <Card.Root>
+                    <Card.Header>
+                      <HStack justify="space-between">
+                        <Box>
+                          <Card.Title>
+                            Récapitulatif CESU - {previewData.periodLabel}
+                          </Card.Title>
+                          <Card.Description>
+                            {previewData.totalEmployees} employé{previewData.totalEmployees > 1 ? 's' : ''} •{' '}
+                            {previewData.totalHours.toFixed(2).replace('.', ',')} heures
+                          </Card.Description>
+                        </Box>
+                        <Badge colorPalette="green" size="lg">
+                          Prêt à exporter
+                        </Badge>
+                      </HStack>
+                    </Card.Header>
+
+                    <Card.Body>
+                      <VStack gap={6} align="stretch">
+                        {/* Résumé employeur */}
+                        <Box p={4} bg="gray.50" borderRadius="md">
+                          <Text fontWeight="semibold" mb={2}>
+                            Employeur
+                          </Text>
+                          <Text>
+                            {previewData.employerFirstName} {previewData.employerLastName}
+                          </Text>
+                          <Text fontSize="sm" color="gray.600">
+                            {previewData.employerAddress}
+                          </Text>
+                          {previewData.cesuNumber && (
+                            <Text fontSize="sm" color="gray.600">
+                              N° CESU: {previewData.cesuNumber}
+                            </Text>
+                          )}
+                        </Box>
+
+                        {/* Tableau des employés */}
+                        <Box>
+                          <Text fontWeight="semibold" mb={3}>
+                            Détail par employé
+                          </Text>
+                          <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
+                            {previewData.employees.map((employee) => {
+                              const totalMajorations = employee.sundayMajoration + employee.holidayMajoration +
+                                employee.nightMajoration + employee.overtimeMajoration
+
+                              return (
+                                <Card.Root key={employee.employeeId} variant="outline">
+                                  <Card.Body p={4}>
+                                    <HStack justify="space-between" mb={3}>
+                                      <Text fontWeight="semibold">
+                                        {employee.firstName} {employee.lastName}
+                                      </Text>
+                                      <Badge>{employee.contractType}</Badge>
+                                    </HStack>
+
+                                    <Grid templateColumns="1fr 1fr" gap={2} fontSize="sm">
+                                      <Text color="gray.600">Heures totales:</Text>
+                                      <Text fontWeight="medium" textAlign="right">
+                                        {employee.totalHours.toFixed(2).replace('.', ',')} h
+                                      </Text>
+
+                                      <Text color="gray.600">Interventions:</Text>
+                                      <Text fontWeight="medium" textAlign="right">
+                                        {employee.shiftsCount}
+                                      </Text>
+
+                                      <Text color="gray.600">Salaire de base:</Text>
+                                      <Text fontWeight="medium" textAlign="right">
+                                        {employee.basePay.toFixed(2).replace('.', ',')} €
+                                      </Text>
+
+                                      {totalMajorations > 0 && (
+                                        <>
+                                          <Text color="gray.600">Majorations:</Text>
+                                          <Text fontWeight="medium" textAlign="right">
+                                            {totalMajorations.toFixed(2).replace('.', ',')} €
+                                          </Text>
+                                        </>
+                                      )}
+
+                                      <Separator gridColumn="span 2" my={1} />
+
+                                      <Text fontWeight="semibold">Total brut:</Text>
+                                      <Text fontWeight="bold" textAlign="right" color="brand.600">
+                                        {employee.totalGrossPay.toFixed(2).replace('.', ',')} €
+                                      </Text>
+                                    </Grid>
+                                  </Card.Body>
+                                </Card.Root>
+                              )
+                            })}
+                          </Grid>
+                        </Box>
+
+                        {/* Total général */}
+                        <Box p={4} bg="brand.50" borderRadius="md">
+                          <HStack justify="space-between">
+                            <Box>
+                              <Text fontWeight="semibold">Total général</Text>
+                              <Text fontSize="sm" color="gray.600">
+                                {previewData.totalHours.toFixed(2).replace('.', ',')} heures travaillées
+                              </Text>
+                            </Box>
+                            <Text fontSize="2xl" fontWeight="bold" color="brand.600">
+                              {previewData.totalGrossPay.toFixed(2).replace('.', ',')} €
+                            </Text>
+                          </HStack>
+                        </Box>
+
+                        <Separator />
+
+                        {/* Boutons de téléchargement */}
+                        <Box>
+                          <Text fontWeight="semibold" mb={3}>
+                            Télécharger
+                          </Text>
+                          <VStack gap={3}>
+                            <Button
+                              colorPalette="brand"
+                              size="lg"
+                              width="100%"
+                              onClick={() => handleDownload('pdf')}
+                            >
+                              Document PDF
+                              <Text fontSize="xs" ml={2} opacity={0.8}>
+                                (recommandé)
+                              </Text>
+                            </Button>
+                            <HStack gap={4} width="100%">
+                              <Button
+                                variant="outline"
+                                colorPalette="brand"
+                                size="lg"
+                                flex={1}
+                                onClick={() => handleDownload('csv')}
+                              >
+                                Fichier CSV
+                                <Text fontSize="xs" ml={2} opacity={0.8}>
+                                  (tableur)
+                                </Text>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                colorPalette="gray"
+                                size="lg"
+                                flex={1}
+                                onClick={() => handleDownload('summary')}
+                              >
+                                Texte
+                                <Text fontSize="xs" ml={2} opacity={0.8}>
+                                  (copier-coller)
+                                </Text>
+                              </Button>
+                            </HStack>
+                          </VStack>
+                        </Box>
+
+                        {/* Aide */}
+                        <Alert.Root status="info">
+                          <Alert.Indicator />
+                          <Box>
+                            <Alert.Title>Comment déclarer ?</Alert.Title>
+                            <Alert.Description>
+                              Rendez-vous sur{' '}
+                              <Text as="span" fontWeight="semibold">cesu.urssaf.fr</Text>
+                              {' '}et utilisez le fichier CSV ou les informations du récapitulatif
+                              pour remplir votre déclaration mensuelle.
+                            </Alert.Description>
+                          </Box>
+                        </Alert.Root>
+                      </VStack>
+                    </Card.Body>
+                  </Card.Root>
+                )}
+              </VStack>
+            </Tabs.Content>
+
+            {/* Onglet Gestion des documents */}
+            <Tabs.Content value="documents" pt={6}>
+              <Card.Root>
+                <Card.Header>
+                  <Card.Title>Gestion des absences et justificatifs</Card.Title>
+                  <Card.Description>
+                    Consultez et gérez les demandes d'absence de vos employés
+                  </Card.Description>
+                </Card.Header>
+                <Card.Body>
+                  {effectiveEmployerId ? (
+                    <DocumentManagementSection employerId={effectiveEmployerId} />
+                  ) : (
+                    <Alert.Root status="warning">
+                      <Alert.Indicator />
+                      <Alert.Title>Impossible de charger les documents</Alert.Title>
+                    </Alert.Root>
+                  )}
+                </Card.Body>
+              </Card.Root>
+            </Tabs.Content>
+          </Tabs.Root>
         </VStack>
       </Container>
     </DashboardLayout>
