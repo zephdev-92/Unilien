@@ -1,10 +1,9 @@
 /**
- * Module d'export des déclarations CESU/PAJEMPLOI
+ * Module d'export des déclarations CESU
  */
 
 // Types
 export type {
-  DeclarationType,
   ExportFormat,
   EmployeeDeclarationData,
   ShiftDeclarationDetail,
@@ -20,7 +19,6 @@ export { getMonthlyDeclarationData } from './declarationService'
 
 // Générateurs
 export { generateCesuCsv, generateCesuSummary } from './cesuGenerator'
-export { generatePajemploiCsv, generatePajemploiSummary } from './pajemploiGenerator'
 
 // Fonction utilitaire pour télécharger un fichier
 export function downloadExport(result: { filename: string; content: string; mimeType: string }): void {

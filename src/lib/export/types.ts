@@ -1,9 +1,6 @@
 /**
- * Types pour l'export des déclarations CESU et PAJEMPLOI
+ * Types pour l'export des déclarations CESU
  */
-
-// Type de déclaration
-export type DeclarationType = 'cesu' | 'pajemploi'
 
 // Format d'export
 export type ExportFormat = 'csv' | 'pdf' | 'summary'
@@ -68,12 +65,10 @@ export interface MonthlyDeclarationData {
   totalEmployees: number
   // Métadonnées
   generatedAt: Date
-  declarationType: DeclarationType
 }
 
 // Options de génération
 export interface ExportOptions {
-  declarationType: DeclarationType
   format: ExportFormat
   year: number
   month: number
