@@ -11,6 +11,8 @@ import {
   addMonths,
   subMonths,
   format,
+  parseISO,
+  isValid,
 } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useAuth } from '@/hooks/useAuth'
@@ -67,11 +69,27 @@ export function PlanningPage() {
     ? profile.id
     : caregiver?.employerId
 
-  // Ouvrir le modal absence si ?action=absence dans l'URL
+  // Gérer les paramètres d'URL
   useEffect(() => {
+    // Naviguer vers une date spécifique si ?date=YYYY-MM-DD dans l'URL
+    const dateParam = searchParams.get('date')
+    if (dateParam) {
+      const parsedDate = parseISO(dateParam)
+      if (isValid(parsedDate)) {
+        setCurrentDate(parsedDate)
+      }
+      // Nettoyer le paramètre date de l'URL après navigation
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('date')
+      setSearchParams(newParams, { replace: true })
+    }
+
+    // Ouvrir le modal absence si ?action=absence dans l'URL
     if (searchParams.get('action') === 'absence' && profile?.role === 'employee') {
       setIsAbsenceRequestModalOpen(true)
-      setSearchParams({}) // Nettoyer l'URL
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('action')
+      setSearchParams(newParams, { replace: true })
     }
   }, [searchParams, profile?.role, setSearchParams])
 
