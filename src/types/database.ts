@@ -49,7 +49,6 @@ export interface EmployerDbRow {
   profile_id: string
   address: AddressDb | null
   cesu_number: string | null
-  pajemploi_number: string | null
 }
 
 export interface AddressDb {

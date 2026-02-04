@@ -26,11 +26,8 @@ import {
   getMonthlyDeclarationData,
   generateCesuCsv,
   generateCesuSummary,
-  generatePajemploiCsv,
-  generatePajemploiSummary,
   downloadExport,
   MONTHS_FR,
-  type DeclarationType,
   type ExportFormat,
   type MonthlyDeclarationData,
 } from '@/lib/export'
@@ -41,7 +38,6 @@ export function DocumentsPage() {
   const { profile, isLoading: authLoading } = useAuth()
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [declarationType, setDeclarationType] = useState<DeclarationType>('cesu')
   const [isGenerating, setIsGenerating] = useState(false)
   const [previewData, setPreviewData] = useState<MonthlyDeclarationData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -104,7 +100,6 @@ export function DocumentsPage() {
 
     try {
       const data = await getMonthlyDeclarationData(effectiveEmployerId, {
-        declarationType,
         format: 'summary',
         year: selectedYear,
         month: selectedMonth,
@@ -133,12 +128,7 @@ export function DocumentsPage() {
   const handleDownload = (format: ExportFormat) => {
     if (!previewData) return
 
-    let result
-    if (declarationType === 'cesu') {
-      result = format === 'csv' ? generateCesuCsv(previewData) : generateCesuSummary(previewData)
-    } else {
-      result = format === 'csv' ? generatePajemploiCsv(previewData) : generatePajemploiSummary(previewData)
-    }
+    const result = format === 'csv' ? generateCesuCsv(previewData) : generateCesuSummary(previewData)
 
     if (result.success) {
       downloadExport(result)
@@ -157,7 +147,7 @@ export function DocumentsPage() {
               Documents et Déclarations
             </Heading>
             <Text color="gray.600">
-              Générez les fichiers pour vos déclarations CESU ou PAJEMPLOI
+              Générez les fichiers pour vos déclarations CESU
             </Text>
           </Box>
 
@@ -165,45 +155,6 @@ export function DocumentsPage() {
           <Card.Root>
             <Card.Body>
               <VStack gap={6} align="stretch">
-                {/* Type de déclaration */}
-                <Box>
-                  <Text fontWeight="semibold" mb={3}>
-                    Type de déclaration
-                  </Text>
-                  <HStack gap={4}>
-                    <Button
-                      variant={declarationType === 'cesu' ? 'solid' : 'outline'}
-                      colorPalette={declarationType === 'cesu' ? 'brand' : 'gray'}
-                      onClick={() => setDeclarationType('cesu')}
-                      size="lg"
-                      flex={1}
-                    >
-                      <VStack gap={1}>
-                        <Text fontWeight="bold">CESU</Text>
-                        <Text fontSize="xs" color={declarationType === 'cesu' ? 'white' : 'gray.500'}>
-                          Chèque Emploi Service Universel
-                        </Text>
-                      </VStack>
-                    </Button>
-                    <Button
-                      variant={declarationType === 'pajemploi' ? 'solid' : 'outline'}
-                      colorPalette={declarationType === 'pajemploi' ? 'brand' : 'gray'}
-                      onClick={() => setDeclarationType('pajemploi')}
-                      size="lg"
-                      flex={1}
-                    >
-                      <VStack gap={1}>
-                        <Text fontWeight="bold">PAJEMPLOI</Text>
-                        <Text fontSize="xs" color={declarationType === 'pajemploi' ? 'white' : 'gray.500'}>
-                          Garde d'enfants à domicile
-                        </Text>
-                      </VStack>
-                    </Button>
-                  </HStack>
-                </Box>
-
-                <Separator />
-
                 {/* Période */}
                 <Box>
                   <Text fontWeight="semibold" mb={3}>
@@ -297,7 +248,7 @@ export function DocumentsPage() {
                 <HStack justify="space-between">
                   <Box>
                     <Card.Title>
-                      Récapitulatif {declarationType.toUpperCase()} - {previewData.periodLabel}
+                      Récapitulatif CESU - {previewData.periodLabel}
                     </Card.Title>
                     <Card.Description>
                       {previewData.totalEmployees} employé{previewData.totalEmployees > 1 ? 's' : ''} •{' '}
@@ -444,20 +395,10 @@ export function DocumentsPage() {
                     <Box>
                       <Alert.Title>Comment déclarer ?</Alert.Title>
                       <Alert.Description>
-                        {declarationType === 'cesu' ? (
-                          <>
-                            Rendez-vous sur{' '}
-                            <Text as="span" fontWeight="semibold">cesu.urssaf.fr</Text>
-                            {' '}et utilisez le fichier CSV ou les informations du récapitulatif
-                            pour remplir votre déclaration mensuelle.
-                          </>
-                        ) : (
-                          <>
-                            Rendez-vous sur{' '}
-                            <Text as="span" fontWeight="semibold">pajemploi.urssaf.fr</Text>
-                            {' '}pour déclarer les heures de votre salarié(e).
-                          </>
-                        )}
+                        Rendez-vous sur{' '}
+                        <Text as="span" fontWeight="semibold">cesu.urssaf.fr</Text>
+                        {' '}et utilisez le fichier CSV ou les informations du récapitulatif
+                        pour remplir votre déclaration mensuelle.
                       </Alert.Description>
                     </Box>
                   </Alert.Root>

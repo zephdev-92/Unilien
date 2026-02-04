@@ -121,7 +121,7 @@ function App() {
       {/* Conformité - gère sa propre protection et layout */}
       <Route path="/compliance" element={<CompliancePage />} />
 
-      {/* Documents - Export CESU/PAJEMPLOI */}
+      {/* Documents - Export CESU */}
       <Route path="/documents" element={<DocumentsPage />} />
 
       {/* Redirection par défaut pour les routes inconnues */}

@@ -1,6 +1,6 @@
 /**
  * Service de génération des données de déclaration
- * Agrège les données des interventions pour les déclarations CESU/PAJEMPLOI
+ * Agrège les données des interventions pour les déclarations CESU
  */
 
 import { supabase } from '@/lib/supabase/client'
@@ -49,7 +49,7 @@ export async function getMonthlyDeclarationData(
   employerId: string,
   options: ExportOptions
 ): Promise<MonthlyDeclarationData | null> {
-  const { year, month, declarationType, employeeIds } = options
+  const { year, month, employeeIds } = options
 
   // Dates de la période
   const startDate = startOfMonth(new Date(year, month - 1))
@@ -98,7 +98,6 @@ export async function getMonthlyDeclarationData(
     totalGrossPay: Math.round(totalGrossPay * 100) / 100,
     totalEmployees: employees.length,
     generatedAt: new Date(),
-    declarationType,
   }
 }
 
