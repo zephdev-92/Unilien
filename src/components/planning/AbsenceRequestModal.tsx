@@ -7,6 +7,7 @@ import {
   Flex,
   Text,
   Textarea,
+  Checkbox,
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -72,6 +73,7 @@ export function AbsenceRequestModal({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [justificationFile, setJustificationFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [isSingleDay, setIsSingleDay] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
@@ -79,6 +81,8 @@ export function AbsenceRequestModal({
     handleSubmit,
     reset,
     control,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<AbsenceFormData>({
     resolver: zodResolver(absenceSchema),
@@ -92,6 +96,14 @@ export function AbsenceRequestModal({
 
   const selectedAbsenceType = useWatch({ control, name: 'absenceType' })
   const isSickLeave = selectedAbsenceType === 'sick'
+  const startDateValue = watch('startDate')
+
+  // Synchroniser la date de fin avec la date de début quand "Toute la journée" est coché
+  useEffect(() => {
+    if (isSingleDay && startDateValue) {
+      setValue('endDate', startDateValue)
+    }
+  }, [isSingleDay, startDateValue, setValue])
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -133,6 +145,7 @@ export function AbsenceRequestModal({
       setSubmitError(null)
       setJustificationFile(null)
       setFileError(null)
+      setIsSingleDay(true)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -226,26 +239,43 @@ export function AbsenceRequestModal({
                     {...register('absenceType')}
                   />
 
-                  <Flex gap={4}>
-                    <Box flex={1}>
-                      <AccessibleInput
-                        label="Date de début"
-                        type="date"
-                        error={errors.startDate?.message}
-                        required
-                        {...register('startDate')}
-                      />
-                    </Box>
-                    <Box flex={1}>
-                      <AccessibleInput
-                        label="Date de fin"
-                        type="date"
-                        error={errors.endDate?.message}
-                        required
-                        {...register('endDate')}
-                      />
-                    </Box>
-                  </Flex>
+                  <Box>
+                    <Flex gap={4} mb={3}>
+                      <Box flex={1}>
+                        <AccessibleInput
+                          label={isSingleDay ? "Date" : "Date de début"}
+                          type="date"
+                          error={errors.startDate?.message}
+                          required
+                          {...register('startDate')}
+                        />
+                      </Box>
+                      {!isSingleDay && (
+                        <Box flex={1}>
+                          <AccessibleInput
+                            label="Date de fin"
+                            type="date"
+                            error={errors.endDate?.message}
+                            required
+                            {...register('endDate')}
+                          />
+                        </Box>
+                      )}
+                    </Flex>
+                    <Checkbox.Root
+                      checked={isSingleDay}
+                      onCheckedChange={(e) => setIsSingleDay(!!e.checked)}
+                      colorPalette="blue"
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control>
+                        <Checkbox.Indicator />
+                      </Checkbox.Control>
+                      <Checkbox.Label>
+                        <Text fontSize="sm">Toute la journée (une seule date)</Text>
+                      </Checkbox.Label>
+                    </Checkbox.Root>
+                  </Box>
 
                   <Box>
                     <Text fontWeight="medium" fontSize="md" mb={2}>
