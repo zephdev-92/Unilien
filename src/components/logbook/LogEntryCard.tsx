@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Box, Flex, Text, Badge, Stack } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
-import { sanitizeText } from '@/lib/sanitize'
 import type { LogEntryWithAuthor } from '@/services/logbookService'
 
 interface LogEntryCardProps {
@@ -72,11 +71,10 @@ export function LogEntryCard({
 
   const isUnread = !entry.readBy.includes(currentUserId)
   const isAuthor = entry.authorId === currentUserId
-  const sanitizedContent = sanitizeText(entry.content)
-  const shouldTruncate = sanitizedContent.length > CONTENT_TRUNCATE_LENGTH
+  const shouldTruncate = entry.content.length > CONTENT_TRUNCATE_LENGTH
   const displayContent = isExpanded || !shouldTruncate
-    ? sanitizedContent
-    : sanitizedContent.slice(0, CONTENT_TRUNCATE_LENGTH) + '...'
+    ? entry.content
+    : entry.content.slice(0, CONTENT_TRUNCATE_LENGTH) + '...'
 
   const authorName = entry.author
     ? `${entry.author.firstName} ${entry.author.lastName}`

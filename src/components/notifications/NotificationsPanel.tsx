@@ -13,7 +13,6 @@ import {
 } from '@chakra-ui/react'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { sanitizeText } from '@/lib/sanitize'
 import type { Notification, NotificationType, NotificationPriority } from '@/types'
 
 // ============================================
@@ -180,7 +179,7 @@ function NotificationItem({
             cursor={notification.actionUrl ? 'pointer' : 'default'}
             onClick={notification.actionUrl ? onClick : undefined}
           >
-            {sanitizeText(notification.message)}
+            {notification.message}
           </Text>
 
           <Text fontSize="xs" color="gray.500" mt={1}>
