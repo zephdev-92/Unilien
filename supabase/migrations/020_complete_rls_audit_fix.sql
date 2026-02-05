@@ -53,6 +53,26 @@ CREATE POLICY "Caregivers can read linked employer"
     )
   );
 
+-- Tutors/Curators can update employer data (legal authority)
+CREATE POLICY "Tutors and curators can update employer"
+  ON employers FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = employers.profile_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = employers.profile_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
 -- ============================================
 -- 2. EMPLOYEES TABLE - Enable RLS
 -- ============================================
@@ -84,6 +104,19 @@ CREATE POLICY "Employers can read employees for active contracts"
       WHERE contracts.employee_id = employees.profile_id
         AND contracts.employer_id = auth.uid()
         AND contracts.status = 'active'
+    )
+  );
+
+-- Tutors/Curators can read employees of their ward
+CREATE POLICY "Tutors can read employees"
+  ON employees FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      JOIN contracts ON contracts.employer_id = caregivers.employer_id
+      WHERE contracts.employee_id = employees.profile_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
     )
   );
 
@@ -128,6 +161,51 @@ CREATE POLICY "Caregivers can read employer contracts"
       WHERE caregivers.employer_id = contracts.employer_id
         AND caregivers.profile_id = auth.uid()
         AND caregivers.permissions->>'view_planning' = 'true'
+    )
+  );
+
+-- Tutors/Curators can fully manage contracts (legal authority)
+CREATE POLICY "Tutors can read contracts"
+  ON contracts FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = contracts.employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can create contracts"
+  ON contracts FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can update contracts"
+  ON contracts FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = contracts.employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can delete contracts"
+  ON contracts FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = contracts.employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
     )
   );
 
@@ -229,6 +307,55 @@ CREATE POLICY "Caregivers can read shifts"
     )
   );
 
+-- Tutors/Curators can fully manage shifts (legal authority)
+CREATE POLICY "Tutors can read shifts"
+  ON shifts FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM contracts
+      JOIN caregivers ON caregivers.employer_id = contracts.employer_id
+      WHERE contracts.id = shifts.contract_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can create shifts"
+  ON shifts FOR INSERT
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM contracts
+      JOIN caregivers ON caregivers.employer_id = contracts.employer_id
+      WHERE contracts.id = contract_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can update shifts"
+  ON shifts FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM contracts
+      JOIN caregivers ON caregivers.employer_id = contracts.employer_id
+      WHERE contracts.id = shifts.contract_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can delete shifts"
+  ON shifts FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM contracts
+      JOIN caregivers ON caregivers.employer_id = contracts.employer_id
+      WHERE contracts.id = shifts.contract_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
 -- ============================================
 -- 5. ABSENCES TABLE - Complete RLS
 -- ============================================
@@ -281,6 +408,31 @@ CREATE POLICY "Employers can update absence status"
 CREATE POLICY "Employees can delete own pending absences"
   ON absences FOR DELETE
   USING (auth.uid() = employee_id AND status = 'pending');
+
+-- Tutors/Curators can read and manage absences (legal authority)
+CREATE POLICY "Tutors can read absences"
+  ON absences FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM contracts
+      JOIN caregivers ON caregivers.employer_id = contracts.employer_id
+      WHERE contracts.employee_id = absences.employee_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can update absences"
+  ON absences FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM contracts
+      JOIN caregivers ON caregivers.employer_id = contracts.employer_id
+      WHERE contracts.employee_id = absences.employee_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
 
 -- ============================================
 -- 6. LOG_ENTRIES TABLE - Enable RLS
@@ -362,6 +514,52 @@ CREATE POLICY "Authors can delete own log entries"
   ON log_entries FOR DELETE
   USING (auth.uid() = author_id);
 
+-- Tutors/Curators have full access to log entries (legal authority)
+CREATE POLICY "Tutors can read log entries"
+  ON log_entries FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = log_entries.employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can create log entries"
+  ON log_entries FOR INSERT
+  WITH CHECK (
+    auth.uid() = author_id
+    AND EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can update log entries"
+  ON log_entries FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = log_entries.employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+CREATE POLICY "Tutors can delete log entries"
+  ON log_entries FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.employer_id = log_entries.employer_id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
 -- ============================================
 -- 7. PROFILES TABLE - Restrict SELECT
 -- ============================================
@@ -427,6 +625,30 @@ CREATE POLICY "Employers can search profiles by email"
     EXISTS (SELECT 1 FROM employers WHERE employers.profile_id = auth.uid())
   );
 
+-- Tutors/Curators can read profiles of employees working for their ward
+CREATE POLICY "Tutors can read employee profiles"
+  ON profiles FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      JOIN contracts ON contracts.employer_id = caregivers.employer_id
+      WHERE contracts.employee_id = profiles.id
+        AND caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
+-- Tutors/Curators can search profiles (like employers)
+CREATE POLICY "Tutors can search profiles by email"
+  ON profiles FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM caregivers
+      WHERE caregivers.profile_id = auth.uid()
+        AND caregivers.legal_status IN ('tutor', 'curator')
+    )
+  );
+
 -- ============================================
 -- 8. STORAGE - Remove public access to justifications
 -- ============================================
@@ -445,10 +667,31 @@ BEGIN
   ) THEN
     DROP POLICY "Public read access for justifications" ON storage.objects;
   END IF;
+
+  -- Add policy for tutors/curators to read justifications
+  -- They have legal authority to access medical documents
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'objects'
+    AND schemaname = 'storage'
+    AND policyname = 'Tutors can read justifications'
+  ) THEN
+    CREATE POLICY "Tutors can read justifications" ON storage.objects
+    FOR SELECT USING (
+      bucket_id = 'justifications'
+      AND EXISTS (
+        SELECT 1 FROM caregivers
+        JOIN contracts ON contracts.employer_id = caregivers.employer_id
+        WHERE contracts.employee_id::text = (storage.foldername(name))[1]
+          AND caregivers.profile_id = auth.uid()
+          AND caregivers.legal_status IN ('tutor', 'curator')
+      )
+    );
+  END IF;
 EXCEPTION
   WHEN OTHERS THEN
     -- Policy might not exist or we don't have permission
-    RAISE NOTICE 'Could not drop public read policy: %', SQLERRM;
+    RAISE NOTICE 'Storage policy error: %', SQLERRM;
 END $$;
 
 -- ============================================
@@ -471,3 +714,11 @@ COMMENT ON POLICY "Employers can update absence status" ON absences IS 'Employer
 
 COMMENT ON POLICY "Caregivers can read log entries" ON log_entries IS 'Caregivers with view_logbook permission can read the logbook';
 COMMENT ON POLICY "Caregivers can create log entries" ON log_entries IS 'Caregivers with write_logbook permission can add entries';
+
+-- Tutor/Curator comments
+COMMENT ON POLICY "Tutors and curators can update employer" ON employers IS 'Legal representatives (tutors/curators) can manage employer data';
+COMMENT ON POLICY "Tutors can read contracts" ON contracts IS 'Legal representatives have full access to contracts';
+COMMENT ON POLICY "Tutors can create contracts" ON contracts IS 'Legal representatives can create contracts on behalf of their ward';
+COMMENT ON POLICY "Tutors can read shifts" ON shifts IS 'Legal representatives have full access to shifts';
+COMMENT ON POLICY "Tutors can read absences" ON absences IS 'Legal representatives can view and manage absences';
+COMMENT ON POLICY "Tutors can read log entries" ON log_entries IS 'Legal representatives have full access to logbook';
