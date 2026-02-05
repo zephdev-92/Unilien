@@ -46,13 +46,12 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false)
   const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
-  const [showBanner, setShowBanner] = useState(true)
-
-  // Vérifier si le bandeau est visible au chargement
-  useEffect(() => {
+  
+  // Initialiser showBanner directement depuis localStorage
+  const [showBanner, setShowBanner] = useState(() => {
     const isDismissed = localStorage.getItem('unilien_dev_banner_dismissed')
-    setShowBanner(!isDismissed)
-  }, [])
+    return !isDismissed
+  })
 
   // Charger les permissions de l'aidant
   useEffect(() => {

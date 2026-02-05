@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Box, Flex, Text, Link, IconButton } from '@chakra-ui/react'
 
 interface DevelopmentBannerProps {
@@ -13,15 +13,11 @@ interface DevelopmentBannerProps {
  * Peut être fermé par l'utilisateur et ne réapparaît pas ensuite (localStorage)
  */
 export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed', onDismiss }: DevelopmentBannerProps) {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    // Vérifier si le bandeau a déjà été fermé
+  // Initialiser isVisible directement depuis localStorage
+  const [isVisible, setIsVisible] = useState(() => {
     const isDismissed = localStorage.getItem(storageKey)
-    if (!isDismissed) {
-      setIsVisible(true)
-    }
-  }, [storageKey])
+    return !isDismissed
+  })
 
   const handleDismiss = () => {
     localStorage.setItem(storageKey, 'true')
