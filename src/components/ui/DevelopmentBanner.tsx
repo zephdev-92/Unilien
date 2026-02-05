@@ -60,7 +60,7 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
             <Text fontSize="sm" color="orange.800">
               Nous travaillons activement sur Unilien. Vos retours sont précieux !{' '}
               <Link
-                href="https://airtable.com/invite/l?inviteId=invV4a4jDNkNNtEV2&inviteToken=4e81236d51b20c1ae3753617ad54269e90d82a40eae96781197bdd5f80556238&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts"
+                href="https://airtable.com/apphPLBwuWxsAq75J/pag4GuwcKDs4nw1C6/form"
                 target="_blank"
                 rel="noopener noreferrer"
                 color="orange.700"
