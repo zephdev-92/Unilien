@@ -17,9 +17,19 @@ END;
 $$;
 
 -- ============================================
--- 2. FIX/CREATE is_employee FUNCTION
+-- 2. FIX is_employee FUNCTION
 -- ============================================
 
+-- Drop existing function(s) to avoid ambiguity, then recreate with search_path
+-- Note: There may be multiple overloads, we handle the common signatures
+
+-- Drop if exists with uuid parameter
+DROP FUNCTION IF EXISTS is_employee(uuid);
+
+-- Drop if exists with no parameters
+DROP FUNCTION IF EXISTS is_employee();
+
+-- Recreate: version with employer_id parameter
 -- This function checks if current user is an employee of a given employer
 -- Used in RLS policies
 CREATE OR REPLACE FUNCTION is_employee(employer_uuid uuid)
@@ -39,7 +49,26 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION is_employee IS 'Checks if current user is an active employee of the given employer';
+-- Recreate: version without parameters (checks if current user is any employee)
+-- This may be used in simpler RLS policies
+CREATE OR REPLACE FUNCTION is_employee()
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid()
+      AND profiles.role = 'employee'
+  );
+END;
+$$;
+
+COMMENT ON FUNCTION is_employee(uuid) IS 'Checks if current user is an active employee of the given employer';
+COMMENT ON FUNCTION is_employee() IS 'Checks if current user has employee role';
 
 -- ============================================
 -- 3. FIX file_upload_audit RLS POLICY
