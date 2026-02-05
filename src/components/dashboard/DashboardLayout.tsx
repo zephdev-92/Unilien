@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, DevelopmentBanner } from '@/components/ui'
 import { NotificationBell, NotificationsPanel } from '@/components/notifications'
 import { getCaregiver } from '@/services/caregiverService'
 
@@ -46,6 +46,13 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false)
   const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
+  const [showBanner, setShowBanner] = useState(true)
+
+  // Vérifier si le bandeau est visible au chargement
+  useEffect(() => {
+    const isDismissed = localStorage.getItem('unilien_dev_banner_dismissed')
+    setShowBanner(!isDismissed)
+  }, [])
 
   // Charger les permissions de l'aidant
   useEffect(() => {
@@ -88,6 +95,9 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
 
   return (
     <Box minH="100vh" bg="gray.50">
+      {/* Development Banner */}
+      <DevelopmentBanner onDismiss={() => setShowBanner(false)} />
+
       {/* Skip link */}
       <a
         href="#main-content"
@@ -100,7 +110,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
           padding: '8px 16px',
           zIndex: 9999,
         }}
-        onFocus={(e) => (e.currentTarget.style.top = '0')}
+        onFocus={(e) => (e.currentTarget.style.top = showBanner ? '80px' : '0')}
         onBlur={(e) => (e.currentTarget.style.top = '-40px')}
       >
         Aller au contenu principal
@@ -110,7 +120,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
       <Box
         as="header"
         position="fixed"
-        top={0}
+        top={showBanner ? '80px' : 0}
         left={0}
         right={0}
         h="64px"
@@ -197,7 +207,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         aria-label="Navigation principale"
         position="fixed"
         left={0}
-        top="64px"
+        top={showBanner ? 'calc(80px + 64px)' : '64px'}
         bottom={0}
         w={{ base: isSidebarOpen ? '240px' : '0', md: '240px' }}
         bg="white"
@@ -278,7 +288,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         <Box
           position="fixed"
           inset={0}
-          top="64px"
+          top={showBanner ? 'calc(80px + 64px)' : '64px'}
           bg="blackAlpha.600"
           zIndex={80}
           display={{ base: 'block', md: 'none' }}
@@ -292,9 +302,9 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         as="main"
         id="main-content"
         ml={{ base: 0, md: '240px' }}
-        mt="64px"
+        mt={showBanner ? 'calc(80px + 64px)' : '64px'}
         p={{ base: 4, md: 6 }}
-        minH="calc(100vh - 64px)"
+        minH={showBanner ? 'calc(100vh - 80px - 64px)' : 'calc(100vh - 64px)'}
       >
         {children}
       </Box>
