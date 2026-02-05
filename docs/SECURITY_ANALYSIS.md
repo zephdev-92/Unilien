@@ -31,6 +31,11 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 ### Audit & Traçabilité
 - **Audit des uploads** : table `file_upload_audit` pour tracer tous les uploads de fichiers (justificatifs, avatars).【F:supabase/migrations/013_add_backend_validation.sql】
 
+### Row Level Security (RLS)
+- **Toutes les tables protégées** : RLS activé sur toutes les tables sensibles avec policies basées sur les relations utilisateurs.【F:supabase/migrations/020_complete_rls_audit_fix.sql】
+- **Logique métier respectée** : employés voient les données handicap de leur employeur (nécessaire pour les soins), aidants ont accès selon leurs permissions.
+- **Tuteurs/Curateurs** : accès complet aux données de leur protégé (autorité légale).
+
 ---
 
 ## Points de vigilance
@@ -53,19 +58,19 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | Tokens JWT | Mémoire (Supabase SDK) | Moyen | Non persisté dans localStorage |
 | Profil utilisateur | localStorage | Faible | Pas de données médicales/bancaires |
 | Mot de passe | Jamais stocké | - | Hashé côté Supabase Auth + HIBP |
-| Numéro CESU | Base Supabase | Moyen | Nécessite RLS strict |
-| Données handicap | Base Supabase | Élevé | Nécessite RLS strict + chiffrement |
-| Messages liaison | Base Supabase | Moyen | RLS par employer_id |
+| Numéro CESU | Base Supabase | Moyen | RLS strict ✅ |
+| Données handicap | Base Supabase | Élevé | RLS strict ✅ (accès employés/aidants autorisés) |
+| Messages liaison | Base Supabase | Moyen | RLS par employer_id ✅ |
 
 ---
 
 ## Recommandations prioritaires
 
-### P0 - Critique
-1. **Audit et durcissement RLS Supabase**
-   - Valider que toutes les tables sensibles (`profiles`, `employers`, `notifications`, `liaison_messages`) ont des policies RLS strictes
-   - Vérifier que les notifications ne sont accessibles qu'à leurs destinataires
-   - Tester les policies avec différents rôles
+### ~~P0 - Critique~~ ✅ FAIT
+~~1. **Audit et durcissement RLS Supabase**~~
+   - ~~Valider que toutes les tables sensibles ont des policies RLS strictes~~
+   - ~~Vérifier que les notifications ne sont accessibles qu'à leurs destinataires~~
+   - ~~Tester les policies avec différents rôles~~
 
 ### P1 - Important
 2. **Centraliser et filtrer les logs en production**
@@ -91,7 +96,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ## Travail effectué
 
-### Migrations de sécurité (013-019)
+### Migrations de sécurité (013-020)
 
 | Migration | Description |
 |-----------|-------------|
@@ -102,6 +107,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | 017 | Fix `handle_new_user()` search_path |
 | 018 | Fix `is_employer()` search_path |
 | 019 | Drop `test_auth_context()` (fonction debug) |
+| **020** | **Audit RLS complet - sécurisation de toutes les tables** |
 
 ### Warnings Supabase corrigés
 
@@ -110,6 +116,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | Function search_path mutable | ✅ Corrigé (toutes les fonctions) |
 | Leaked password protection disabled | ✅ Activé (HIBP) |
 | RLS policy always true | ✅ Corrigé (file_upload_audit) |
+| Tables without RLS | ✅ Corrigé (migration 020) |
 
 ---
 
@@ -117,31 +124,47 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 | Table | SELECT | INSERT | UPDATE | DELETE | Vérifié |
 |-------|--------|--------|--------|--------|---------|
-| profiles | ✅ own | ✅ own | ✅ own | ❌ | ⬜ |
-| employers | ✅ own | ✅ own | ✅ own | ❌ | ⬜ |
-| employees | ✅ own | ✅ own | ✅ own | ❌ | ⬜ |
-| contracts | ✅ parties | ✅ employer | ✅ employer | ❌ | ⬜ |
-| shifts | ✅ parties | ✅ employer | ✅ parties | ✅ employer | ⬜ |
-| notifications | ✅ own | ✅ system | ✅ own (read) | ❌ | ⬜ |
-| liaison_messages | ✅ team | ✅ team | ✅ author | ❌ | ⬜ |
-| logbook_entries | ✅ team | ✅ team | ✅ author | ❌ | ⬜ |
+| profiles | ✅ own + relations | ✅ own | ✅ own | ❌ | ✅ |
+| employers | ✅ own + employés + aidants | ✅ own | ✅ own + tuteurs | ❌ | ✅ |
+| employees | ✅ own + employeurs | ✅ own | ✅ own | ❌ | ✅ |
+| contracts | ✅ parties + aidants | ✅ employer + tuteurs | ✅ employer + tuteurs | ✅ employer + tuteurs | ✅ |
+| shifts | ✅ parties + aidants | ✅ parties + tuteurs | ✅ parties + tuteurs | ✅ employer + tuteurs | ✅ |
+| absences | ✅ employee + employer + tuteurs | ✅ employee | ✅ employee (pending) + employer + tuteurs | ✅ employee (pending) | ✅ |
+| notifications | ✅ own | ✅ system | ✅ own (read) | ✅ own | ✅ |
+| liaison_messages | ✅ team | ✅ team | ✅ author | ✅ author | ✅ |
+| log_entries | ✅ team + aidants + tuteurs | ✅ team + aidants + tuteurs | ✅ author + employer + tuteurs | ✅ author + tuteurs | ✅ |
+| caregivers | ✅ employer + own | ✅ employer | ✅ employer + own (profile) | ✅ employer | ✅ |
+| push_subscriptions | ✅ own | ✅ own | ✅ own | ✅ own | ✅ |
+| notification_preferences | ✅ own | ✅ own | ✅ own | ✅ own | ✅ |
 | file_upload_audit | ✅ own | ✅ trigger only | ❌ | ❌ | ✅ |
+| storage (justifications) | ✅ own + employer + tuteurs | ✅ own folder | ❌ | ❌ | ✅ |
+
+### Légende accès
+- **own** : l'utilisateur accède à ses propres données
+- **parties** : les deux parties d'un contrat (employeur + employé)
+- **team** : employeur + employés avec contrat actif + aidants avec permission
+- **aidants** : aidants avec permissions spécifiques (view_planning, view_logbook, etc.)
+- **tuteurs** : tuteurs/curateurs (autorité légale complète)
+- **employer** : uniquement l'employeur
 
 ---
 
 ## Conclusion
 
-Le front-end présente de bons fondamentaux de sécurité :
-- Gestion de session robuste
-- Validation côté client ET serveur
-- Segmentation par rôle
-- Protection des uploads
-- Protection XSS native via React
-- Protection mots de passe compromis (HIBP)
+Le projet présente maintenant de solides fondamentaux de sécurité :
+- ✅ Gestion de session robuste
+- ✅ Validation côté client ET serveur
+- ✅ Segmentation par rôle
+- ✅ Protection des uploads
+- ✅ Protection XSS native via React
+- ✅ Protection mots de passe compromis (HIBP)
+- ✅ **RLS complet sur toutes les tables**
+- ✅ **Logique métier respectée (employés, aidants, tuteurs)**
 
-La sécurité effective repose sur :
-1. **Les policies RLS Supabase** (à auditer)
-2. **Le logging maîtrisé** (à améliorer)
-3. **Le chiffrement des données sensibles** (à envisager)
+Reste à faire :
+1. **Le logging maîtrisé** (P1 - à améliorer)
+2. **Le chiffrement des données sensibles** (P2 - à envisager)
+3. **Rate limiting** (P2)
+4. **Headers de sécurité** (P2)
 
-Le risque principal réside dans les données de santé (`handicap_type`, `specific_needs`) qui nécessitent une attention particulière en termes de conformité RGPD et protection renforcée.
+Le risque principal réside dans les données de santé (`handicap_type`, `specific_needs`) qui nécessitent une attention particulière en termes de conformité RGPD. Le chiffrement via `pgsodium` est recommandé pour une protection renforcée.
