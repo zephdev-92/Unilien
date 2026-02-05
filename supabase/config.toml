@@ -60,6 +60,11 @@ enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
+# Enable leaked password protection via HaveIBeenPwned.org
+# Prevents users from using passwords that have been exposed in data breaches
+enable_hibp = true
+# Minimum password length (default: 6, recommended: 8+)
+min_password_length = 8
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
