@@ -20,6 +20,7 @@ import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compl
 import { updateShift, deleteShift, validateShift, getShifts } from '@/services/shiftService'
 import { getContractById } from '@/services/contractService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
+import { sanitizeText } from '@/lib/sanitize'
 import type { Shift, UserRole, Contract } from '@/types'
 import type { ShiftForValidation } from '@/lib/compliance'
 
@@ -524,7 +525,7 @@ export function ShiftDetailModal({
                         {shift.tasks.map((task, index) => (
                           <Flex key={index} align="center" gap={2}>
                             <Box w="6px" h="6px" borderRadius="full" bg="brand.500" />
-                            <Text fontSize="md">{task}</Text>
+                            <Text fontSize="md">{sanitizeText(task)}</Text>
                           </Flex>
                         ))}
                       </Stack>
@@ -538,7 +539,7 @@ export function ShiftDetailModal({
                         Notes
                       </Text>
                       <Text fontSize="md" whiteSpace="pre-wrap">
-                        {shift.notes}
+                        {sanitizeText(shift.notes)}
                       </Text>
                     </Box>
                   )}

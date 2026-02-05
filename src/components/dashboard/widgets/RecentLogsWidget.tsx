@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Box, Stack, Flex, Text, Badge, Spinner } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { AccessibleButton } from '@/components/ui'
+import { sanitizeText } from '@/lib/sanitize'
 import { getRecentLogEntries, type LogEntryWithAuthor } from '@/services/logbookService'
 import type { LogEntry } from '@/types'
 
@@ -144,7 +145,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
                 </Text>
               </Flex>
               <Text fontSize="sm" color="gray.700" lineClamp={2}>
-                {log.content}
+                {sanitizeText(log.content)}
               </Text>
               <Text fontSize="xs" color="gray.500" mt={2}>
                 Par {log.author ? `${log.author.firstName} ${log.author.lastName}` : authorRoleLabels[log.authorRole]}
