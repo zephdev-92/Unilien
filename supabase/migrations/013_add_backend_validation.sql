@@ -153,6 +153,7 @@ CREATE OR REPLACE FUNCTION is_valid_email(email text)
 RETURNS boolean
 LANGUAGE plpgsql
 IMMUTABLE
+SET search_path = public
 AS $$
 BEGIN
   RETURN email ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$';
@@ -168,6 +169,7 @@ CREATE OR REPLACE FUNCTION is_valid_french_phone(phone text)
 RETURNS boolean
 LANGUAGE plpgsql
 IMMUTABLE
+SET search_path = public
 AS $$
 BEGIN
   -- Remove spaces and dots for validation
@@ -184,6 +186,7 @@ CREATE OR REPLACE FUNCTION normalize_french_phone(phone text)
 RETURNS text
 LANGUAGE plpgsql
 IMMUTABLE
+SET search_path = public
 AS $$
 BEGIN
   IF phone IS NULL THEN
@@ -200,6 +203,7 @@ $$;
 CREATE OR REPLACE FUNCTION normalize_profile_phone()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 BEGIN
   IF NEW.phone IS NOT NULL THEN
