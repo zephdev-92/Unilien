@@ -32,7 +32,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 - **Audit des uploads** : table `file_upload_audit` pour tracer tous les uploads de fichiers (justificatifs, avatars).【F:supabase/migrations/013_add_backend_validation.sql】
 
 ### Row Level Security (RLS)
-- **Toutes les tables protégées** : RLS activé sur toutes les tables sensibles avec policies basées sur les relations utilisateurs.【F:supabase/migrations/020_complete_rls_audit_fix.sql】
+- **Toutes les tables protégées** : RLS activé sur toutes les tables sensibles avec policies basées sur les relations utilisateurs.【F:supabase/migrations/021_fix_rls_policy_conflicts.sql】
 - **Logique métier respectée** : employés voient les données handicap de leur employeur (nécessaire pour les soins), aidants ont accès selon leurs permissions.
 - **Tuteurs/Curateurs** : accès complet aux données de leur protégé (autorité légale).
 
@@ -107,7 +107,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | 017 | Fix `handle_new_user()` search_path |
 | 018 | Fix `is_employer()` search_path |
 | 019 | Drop `test_auth_context()` (fonction debug) |
-| **020** | **Audit RLS complet - sécurisation de toutes les tables** |
+| **021** | **Audit RLS complet - sécurisation de toutes les tables** |
 
 ### Warnings Supabase corrigés
 
