@@ -9,7 +9,7 @@ import { isPublicHoliday, isSunday } from './types'
 import { calculateShiftDuration, calculateNightHours, getWeekStart, calculateTotalHours } from './utils'
 
 // Taux de majoration (Convention Collective IDCC 3239)
-const MAJORATION_RATES = {
+export const MAJORATION_RATES = {
   SUNDAY: 0.30, // +30% pour le dimanche
   PUBLIC_HOLIDAY_WORKED: 0.60, // +60% jour férié travaillé habituellement
   PUBLIC_HOLIDAY_EXCEPTIONAL: 1.00, // +100% jour férié travaillé exceptionnellement
@@ -95,7 +95,7 @@ export function calculateShiftPay(
 /**
  * Calcule le nombre d'heures supplémentaires pour une intervention
  */
-function calculateOvertimeHours(
+export function calculateOvertimeHours(
   newShift: ShiftForValidation,
   existingShifts: ShiftForValidation[],
   contractualWeeklyHours: number

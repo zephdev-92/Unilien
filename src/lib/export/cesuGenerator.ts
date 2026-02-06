@@ -9,6 +9,7 @@
 
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { MAJORATION_RATES } from '@/lib/compliance/calculatePay'
 import type { MonthlyDeclarationData, ExportResult } from './types'
 
 /**
@@ -173,13 +174,16 @@ export function generateCesuSummary(data: MonthlyDeclarationData): ExportResult 
       lines.push('DÉTAIL DES HEURES:')
       lines.push(`  • Heures normales:     ${formatNumber(employee.normalHours)} h`)
       if (employee.sundayHours > 0) {
-        lines.push(`  • Heures dimanche:     ${formatNumber(employee.sundayHours)} h (+30%)`)
+        lines.push(`  • Heures dimanche:     ${formatNumber(employee.sundayHours)} h (+${MAJORATION_RATES.SUNDAY * 100}%)`)
       }
       if (employee.holidayHours > 0) {
-        lines.push(`  • Heures jours fériés: ${formatNumber(employee.holidayHours)} h (+60%)`)
+        lines.push(`  • Heures jours fériés: ${formatNumber(employee.holidayHours)} h (+${MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED * 100}%)`)
       }
       if (employee.nightHours > 0) {
-        lines.push(`  • Heures de nuit:      ${formatNumber(employee.nightHours)} h (+20%)`)
+        lines.push(`  • Heures de nuit:      ${formatNumber(employee.nightHours)} h (+${MAJORATION_RATES.NIGHT * 100}%)`)
+      }
+      if (employee.overtimeHours > 0) {
+        lines.push(`  • Heures sup:          ${formatNumber(employee.overtimeHours)} h (+${MAJORATION_RATES.OVERTIME_FIRST_8H * 100}%/+${MAJORATION_RATES.OVERTIME_BEYOND_8H * 100}%)`)
       }
       lines.push('')
 
