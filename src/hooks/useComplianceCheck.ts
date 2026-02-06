@@ -22,6 +22,7 @@ interface UseComplianceCheckOptions {
     startTime: string
     endTime: string
     breakDuration: number
+    hasNightAction?: boolean
   } | null
 
   // Contrat pour le calcul de paie
@@ -85,6 +86,7 @@ export function useComplianceCheck({
       startTime: shift.startTime,
       endTime: shift.endTime,
       breakDuration: shift.breakDuration || 0,
+      hasNightAction: shift.hasNightAction,
     }
   }, [shift, editingShiftId])
 

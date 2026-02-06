@@ -12,6 +12,7 @@ export interface ShiftForValidation {
   startTime: string // "HH:mm"
   endTime: string // "HH:mm"
   breakDuration: number // minutes
+  hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule (pas de majoration)
 }
 
 // Contrat simplifié pour calculs

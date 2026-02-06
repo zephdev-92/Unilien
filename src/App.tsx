@@ -7,6 +7,7 @@ import { PlanningPage } from '@/components/planning'
 import { LogbookPage } from '@/components/logbook'
 import { LiaisonPage } from '@/components/liaison'
 import { TeamPage } from '@/components/team'
+import { ClockInPage } from '@/components/clock-in/ClockInPage'
 import { CompliancePage } from '@/pages/CompliancePage'
 import { DocumentsPage } from '@/pages/DocumentsPage'
 import { HomePage } from '@/pages/HomePage'
@@ -108,6 +109,9 @@ function App() {
 
       {/* Planning - gère sa propre protection et layout */}
       <Route path="/planning" element={<PlanningPage />} />
+
+      {/* Pointage auxiliaire - gère sa propre protection et layout */}
+      <Route path="/clock-in" element={<ClockInPage />} />
 
       {/* Cahier de liaison - gère sa propre protection et layout */}
       <Route path="/logbook" element={<LogbookPage />} />

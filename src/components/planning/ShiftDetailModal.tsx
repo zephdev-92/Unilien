@@ -9,6 +9,7 @@ import {
   Textarea,
   Separator,
   Badge,
+  Switch,
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,6 +21,7 @@ import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compl
 import { updateShift, deleteShift, validateShift, getShifts } from '@/services/shiftService'
 import { getContractById } from '@/services/contractService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
+import { calculateNightHours } from '@/lib/compliance'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Shift, UserRole, Contract } from '@/types'
 import type { ShiftForValidation } from '@/lib/compliance'
@@ -86,6 +88,7 @@ export function ShiftDetailModal({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
+  const [hasNightAction, setHasNightAction] = useState(false)
 
   const canEdit = userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)
   const canDelete = (userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)) && shift?.status === 'planned'
@@ -117,6 +120,21 @@ export function ShiftDetailModal({
   // Observer les valeurs du formulaire
   const watchedValues = useWatch({ control })
 
+  // Détecter les heures de nuit
+  const nightHoursCount = useMemo(() => {
+    const st = isEditing ? watchedValues.startTime : shift?.startTime
+    const et = isEditing ? watchedValues.endTime : shift?.endTime
+    const d = isEditing ? watchedValues.date : (shift ? format(new Date(shift.date), 'yyyy-MM-dd') : null)
+    if (!st || !et || !d) return 0
+    try {
+      return calculateNightHours(new Date(d), st, et)
+    } catch {
+      return 0
+    }
+  }, [isEditing, watchedValues.startTime, watchedValues.endTime, watchedValues.date, shift])
+
+  const hasNightHours = nightHoursCount > 0
+
   // Construire l'objet shift pour validation compliance
   const shiftForCompliance = useMemo(() => {
     if (!isEditing || !watchedValues.date || !watchedValues.startTime || !watchedValues.endTime || !contract) {
@@ -130,8 +148,9 @@ export function ShiftDetailModal({
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,
       breakDuration: watchedValues.breakDuration || 0,
+      hasNightAction: hasNightHours ? hasNightAction : undefined,
     }
-  }, [watchedValues, contract, shift, isEditing])
+  }, [watchedValues, contract, shift, isEditing, hasNightHours, hasNightAction])
 
   // Hook de validation de conformité (seulement en mode édition)
   const {
@@ -194,6 +213,7 @@ export function ShiftDetailModal({
         notes: shift.notes || '',
         status: shift.status,
       })
+      setHasNightAction(shift.hasNightAction ?? false)
     }
   }, [isOpen, shift, profileId, userRole, reset])
 
@@ -234,6 +254,7 @@ export function ShiftDetailModal({
         breakDuration: data.breakDuration,
         tasks: data.tasks ? data.tasks.split('\n').filter(Boolean) : [],
         notes: data.notes || undefined,
+        hasNightAction: hasNightHours ? hasNightAction : undefined,
         status: data.status,
       })
 
@@ -425,6 +446,44 @@ export function ShiftDetailModal({
                       {...register('status')}
                     />
 
+                    {/* Toggle action de nuit */}
+                    {hasNightHours && (
+                      <Box
+                        p={4}
+                        bg="purple.50"
+                        borderRadius="lg"
+                        borderWidth="1px"
+                        borderColor="purple.200"
+                      >
+                        <Text fontWeight="medium" color="purple.800" mb={1}>
+                          🌙 Heures de nuit : {nightHoursCount.toFixed(1)}h
+                        </Text>
+                        <Text fontSize="sm" color="purple.600" mb={3}>
+                          La majoration +20% ne s'applique que si un acte est effectué.
+                        </Text>
+                        <Flex
+                          justify="space-between"
+                          align="center"
+                          p={3}
+                          bg="white"
+                          borderRadius="md"
+                        >
+                          <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                            Acte effectué pendant la nuit
+                          </Text>
+                          <Switch.Root
+                            checked={hasNightAction}
+                            onCheckedChange={(e) => setHasNightAction(e.checked)}
+                          >
+                            <Switch.HiddenInput aria-label="Acte effectué pendant les heures de nuit" />
+                            <Switch.Control>
+                              <Switch.Thumb />
+                            </Switch.Control>
+                          </Switch.Root>
+                        </Flex>
+                      </Box>
+                    )}
+
                     <Separator />
 
                     {/* Alertes de conformité */}
@@ -499,6 +558,24 @@ export function ShiftDetailModal({
                       {shift.breakDuration > 0 && ` (pause de ${shift.breakDuration} min incluse)`}
                     </Text>
                   </Box>
+
+                  {/* Indicateur heures de nuit */}
+                  {hasNightHours && (
+                    <Box p={3} bg="purple.50" borderRadius="md">
+                      <Flex align="center" gap={2}>
+                        <Text>🌙</Text>
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color="purple.800">
+                            {nightHoursCount.toFixed(1)}h de nuit
+                            {shift.hasNightAction
+                              ? ' — Acte effectué (majoration +20%)'
+                              : ' — Présence seule (pas de majoration)'
+                            }
+                          </Text>
+                        </Box>
+                      </Flex>
+                    </Box>
+                  )}
 
                   {/* Auxiliaire */}
                   {!isLoadingContract && contract && (
