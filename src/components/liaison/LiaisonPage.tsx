@@ -28,6 +28,7 @@ import {
   getCaregiver,
   getCaregiverEmployerId,
 } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 import type { LiaisonMessageWithSender, CaregiverPermissions } from '@/types'
 
 // ============================================
@@ -194,7 +195,7 @@ export function LiaisonPage() {
         const empId = await getCaregiverEmployerId(profile.id)
         setResolvedEmployerId(empId)
       } catch (error) {
-        console.error('Erreur résolution employeur pour aidant:', error)
+        logger.error('Erreur résolution employeur pour aidant:', error)
         setAccessDenied(true)
       } finally {
         setIsResolvingEmployer(false)
@@ -220,7 +221,7 @@ export function LiaisonPage() {
         // Mark all as read
         await markAllMessagesAsRead(resolvedEmployerId, profile.id)
       } catch (error) {
-        console.error('Erreur chargement messages:', error)
+        logger.error('Erreur chargement messages:', error)
       } finally {
         setIsLoadingMessages(false)
         isInitialLoad.current = false
@@ -307,7 +308,7 @@ export function LiaisonPage() {
       }
       setHasMore(olderMessages.length >= 20)
     } catch (error) {
-      console.error('Erreur chargement anciens messages:', error)
+      logger.error('Erreur chargement anciens messages:', error)
     } finally {
       setIsLoadingMore(false)
     }
@@ -338,7 +339,7 @@ export function LiaisonPage() {
     try {
       await deleteLiaisonMessage(messageId)
     } catch (error) {
-      console.error('Erreur suppression message:', error)
+      logger.error('Erreur suppression message:', error)
     }
   }, [])
 

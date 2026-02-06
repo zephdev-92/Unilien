@@ -18,6 +18,7 @@ import {
   getEmployee,
   upsertEmployee,
 } from '@/services/profileService'
+import { logger } from '@/lib/logger'
 import type { Profile, Employer, Employee } from '@/types'
 
 export function ProfilePage() {
@@ -42,7 +43,7 @@ export function ProfilePage() {
         setEmployee(employeeData)
       }
     } catch (error) {
-      console.error('Erreur chargement données:', error)
+      logger.error('Erreur chargement données:', error)
     } finally {
       setIsLoadingData(false)
     }

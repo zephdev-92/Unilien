@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Box, Stack, Flex, Text, Switch } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton, AccessibleSelect } from '@/components/ui'
+import { logger } from '@/lib/logger'
 import type { Employer, EmergencyContact } from '@/types'
 
 const addressSchema = z.object({
@@ -98,7 +99,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
       setSuccessMessage('Informations mises à jour avec succès')
       setTimeout(() => setSuccessMessage(null), 3000)
     } catch (error) {
-      console.error('Erreur mise à jour employeur:', error)
+      logger.error('Erreur mise à jour employeur:', error)
     } finally {
       setIsLoading(false)
     }

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Profile, Employer, Employee } from '@/types'
 
 // ============================================
@@ -20,7 +21,7 @@ export async function updateProfile(
     .eq('id', profileId)
 
   if (error) {
-    console.error('Erreur mise à jour profil:', error)
+    logger.error('Erreur mise à jour profil:', error)
     throw new Error(error.message)
   }
 }
@@ -87,7 +88,7 @@ export async function uploadAvatar(
     }
   } catch (err) {
     // Continuer même si la suppression échoue
-    console.warn('Avertissement suppression ancien avatar:', err)
+    logger.warn('Avertissement suppression ancien avatar:', err)
   }
 
   // Upload le nouveau fichier
@@ -99,7 +100,7 @@ export async function uploadAvatar(
     })
 
   if (uploadError) {
-    console.error('Erreur upload avatar:', uploadError)
+    logger.error('Erreur upload avatar:', uploadError)
     throw new Error('Erreur lors de l\'upload de l\'image.')
   }
 
@@ -120,7 +121,7 @@ export async function uploadAvatar(
     .eq('id', profileId)
 
   if (updateError) {
-    console.error('Erreur mise à jour avatar_url:', updateError)
+    logger.error('Erreur mise à jour avatar_url:', updateError)
     throw new Error('Erreur lors de la mise à jour du profil.')
   }
 
@@ -142,7 +143,7 @@ export async function deleteAvatar(profileId: string): Promise<void> {
       await supabase.storage.from(AVATAR_BUCKET).remove(filesToDelete)
     }
   } catch (err) {
-    console.warn('Avertissement suppression fichiers avatar:', err)
+    logger.warn('Avertissement suppression fichiers avatar:', err)
   }
 
   // Mettre à jour le profil
@@ -155,7 +156,7 @@ export async function deleteAvatar(profileId: string): Promise<void> {
     .eq('id', profileId)
 
   if (error) {
-    console.error('Erreur suppression avatar:', error)
+    logger.error('Erreur suppression avatar:', error)
     throw new Error('Erreur lors de la suppression de l\'avatar.')
   }
 }
@@ -172,7 +173,7 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
     .maybeSingle()
 
   if (error) {
-    console.error('Erreur récupération employeur:', error)
+    logger.error('Erreur récupération employeur:', error)
     return null
   }
 
@@ -209,7 +210,7 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     .upsert(payload, { onConflict: 'profile_id' })
 
   if (error) {
-    console.error('Erreur mise à jour employeur:', error)
+    logger.error('Erreur mise à jour employeur:', error)
     throw new Error(error.message)
   }
 }
@@ -226,7 +227,7 @@ export async function getEmployee(profileId: string): Promise<Employee | null> {
     .maybeSingle()
 
   if (error) {
-    console.error('Erreur récupération employé:', error)
+    logger.error('Erreur récupération employé:', error)
     return null
   }
 
@@ -296,7 +297,7 @@ export async function upsertEmployee(profileId: string, data: Partial<Employee>)
     .upsert(payload, { onConflict: 'profile_id' })
 
   if (error) {
-    console.error('Erreur mise à jour employé:', error)
+    logger.error('Erreur mise à jour employé:', error)
     throw new Error(error.message)
   }
 }

@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Absence } from '@/types'
 
 // ============================================
@@ -80,7 +81,7 @@ export async function getDocumentsForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération documents:', error)
+    logger.error('Erreur récupération documents:', error)
     return []
   }
 

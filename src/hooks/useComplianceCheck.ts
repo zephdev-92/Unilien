@@ -12,6 +12,7 @@ import {
   type ShiftForValidation,
   type ContractForCalculation,
 } from '@/lib/compliance'
+import { logger } from '@/lib/logger'
 
 interface UseComplianceCheckOptions {
   // Intervention à valider
@@ -137,7 +138,7 @@ export function useComplianceCheck({
         setComputedPay(pay)
       }
     } catch (error) {
-      console.error('Erreur validation conformité:', error)
+      logger.error('Erreur validation conformité:', error)
       setComplianceResult({
         valid: false,
         errors: [

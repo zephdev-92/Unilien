@@ -23,6 +23,7 @@ import {
 } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard'
 import { useAuth } from '@/hooks/useAuth'
+import { logger } from '@/lib/logger'
 import {
   getMonthlyDeclarationData,
   generateCesuCsv,
@@ -121,7 +122,7 @@ export function DocumentsPage() {
       setPreviewData(data)
     } catch (err) {
       setError('Erreur lors de la génération des données')
-      console.error(err)
+      logger.error(err)
     } finally {
       setIsGenerating(false)
     }

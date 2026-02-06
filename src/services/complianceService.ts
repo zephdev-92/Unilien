@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { ShiftForValidation } from '@/lib/compliance/types'
 import {
   getWeekStart,
@@ -79,7 +80,7 @@ async function getShiftsForPeriod(
     .in('status', ['planned', 'completed'])
 
   if (error) {
-    console.error('Erreur récupération interventions:', error)
+    logger.error('Erreur récupération interventions:', error)
     return []
   }
 
@@ -137,7 +138,7 @@ async function getActiveEmployees(employerId: string): Promise<
     .eq('status', 'active')
 
   if (error) {
-    console.error('Erreur récupération employés:', error)
+    logger.error('Erreur récupération employés:', error)
     return []
   }
 

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { LiaisonMessage, LiaisonMessageWithSender, UserRole, Attachment } from '@/types'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
@@ -44,7 +45,7 @@ export async function getLiaisonMessages(
     .range(from, to)
 
   if (error) {
-    console.error('Erreur récupération messages liaison:', error)
+    logger.error('Erreur récupération messages liaison:', error)
     return { messages: [], totalCount: 0, hasMore: false }
   }
 
@@ -81,7 +82,7 @@ export async function getOlderMessages(
     .limit(limit)
 
   if (error) {
-    console.error('Erreur récupération anciens messages:', error)
+    logger.error('Erreur récupération anciens messages:', error)
     return []
   }
 
@@ -116,7 +117,7 @@ export async function createLiaisonMessage(
     .single()
 
   if (error) {
-    console.error('Erreur création message liaison:', error)
+    logger.error('Erreur création message liaison:', error)
     throw new Error(error.message)
   }
 
@@ -141,7 +142,7 @@ export async function updateLiaisonMessage(
     .eq('id', messageId)
 
   if (error) {
-    console.error('Erreur modification message:', error)
+    logger.error('Erreur modification message:', error)
     throw new Error(error.message)
   }
 }
@@ -157,7 +158,7 @@ export async function deleteLiaisonMessage(messageId: string): Promise<void> {
     .eq('id', messageId)
 
   if (error) {
-    console.error('Erreur suppression message:', error)
+    logger.error('Erreur suppression message:', error)
     throw new Error(error.message)
   }
 }
@@ -177,7 +178,7 @@ export async function markMessageAsRead(
     .single()
 
   if (fetchError) {
-    console.error('Erreur récupération message pour marquer lu:', fetchError)
+    logger.error('Erreur récupération message pour marquer lu:', fetchError)
     return
   }
 
@@ -190,7 +191,7 @@ export async function markMessageAsRead(
     .eq('id', messageId)
 
   if (error) {
-    console.error('Erreur marquage message lu:', error)
+    logger.error('Erreur marquage message lu:', error)
   }
 }
 
@@ -210,7 +211,7 @@ export async function markAllMessagesAsRead(
     .not('read_by', 'cs', `{${userId}}`)
 
   if (fetchError) {
-    console.error('Erreur récupération messages non lus:', fetchError)
+    logger.error('Erreur récupération messages non lus:', fetchError)
     return
   }
 
@@ -239,7 +240,7 @@ export async function getLiaisonUnreadCount(
     .not('read_by', 'cs', `{${userId}}`)
 
   if (error) {
-    console.error('Erreur comptage messages non lus:', error)
+    logger.error('Erreur comptage messages non lus:', error)
     return 0
   }
 

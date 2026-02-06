@@ -3,6 +3,7 @@ import { Box, Stack, Flex, Text, Badge, Spinner } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { AccessibleButton } from '@/components/ui'
 import { sanitizeText } from '@/lib/sanitize'
+import { logger } from '@/lib/logger'
 import { getRecentLogEntries, type LogEntryWithAuthor } from '@/services/logbookService'
 import type { LogEntry } from '@/types'
 
@@ -66,7 +67,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
       const entries = await getRecentLogEntries(employerId, 3)
       setLogs(entries)
     } catch (error) {
-      console.error('Erreur chargement entrées récentes:', error)
+      logger.error('Erreur chargement entrées récentes:', error)
     } finally {
       setLoading(false)
     }

@@ -14,6 +14,7 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { AccessibleButton, DevelopmentBanner } from '@/components/ui'
 import { NotificationBell, NotificationsPanel } from '@/components/notifications'
 import { getCaregiver } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 
 import type { UserRole, CaregiverPermissions } from '@/types'
 
@@ -63,7 +64,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
           }
         })
         .catch((error) => {
-          console.error('Erreur chargement permissions aidant:', error)
+          logger.error('Erreur chargement permissions aidant:', error)
         })
     }
   }, [profile?.id, userRole])

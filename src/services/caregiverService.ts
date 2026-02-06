@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type {
   Caregiver,
   CaregiverPermissions,
@@ -29,7 +30,7 @@ export async function getCaregiver(profileId: string): Promise<Caregiver | null>
     .maybeSingle()
 
   if (error) {
-    console.error('Erreur récupération aidant:', error)
+    logger.error('Erreur récupération aidant:', error)
     return null
   }
 
@@ -49,7 +50,7 @@ export async function getCaregiverEmployerId(profileId: string): Promise<string 
     .maybeSingle()
 
   if (error || !data) {
-    console.error('Erreur récupération employeur de l\'aidant:', error)
+    logger.error('Erreur récupération employeur de l\'aidant:', error)
     return null
   }
 
@@ -78,14 +79,14 @@ export async function getShiftsForCaregiver(
   const employerId = await getCaregiverEmployerId(profileId)
 
   if (!employerId) {
-    console.warn('Aucun employeur associé à cet aidant')
+    logger.warn('Aucun employeur associé à cet aidant')
     return []
   }
 
   // Vérifier que l'aidant a la permission de voir le planning
   const permissions = await getCaregiverPermissions(profileId)
   if (!permissions?.canViewPlanning) {
-    console.warn('Aidant sans permission de voir le planning')
+    logger.warn('Aidant sans permission de voir le planning')
     return []
   }
 
@@ -107,7 +108,7 @@ export async function getShiftsForCaregiver(
     .order('start_time', { ascending: true })
 
   if (error) {
-    console.error('Erreur récupération shifts pour aidant:', error)
+    logger.error('Erreur récupération shifts pour aidant:', error)
     return []
   }
 
@@ -164,7 +165,7 @@ export async function upsertCaregiver(
     .upsert(payload, { onConflict: 'profile_id' })
 
   if (error) {
-    console.error('Erreur création/mise à jour aidant:', error)
+    logger.error('Erreur création/mise à jour aidant:', error)
     throw new Error(error.message)
   }
 }
@@ -200,14 +201,14 @@ export async function updateCaregiverProfile(
     .eq('profile_id', profileId)
     .select()
 
-  console.log('updateCaregiverProfile - profileId:', profileId)
-  console.log('updateCaregiverProfile - updateData:', updateData)
-  console.log('updateCaregiverProfile - result:', result)
-  console.log('updateCaregiverProfile - count:', count)
-  console.log('updateCaregiverProfile - error:', error)
+  logger.debug('updateCaregiverProfile - profileId:', profileId)
+  logger.debug('updateCaregiverProfile - updateData:', updateData)
+  logger.debug('updateCaregiverProfile - result:', result)
+  logger.debug('updateCaregiverProfile - count:', count)
+  logger.debug('updateCaregiverProfile - error:', error)
 
   if (error) {
-    console.error('Erreur mise à jour profil aidant:', error)
+    logger.error('Erreur mise à jour profil aidant:', error)
     throw new Error(error.message)
   }
 
@@ -245,7 +246,7 @@ export async function updateCaregiverPermissions(
     .eq('profile_id', profileId)
 
   if (error) {
-    console.error('Erreur mise à jour permissions:', error)
+    logger.error('Erreur mise à jour permissions:', error)
     throw new Error(error.message)
   }
 
@@ -255,7 +256,7 @@ export async function updateCaregiverPermissions(
       const employerName = await getProfileName(caregiver.employer_id)
       await createPermissionsUpdatedNotification(profileId, employerName)
     } catch (err) {
-      console.error('Erreur notification permissions modifiées:', err)
+      logger.error('Erreur notification permissions modifiées:', err)
     }
   }
 }
@@ -306,7 +307,7 @@ export async function getCaregiversForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération aidants:', error)
+    logger.error('Erreur récupération aidants:', error)
     return []
   }
 
@@ -327,7 +328,7 @@ export async function searchCaregiverByEmail(
     .maybeSingle()
 
   if (error) {
-    console.error('Erreur recherche aidant:', error)
+    logger.error('Erreur recherche aidant:', error)
     return null
   }
 
@@ -392,7 +393,7 @@ export async function addCaregiverToEmployer(
     })
 
   if (error) {
-    console.error('Erreur ajout aidant:', error)
+    logger.error('Erreur ajout aidant:', error)
     throw new Error('Erreur lors de l\'ajout de l\'aidant.')
   }
 
@@ -401,7 +402,7 @@ export async function addCaregiverToEmployer(
     const employerName = await getProfileName(employerId)
     await createTeamMemberAddedNotification(caregiverProfileId, employerName)
   } catch (err) {
-    console.error('Erreur notification ajout aidant:', err)
+    logger.error('Erreur notification ajout aidant:', err)
   }
 }
 
@@ -438,7 +439,7 @@ export async function updateCaregiver(
     .eq('employer_id', employerId)
 
   if (error) {
-    console.error('Erreur mise à jour aidant:', error)
+    logger.error('Erreur mise à jour aidant:', error)
     throw new Error('Erreur lors de la mise à jour de l\'aidant.')
   }
 
@@ -447,7 +448,7 @@ export async function updateCaregiver(
     const employerName = await getProfileName(employerId)
     await createPermissionsUpdatedNotification(caregiverProfileId, employerName)
   } catch (err) {
-    console.error('Erreur notification permissions modifiées:', err)
+    logger.error('Erreur notification permissions modifiées:', err)
   }
 }
 
@@ -473,7 +474,7 @@ export async function removeCaregiverFromEmployer(
     .eq('employer_id', employerId)
 
   if (error) {
-    console.error('Erreur suppression aidant:', error)
+    logger.error('Erreur suppression aidant:', error)
     throw new Error('Erreur lors de la suppression de l\'aidant.')
   }
 
@@ -481,7 +482,7 @@ export async function removeCaregiverFromEmployer(
   try {
     await createTeamMemberRemovedNotification(caregiverProfileId, employerName)
   } catch (err) {
-    console.error('Erreur notification retrait aidant:', err)
+    logger.error('Erreur notification retrait aidant:', err)
   }
 }
 

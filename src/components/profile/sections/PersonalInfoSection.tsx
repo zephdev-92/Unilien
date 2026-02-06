@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Box, Stack, Flex, Text, Avatar, Input } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton } from '@/components/ui'
 import { uploadAvatar, deleteAvatar, validateAvatarFile } from '@/services/profileService'
+import { logger } from '@/lib/logger'
 import type { Profile } from '@/types'
 
 const personalInfoSchema = z.object({
@@ -66,7 +67,7 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
       setSuccessMessage('Profil mis à jour avec succès')
       setTimeout(() => setSuccessMessage(null), 3000)
     } catch (error) {
-      console.error('Erreur mise à jour profil:', error)
+      logger.error('Erreur mise à jour profil:', error)
     } finally {
       setIsLoading(false)
     }
@@ -103,7 +104,7 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
         setSuccessMessage('Photo de profil mise à jour')
         setTimeout(() => setSuccessMessage(null), 3000)
       } catch (error) {
-        console.error('Erreur upload avatar:', error)
+        logger.error('Erreur upload avatar:', error)
         setAvatarError(
           error instanceof Error ? error.message : 'Erreur lors de l\'upload'
         )
@@ -136,7 +137,7 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
       setSuccessMessage('Photo de profil supprimée')
       setTimeout(() => setSuccessMessage(null), 3000)
     } catch (error) {
-      console.error('Erreur suppression avatar:', error)
+      logger.error('Erreur suppression avatar:', error)
       setAvatarError(
         error instanceof Error ? error.message : 'Erreur lors de la suppression'
       )

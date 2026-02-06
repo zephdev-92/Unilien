@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, SimpleGrid, Text, Flex, Skeleton } from '@chakra-ui/react'
 import type { UserRole } from '@/types'
+import { logger } from '@/lib/logger'
 import {
   getEmployerStats,
   getEmployeeStats,
@@ -169,7 +170,7 @@ export function StatsWidget({ userRole, profileId, employerId }: StatsWidgetProp
 
         setStats(formattedStats)
       } catch (err) {
-        console.error('Erreur chargement stats:', err)
+        logger.error('Erreur chargement stats:', err)
         setError('Erreur lors du chargement des statistiques')
       } finally {
         setIsLoading(false)

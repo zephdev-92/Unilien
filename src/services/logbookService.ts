@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { LogEntry, UserRole, Attachment } from '@/types'
 import {
   getProfileName,
@@ -85,7 +86,7 @@ export async function getLogEntries(
   const { data, error, count } = await query
 
   if (error) {
-    console.error('Erreur récupération entrées cahier:', error)
+    logger.error('Erreur récupération entrées cahier:', error)
     return { entries: [], totalCount: 0, hasMore: false }
   }
 
@@ -116,7 +117,7 @@ export async function getLogEntryById(
     .single()
 
   if (error) {
-    console.error('Erreur récupération entrée:', error)
+    logger.error('Erreur récupération entrée:', error)
     return null
   }
 
@@ -156,7 +157,7 @@ export async function createLogEntry(
     .single()
 
   if (error) {
-    console.error('Erreur création entrée cahier:', error)
+    logger.error('Erreur création entrée cahier:', error)
     throw new Error(error.message)
   }
 
@@ -169,7 +170,7 @@ export async function createLogEntry(
         : data.content
       await createLogEntryDirectedNotification(data.recipientId, authorName, preview)
     } catch (err) {
-      console.error('Erreur notification logbook dirigée:', err)
+      logger.error('Erreur notification logbook dirigée:', err)
     }
   }
 
@@ -217,7 +218,7 @@ export async function createLogEntry(
         )
       }
     } catch (err) {
-      console.error('Erreur notification logbook urgent:', err)
+      logger.error('Erreur notification logbook urgent:', err)
     }
   }
 
@@ -252,7 +253,7 @@ export async function updateLogEntry(
     .eq('id', entryId)
 
   if (error) {
-    console.error('Erreur mise à jour entrée:', error)
+    logger.error('Erreur mise à jour entrée:', error)
     throw new Error(error.message)
   }
 }
@@ -268,7 +269,7 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
     .eq('id', entryId)
 
   if (error) {
-    console.error('Erreur suppression entrée:', error)
+    logger.error('Erreur suppression entrée:', error)
     throw new Error(error.message)
   }
 }
@@ -289,7 +290,7 @@ export async function markAsRead(
     .single()
 
   if (fetchError) {
-    console.error('Erreur récupération entrée pour marquer comme lue:', fetchError)
+    logger.error('Erreur récupération entrée pour marquer comme lue:', fetchError)
     return
   }
 
@@ -307,7 +308,7 @@ export async function markAsRead(
     .eq('id', entryId)
 
   if (error) {
-    console.error('Erreur marquage comme lu:', error)
+    logger.error('Erreur marquage comme lu:', error)
   }
 }
 
@@ -326,7 +327,7 @@ export async function getUnreadCount(
     .not('read_by', 'cs', `{${userId}}`)
 
   if (error) {
-    console.error('Erreur comptage non lus:', error)
+    logger.error('Erreur comptage non lus:', error)
     return 0
   }
 
@@ -355,7 +356,7 @@ export async function getRecentLogEntries(
     .limit(limit)
 
   if (error) {
-    console.error('Erreur récupération entrées récentes:', error)
+    logger.error('Erreur récupération entrées récentes:', error)
     return []
   }
 

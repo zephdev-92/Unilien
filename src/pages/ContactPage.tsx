@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AccessibleButton, AccessibleInput, AccessibleSelect } from '@/components/ui'
+import { logger } from '@/lib/logger'
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
@@ -86,7 +87,7 @@ export function ContactPage() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    console.log('Contact form submitted:', data)
+    logger.debug('Contact form submitted:', data)
     setIsSubmitting(false)
     setIsSubmitted(true)
     reset()

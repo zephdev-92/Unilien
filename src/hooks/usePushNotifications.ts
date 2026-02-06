@@ -10,6 +10,7 @@ import {
   showLocalNotification,
   type PushNotificationPayload,
 } from '@/services/pushService'
+import { logger } from '@/lib/logger'
 
 // ============================================
 // TYPES
@@ -77,7 +78,7 @@ export function usePushNotifications(
         const subscribed = await isPushSubscribed()
         setIsSubscribed(subscribed)
       } catch (err) {
-        console.error('Erreur vérification subscription:', err)
+        logger.error('Erreur vérification subscription:', err)
       } finally {
         setIsLoading(false)
       }
@@ -254,7 +255,7 @@ export function usePushNotifications(
   // Show local notification
   const showNotification = useCallback((payload: PushNotificationPayload) => {
     if (permission !== 'granted') {
-      console.warn('Permission non accordée pour les notifications')
+      logger.warn('Permission non accordée pour les notifications')
       return
     }
     showLocalNotification(payload)

@@ -17,6 +17,7 @@ import type {
 } from './types'
 import { getMonthLabel } from './types'
 import type { AddressDb, ShiftDbRow } from '@/types/database'
+import { logger } from '@/lib/logger'
 
 // Types pour les données de la DB
 interface EmployerDataDb {
@@ -61,14 +62,14 @@ export async function getMonthlyDeclarationData(
   // Récupérer les infos employeur
   const employerData = await getEmployerData(employerId)
   if (!employerData) {
-    console.error('Employeur non trouvé')
+    logger.error('Employeur non trouvé')
     return null
   }
 
   // Récupérer les contrats actifs avec leurs employés
   const contracts = await getActiveContracts(employerId, employeeIds)
   if (contracts.length === 0) {
-    console.error('Aucun contrat actif trouvé')
+    logger.error('Aucun contrat actif trouvé')
     return null
   }
 
@@ -171,7 +172,7 @@ async function getActiveContracts(
   const { data, error } = await query
 
   if (error) {
-    console.error('Erreur récupération contrats:', error)
+    logger.error('Erreur récupération contrats:', error)
     return []
   }
 
@@ -196,7 +197,7 @@ async function getShiftsForPeriod(
     .order('date', { ascending: true })
 
   if (error) {
-    console.error('Erreur récupération shifts:', error)
+    logger.error('Erreur récupération shifts:', error)
     return []
   }
 

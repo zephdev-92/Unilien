@@ -5,6 +5,7 @@ import {
   createComplianceCriticalNotification,
   COMPLIANCE_THRESHOLDS,
 } from '@/services/notificationService'
+import { logger } from '@/lib/logger'
 
 // ============================================
 // TYPES
@@ -187,7 +188,7 @@ export function useComplianceMonitor(options: UseComplianceMonitorOptions): void
         }
       }
     } catch (error) {
-      console.error('Erreur surveillance conformité:', error)
+      logger.error('Erreur surveillance conformité:', error)
     }
   }, [employerId, userId, shouldNotify, markNotified])
 
