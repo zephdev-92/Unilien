@@ -282,7 +282,10 @@ function calculateEmployeeDeclaration(
       holidayHours += effectiveHours
     }
 
-    if (shiftNightHours > 0) {
+    // Majoration nuit : uniquement si un acte est effectué (has_night_action)
+    // Pour les anciens shifts sans le champ (null), on applique la majoration par rétrocompatibilité
+    const shiftHasNightAction = shift.has_night_action !== false // null = rétrocompat (appliquée), true = appliquée, false = pas de majoration
+    if (shiftNightHours > 0 && shiftHasNightAction) {
       shiftNightMaj = shiftNightHours * hourlyRate * MAJORATION_RATES.NIGHT
       shiftTotal += shiftNightMaj
       nightHours += shiftNightHours

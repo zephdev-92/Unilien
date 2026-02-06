@@ -111,6 +111,7 @@ export interface ShiftDbRow {
   break_duration: number | null
   tasks: string[] | null
   notes: string | null
+  has_night_action: boolean | null // true = acte de nuit (majoration 20%), null/false = présence seule
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   created_at: string
   updated_at: string

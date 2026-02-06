@@ -8,6 +8,7 @@ import {
   Text,
   Textarea,
   Separator,
+  Switch,
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,6 +19,7 @@ import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compl
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import { createShift, getShifts } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
+import { calculateNightHours } from '@/lib/compliance'
 import type { ShiftForValidation } from '@/lib/compliance'
 
 const shiftSchema = z.object({
@@ -64,6 +66,7 @@ export function NewShiftModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
+  const [hasNightAction, setHasNightAction] = useState(false)
 
   const {
     register,
@@ -91,6 +94,22 @@ export function NewShiftModal({
     return contracts.find((c) => c.id === watchedValues.contractId)
   }, [contracts, watchedValues.contractId])
 
+  // Détecter les heures de nuit (21h-6h)
+  const nightHoursCount = useMemo(() => {
+    if (!watchedValues.startTime || !watchedValues.endTime || !watchedValues.date) return 0
+    try {
+      return calculateNightHours(
+        new Date(watchedValues.date),
+        watchedValues.startTime,
+        watchedValues.endTime
+      )
+    } catch {
+      return 0
+    }
+  }, [watchedValues.startTime, watchedValues.endTime, watchedValues.date])
+
+  const hasNightHours = nightHoursCount > 0
+
   // Construire l'objet shift pour validation
   const shiftForCompliance = useMemo(() => {
     if (!watchedValues.contractId || !watchedValues.date || !watchedValues.startTime || !watchedValues.endTime) {
@@ -108,8 +127,9 @@ export function NewShiftModal({
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,
       breakDuration: watchedValues.breakDuration || 0,
+      hasNightAction: hasNightHours ? hasNightAction : undefined,
     }
-  }, [watchedValues, contracts])
+  }, [watchedValues, contracts, hasNightHours, hasNightAction])
 
   // Hook de validation de conformité
   const {
@@ -176,6 +196,7 @@ export function NewShiftModal({
       })
       setSubmitError(null)
       setAcknowledgeWarnings(false)
+      setHasNightAction(false)
     }
   }, [isOpen, defaultDate, reset])
 
@@ -204,8 +225,7 @@ export function NewShiftModal({
         breakDuration: data.breakDuration,
         tasks: data.tasks ? data.tasks.split('\n').filter(Boolean) : [],
         notes: data.notes || undefined,
-        // Ajouter le calcul de paie
-        ...(computedPay && { computedPay }),
+        hasNightAction: hasNightHours ? hasNightAction : undefined,
       })
 
       onSuccess()
@@ -345,6 +365,61 @@ export function NewShiftModal({
                     error={errors.breakDuration?.message}
                     {...register('breakDuration')}
                   />
+
+                  {/* Toggle action de nuit - affiché seulement si heures de nuit détectées */}
+                  {hasNightHours && (
+                    <Box
+                      p={4}
+                      bg="purple.50"
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor="purple.200"
+                    >
+                      <Flex justify="space-between" align="center" mb={2}>
+                        <Box flex={1}>
+                          <Text fontWeight="medium" color="purple.800">
+                            🌙 Heures de nuit détectées ({nightHoursCount.toFixed(1)}h)
+                          </Text>
+                          <Text fontSize="sm" color="purple.600" mt={1}>
+                            La majoration de nuit (+20%) ne s'applique que si l'auxiliaire
+                            effectue un acte (soin, aide...) pendant les heures de nuit.
+                            La simple présence ne donne pas droit à la majoration.
+                          </Text>
+                        </Box>
+                      </Flex>
+                      <Flex
+                        justify="space-between"
+                        align="center"
+                        mt={3}
+                        p={3}
+                        bg="white"
+                        borderRadius="md"
+                      >
+                        <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                          Acte effectué pendant la nuit
+                        </Text>
+                        <Switch.Root
+                          checked={hasNightAction}
+                          onCheckedChange={(e) => setHasNightAction(e.checked)}
+                        >
+                          <Switch.HiddenInput aria-label="Acte effectué pendant les heures de nuit" />
+                          <Switch.Control>
+                            <Switch.Thumb />
+                          </Switch.Control>
+                        </Switch.Root>
+                      </Flex>
+                      {hasNightAction && (
+                        <Text fontSize="xs" color="green.600" mt={2}>
+                          Majoration de nuit appliquée : +20% sur {nightHoursCount.toFixed(1)}h
+                        </Text>
+                      )}
+                      {!hasNightAction && (
+                        <Text fontSize="xs" color="gray.500" mt={2}>
+                          Pas de majoration — présence de nuit uniquement
+                        </Text>
+                      )}
+                    </Box>
+                  )}
 
                   <Separator />
 

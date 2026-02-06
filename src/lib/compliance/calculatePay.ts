@@ -56,9 +56,11 @@ export function calculateShiftPay(
   }
 
   // Majoration nuit (+20% pour heures entre 21h-6h)
+  // La majoration ne s'applique que si l'auxiliaire effectue un acte pendant la nuit
+  // Simple présence = pas de majoration (Convention Collective IDCC 3239)
   let nightMajoration = 0
   const nightHours = calculateNightHours(shift.date, shift.startTime, shift.endTime)
-  if (nightHours > 0) {
+  if (nightHours > 0 && shift.hasNightAction) {
     nightMajoration = nightHours * hourlyRate * MAJORATION_RATES.NIGHT
   }
 

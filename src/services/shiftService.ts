@@ -70,6 +70,7 @@ export async function createShift(
     breakDuration?: number
     tasks?: string[]
     notes?: string
+    hasNightAction?: boolean
   }
 ): Promise<Shift | null> {
   const { data, error } = await supabase
@@ -82,6 +83,7 @@ export async function createShift(
       break_duration: shiftData.breakDuration || 0,
       tasks: shiftData.tasks || [],
       notes: shiftData.notes || null,
+      has_night_action: shiftData.hasNightAction ?? null,
       status: 'planned',
       computed_pay: {},
       validated_by_employer: false,
@@ -127,6 +129,7 @@ export async function updateShift(
     breakDuration: number
     tasks: string[]
     notes: string
+    hasNightAction: boolean
     status: Shift['status']
   }>
 ): Promise<void> {
@@ -140,6 +143,7 @@ export async function updateShift(
   if (updates.breakDuration !== undefined) payload.break_duration = updates.breakDuration
   if (updates.tasks) payload.tasks = updates.tasks
   if (updates.notes !== undefined) payload.notes = updates.notes
+  if (updates.hasNightAction !== undefined) payload.has_night_action = updates.hasNightAction
   if (updates.status) payload.status = updates.status
 
   const { error } = await supabase
@@ -252,6 +256,7 @@ function mapShiftFromDb(data: any): Shift {
     breakDuration: data.break_duration || 0,
     tasks: data.tasks || [],
     notes: data.notes || undefined,
+    hasNightAction: data.has_night_action ?? undefined,
     status: data.status,
     computedPay: data.computed_pay || {
       basePay: 0,
