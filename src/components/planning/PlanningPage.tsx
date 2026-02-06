@@ -27,6 +27,7 @@ import { AbsenceDetailModal } from './AbsenceDetailModal'
 import { getShifts } from '@/services/shiftService'
 import { getAbsencesForEmployee, getAbsencesForEmployer } from '@/services/absenceService'
 import { getCaregiver, getShiftsForCaregiver } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 import type { Shift, Absence, Caregiver } from '@/types'
 
 type ViewMode = 'week' | 'month'
@@ -53,7 +54,7 @@ export function PlanningPage() {
           const caregiverData = await getCaregiver(profile.id)
           setCaregiver(caregiverData)
         } catch (error) {
-          console.error('Erreur chargement données aidant:', error)
+          logger.error('Erreur chargement données aidant:', error)
         }
       }
     }
@@ -153,7 +154,7 @@ export function PlanningPage() {
       })
       setAbsences(periodAbsences)
     } catch (error) {
-      console.error('Erreur chargement planning:', error)
+      logger.error('Erreur chargement planning:', error)
     } finally {
       setIsLoadingShifts(false)
     }

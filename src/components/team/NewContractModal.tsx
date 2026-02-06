@@ -13,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, addMonths } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
+import { logger } from '@/lib/logger'
 import { createContract, searchAuxiliaryByEmail } from '@/services/auxiliaryService'
 
 const searchSchema = z.object({
@@ -135,7 +136,7 @@ export function NewContractModal({
       setFoundEmployee(employee)
       setStep(1)
     } catch (error) {
-      console.error('Erreur recherche:', error)
+      logger.error('Erreur recherche:', error)
       setSearchError('Une erreur est survenue lors de la recherche')
     } finally {
       setIsSearching(false)
@@ -160,7 +161,7 @@ export function NewContractModal({
 
       onSuccess()
     } catch (error) {
-      console.error('Erreur création contrat:', error)
+      logger.error('Erreur création contrat:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Une erreur est survenue'
       )

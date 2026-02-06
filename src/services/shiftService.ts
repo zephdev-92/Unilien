@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Shift, UserRole } from '@/types'
 import {
   getProfileName,
@@ -39,7 +40,7 @@ export async function getShifts(
   const { data, error } = await query
 
   if (error) {
-    console.error('Erreur récupération shifts:', error)
+    logger.error('Erreur récupération shifts:', error)
     return []
   }
 
@@ -54,7 +55,7 @@ export async function getShiftById(shiftId: string): Promise<Shift | null> {
     .single()
 
   if (error) {
-    console.error('Erreur récupération shift:', error)
+    logger.error('Erreur récupération shift:', error)
     return null
   }
 
@@ -93,7 +94,7 @@ export async function createShift(
     .single()
 
   if (error) {
-    console.error('Erreur création shift:', error)
+    logger.error('Erreur création shift:', error)
     throw new Error(error.message)
   }
 
@@ -114,7 +115,7 @@ export async function createShift(
       )
     }
   } catch (err) {
-    console.error('Erreur notification shift créé:', err)
+    logger.error('Erreur notification shift créé:', err)
   }
 
   return mapShiftFromDb(data)
@@ -152,7 +153,7 @@ export async function updateShift(
     .eq('id', shiftId)
 
   if (error) {
-    console.error('Erreur mise à jour shift:', error)
+    logger.error('Erreur mise à jour shift:', error)
     throw new Error(error.message)
   }
 
@@ -180,7 +181,7 @@ export async function updateShift(
         }
       }
     } catch (err) {
-      console.error('Erreur notification shift modifié:', err)
+      logger.error('Erreur notification shift modifié:', err)
     }
   }
 
@@ -207,7 +208,7 @@ export async function updateShift(
         }
       }
     } catch (err) {
-      console.error('Erreur notification shift annulé:', err)
+      logger.error('Erreur notification shift annulé:', err)
     }
   }
 }
@@ -219,7 +220,7 @@ export async function deleteShift(shiftId: string): Promise<void> {
     .eq('id', shiftId)
 
   if (error) {
-    console.error('Erreur suppression shift:', error)
+    logger.error('Erreur suppression shift:', error)
     throw new Error(error.message)
   }
 }
@@ -239,7 +240,7 @@ export async function validateShift(
     .eq('id', shiftId)
 
   if (error) {
-    console.error('Erreur validation shift:', error)
+    logger.error('Erreur validation shift:', error)
     throw new Error(error.message)
   }
 }

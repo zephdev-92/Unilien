@@ -3,7 +3,7 @@
  * Permet de démarrer et terminer une intervention rapidement
  */
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   Box,
@@ -16,13 +16,14 @@ import {
   Center,
   Spinner,
 } from '@chakra-ui/react'
-import { format } from 'date-fns'
+import { format, subDays, startOfDay, endOfDay, isToday, isYesterday } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
 import { AccessibleButton } from '@/components/ui'
 import { getShifts, updateShift } from '@/services/shiftService'
-import { calculateNightHours } from '@/lib/compliance'
+import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
+import { logger } from '@/lib/logger'
 import type { Shift } from '@/types'
 
 type ClockInStep = 'idle' | 'in-progress' | 'completing'
@@ -38,35 +39,50 @@ export function ClockInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [historyShifts, setHistoryShifts] = useState<Shift[]>([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
+  const [historyDays, setHistoryDays] = useState(7)
 
-  // Charger les shifts du jour
-  useEffect(() => {
+  // Charger les shifts du jour + historique
+  const loadAllShifts = useCallback(async () => {
     if (!profile) return
 
-    async function loadTodayShifts() {
-      setIsLoadingShifts(true)
-      try {
-        const today = new Date()
-        const tomorrow = new Date()
-        tomorrow.setDate(tomorrow.getDate() + 1)
+    setIsLoadingShifts(true)
+    setIsLoadingHistory(true)
+    try {
+      const today = new Date()
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const historyStart = startOfDay(subDays(today, historyDays))
 
-        const shifts = await getShifts(profile!.id, 'employee', today, tomorrow)
-        // Garder les shifts d'aujourd'hui (planned ou completed)
-        const todayStr = format(today, 'yyyy-MM-dd')
-        const filtered = shifts.filter(
-          (s) => format(new Date(s.date), 'yyyy-MM-dd') === todayStr
+      const shifts = await getShifts(profile.id, 'employee', historyStart, endOfDay(tomorrow))
+
+      // Shifts d'aujourd'hui
+      const todayStr = format(today, 'yyyy-MM-dd')
+      setTodayShifts(
+        shifts.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === todayStr)
+      )
+
+      // Historique = shifts terminés des jours précédents
+      setHistoryShifts(
+        shifts.filter(
+          (s) =>
+            format(new Date(s.date), 'yyyy-MM-dd') !== todayStr &&
+            s.status === 'completed'
         )
-        setTodayShifts(filtered)
-      } catch (err) {
-        console.error('Erreur chargement shifts:', err)
-        setError('Impossible de charger les interventions du jour')
-      } finally {
-        setIsLoadingShifts(false)
-      }
+      )
+    } catch (err) {
+      logger.error('Erreur chargement shifts:', err)
+      setError('Impossible de charger les interventions')
+    } finally {
+      setIsLoadingShifts(false)
+      setIsLoadingHistory(false)
     }
+  }, [profile, historyDays])
 
-    loadTodayShifts()
-  }, [profile])
+  useEffect(() => {
+    loadAllShifts()
+  }, [loadAllShifts])
 
   // Shifts planifiés et terminés
   const plannedShifts = useMemo(
@@ -77,6 +93,55 @@ export function ClockInPage() {
     () => todayShifts.filter((s) => s.status === 'completed'),
     [todayShifts]
   )
+
+  // Historique groupé par jour (du plus récent au plus ancien)
+  const historyByDay = useMemo(() => {
+    const grouped = new Map<string, Shift[]>()
+    for (const shift of historyShifts) {
+      const dayKey = format(new Date(shift.date), 'yyyy-MM-dd')
+      if (!grouped.has(dayKey)) {
+        grouped.set(dayKey, [])
+      }
+      grouped.get(dayKey)!.push(shift)
+    }
+    // Trier les jours du plus récent au plus ancien
+    return Array.from(grouped.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([dateStr, shifts]) => ({
+        date: new Date(dateStr),
+        dateStr,
+        shifts: shifts.sort((a, b) => a.startTime.localeCompare(b.startTime)),
+      }))
+  }, [historyShifts])
+
+  // Stats récapitulatives
+  const historyStats = useMemo(() => {
+    let totalMinutes = 0
+    let totalNightHours = 0
+    let totalNightActionHours = 0
+    let shiftCount = 0
+
+    for (const shift of historyShifts) {
+      const durationMin = calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
+      totalMinutes += durationMin
+      shiftCount++
+
+      const nightH = calculateNightHours(new Date(shift.date), shift.startTime, shift.endTime)
+      if (nightH > 0) {
+        totalNightHours += nightH
+        if (shift.hasNightAction) {
+          totalNightActionHours += nightH
+        }
+      }
+    }
+
+    return {
+      totalHours: totalMinutes / 60,
+      totalNightHours,
+      totalNightActionHours,
+      shiftCount,
+    }
+  }, [historyShifts])
 
   // Shift actif (en cours de pointage)
   const activeShift = useMemo(
@@ -132,15 +197,8 @@ export function ClockInPage() {
         `Intervention terminée à ${clockOutTime}. Durée effective enregistrée.`
       )
 
-      // Recharger les shifts
-      const today = new Date()
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const shifts = await getShifts(profile!.id, 'employee', today, tomorrow)
-      const todayStr = format(today, 'yyyy-MM-dd')
-      setTodayShifts(
-        shifts.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === todayStr)
-      )
+      // Recharger tous les shifts
+      await loadAllShifts()
 
       // Reset
       setActiveShiftId(null)
@@ -148,7 +206,7 @@ export function ClockInPage() {
       setStep('idle')
       setHasNightAction(false)
     } catch (err) {
-      console.error('Erreur clock-out:', err)
+      logger.error('Erreur clock-out:', err)
       setError(
         err instanceof Error ? err.message : 'Erreur lors de la fin de l\'intervention'
       )
@@ -417,8 +475,263 @@ export function ClockInPage() {
             )}
           </Box>
         )}
+
+        {/* Historique des heures */}
+        <HistorySection
+          historyByDay={historyByDay}
+          historyStats={historyStats}
+          historyDays={historyDays}
+          setHistoryDays={setHistoryDays}
+          isLoading={isLoadingHistory}
+        />
       </Stack>
     </DashboardLayout>
+  )
+}
+
+/**
+ * Formater la date d'un jour en label lisible
+ */
+function formatDayLabel(date: Date): string {
+  if (isToday(date)) return "Aujourd'hui"
+  if (isYesterday(date)) return 'Hier'
+  return format(date, 'EEEE d MMMM', { locale: fr })
+}
+
+/**
+ * Formater un nombre d'heures en "Xh XXmin"
+ */
+function formatHours(hours: number): string {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (h === 0) return `${m}min`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m.toString().padStart(2, '0')}min`
+}
+
+/**
+ * Section historique des heures
+ */
+function HistorySection({
+  historyByDay,
+  historyStats,
+  historyDays,
+  setHistoryDays,
+  isLoading,
+}: {
+  historyByDay: { date: Date; dateStr: string; shifts: Shift[] }[]
+  historyStats: {
+    totalHours: number
+    totalNightHours: number
+    totalNightActionHours: number
+    shiftCount: number
+  }
+  historyDays: number
+  setHistoryDays: (days: number) => void
+  isLoading: boolean
+}) {
+  return (
+    <Box
+      bg="white"
+      borderRadius="xl"
+      borderWidth="1px"
+      borderColor="gray.200"
+      p={6}
+      boxShadow="sm"
+    >
+      {/* En-tête historique */}
+      <Flex justify="space-between" align="center" mb={4}>
+        <Flex align="center" gap={2}>
+          <Text fontSize="lg">📊</Text>
+          <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+            Historique des heures
+          </Text>
+        </Flex>
+        <Flex gap={1}>
+          {[7, 14, 30].map((days) => (
+            <AccessibleButton
+              key={days}
+              size="xs"
+              variant={historyDays === days ? 'solid' : 'outline'}
+              colorPalette={historyDays === days ? 'blue' : 'gray'}
+              onClick={() => setHistoryDays(days)}
+            >
+              {days}j
+            </AccessibleButton>
+          ))}
+        </Flex>
+      </Flex>
+
+      {/* Récapitulatif */}
+      {!isLoading && historyStats.shiftCount > 0 && (
+        <Box
+          p={4}
+          bg="blue.50"
+          borderRadius="lg"
+          borderWidth="1px"
+          borderColor="blue.100"
+          mb={4}
+        >
+          <Flex wrap="wrap" gap={4}>
+            <StatItem
+              label="Total heures"
+              value={formatHours(historyStats.totalHours)}
+              icon="⏱️"
+            />
+            <StatItem
+              label="Interventions"
+              value={String(historyStats.shiftCount)}
+              icon="📋"
+            />
+            {historyStats.totalNightHours > 0 && (
+              <StatItem
+                label="Heures de nuit"
+                value={formatHours(historyStats.totalNightHours)}
+                icon="🌙"
+              />
+            )}
+            {historyStats.totalNightActionHours > 0 && (
+              <StatItem
+                label="Nuit (acte)"
+                value={formatHours(historyStats.totalNightActionHours)}
+                icon="💊"
+              />
+            )}
+          </Flex>
+        </Box>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <Center py={6}>
+          <Spinner size="md" />
+        </Center>
+      )}
+
+      {/* Aucun historique */}
+      {!isLoading && historyStats.shiftCount === 0 && (
+        <Box p={6} textAlign="center">
+          <Text fontSize="3xl" mb={2}>📭</Text>
+          <Text color="gray.500">
+            Aucune intervention terminée sur les {historyDays} derniers jours
+          </Text>
+        </Box>
+      )}
+
+      {/* Liste par jour */}
+      {!isLoading && historyByDay.length > 0 && (
+        <Stack gap={4}>
+          {historyByDay.map(({ date, dateStr, shifts }) => {
+            const dayTotalMin = shifts.reduce(
+              (acc, s) => acc + calculateShiftDuration(s.startTime, s.endTime, s.breakDuration),
+              0
+            )
+            return (
+              <Box key={dateStr}>
+                <Flex justify="space-between" align="center" mb={2}>
+                  <Text
+                    fontSize="sm"
+                    fontWeight="semibold"
+                    color="gray.600"
+                    textTransform="capitalize"
+                  >
+                    {formatDayLabel(date)}
+                  </Text>
+                  <Badge colorPalette="gray" size="sm">
+                    {formatHours(dayTotalMin / 60)}
+                  </Badge>
+                </Flex>
+                <Stack gap={2}>
+                  {shifts.map((shift) => (
+                    <HistoryShiftRow key={shift.id} shift={shift} />
+                  ))}
+                </Stack>
+              </Box>
+            )
+          })}
+        </Stack>
+      )}
+    </Box>
+  )
+}
+
+/**
+ * Item de statistique compact
+ */
+function StatItem({ label, value, icon }: { label: string; value: string; icon: string }) {
+  return (
+    <Flex align="center" gap={2} minW="120px">
+      <Text fontSize="lg">{icon}</Text>
+      <Box>
+        <Text fontSize="lg" fontWeight="bold" color="blue.800" lineHeight="1.2">
+          {value}
+        </Text>
+        <Text fontSize="xs" color="blue.600">
+          {label}
+        </Text>
+      </Box>
+    </Flex>
+  )
+}
+
+/**
+ * Ligne d'intervention dans l'historique
+ */
+function HistoryShiftRow({ shift }: { shift: Shift }) {
+  const durationMin = calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
+  const nightHours = useMemo(() => {
+    try {
+      return calculateNightHours(new Date(shift.date), shift.startTime, shift.endTime)
+    } catch {
+      return 0
+    }
+  }, [shift])
+
+  return (
+    <Flex
+      p={3}
+      bg="gray.50"
+      borderRadius="md"
+      borderWidth="1px"
+      borderColor="gray.100"
+      justify="space-between"
+      align="center"
+    >
+      <Flex align="center" gap={3}>
+        <Box
+          w="4px"
+          h="36px"
+          borderRadius="full"
+          bg="green.400"
+          flexShrink={0}
+        />
+        <Box>
+          <Text fontSize="sm" fontWeight="semibold" color="gray.800">
+            {shift.startTime} - {shift.endTime}
+          </Text>
+          <Flex align="center" gap={2} mt={0.5}>
+            <Text fontSize="xs" color="gray.500">
+              {formatHours(durationMin / 60)}
+              {shift.breakDuration > 0 && ` (pause ${shift.breakDuration}min)`}
+            </Text>
+            {nightHours > 0 && (
+              <Badge
+                size="sm"
+                colorPalette={shift.hasNightAction ? 'purple' : 'gray'}
+                variant="subtle"
+              >
+                🌙 {nightHours.toFixed(1)}h {shift.hasNightAction ? '(acte)' : '(présence)'}
+              </Badge>
+            )}
+          </Flex>
+        </Box>
+      </Flex>
+      {shift.tasks.length > 0 && (
+        <Text fontSize="xs" color="gray.400" maxW="120px" truncate textAlign="right">
+          {shift.tasks.slice(0, 2).join(', ')}
+        </Text>
+      )}
+    </Flex>
   )
 }
 

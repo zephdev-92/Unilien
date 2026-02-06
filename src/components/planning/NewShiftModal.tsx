@@ -20,6 +20,7 @@ import { getContractsForEmployer, type ContractWithEmployee } from '@/services/c
 import { createShift, getShifts } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { calculateNightHours } from '@/lib/compliance'
+import { logger } from '@/lib/logger'
 import type { ShiftForValidation } from '@/lib/compliance'
 
 const shiftSchema = z.object({
@@ -179,7 +180,7 @@ export function NewShiftModal({
           }))
           setExistingShifts(shiftsForValidation)
         })
-        .catch(console.error)
+        .catch((err) => logger.error('Erreur chargement shifts pour validation:', err))
     }
   }, [isOpen, employerId, defaultDate])
 
@@ -231,7 +232,7 @@ export function NewShiftModal({
       onSuccess()
       onClose()
     } catch (error) {
-      console.error('Erreur création intervention:', error)
+      logger.error('Erreur création intervention:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Une erreur est survenue'
       )

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
+import { logger } from '@/lib/logger'
 
 interface SignUpData {
   email: string
@@ -54,7 +55,7 @@ function getSignUpErrorMessage(err: unknown): string {
   }
 
   // Erreur par défaut avec le message original pour debug
-  console.error('Erreur inscription non mappée:', err.message)
+  logger.error('Erreur inscription non mappée:', err.message)
   return 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.'
 }
 
@@ -108,7 +109,7 @@ export function useAuth() {
           .maybeSingle()
 
         if (profileError) {
-          console.error('Erreur récupération profil:', profileError)
+          logger.error('Erreur récupération profil:', profileError)
         }
 
         if (profileData) {
@@ -145,7 +146,7 @@ export function useAuth() {
           })
 
           if (createError) {
-            console.error('Erreur création profil fallback:', createError)
+            logger.error('Erreur création profil fallback:', createError)
           } else {
             setProfile({
               id: currentSession.user.id,
@@ -343,7 +344,7 @@ export function useAuth() {
       reset()
       navigate('/login')
     } catch (err) {
-      console.error('Erreur déconnexion:', err)
+      logger.error('Erreur déconnexion:', err)
     } finally {
       setLoading(false)
     }

@@ -23,6 +23,7 @@ import { getContractById } from '@/services/contractService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { calculateNightHours } from '@/lib/compliance'
 import { sanitizeText } from '@/lib/sanitize'
+import { logger } from '@/lib/logger'
 import type { Shift, UserRole, Contract } from '@/types'
 import type { ShiftForValidation } from '@/lib/compliance'
 
@@ -201,7 +202,7 @@ export function ShiftDetailModal({
           }))
           setExistingShifts(shiftsForValidation)
         })
-        .catch(console.error)
+        .catch((err) => logger.error('Erreur chargement shifts pour validation:', err))
 
       // Reset du formulaire avec les valeurs du shift
       reset({
@@ -261,7 +262,7 @@ export function ShiftDetailModal({
       onSuccess()
       setIsEditing(false)
     } catch (error) {
-      console.error('Erreur mise à jour intervention:', error)
+      logger.error('Erreur mise à jour intervention:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Une erreur est survenue'
       )
@@ -282,7 +283,7 @@ export function ShiftDetailModal({
       onSuccess()
       onClose()
     } catch (error) {
-      console.error('Erreur suppression intervention:', error)
+      logger.error('Erreur suppression intervention:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Erreur lors de la suppression'
       )
@@ -303,7 +304,7 @@ export function ShiftDetailModal({
       await validateShift(shift.id, userRole)
       onSuccess()
     } catch (error) {
-      console.error('Erreur validation intervention:', error)
+      logger.error('Erreur validation intervention:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Erreur lors de la validation'
       )

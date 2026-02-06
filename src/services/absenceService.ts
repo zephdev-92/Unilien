@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Absence } from '@/types'
 import {
   getProfileName,
@@ -111,7 +112,7 @@ export async function uploadJustification(
     })
 
   if (uploadError) {
-    console.error('Erreur upload justificatif:', uploadError)
+    logger.error('Erreur upload justificatif:', uploadError)
     throw new Error('Erreur lors de l\'upload du justificatif.')
   }
 
@@ -137,7 +138,7 @@ export async function getAbsencesForEmployee(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération absences:', error)
+    logger.error('Erreur récupération absences:', error)
     return []
   }
 
@@ -171,7 +172,7 @@ export async function getAbsencesForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération absences employeur:', error)
+    logger.error('Erreur récupération absences employeur:', error)
     return []
   }
 
@@ -205,7 +206,7 @@ export async function getPendingAbsencesForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération absences en attente:', error)
+    logger.error('Erreur récupération absences en attente:', error)
     return []
   }
 
@@ -241,7 +242,7 @@ export async function createAbsence(
     .single()
 
   if (error) {
-    console.error('Erreur création absence:', error)
+    logger.error('Erreur création absence:', error)
     throw new Error(error.message)
   }
 
@@ -256,7 +257,7 @@ export async function createAbsence(
       .maybeSingle()
 
     if (contractError) {
-      console.error('Erreur récupération contrat pour notification absence:', contractError)
+      logger.error('Erreur récupération contrat pour notification absence:', contractError)
     } else if (contract) {
       const employeeName = await getProfileName(employeeId)
       await createAbsenceRequestedNotification(
@@ -268,7 +269,7 @@ export async function createAbsence(
       )
     }
   } catch (err) {
-    console.error('Erreur notification demande absence:', err)
+    logger.error('Erreur notification demande absence:', err)
   }
 
   return mapAbsenceFromDb(data)
@@ -299,7 +300,7 @@ export async function updateAbsenceStatus(
     .eq('id', absenceId)
 
   if (error) {
-    console.error('Erreur mise à jour absence:', error)
+    logger.error('Erreur mise à jour absence:', error)
     throw new Error(error.message)
   }
 
@@ -312,7 +313,7 @@ export async function updateAbsenceStatus(
       new Date(absence.end_date)
     )
   } catch (err) {
-    console.error('Erreur notification absence résolue:', err)
+    logger.error('Erreur notification absence résolue:', err)
   }
 }
 
@@ -349,7 +350,7 @@ export async function cancelAbsence(
     .eq('id', absenceId)
 
   if (error) {
-    console.error('Erreur annulation absence:', error)
+    logger.error('Erreur annulation absence:', error)
     throw new Error(error.message)
   }
 }
@@ -365,7 +366,7 @@ export async function deleteAbsence(absenceId: string): Promise<void> {
     .eq('id', absenceId)
 
   if (error) {
-    console.error('Erreur suppression absence:', error)
+    logger.error('Erreur suppression absence:', error)
     throw new Error(error.message)
   }
 }

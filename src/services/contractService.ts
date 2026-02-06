@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Contract } from '@/types'
 import type {
   ContractDbRow,
@@ -45,7 +46,7 @@ export async function getContractById(contractId: string): Promise<Contract | nu
     .single()
 
   if (error) {
-    console.error('Erreur récupération contrat:', error)
+    logger.error('Erreur récupération contrat:', error)
     return null
   }
 
@@ -71,7 +72,7 @@ export async function getContractsForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération contrats:', error)
+    logger.error('Erreur récupération contrats:', error)
     return []
   }
 
@@ -96,7 +97,7 @@ export async function getContractsForEmployee(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération contrats employé:', error)
+    logger.error('Erreur récupération contrats employé:', error)
     return []
   }
 
@@ -124,7 +125,7 @@ export async function getActiveContractsCount(employerId: string): Promise<numbe
     .eq('status', 'active')
 
   if (error) {
-    console.error('Erreur comptage contrats:', error)
+    logger.error('Erreur comptage contrats:', error)
     return 0
   }
 
@@ -156,7 +157,7 @@ export async function createContract(
     .single()
 
   if (error) {
-    console.error('Erreur création contrat:', error)
+    logger.error('Erreur création contrat:', error)
     throw new Error(
       error.code === '23505'
         ? 'Un contrat actif existe déjà avec cet auxiliaire'
@@ -173,7 +174,7 @@ export async function createContract(
       contractData.contractType
     )
   } catch (err) {
-    console.error('Erreur notification nouveau contrat:', err)
+    logger.error('Erreur notification nouveau contrat:', err)
   }
 
   return mapContractFromDb(data as ContractDbRow)
@@ -210,7 +211,7 @@ export async function updateContract(
     .eq('id', contractId)
 
   if (error) {
-    console.error('Erreur mise à jour contrat:', error)
+    logger.error('Erreur mise à jour contrat:', error)
     throw new Error('Erreur lors de la mise à jour du contrat')
   }
 }
@@ -255,7 +256,7 @@ export async function terminateContract(
     try {
       await createContractTerminatedNotification(employeeId, employerName)
     } catch (err) {
-      console.error('Erreur notification fin contrat:', err)
+      logger.error('Erreur notification fin contrat:', err)
     }
   }
 }
@@ -337,7 +338,7 @@ export async function hasActiveContract(
     .eq('status', 'active')
 
   if (error) {
-    console.error('Erreur vérification contrat:', error)
+    logger.error('Erreur vérification contrat:', error)
     return false
   }
 

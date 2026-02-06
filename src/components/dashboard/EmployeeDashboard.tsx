@@ -9,6 +9,7 @@ import {
   StatsWidget,
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
+import { logger } from '@/lib/logger'
 
 interface EmployeeDashboardProps {
   profile: Profile
@@ -33,7 +34,7 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
           .slice(0, 5)
         setShifts(upcomingShifts)
       } catch (error) {
-        console.error('Erreur chargement shifts:', error)
+        logger.error('Erreur chargement shifts:', error)
       } finally {
         setIsLoadingShifts(false)
       }

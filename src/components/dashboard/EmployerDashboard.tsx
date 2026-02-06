@@ -12,6 +12,7 @@ import {
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { useComplianceMonitor } from '@/hooks/useComplianceMonitor'
+import { logger } from '@/lib/logger'
 
 interface EmployerDashboardProps {
   profile: Profile
@@ -44,7 +45,7 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
           .slice(0, 5)
         setShifts(upcomingShifts)
       } catch (error) {
-        console.error('Erreur chargement shifts:', error)
+        logger.error('Erreur chargement shifts:', error)
       } finally {
         setIsLoadingShifts(false)
       }

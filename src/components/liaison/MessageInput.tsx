@@ -9,6 +9,7 @@ import {
   VisuallyHidden,
 } from '@chakra-ui/react'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
+import { logger } from '@/lib/logger'
 
 // ============================================
 // PROPS
@@ -180,7 +181,7 @@ export function MessageInput({
         textareaRef.current.style.height = 'auto'
       }
     } catch (error) {
-      console.error('Erreur envoi message:', error)
+      logger.error('Erreur envoi message:', error)
     } finally {
       setIsSending(false)
     }

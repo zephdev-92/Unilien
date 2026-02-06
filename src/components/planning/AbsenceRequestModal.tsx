@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
+import { logger } from '@/lib/logger'
 import { createAbsence, uploadJustification, validateJustificationFile } from '@/services/absenceService'
 import type { Absence } from '@/types'
 
@@ -185,7 +186,7 @@ export function AbsenceRequestModal({
       onSuccess()
       onClose()
     } catch (error) {
-      console.error('Erreur création absence:', error)
+      logger.error('Erreur création absence:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Une erreur est survenue'
       )
