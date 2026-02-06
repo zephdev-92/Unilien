@@ -144,7 +144,9 @@ export function useAuth() {
             accessibility_settings: {},
           })
 
-          if (!createError) {
+          if (createError) {
+            console.error('Erreur création profil fallback:', createError)
+          } else {
             setProfile({
               id: currentSession.user.id,
               role: userRole,
