@@ -8,7 +8,7 @@ Ce document trace les fonctionnalités de notification à implémenter pour une 
 
 ## 1. Web Push API ✅ IMPLÉMENTÉ
 
-### Statut : Code implémenté, nécessite configuration
+### Statut : ✅ Configuré et déployé (09/02/2026)
 
 ### Architecture
 ```
@@ -35,21 +35,29 @@ Ce document trace les fonctionnalités de notification à implémenter pour une 
 
 ### Configuration requise ⚠️
 
-#### 1. Générer les clés VAPID
-```bash
-npx web-push generate-vapid-keys
+> **SÉCURITÉ (09/02/2026)** : Les anciennes clés VAPID ont été compromises (clé privée
+> stockée en clair dans `.vapid-keys.json`). De nouvelles clés ont été régénérées.
+> Ne JAMAIS stocker la clé privée dans un fichier du projet.
+
+#### 1. Clés VAPID (régénérées le 09/02/2026)
+
+**Clé publique** (dans `.env`) :
+```
+BDv33ff-KqJCumsmKee6SHqswcN9nhaH8q7zdIgIDNUtuO5B3fqIJp035EmyqRfL0OOfltwtiXVnLdWBAV-a-I4
 ```
 
-#### 2. Variables d'environnement Frontend (.env)
+> La clé privée est stockée **uniquement** dans les secrets Supabase.
+> Pour régénérer en cas de besoin : `npx web-push generate-vapid-keys --json`
+
+#### 2. Variables d'environnement Frontend (.env) ✅
 ```env
-VITE_VAPID_PUBLIC_KEY=BPxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_VAPID_PUBLIC_KEY=BDv33ff-KqJCumsmKee6SHqswcN9nhaH8q7zdIgIDNUtuO5B3fqIJp035EmyqRfL0OOfltwtiXVnLdWBAV-a-I4
 ```
 
-#### 3. Variables Supabase (secrets)
+#### 3. Secrets Supabase ✅ (configurés le 09/02/2026)
 ```bash
-supabase secrets set VAPID_PUBLIC_KEY="BPxxx..."
-supabase secrets set VAPID_PRIVATE_KEY="xxxxx..."
-supabase secrets set VAPID_SUBJECT="mailto:contact@unilien.fr"
+# Déjà configurés via : npx supabase secrets set
+# VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
 ```
 
 #### 4. Appliquer la migration
