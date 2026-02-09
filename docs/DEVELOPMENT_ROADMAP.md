@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 5 février 2026
-**Version**: 1.0.0
+**Dernière mise à jour**: 9 février 2026 (post-audit complet)
+**Version**: 1.1.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -12,55 +12,199 @@
 
 | Catégorie | Complétude | Statut |
 |-----------|------------|--------|
-| **Authentification** | 90% | ✅ Bon |
-| **Dashboards** | 85% | ✅ Bon |
-| **Planning** | 80% | 🟡 À améliorer |
-| **Cahier de liaison** | 75% | 🟡 À améliorer |
-| **Équipe/Contrats** | 80% | 🟡 À améliorer |
+| **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
+| **Dashboards** | 95% | ✅ Excellent (3 dashboards rôle-spécifiques) |
+| **Planning** | 90% | ✅ Bon (semaine/mois, shifts, absences) |
+| **Cahier de liaison** | 80% | 🟡 Bon (realtime, typing indicators) |
+| **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
-| **Documents/Export** | 70% | 🔴 Bugs critiques |
-| **Notifications** | 60% | 🟡 Partiel |
-| **Tests** | 15% | 🔴 Critique |
-| **Sécurité** | 90% | ✅ Bon (logger centralisé) |
+| **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
+| **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
+| **Tests** | 20% | 🔴 Critique (16 fichiers, couverture limitée) |
+| **Sécurité** | 70% | 🔴 À corriger (secrets exposés, routes non protégées) |
 
 ### Métriques Clés
 
-- **Fichiers source**: 137 fichiers TS/TSX
-- **Lignes de code**: ~15,000 lignes
-- **Tests**: 16 fichiers (15% coverage)
-- **Migrations DB**: 21 migrations
-- **Composants UI**: 60 composants
-- **Services**: 14 services
+- **Fichiers source**: ~140 fichiers TS/TSX
+- **Lignes de code**: ~16,000 lignes
+- **Tests**: 16 fichiers (~20% coverage)
+- **Migrations DB**: 23 migrations
+- **Composants UI**: ~65 composants
+- **Services**: 13 services
 - **Hooks**: 8 hooks
+- **Routes**: 16 routes (dont 10 protégées)
+
+---
+
+## ✅ Réalisations Récentes (Semaines 6-7 - Février 2026)
+
+### Audit Complet (09/02/2026)
+
+Audit multi-domaines réalisé couvrant sécurité, qualité, architecture, accessibilité et performance. Résultats :
+- **2 problèmes critiques** : clé VAPID privée exposée, credentials .env sans protection git
+- **4 problèmes hauts** : routes sans garde, client Supabase silencieux, sanitisation manquante, duplication code
+- **6 problèmes moyens** : error boundary absent, code splitting manquant, types Supabase génériques, emojis accessibilité, ARIA live regions, performance calculateNightHours
+- **5 problèmes bas** : focus SPA, refetchOnWindowFocus désactivé, paramètre _date inutilisé
+
+### Fonctionnalités Complétées
+
+| Fonctionnalité | Détails |
+|----------------|---------|
+| **Logger Centralisé** | `src/lib/logger.ts` - Redaction automatique, 4 niveaux, intégré dans tous les fichiers |
+| **Dashboards Complets** | 3 dashboards rôle-spécifiques (Employer, Employee, Caregiver) avec widgets |
+| **Profil Complet** | Sections PersonalInfo, Employee, Employer, Caregiver, Accessibility + avatar upload |
+| **Équipe & Contrats** | Gestion auxiliaires, aidants, contrats CDI/CDD, permissions granulaires |
+| **Planning Complet** | Vues semaine/mois, shifts CRUD, absences avec justificatifs, approbation |
+| **Documents** | Gestion absences/justificatifs, filtres, statistiques, approbation |
+| **Notifications In-App** | Bell icon, badge, panel, mark as read, dismiss, Realtime Supabase |
+| **Push Notifications** | Code implémenté, service worker, Edge Function (config VAPID restante) |
+| **Messaging Realtime** | Cahier de liaison temps réel avec indicateurs de frappe |
+| **Navigation Responsive** | Sidebar rôle-based, mobile overlay, accessibility (skip link) |
+| **23 Migrations DB** | Tables, RLS policies, fonctions, storage buckets, realtime |
+| **16 Fichiers Tests** | Compliance (7), Auth (4), Services (3), Store (1), Hook (1) |
+| **13 Services** | CRUD complet pour toutes les entités métier |
+| **Composants Accessibles** | AccessibleInput, AccessibleButton, AccessibleSelect, VoiceInput |
 
 ---
 
 ## 🔴 PRIORITÉ 0 - BUGS CRITIQUES (Urgent)
 
-### 1. 🐛 Majorations Hardcodées dans DeclarationService
+### 0a. ✅ CORRIGÉ : Clé Privée VAPID Exposée
+
+**Fichier**: `.vapid-keys.json` (racine projet)
+**Impact**: 🔴 CRITIQUE - Usurpation possible du serveur de notifications push
+**Effort**: 30 min
+**Statut**: ✅ CORRIGÉ (09/02/2026)
+**Découvert**: Audit 09/02/2026
+
+**Problème résolu**: Le fichier `.vapid-keys.json` contenait la clé privée VAPID en clair.
+
+**Corrections appliquées**:
+```
+[x] Nouvelles clés VAPID régénérées (npx web-push generate-vapid-keys)
+[x] Fichier .vapid-keys.json supprimé du filesystem
+[x] .env mis à jour avec la nouvelle clé publique
+[x] Dépôt git vérifié : aucun secret tracké
+[x] Ancienne clé privée absente de tous les fichiers du projet
+[x] Secrets Supabase mis à jour (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT)
+[x] Edge Function send-push-notification redéployée (v12)
+[x] Clé privée supprimée de la documentation
+[ ] Vérifier qu'aucune copie/backup externe ne contient l'ancienne clé
+```
+
+---
+
+### 0b. 🔴 CRITIQUE : Fichier .env avec Credentials en Clair (hors git)
+
+**Fichier**: `.env`
+**Impact**: 🔴 CRITIQUE - Credentials Supabase exposées
+**Effort**: 15 min
+**Statut**: ❌ À CORRIGER IMMÉDIATEMENT
+**Découvert**: Audit 09/02/2026
+
+**Problème**: Le fichier `.env` contient l'URL et la clé Supabase live (`lczfygydhnyygguvponw.supabase.co`). Le projet **n'est pas un dépôt git**, donc `.gitignore` ne protège rien. Toute copie du dossier inclut les credentials.
+
+**Actions**:
+```
+[ ] Initialiser le dépôt git IMMÉDIATEMENT (git init)
+[ ] Vérifier que .env est bien dans .gitignore (déjà OK dans le fichier)
+[ ] Utiliser .env.local pour les variables sensibles (Vite le supporte nativement)
+[ ] Auditer les copies/backups du dossier F:\warp
+[ ] Considérer une rotation de la clé anon Supabase si exposée
+```
+
+---
+
+### 0c. 🔴 HAUTE : Routes Protégées Sans Garde Centralisée
+
+**Fichier**: `src/App.tsx:104-129`
+**Impact**: 🔴 HAUTE - Accès non autorisé possible
+**Effort**: 1h
+**Statut**: ❌ À CORRIGER
+**Découvert**: Audit 09/02/2026
+
+**Problème**: Les routes `/dashboard`, `/settings`, `/planning`, `/clock-in`, `/logbook`, `/liaison`, `/team`, `/compliance`, `/documents` n'ont **aucune garde centralisée**. Chaque composant gère sa propre authentification individuellement (commentaires : "gère sa propre protection"). Pattern fragile :
+- Si un composant oublie la vérification → faille de sécurité
+- Un composant `PublicRoute` existe déjà mais pas de `ProtectedRoute` équivalent
+- Duplication du code de vérification dans chaque page
+
+**Actions**:
+```
+[ ] Créer composant <ProtectedRoute> (même pattern que PublicRoute existant)
+[ ] Wrapper toutes les routes authentifiées dans App.tsx
+[ ] Supprimer les vérifications individuelles redondantes dans chaque page
+[ ] Ajouter option de restriction par rôle (<ProtectedRoute allowedRoles={['employer']}>)
+[ ] Tests unitaires du composant ProtectedRoute
+```
+
+---
+
+### 0d. 🔴 HAUTE : Client Supabase Silencieux en Cas de Config Manquante
+
+**Fichier**: `src/lib/supabase/client.ts:14-16`
+**Impact**: 🔴 HAUTE - Bugs silencieux en production
+**Effort**: 15 min
+**Statut**: ❌ À CORRIGER
+**Découvert**: Audit 09/02/2026
+
+**Problème**: Quand les variables d'environnement sont absentes, le client Supabase se rabat silencieusement sur `'https://placeholder.supabase.co'` avec `'placeholder-key'`. Cela masque les erreurs de configuration en production et provoque des comportements imprévisibles au lieu d'un crash explicite.
+
+**Actions**:
+```
+[ ] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
+[ ] Idem pour VITE_SUPABASE_ANON_KEY
+[ ] Garder un message clair pour aider au debug ("Variables VITE_SUPABASE_* manquantes")
+```
+
+---
+
+### 0e. 🔴 HAUTE : Sanitisation Manquante dans les Services
+
+**Fichier**: `src/services/shiftService.ts` (lignes 86, 147)
+**Impact**: 🔴 HAUTE - XSS potentiel via données stockées
+**Effort**: 1h
+**Statut**: ❌ À CORRIGER
+**Découvert**: Audit 09/02/2026
+
+**Problème**: Le module `sanitize.ts` existe avec DOMPurify, mais les champs `notes` et `tasks` dans `shiftService.ts` sont envoyés directement à Supabase sans sanitisation. Tout texte utilisateur pourrait contenir du HTML/JS malicieux.
+
+**Actions**:
+```
+[ ] Appeler sanitizeText() sur le champ notes dans createShift()
+[ ] Appeler sanitizeText() sur chaque élément du tableau tasks
+[ ] Auditer les autres services (caregiverService, absenceService, liaisonService)
+[ ] Appliquer sanitizeText() à tout champ texte libre avant écriture en DB
+[ ] Ajouter tests unitaires vérifiant la sanitisation
+```
+
+---
+
+### 1. ✅ Majorations Hardcodées dans DeclarationService
 
 **Fichier**: `src/lib/export/declarationService.ts`
 **Impact**: 🔴 CRITIQUE - Exports CESU incorrects
 **Effort**: 1 jour
+**Statut**: ✅ CORRIGÉ
 **Document**: `docs/issues/HARDCODED_MAJORATIONS_ISSUE.md`
 
-**Problèmes**:
-- ❌ Majorations hardcodées (30%, 60%, 20%)
-- ❌ Heures supplémentaires toujours à 0
-- ❌ Non-conformité légale (Code du travail)
-- ❌ Sous-paiement des employés
+**Problèmes corrigés**:
+- ✅ ~~Majorations hardcodées (30%, 60%, 20%)~~ → Utilise `MAJORATION_RATES` depuis `calculatePay.ts`
+- ✅ ~~Heures supplémentaires toujours à 0~~ → Calcul réel via `calculateOvertimeHours()` avec cumul par shift
+- ✅ ~~Non-conformité légale~~ → Taux conformes Convention Collective IDCC 3239
+- ✅ ~~Sous-paiement des employés~~ → Calcul correct (dimanche, fériés, nuit, heures sup)
 
 **Actions**:
 ```
 [x] Exporter MAJORATION_RATES depuis calculatePay.ts
-[ ] Utiliser calculateShiftPay() pour chaque shift
-[ ] Implémenter calcul réel des heures sup
+[x] Utiliser MAJORATION_RATES + calculateOvertimeHours() pour chaque shift
+[x] Implémenter calcul réel des heures sup (cumul progressif par shift)
+[x] Gestion has_night_action (acte vs présence seule)
 [ ] Créer tests unitaires (declarationService.test.ts)
 [ ] Tests d'intégration export CESU
 [ ] Validation expert paie
 ```
 
-**Timeline**: **Cette semaine** (Semaine 6/2026)
+**Timeline**: ~~Cette semaine (Semaine 6/2026)~~ Code corrigé, tests restants
 
 ---
 
@@ -70,7 +214,18 @@
 **Effort**: 6-8 semaines
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: 15% coverage (cible: 70%)
+**État actuel**: ~20% coverage (cible: 70%)
+
+**Tests existants (16 fichiers)**:
+```
+[x] src/lib/compliance/**/*.test.ts (7 fichiers - conformité)
+[x] src/hooks/useAuth.test.ts
+[x] src/stores/authStore.test.ts
+[x] src/services/contractService.test.ts
+[x] src/services/shiftService.test.ts
+[x] src/services/profileService.test.ts
+[x] src/components/auth/*.test.tsx (3 fichiers - LoginForm, SignupForm, etc.)
+```
 
 **Services non testés (10/13)** - P0:
 ```
@@ -99,7 +254,7 @@
 **Quick Wins**:
 ```
 [x] Corriger vitest.config.ts (coverage global) - 15 min
-[ ] Créer premiers tests services - 1 semaine
+[ ] Créer premiers tests services restants - 1 semaine
 [ ] Setup GitHub Actions coverage - 30 min
 ```
 
@@ -118,22 +273,138 @@
 **Document**: `docs/SECURITY_ANALYSIS.md` (P1)
 
 **Implémentation** (`src/lib/logger.ts`):
-- Redaction automatique : emails, JWT, UUIDs, téléphones, clés API
-- Sanitisation récursive des objets (clés sensibles masquées)
-- Production : seuls error/warn actifs, prêt pour Sentry
-- Développement : tous niveaux actifs avec données sanitisées
-- 4 niveaux : `logger.error()`, `logger.warn()`, `logger.info()`, `logger.debug()`
+- ✅ Redaction automatique : emails, JWT, UUIDs, téléphones, clés API
+- ✅ Sanitisation récursive des objets (clés sensibles masquées)
+- ✅ Production : seuls error/warn actifs, prêt pour Sentry
+- ✅ Développement : tous niveaux actifs avec données sanitisées
+- ✅ 4 niveaux : `logger.error()`, `logger.warn()`, `logger.info()`, `logger.debug()`
+- ✅ Intégré dans tous les services, hooks et composants
 
 **Actions**:
 ```
 [x] Créer src/lib/logger.ts
 [x] Implémenter redaction (emails, IDs, tokens, téléphones)
 [x] Remplacer console.* par logger dans 47 fichiers (170+ appels)
+[x] Intégration dans les composants (dashboard, planning, profile, team, documents)
 [ ] Intégrer Sentry/LogRocket (optionnel - prêt pour intégration)
 [x] Documentation équipe (JSDoc dans le fichier)
 ```
 
 **Timeline**: ~~Semaine 7/2026~~ Terminé Semaine 6/2026
+
+---
+
+### 2b. 🟡 Qualité de Code - Problèmes Détectés par Audit
+
+**Impact**: 🟡 MOYEN-ÉLEVÉ - Maintenabilité & fiabilité
+**Effort**: 2-3 jours
+**Statut**: ❌ À CORRIGER
+**Découvert**: Audit 09/02/2026
+
+#### Duplication Massive du Mapping Profil (useAuth.ts)
+
+**Fichier**: `src/hooks/useAuth.ts`
+
+Le code de conversion DB → Profile est dupliqué **4 fois** dans le même fichier :
+1. `initialize()` quand le profil existe (lignes 118-129)
+2. `initialize()` quand le profil est créé (lignes 151-162)
+3. `signIn()` quand le profil existe (lignes 280-291)
+4. `signIn()` quand le profil est créé (lignes 311-322)
+
++ Casting `as any` dans 2 endroits (lignes 117, 279) contournant TypeScript.
+
+**Actions**:
+```
+[ ] Extraire une fonction mapProfileFromDb(data, email) réutilisable
+[ ] Extraire une fonction createFallbackProfile(user) réutilisable
+[ ] Supprimer les 4 duplications et les remplacer par des appels à ces fonctions
+[ ] Supprimer les "as any" en typant correctement les réponses Supabase
+```
+
+**Effort**: 1h
+
+#### Absence d'Error Boundary Global
+
+L'application n'a pas de React Error Boundary au niveau racine. Si un composant crash, l'écran blanc sans message apparaît.
+
+**Actions**:
+```
+[ ] Créer un composant ErrorBoundary global
+[ ] L'intégrer dans main.tsx (wrappant <App />)
+[ ] Afficher un message d'erreur accessible en cas de crash
+[ ] Logger l'erreur via logger.ts
+```
+
+**Effort**: 30 min
+
+#### Types Supabase Trop Génériques
+
+**Fichier**: `src/lib/supabase/types.ts`
+
+Les champs structurés utilisent `Record<string, unknown>` au lieu de types précis :
+- `accessibility_settings` → devrait être `AccessibilitySettings`
+- `address` → devrait être `Address`
+- `computed_pay` → devrait être `ComputedPay`
+- `permissions` → devrait être `CaregiverPermissions`
+
+**Actions**:
+```
+[ ] Aligner les types Supabase avec les interfaces de types/index.ts
+[ ] Supprimer les Record<string, unknown> génériques
+[ ] Regenerer les types si possible (npx supabase gen types)
+```
+
+**Effort**: 1h
+
+---
+
+### 2c. 🟡 Accessibilité - Écarts par Rapport à l'Objectif WCAG AAA
+
+**Impact**: 🟡 IMPORTANT - Mission critique du projet
+**Effort**: 1 jour
+**Statut**: ❌ À CORRIGER
+**Découvert**: Audit 09/02/2026
+
+#### Emojis dans les Boutons (LoginForm, SignupForm)
+
+**Fichiers**: `src/components/auth/LoginForm.tsx:132-133`, `SignupForm.tsx:227-249`
+
+Les boutons d'affichage/masquage du mot de passe utilisent des emojis (`🙈` / `👁️`). Les lecteurs d'écran liront "singe qui se cache les yeux" ou "oeil" au lieu d'un texte utile. L'`aria-label` est présent mais l'emoji reste visuellement problématique.
+
+**Actions**:
+```
+[ ] Remplacer les emojis par des icônes SVG (Chakra UI icons ou lucide-react)
+[ ] Exemple : <EyeIcon /> et <EyeOffIcon />
+[ ] Garder les aria-label existants
+```
+
+**Effort**: 30 min
+
+#### Pas de ARIA Live Regions pour le Contenu Dynamique
+
+Aucune `aria-live` region détectée pour les alertes dynamiques (conformité, notifications, messages temps réel). Les changements dynamiques ne sont pas annoncés aux lecteurs d'écran.
+
+**Actions**:
+```
+[ ] Ajouter aria-live="assertive" sur les alertes de conformité critiques
+[ ] Ajouter aria-live="polite" sur les notifications, indicateurs de frappe
+[ ] Tester avec NVDA/VoiceOver
+```
+
+**Effort**: 1h
+
+#### Gestion du Focus après Navigation SPA
+
+Le focus n'est pas géré après les changements de route. L'utilisateur au clavier ou lecteur d'écran se retrouve "perdu" après navigation.
+
+**Actions**:
+```
+[ ] Implémenter un hook useRouteAnnouncer() ou composant <RouteAnnouncer />
+[ ] Déplacer le focus vers le h1 de la nouvelle page après navigation
+[ ] Annoncer le titre de la page aux lecteurs d'écran
+```
+
+**Effort**: 1h
 
 ---
 
@@ -146,7 +417,9 @@
 **Document**: `docs/TODO_NOTIFICATIONS.md`
 
 **État actuel**:
-- ✅ Notifications Web Push (code implémenté, config manquante)
+- ✅ Notifications in-app (bell icon, badge, panel, mark as read, dismiss)
+- ✅ Notifications Realtime (Supabase Realtime subscriptions)
+- ✅ Notifications Web Push (code implémenté, service worker prêt, config VAPID manquante)
 - ❌ Notifications Email (non implémenté)
 - ❌ Notifications SMS (non implémenté)
 
@@ -624,21 +897,28 @@ npx playwright install
 **Impact**: 🟡 IMPORTANT - UX
 **Effort**: 1 semaine
 
-#### 16.1 Bundle Size Optimization
+#### 16.1 Bundle Size Optimization & Code Splitting
+
+**Constat audit 09/02/2026** : Toutes les pages sont importées de manière synchrone dans `App.tsx`. Aucun code splitting. Pour une PWA, c'est un problème de performance au premier chargement.
 
 ```
-[ ] Analyse bundle (webpack-bundle-analyzer)
-[ ] Code splitting (React.lazy)
+[ ] Analyse bundle (vite-bundle-visualizer)
+[ ] Code splitting avec React.lazy() + Suspense sur toutes les routes
 [ ] Tree shaking
 [ ] Compression assets
 [ ] CDN pour assets statiques
+[ ] Mesurer le gain (target : <200KB initial, <500KB total)
 ```
 
-**Cible**: < 500KB initial bundle
+**Cible**: < 200KB initial bundle (actuellement toutes les pages chargées d'un coup)
 
 #### 16.2 Performance Runtime
 
+**Constat audit 09/02/2026** : `calculateNightHours()` dans `utils.ts:118` itère minute par minute (720 itérations pour un shift de 12h). Peut être remplacé par un calcul d'intervalles en O(1). `refetchOnWindowFocus: false` dans React Query désactive le rafraîchissement automatique, risque de données périmées en multi-utilisateurs.
+
 ```
+[ ] Optimiser calculateNightHours() avec calcul d'intervalles (pas de boucle)
+[ ] Évaluer refetchOnWindowFocus: true pour les données collaboratives (shifts, messages)
 [ ] React.memo sur composants lourds
 [ ] useMemo/useCallback optimisations
 [ ] Virtualization listes longues
@@ -663,12 +943,20 @@ npx playwright install
 
 ### Q1 2026 (Janvier - Mars)
 
-**Semaine 6** (Actuelle):
-- 🔴 Fix majorations hardcodées
-- 🔴 Logger centralisé
-- 🟡 Finaliser Web Push
+**Semaine 6** (Terminée ✅):
+- ✅ Logger centralisé (créé + intégré dans tous les fichiers)
+- ✅ Fix majorations hardcodées (MAJORATION_RATES + calculateOvertimeHours)
+- 🟡 Finaliser Web Push (config VAPID restante)
 
-**Semaines 7-10**:
+**Semaine 7** (Actuelle - 10-14 février):
+- 🔴 **URGENT** : Corrections sécurité post-audit (clé VAPID, git init, fallback Supabase)
+- 🔴 **URGENT** : Créer ProtectedRoute + sanitisation services
+- 🔴 Extraire mapProfileFromDb, supprimer duplications useAuth.ts
+- 🔴 Ajouter Error Boundary global
+- 🟡 Finaliser Web Push (avec nouvelles clés VAPID régénérées)
+- 🔴 Début tests services critiques
+
+**Semaines 8-10**:
 - 🔴 Tests services critiques (Phase 1)
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
@@ -718,11 +1006,15 @@ npx playwright install
 
 ### Objectifs Q1 2026
 
-- [x] Coverage tests ≥ 60%
+- [ ] Coverage tests ≥ 60% (actuellement ~20%)
 - [ ] 0 bugs critiques en production
-- [ ] Notifications multi-canal (Push, Email)
-- [ ] Export documents conformes légalement
-- [ ] Logger production sécurisé
+- [ ] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git)
+- [ ] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute)
+- [ ] **NOUVEAU** : Sanitisation systématique des entrées utilisateur dans tous les services
+- [x] Notifications in-app + Realtime (Supabase)
+- [ ] Notifications multi-canal Push + Email (Push: code prêt, config manquante)
+- [ ] Export documents conformes légalement (majorations en cours)
+- [x] Logger production sécurisé (✅ logger.ts avec redaction)
 
 ### Objectifs Q2 2026
 
@@ -809,32 +1101,68 @@ npx playwright install
 - `docs/compliance/README.md` - Règles métier conformité
 - `README.md` - Setup & installation
 
+> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0e), 2b, 2c, et 16.
+
 ---
 
 ## ✅ Prochaines Actions Immédiates
 
-### Cette Semaine (Semaine 6)
+### Semaine 6 - Bilan (Terminé)
 
-1. **Lundi-Mardi**: Fix majorations hardcodées
-   - [ ] Refactor declarationService.ts
-   - [ ] Tests unitaires
-   - [ ] Code review
-   - [ ] Merge + déploiement
+1. ~~**Logger centralisé**~~ ✅ TERMINÉ (03/02/2026)
+   - [x] Créer src/lib/logger.ts
+   - [x] Remplacer console.* dans tous les fichiers (services, hooks, composants)
+   - [x] Redaction données sensibles
+   - [x] Intégration dashboard, planning, profile, team, documents
 
-2. **Mercredi**: Logger centralisé
-   - [ ] Créer src/lib/logger.ts
-   - [ ] Remplacer console.* dans fichiers critiques
-   - [ ] Tests
+2. ~~**Fix majorations hardcodées**~~ ✅ CORRIGÉ
+   - [x] Utiliser MAJORATION_RATES depuis calculatePay.ts (plus de valeurs hardcodées)
+   - [x] Calcul réel des heures sup via calculateOvertimeHours()
+   - [x] Gestion has_night_action (acte vs présence seule)
+   - [ ] Tests unitaires declarationService.test.ts (restant)
 
-3. **Jeudi-Vendredi**: Web Push finalization
-   - [ ] Générer clés VAPID
-   - [ ] Config variables env
-   - [ ] Déployer Edge Function
+### 🚨 URGENT - Actions Immédiates Post-Audit (09/02/2026)
+
+> Ces actions ont été identifiées lors de l'audit complet du 9 février 2026.
+> Elles sont prioritaires sur les tâches de la semaine 7.
+
+**0. Sécurité critique (AUJOURD'HUI)**:
+   - [x] ✅ Régénérer les clés VAPID et supprimer `.vapid-keys.json` du filesystem (09/02/2026)
+   - [x] ✅ Dépôt git initialisé, `.gitignore` actif (09/02/2026)
+   - [x] ✅ Vérifié : `.env` et `.vapid-keys.json` sont bien exclus de git (09/02/2026)
+   - [x] ✅ Secrets VAPID configurés sur Supabase + Edge Function redéployée v12 (09/02/2026)
+   - [x] ✅ Migrations synchronisées (22 marquées applied) (09/02/2026)
+   - [x] ✅ config.toml corrigé (clés non supportées retirées) (09/02/2026)
+   - [ ] Faire échouer explicitement le client Supabase si env vars manquantes (supprimer les fallbacks placeholder)
+
+**1. Protection des routes (CETTE SEMAINE)**:
+   - [ ] Créer composant `<ProtectedRoute>` centralisé
+   - [ ] L'appliquer à toutes les routes authentifiées dans `App.tsx`
+   - [ ] Ajouter support restriction par rôle
+
+**2. Sanitisation des entrées (CETTE SEMAINE)**:
+   - [ ] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
+   - [ ] Auditer et corriger les autres services (caregiver, absence, liaison)
+
+**3. Qualité code (CETTE SEMAINE)**:
+   - [ ] Extraire helper `mapProfileFromDb()` dans `useAuth.ts` (supprimer 4x duplication)
+   - [ ] Supprimer les castings `as any` dans `useAuth.ts`
+   - [ ] Ajouter un Error Boundary global dans `main.tsx`
+
+### Cette Semaine (Semaine 7 - 10-14 février)
+
+3. **Tests declarationService** (suite fix majorations)
+   - [ ] Créer declarationService.test.ts
+   - [ ] Tests d'intégration export CESU
+   - [ ] Code review + Merge
+
+4. **Web Push finalization**
+   - [ ] ~~Générer clés VAPID~~ → Inclus dans actions urgentes ci-dessus
+   - [ ] Config variables env (VITE_VAPID_PUBLIC_KEY)
+   - [ ] Déployer Edge Function send-push-notification
    - [ ] Tests navigateurs
 
-### Semaine 7
-
-4. **Début tests services**
+5. **Début tests services**
    - [ ] notificationService.test.ts (2 jours)
    - [ ] absenceService.test.ts (1 jour)
    - [ ] Setup GitHub Actions coverage (30 min)
@@ -843,12 +1171,14 @@ npx playwright install
 
 ## 🔄 Cycle de Review
 
-- **Hebdomadaire**: Review roadmap, ajustements priorités
+- **Hebdomadaire**: Review roadmap, ajustements priorités (chaque lundi)
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
+
+> **Dernière review**: 9 février 2026 - Mise à jour post-audit complet (sécurité, qualité, architecture, accessibilité, performance)
 
 ---
 
 **Maintenu par**: Tech Lead
-**Prochaine revue**: 12 février 2026
+**Prochaine revue**: 16 février 2026
 **Feedback**: [Ouvrir une issue](https://github.com/zephdev-92/Unilien/issues)
