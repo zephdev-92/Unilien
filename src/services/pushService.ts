@@ -196,6 +196,20 @@ export async function subscribeToPush(userId: string): Promise<PushSubscription 
 
     let subscription = existingSubscription
 
+    // Vérifier si la subscription existante utilise la bonne clé VAPID
+    if (subscription) {
+      const currentKey = subscription.options?.applicationServerKey
+      const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      const keysMatch = currentKey && new Uint8Array(currentKey).length === expectedKey.length &&
+        new Uint8Array(currentKey).every((v, i) => v === expectedKey[i])
+
+      if (!keysMatch) {
+        logger.debug('[Push] Clé VAPID changée, ré-abonnement nécessaire...')
+        await subscription.unsubscribe()
+        subscription = null
+      }
+    }
+
     if (!subscription) {
       // Créer la subscription
       logger.debug('[Push] Création nouvelle subscription avec VAPID...')
