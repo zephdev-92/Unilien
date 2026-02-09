@@ -19,14 +19,19 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
  */
 async function triggerPushNotification(notification: Notification): Promise<void> {
   try {
+    logger.debug('[Push] triggerPushNotification appelée pour:', notification.userId, notification.title)
+
     // Vérifier les préférences utilisateur
     const prefs = await getNotificationPreferences(notification.userId)
+    logger.debug('[Push] Préférences pushEnabled:', prefs.pushEnabled)
     if (!prefs.pushEnabled) {
+      logger.debug('[Push] Push désactivé par les préférences utilisateur')
       return
     }
 
     // Appeler l'Edge Function pour envoyer le push
-    const { error } = await supabase.functions.invoke('send-push-notification', {
+    logger.debug('[Push] Appel Edge Function send-push-notification...')
+    const { data, error } = await supabase.functions.invoke('send-push-notification', {
       body: {
         userId: notification.userId,
         title: notification.title,
@@ -41,11 +46,13 @@ async function triggerPushNotification(notification: Notification): Promise<void
     })
 
     if (error) {
-      logger.warn('Erreur envoi push notification:', error)
+      logger.warn('[Push] Erreur Edge Function:', error)
+    } else {
+      logger.debug('[Push] Réponse Edge Function:', data)
     }
   } catch (err) {
     // Ne pas bloquer si le push échoue
-    logger.warn('Push notification non envoyée:', err)
+    logger.warn('[Push] Push notification non envoyée:', err)
   }
 }
 
@@ -198,8 +205,8 @@ export async function createNotification(
   const notification = mapNotificationFromDb(data)
 
   // Déclencher le push notification en arrière-plan (non bloquant)
-  triggerPushNotification(notification).catch(() => {
-    // Ignorer les erreurs push silencieusement
+  triggerPushNotification(notification).catch((err) => {
+    logger.warn('[Push] Échec triggerPushNotification:', err)
   })
 
   return notification

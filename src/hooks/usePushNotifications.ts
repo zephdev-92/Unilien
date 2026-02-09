@@ -66,7 +66,7 @@ export function usePushNotifications(
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Check subscription status on mount
+  // Check subscription status on mount and re-subscribe if VAPID key changed
   useEffect(() => {
     async function checkSubscription() {
       if (!isSupported || !userId) {
@@ -77,6 +77,16 @@ export function usePushNotifications(
       try {
         const subscribed = await isPushSubscribed()
         setIsSubscribed(subscribed)
+
+        // Si la permission est accordée mais pas d'abonnement actif,
+        // tenter un ré-abonnement (cas rotation de clé VAPID)
+        if (!subscribed && isConfigured && permission === 'granted') {
+          logger.debug('[Push] Ré-abonnement automatique après changement de clé VAPID...')
+          const sub = await subscribeToPush(userId)
+          if (sub) {
+            setIsSubscribed(true)
+          }
+        }
       } catch (err) {
         logger.error('Erreur vérification subscription:', err)
       } finally {
@@ -85,7 +95,7 @@ export function usePushNotifications(
     }
 
     checkSubscription()
-  }, [isSupported, userId])
+  }, [isSupported, isConfigured, permission, userId])
 
   // Auto-subscribe if enabled and permission granted
   useEffect(() => {

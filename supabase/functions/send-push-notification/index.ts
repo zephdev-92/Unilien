@@ -33,6 +33,22 @@ serve(async (req) => {
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
     const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:contact@unilien.fr'
 
+    // Vérification interne du JWT : valider que l'appelant est authentifié
+    const authHeader = req.headers.get('authorization') || ''
+    const token = authHeader.replace('Bearer ', '')
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Unauthorized - no token' }), { status: 401, headers: corsHeaders })
+    }
+
+    // Vérifier le token via Supabase Auth
+    const authClient = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+    const { data: { user }, error: authError } = await authClient.auth.getUser(token)
+    if (authError || !user) {
+      console.log('Auth failed:', authError?.message)
+      return new Response(JSON.stringify({ error: 'Unauthorized - invalid token' }), { status: 401, headers: corsHeaders })
+    }
+    console.log('Authenticated user:', user.id)
+
     console.log('Push function called')
     console.log('VAPID configured:', !!vapidPublicKey && !!vapidPrivateKey)
 
@@ -97,8 +113,8 @@ serve(async (req) => {
         const err = e as { statusCode?: number; body?: string; message?: string }
         console.log('Failed:', err.statusCode, err.body || err.message)
         failed++
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          console.log('Removing expired subscription')
+        if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 401 || err.statusCode === 403) {
+          console.log('Removing invalid/expired subscription:', err.statusCode)
           await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
         }
       }
