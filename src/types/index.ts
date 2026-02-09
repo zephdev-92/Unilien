@@ -165,6 +165,7 @@ export interface Shift {
   breakDuration: number // minutes
   tasks: string[]
   notes?: string
+  hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   computedPay: ComputedPay
   validatedByEmployer: boolean

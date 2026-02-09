@@ -12,6 +12,7 @@ import {
   type ShiftForValidation,
   type ContractForCalculation,
 } from '@/lib/compliance'
+import { logger } from '@/lib/logger'
 
 interface UseComplianceCheckOptions {
   // Intervention à valider
@@ -22,6 +23,7 @@ interface UseComplianceCheckOptions {
     startTime: string
     endTime: string
     breakDuration: number
+    hasNightAction?: boolean
   } | null
 
   // Contrat pour le calcul de paie
@@ -85,6 +87,7 @@ export function useComplianceCheck({
       startTime: shift.startTime,
       endTime: shift.endTime,
       breakDuration: shift.breakDuration || 0,
+      hasNightAction: shift.hasNightAction,
     }
   }, [shift, editingShiftId])
 
@@ -135,7 +138,7 @@ export function useComplianceCheck({
         setComputedPay(pay)
       }
     } catch (error) {
-      console.error('Erreur validation conformité:', error)
+      logger.error('Erreur validation conformité:', error)
       setComplianceResult({
         valid: false,
         errors: [

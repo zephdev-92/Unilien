@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Contract, Employee, Profile } from '@/types'
 import type {
   ContractDbRow,
@@ -80,7 +81,7 @@ export async function getAuxiliariesForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération auxiliaires:', error)
+    logger.error('Erreur récupération auxiliaires:', error)
     return []
   }
 
@@ -121,7 +122,7 @@ export async function getActiveAuxiliariesForEmployer(
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erreur récupération auxiliaires actifs:', error)
+    logger.error('Erreur récupération auxiliaires actifs:', error)
     return []
   }
 
@@ -147,7 +148,7 @@ export async function getAuxiliaryDetails(
     .single()
 
   if (contractError || !contractData) {
-    console.error('Erreur récupération détails auxiliaire:', contractError)
+    logger.error('Erreur récupération détails auxiliaire:', contractError)
     return null
   }
 

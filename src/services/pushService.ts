@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 
 // ============================================
 // TYPES
@@ -102,7 +103,7 @@ export function getNotificationPermission(): NotificationPermission {
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) {
-    console.warn('Ce navigateur ne supporte pas les notifications')
+    logger.warn('Ce navigateur ne supporte pas les notifications')
     return 'denied'
   }
 
@@ -133,7 +134,7 @@ async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration
     const registration = await navigator.serviceWorker.ready
     return registration
   } catch (error) {
-    console.error('Erreur accès service worker:', error)
+    logger.error('Erreur accès service worker:', error)
     return null
   }
 }
@@ -153,7 +154,7 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
     const subscription = await registration.pushManager.getSubscription()
     return subscription
   } catch (error) {
-    console.error('Erreur récupération subscription:', error)
+    logger.error('Erreur récupération subscription:', error)
     return null
   }
 }
@@ -162,57 +163,57 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
  * S'abonne aux notifications push
  */
 export async function subscribeToPush(userId: string): Promise<PushSubscription | null> {
-  console.log('[Push] Début subscribeToPush pour userId:', userId)
+  logger.debug('[Push] Début subscribeToPush pour userId:', userId)
 
   if (!isPushSupported()) {
-    console.warn('[Push] Push non supporté')
+    logger.warn('[Push] Push non supporté')
     return null
   }
 
   if (!isVapidConfigured()) {
-    console.warn('[Push] VAPID non configuré - clé:', VAPID_PUBLIC_KEY?.substring(0, 20))
+    logger.warn('[Push] VAPID non configuré - clé:', VAPID_PUBLIC_KEY?.substring(0, 20))
     return null
   }
 
   const permission = await requestNotificationPermission()
-  console.log('[Push] Permission:', permission)
+  logger.debug('[Push] Permission:', permission)
   if (permission !== 'granted') {
-    console.warn('[Push] Permission notification refusée')
+    logger.warn('[Push] Permission notification refusée')
     return null
   }
 
   const registration = await getServiceWorkerRegistration()
-  console.log('[Push] Service Worker registration:', registration ? 'OK' : 'NULL')
+  logger.debug('[Push] Service Worker registration:', registration ? 'OK' : 'NULL')
   if (!registration) {
-    console.error('[Push] Service worker non disponible')
+    logger.error('[Push] Service worker non disponible')
     return null
   }
 
   try {
     // Vérifier s'il y a déjà une subscription
     const existingSubscription = await registration.pushManager.getSubscription()
-    console.log('[Push] Subscription existante:', existingSubscription ? 'OUI' : 'NON')
+    logger.debug('[Push] Subscription existante:', existingSubscription ? 'OUI' : 'NON')
 
     let subscription = existingSubscription
 
     if (!subscription) {
       // Créer la subscription
-      console.log('[Push] Création nouvelle subscription avec VAPID...')
+      logger.debug('[Push] Création nouvelle subscription avec VAPID...')
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       })
-      console.log('[Push] Subscription créée:', subscription.endpoint.substring(0, 50))
+      logger.debug('[Push] Subscription créée:', subscription.endpoint.substring(0, 50))
     }
 
     // Sauvegarder en base
-    console.log('[Push] Sauvegarde en base...')
+    logger.debug('[Push] Sauvegarde en base...')
     await savePushSubscription(userId, subscription)
 
-    console.log('[Push] ✅ Subscription push enregistrée avec succès!')
+    logger.debug('[Push] ✅ Subscription push enregistrée avec succès!')
     return subscription
   } catch (error) {
-    console.error('[Push] ❌ Erreur création subscription push:', error)
+    logger.error('[Push] ❌ Erreur création subscription push:', error)
     return null
   }
 }
@@ -234,7 +235,7 @@ export async function unsubscribeFromPush(userId: string): Promise<boolean> {
     const success = await subscription.unsubscribe()
     return success
   } catch (error) {
-    console.error('Erreur désabonnement push:', error)
+    logger.error('Erreur désabonnement push:', error)
     return false
   }
 }
@@ -251,7 +252,7 @@ async function savePushSubscription(
   subscription: PushSubscription
 ): Promise<void> {
   const subscriptionJson = subscription.toJSON()
-  console.log('[Push] Subscription JSON:', {
+  logger.debug('[Push] Subscription JSON:', {
     endpoint: subscriptionJson.endpoint?.substring(0, 50),
     hasKeys: !!subscriptionJson.keys,
   })
@@ -277,7 +278,7 @@ async function savePushSubscription(
     created_at: new Date().toISOString(),
   }
 
-  console.log('[Push] Insertion dans push_subscriptions pour user:', userId)
+  logger.debug('[Push] Insertion dans push_subscriptions pour user:', userId)
 
   const { error, data } = await supabase.from('push_subscriptions').upsert(
     insertData,
@@ -287,11 +288,11 @@ async function savePushSubscription(
   ).select()
 
   if (error) {
-    console.error('[Push] ❌ Erreur Supabase sauvegarde subscription:', error)
+    logger.error('[Push] ❌ Erreur Supabase sauvegarde subscription:', error)
     throw error
   }
 
-  console.log('[Push] ✅ Subscription sauvegardée:', data)
+  logger.debug('[Push] ✅ Subscription sauvegardée:', data)
 }
 
 /**
@@ -308,7 +309,7 @@ async function deletePushSubscription(
     .eq('endpoint', endpoint)
 
   if (error) {
-    console.error('Erreur suppression subscription:', error)
+    logger.error('Erreur suppression subscription:', error)
   }
 }
 
@@ -324,7 +325,7 @@ export async function getUserPushSubscriptions(
     .eq('user_id', userId)
 
   if (error) {
-    console.error('Erreur récupération subscriptions:', error)
+    logger.error('Erreur récupération subscriptions:', error)
     return []
   }
 
@@ -346,7 +347,7 @@ export async function getUserPushSubscriptions(
  */
 export function showLocalNotification(payload: PushNotificationPayload): void {
   if (Notification.permission !== 'granted') {
-    console.warn('Permission notification non accordée')
+    logger.warn('Permission notification non accordée')
     return
   }
 

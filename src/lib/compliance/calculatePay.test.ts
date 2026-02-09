@@ -117,8 +117,8 @@ describe('calculateShiftPay', () => {
   })
 
   describe('Majoration heures de nuit (+20%)', () => {
-    it('devrait appliquer +20% pour heures entre 21h et 6h', () => {
-      const shift = createShift('2025-01-15', '20:00', '23:00') // 3h dont 2h de nuit (21-23h)
+    it('devrait appliquer +20% pour heures entre 21h et 6h avec acte de nuit', () => {
+      const shift = { ...createShift('2025-01-15', '20:00', '23:00'), hasNightAction: true } // 3h dont 2h de nuit (21-23h)
       const contract = createContract(12, 35)
 
       const pay = calculateShiftPay(shift, contract)
@@ -128,8 +128,8 @@ describe('calculateShiftPay', () => {
       expect(pay.totalPay).toBe(40.8)
     })
 
-    it('devrait calculer heures de nuit traversant minuit', () => {
-      const shift = createShift('2025-01-15', '22:00', '02:00') // 4h de nuit
+    it('devrait calculer heures de nuit traversant minuit avec acte de nuit', () => {
+      const shift = { ...createShift('2025-01-15', '22:00', '02:00'), hasNightAction: true } // 4h de nuit
       const contract = createContract(12, 35)
 
       const pay = calculateShiftPay(shift, contract)
@@ -145,6 +145,26 @@ describe('calculateShiftPay', () => {
       const pay = calculateShiftPay(shift, contract)
 
       expect(pay.nightMajoration).toBe(0)
+    })
+
+    it('devrait ne pas appliquer majoration nuit si présence seule (hasNightAction=false)', () => {
+      const shift = { ...createShift('2025-01-15', '20:00', '23:00'), hasNightAction: false } // 3h dont 2h de nuit
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.basePay).toBe(36) // 3h * 12€
+      expect(pay.nightMajoration).toBe(0) // Pas de majoration car présence seule
+      expect(pay.totalPay).toBe(36)
+    })
+
+    it('devrait ne pas appliquer majoration nuit si hasNightAction non défini', () => {
+      const shift = createShift('2025-01-15', '20:00', '23:00') // 3h dont 2h de nuit, hasNightAction=undefined
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.nightMajoration).toBe(0) // Pas de majoration par défaut
     })
   })
 
@@ -208,9 +228,9 @@ describe('calculateShiftPay', () => {
 
   describe('Combinaison de majorations', () => {
     it('devrait cumuler toutes les majorations applicables', () => {
-      // Dimanche 1er janvier 2023 (jour férié + dimanche) avec heures de nuit
+      // Dimanche 1er janvier 2023 (jour férié + dimanche) avec heures de nuit + acte
       // Note: 2023-01-01 est un dimanche
-      const shift = createShift('2023-01-01', '20:00', '23:00') // 3h dont 2h de nuit
+      const shift = { ...createShift('2023-01-01', '20:00', '23:00'), hasNightAction: true } // 3h dont 2h de nuit
       const contract = createContract(15, 35)
 
       const pay = calculateShiftPay(shift, contract, [], false)
@@ -221,6 +241,19 @@ describe('calculateShiftPay', () => {
       expect(pay.nightMajoration).toBe(6) // 2h * 15€ * 0.20
       expect(pay.overtimeMajoration).toBe(0)
       expect(pay.totalPay).toBe(109.5)
+    })
+
+    it('devrait cumuler sans majoration nuit si présence seule', () => {
+      const shift = { ...createShift('2023-01-01', '20:00', '23:00'), hasNightAction: false }
+      const contract = createContract(15, 35)
+
+      const pay = calculateShiftPay(shift, contract, [], false)
+
+      expect(pay.basePay).toBe(45)
+      expect(pay.sundayMajoration).toBe(13.5)
+      expect(pay.holidayMajoration).toBe(45)
+      expect(pay.nightMajoration).toBe(0) // Pas de majoration nuit
+      expect(pay.totalPay).toBe(103.5) // 45 + 13.5 + 45
     })
   })
 })

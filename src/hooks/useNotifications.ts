@@ -10,6 +10,7 @@ import {
   type NotificationFilters,
 } from '@/services/notificationService'
 import type { Notification } from '@/types'
+import { logger } from '@/lib/logger'
 
 // ============================================
 // HOOK OPTIONS
@@ -97,7 +98,7 @@ export function useNotifications(
       setNotifications(notifs)
       setUnreadCount(count)
     } catch (err) {
-      console.error('Erreur chargement notifications:', err)
+      logger.error('Erreur chargement notifications:', err)
       setError('Impossible de charger les notifications')
     } finally {
       setIsLoading(false)

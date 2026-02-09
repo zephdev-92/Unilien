@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type { Shift, UserRole } from '@/types'
 import {
   getProfileName,
@@ -39,7 +40,7 @@ export async function getShifts(
   const { data, error } = await query
 
   if (error) {
-    console.error('Erreur récupération shifts:', error)
+    logger.error('Erreur récupération shifts:', error)
     return []
   }
 
@@ -54,7 +55,7 @@ export async function getShiftById(shiftId: string): Promise<Shift | null> {
     .single()
 
   if (error) {
-    console.error('Erreur récupération shift:', error)
+    logger.error('Erreur récupération shift:', error)
     return null
   }
 
@@ -70,6 +71,7 @@ export async function createShift(
     breakDuration?: number
     tasks?: string[]
     notes?: string
+    hasNightAction?: boolean
   }
 ): Promise<Shift | null> {
   const { data, error } = await supabase
@@ -82,6 +84,7 @@ export async function createShift(
       break_duration: shiftData.breakDuration || 0,
       tasks: shiftData.tasks || [],
       notes: shiftData.notes || null,
+      has_night_action: shiftData.hasNightAction ?? null,
       status: 'planned',
       computed_pay: {},
       validated_by_employer: false,
@@ -91,7 +94,7 @@ export async function createShift(
     .single()
 
   if (error) {
-    console.error('Erreur création shift:', error)
+    logger.error('Erreur création shift:', error)
     throw new Error(error.message)
   }
 
@@ -112,7 +115,7 @@ export async function createShift(
       )
     }
   } catch (err) {
-    console.error('Erreur notification shift créé:', err)
+    logger.error('Erreur notification shift créé:', err)
   }
 
   return mapShiftFromDb(data)
@@ -127,6 +130,7 @@ export async function updateShift(
     breakDuration: number
     tasks: string[]
     notes: string
+    hasNightAction: boolean
     status: Shift['status']
   }>
 ): Promise<void> {
@@ -140,6 +144,7 @@ export async function updateShift(
   if (updates.breakDuration !== undefined) payload.break_duration = updates.breakDuration
   if (updates.tasks) payload.tasks = updates.tasks
   if (updates.notes !== undefined) payload.notes = updates.notes
+  if (updates.hasNightAction !== undefined) payload.has_night_action = updates.hasNightAction
   if (updates.status) payload.status = updates.status
 
   const { error } = await supabase
@@ -148,7 +153,7 @@ export async function updateShift(
     .eq('id', shiftId)
 
   if (error) {
-    console.error('Erreur mise à jour shift:', error)
+    logger.error('Erreur mise à jour shift:', error)
     throw new Error(error.message)
   }
 
@@ -176,7 +181,7 @@ export async function updateShift(
         }
       }
     } catch (err) {
-      console.error('Erreur notification shift modifié:', err)
+      logger.error('Erreur notification shift modifié:', err)
     }
   }
 
@@ -203,7 +208,7 @@ export async function updateShift(
         }
       }
     } catch (err) {
-      console.error('Erreur notification shift annulé:', err)
+      logger.error('Erreur notification shift annulé:', err)
     }
   }
 }
@@ -215,7 +220,7 @@ export async function deleteShift(shiftId: string): Promise<void> {
     .eq('id', shiftId)
 
   if (error) {
-    console.error('Erreur suppression shift:', error)
+    logger.error('Erreur suppression shift:', error)
     throw new Error(error.message)
   }
 }
@@ -235,7 +240,7 @@ export async function validateShift(
     .eq('id', shiftId)
 
   if (error) {
-    console.error('Erreur validation shift:', error)
+    logger.error('Erreur validation shift:', error)
     throw new Error(error.message)
   }
 }
@@ -252,6 +257,7 @@ function mapShiftFromDb(data: any): Shift {
     breakDuration: data.break_duration || 0,
     tasks: data.tasks || [],
     notes: data.notes || undefined,
+    hasNightAction: data.has_night_action ?? undefined,
     status: data.status,
     computedPay: data.computed_pay || {
       basePay: 0,

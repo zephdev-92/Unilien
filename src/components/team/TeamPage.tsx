@@ -32,6 +32,7 @@ import {
   removeCaregiverFromEmployer,
   type CaregiverWithProfile,
 } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 import type { Caregiver } from '@/types'
 
 export function TeamPage() {
@@ -77,7 +78,7 @@ export function TeamPage() {
           setActiveTab('caregivers')
         }
       } catch (error) {
-        console.error('Erreur chargement données aidant:', error)
+        logger.error('Erreur chargement données aidant:', error)
       } finally {
         setIsLoadingCurrentCaregiver(false)
       }

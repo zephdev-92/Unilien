@@ -20,6 +20,7 @@ import {
   getCaregiver,
   getCaregiverEmployerId,
 } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 import type { CaregiverPermissions } from '@/types'
 
 const PAGE_SIZE = 20
@@ -101,7 +102,7 @@ export function LogbookPage() {
         const empId = await getCaregiverEmployerId(profile.id)
         setResolvedEmployerId(empId)
       } catch (error) {
-        console.error('Erreur résolution employeur pour aidant:', error)
+        logger.error('Erreur résolution employeur pour aidant:', error)
         setAccessDenied(true)
       } finally {
         setIsResolvingEmployer(false)
@@ -148,7 +149,7 @@ export function LogbookPage() {
       const unread = await getUnreadCount(resolvedEmployerId, profile.id)
       setUnreadCount(unread)
     } catch (error) {
-      console.error('Erreur chargement cahier de liaison:', error)
+      logger.error('Erreur chargement cahier de liaison:', error)
     } finally {
       setIsLoadingEntries(false)
     }
@@ -192,7 +193,7 @@ export function LogbookPage() {
       setEntries((prev) => prev.filter((entry) => entry.id !== entryId))
       setTotalCount((prev) => prev - 1)
     } catch (error) {
-      console.error('Erreur suppression entrée:', error)
+      logger.error('Erreur suppression entrée:', error)
     }
   }
 

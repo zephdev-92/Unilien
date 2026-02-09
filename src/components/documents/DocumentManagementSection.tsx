@@ -26,6 +26,7 @@ import {
   type DocumentStats,
 } from '@/services/documentService'
 import { updateAbsenceStatus } from '@/services/absenceService'
+import { logger } from '@/lib/logger'
 import type { Absence } from '@/types'
 
 // ============================================
@@ -92,7 +93,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
       setDocuments(docs)
       setStats(docStats)
     } catch (err) {
-      console.error('Erreur chargement documents:', err)
+      logger.error('Erreur chargement documents:', err)
       setError('Erreur lors du chargement des documents')
     } finally {
       setIsLoading(false)
@@ -127,7 +128,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
       await updateAbsenceStatus(absenceId, status)
       await loadDocuments()
     } catch (err) {
-      console.error('Erreur mise à jour statut:', err)
+      logger.error('Erreur mise à jour statut:', err)
       setError('Erreur lors de la mise à jour du statut')
     } finally {
       setProcessingId(null)

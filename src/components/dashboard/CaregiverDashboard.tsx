@@ -14,6 +14,7 @@ import {
   getCaregiver,
   getUpcomingShiftsForCaregiver,
 } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 
 interface CaregiverDashboardProps {
   profile: Profile
@@ -43,7 +44,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
           }
         }
       } catch (err) {
-        console.error('Erreur chargement données aidant:', err)
+        logger.error('Erreur chargement données aidant:', err)
         setError('Erreur lors du chargement des données')
       } finally {
         setIsLoading(false)

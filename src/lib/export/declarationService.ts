@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase/client'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance/utils'
 import { isPublicHoliday, isSunday } from '@/lib/compliance/types'
+import { MAJORATION_RATES, calculateOvertimeHours } from '@/lib/compliance/calculatePay'
+import type { ShiftForValidation } from '@/lib/compliance/types'
 import type {
   MonthlyDeclarationData,
   EmployeeDeclarationData,
@@ -15,6 +17,7 @@ import type {
 } from './types'
 import { getMonthLabel } from './types'
 import type { AddressDb, ShiftDbRow } from '@/types/database'
+import { logger } from '@/lib/logger'
 
 // Types pour les données de la DB
 interface EmployerDataDb {
@@ -33,6 +36,7 @@ interface ContractForDeclarationDb {
   employee_id: string
   contract_type: 'CDI' | 'CDD'
   hourly_rate: number
+  weekly_hours: number
   employee_profile?: {
     profile?: {
       id?: string
@@ -58,14 +62,14 @@ export async function getMonthlyDeclarationData(
   // Récupérer les infos employeur
   const employerData = await getEmployerData(employerId)
   if (!employerData) {
-    console.error('Employeur non trouvé')
+    logger.error('Employeur non trouvé')
     return null
   }
 
   // Récupérer les contrats actifs avec leurs employés
   const contracts = await getActiveContracts(employerId, employeeIds)
   if (contracts.length === 0) {
-    console.error('Aucun contrat actif trouvé')
+    logger.error('Aucun contrat actif trouvé')
     return null
   }
 
@@ -149,6 +153,7 @@ async function getActiveContracts(
       employee_id,
       contract_type,
       hourly_rate,
+      weekly_hours,
       employee_profile:employees!employee_id(
         profile:profiles!profile_id(
           id,
@@ -167,7 +172,7 @@ async function getActiveContracts(
   const { data, error } = await query
 
   if (error) {
-    console.error('Erreur récupération contrats:', error)
+    logger.error('Erreur récupération contrats:', error)
     return []
   }
 
@@ -192,7 +197,7 @@ async function getShiftsForPeriod(
     .order('date', { ascending: true })
 
   if (error) {
-    console.error('Erreur récupération shifts:', error)
+    logger.error('Erreur récupération shifts:', error)
     return []
   }
 
@@ -200,13 +205,31 @@ async function getShiftsForPeriod(
 }
 
 /**
+ * Convertit un ShiftDbRow en ShiftForValidation pour les fonctions de calcul centralisées
+ */
+function toShiftForValidation(shift: ShiftDbRow, employeeId: string, contractId: string): ShiftForValidation {
+  return {
+    id: shift.id,
+    contractId,
+    employeeId,
+    date: new Date(shift.date),
+    startTime: shift.start_time,
+    endTime: shift.end_time,
+    breakDuration: shift.break_duration || 0,
+  }
+}
+
+/**
  * Calcule les données de déclaration pour un employé
+ * Utilise les taux de MAJORATION_RATES (Convention Collective IDCC 3239)
+ * et le calcul réel des heures supplémentaires via calculateOvertimeHours
  */
 function calculateEmployeeDeclaration(
   contract: ContractForDeclarationDb,
   shifts: ShiftDbRow[]
 ): EmployeeDeclarationData {
   const hourlyRate = contract.hourly_rate
+  const contractualWeeklyHours = contract.weekly_hours || 35
   const shiftsDetails: ShiftDeclarationDetail[] = []
 
   let totalHours = 0
@@ -214,15 +237,21 @@ function calculateEmployeeDeclaration(
   let sundayHours = 0
   let holidayHours = 0
   let nightHours = 0
-  const overtimeHours = 0
+  let overtimeHours = 0
 
   let basePay = 0
   let sundayMajoration = 0
   let holidayMajoration = 0
   let nightMajoration = 0
-  const overtimeMajoration = 0
+  let overtimeMajoration = 0
 
-  for (const shift of shifts) {
+  // Préparer tous les shifts au format ShiftForValidation pour le calcul des heures sup
+  const allShiftsForValidation = shifts.map((s) =>
+    toShiftForValidation(s, contract.employee_id, contract.id)
+  )
+
+  for (let i = 0; i < shifts.length; i++) {
+    const shift = shifts[i]
     const shiftDate = new Date(shift.date)
     const effectiveMinutes = calculateShiftDuration(
       shift.start_time,
@@ -234,29 +263,62 @@ function calculateEmployeeDeclaration(
     const isSundayShift = isSunday(shiftDate)
     const isHolidayShift = isPublicHoliday(shiftDate)
 
-    // Calcul de la paie pour cette intervention
+    // Calcul de la paie pour cette intervention (taux centralisés)
     const shiftBasePay = effectiveHours * hourlyRate
     let shiftTotal = shiftBasePay
     let shiftSundayMaj = 0
     let shiftHolidayMaj = 0
     let shiftNightMaj = 0
+    let shiftOvertimeMaj = 0
 
     if (isSundayShift) {
-      shiftSundayMaj = shiftBasePay * 0.30
+      shiftSundayMaj = shiftBasePay * MAJORATION_RATES.SUNDAY
       shiftTotal += shiftSundayMaj
       sundayHours += effectiveHours
     }
 
     if (isHolidayShift) {
-      shiftHolidayMaj = shiftBasePay * 0.60 // Taux habituel
+      shiftHolidayMaj = shiftBasePay * MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED
       shiftTotal += shiftHolidayMaj
       holidayHours += effectiveHours
     }
 
-    if (shiftNightHours > 0) {
-      shiftNightMaj = shiftNightHours * hourlyRate * 0.20
+    // Majoration nuit : uniquement si un acte est effectué (has_night_action)
+    // Pour les anciens shifts sans le champ (null), on applique la majoration par rétrocompatibilité
+    const shiftHasNightAction = shift.has_night_action !== false // null = rétrocompat (appliquée), true = appliquée, false = pas de majoration
+    if (shiftNightHours > 0 && shiftHasNightAction) {
+      shiftNightMaj = shiftNightHours * hourlyRate * MAJORATION_RATES.NIGHT
       shiftTotal += shiftNightMaj
       nightHours += shiftNightHours
+    }
+
+    // Calcul réel des heures supplémentaires pour cette intervention
+    const shiftForValidation = allShiftsForValidation[i]
+    const previousShifts = allShiftsForValidation.slice(0, i)
+    const shiftOvertime = calculateOvertimeHours(
+      shiftForValidation,
+      previousShifts,
+      contractualWeeklyHours
+    )
+
+    if (shiftOvertime > 0) {
+      // Premières 8h supplémentaires : +25%, au-delà : +50%
+      const cumulativeOvertimeBefore = overtimeHours
+      const cumulativeOvertimeAfter = overtimeHours + shiftOvertime
+
+      // Calculer la majoration pour les heures sup de CE shift
+      const first8hBefore = Math.min(8, cumulativeOvertimeBefore)
+      const first8hAfter = Math.min(8, cumulativeOvertimeAfter)
+      const beyond8hBefore = Math.max(0, cumulativeOvertimeBefore - 8)
+      const beyond8hAfter = Math.max(0, cumulativeOvertimeAfter - 8)
+
+      shiftOvertimeMaj =
+        (first8hAfter - first8hBefore) * hourlyRate * MAJORATION_RATES.OVERTIME_FIRST_8H +
+        (beyond8hAfter - beyond8hBefore) * hourlyRate * MAJORATION_RATES.OVERTIME_BEYOND_8H
+
+      shiftTotal += shiftOvertimeMaj
+      overtimeHours += shiftOvertime
+      overtimeMajoration += shiftOvertimeMaj
     }
 
     // Accumuler les totaux
@@ -280,8 +342,8 @@ function calculateEmployeeDeclaration(
     })
   }
 
-  // Heures normales = total - spéciales (éviter double comptage)
-  normalHours = totalHours - sundayHours - holidayHours
+  // Heures normales = total - spéciales - supplémentaires (éviter double comptage)
+  normalHours = totalHours - sundayHours - holidayHours - overtimeHours
 
   const totalGrossPay = basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
 

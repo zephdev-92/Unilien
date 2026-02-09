@@ -9,7 +9,7 @@ import { isPublicHoliday, isSunday } from './types'
 import { calculateShiftDuration, calculateNightHours, getWeekStart, calculateTotalHours } from './utils'
 
 // Taux de majoration (Convention Collective IDCC 3239)
-const MAJORATION_RATES = {
+export const MAJORATION_RATES = {
   SUNDAY: 0.30, // +30% pour le dimanche
   PUBLIC_HOLIDAY_WORKED: 0.60, // +60% jour férié travaillé habituellement
   PUBLIC_HOLIDAY_EXCEPTIONAL: 1.00, // +100% jour férié travaillé exceptionnellement
@@ -56,9 +56,11 @@ export function calculateShiftPay(
   }
 
   // Majoration nuit (+20% pour heures entre 21h-6h)
+  // La majoration ne s'applique que si l'auxiliaire effectue un acte pendant la nuit
+  // Simple présence = pas de majoration (Convention Collective IDCC 3239)
   let nightMajoration = 0
   const nightHours = calculateNightHours(shift.date, shift.startTime, shift.endTime)
-  if (nightHours > 0) {
+  if (nightHours > 0 && shift.hasNightAction) {
     nightMajoration = nightHours * hourlyRate * MAJORATION_RATES.NIGHT
   }
 
@@ -95,7 +97,7 @@ export function calculateShiftPay(
 /**
  * Calcule le nombre d'heures supplémentaires pour une intervention
  */
-function calculateOvertimeHours(
+export function calculateOvertimeHours(
   newShift: ShiftForValidation,
   existingShifts: ShiftForValidation[],
   contractualWeeklyHours: number

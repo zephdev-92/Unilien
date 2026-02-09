@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { logger } from '@/lib/logger'
 
 // Web Speech API types
 interface SpeechRecognitionEvent extends Event {
@@ -259,7 +260,7 @@ export function useSpeechRecognition(
       recognitionRef.current.start()
     } catch (err) {
       // Recognition might already be started
-      console.warn('Speech recognition start error:', err)
+      logger.warn('Speech recognition start error:', err)
     }
   }, [continuous])
 
@@ -272,7 +273,7 @@ export function useSpeechRecognition(
     try {
       recognitionRef.current.stop()
     } catch (err) {
-      console.warn('Speech recognition stop error:', err)
+      logger.warn('Speech recognition stop error:', err)
     }
   }, [])
 

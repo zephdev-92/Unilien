@@ -17,6 +17,7 @@ import {
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AccessibleButton, AccessibleInput } from '@/components/ui'
+import { logger } from '@/lib/logger'
 import {
   getAuxiliaryDetails,
   updateContract,
@@ -83,7 +84,7 @@ export function AuxiliaryDetailModal({
       setIsEditing(false)
       onUpdate()
     } catch (error) {
-      console.error('Erreur mise à jour:', error)
+      logger.error('Erreur mise à jour:', error)
     } finally {
       setIsSaving(false)
     }
@@ -96,7 +97,7 @@ export function AuxiliaryDetailModal({
       onUpdate()
       onClose()
     } catch (error) {
-      console.error('Erreur résiliation:', error)
+      logger.error('Erreur résiliation:', error)
     } finally {
       setIsTerminating(false)
     }
@@ -110,7 +111,7 @@ export function AuxiliaryDetailModal({
       setDetails(updated)
       onUpdate()
     } catch (error) {
-      console.error('Erreur suspension:', error)
+      logger.error('Erreur suspension:', error)
     } finally {
       setIsSuspending(false)
     }
@@ -124,7 +125,7 @@ export function AuxiliaryDetailModal({
       setDetails(updated)
       onUpdate()
     } catch (error) {
-      console.error('Erreur réactivation:', error)
+      logger.error('Erreur réactivation:', error)
     } finally {
       setIsResuming(false)
     }

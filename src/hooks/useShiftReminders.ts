@@ -4,6 +4,7 @@ import {
   getProfileName,
   createShiftReminderNotification,
 } from '@/services/notificationService'
+import { logger } from '@/lib/logger'
 
 /**
  * Hook qui crée des rappels de notification pour les shifts des prochaines 24h.
@@ -84,7 +85,7 @@ export function useShiftReminders(userId: string | undefined, role: string | und
           }
         }
       } catch (err) {
-        console.error('Erreur vérification rappels shifts:', err)
+        logger.error('Erreur vérification rappels shifts:', err)
       }
     }
 

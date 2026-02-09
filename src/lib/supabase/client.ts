@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
+import { logger } from '@/lib/logger'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
+  logger.warn(
     'Supabase URL ou clé manquante. Veuillez configurer les variables d\'environnement.'
   )
 }

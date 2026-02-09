@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 import type {
   Notification,
   NotificationType,
@@ -40,11 +41,11 @@ async function triggerPushNotification(notification: Notification): Promise<void
     })
 
     if (error) {
-      console.warn('Erreur envoi push notification:', error)
+      logger.warn('Erreur envoi push notification:', error)
     }
   } catch (err) {
     // Ne pas bloquer si le push échoue
-    console.warn('Push notification non envoyée:', err)
+    logger.warn('Push notification non envoyée:', err)
   }
 }
 
@@ -145,7 +146,7 @@ export async function getNotifications(
   const { data, error } = await query
 
   if (error) {
-    console.error('Erreur récupération notifications:', error)
+    logger.error('Erreur récupération notifications:', error)
     return []
   }
 
@@ -165,7 +166,7 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
     .eq('is_dismissed', false)
 
   if (error) {
-    console.error('Erreur comptage notifications:', error)
+    logger.error('Erreur comptage notifications:', error)
     return 0
   }
 
@@ -190,7 +191,7 @@ export async function createNotification(
   })
 
   if (error) {
-    console.error('Erreur création notification:', error)
+    logger.error('Erreur création notification:', error)
     return null
   }
 
@@ -235,7 +236,7 @@ export async function markNotificationAsRead(notificationId: string): Promise<vo
     .eq('id', notificationId)
 
   if (error) {
-    console.error('Erreur marquage notification lue:', error)
+    logger.error('Erreur marquage notification lue:', error)
   }
 }
 
@@ -254,7 +255,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
     .eq('is_read', false)
 
   if (error) {
-    console.error('Erreur marquage toutes notifications lues:', error)
+    logger.error('Erreur marquage toutes notifications lues:', error)
   }
 }
 
@@ -269,7 +270,7 @@ export async function dismissNotification(notificationId: string): Promise<void>
     .eq('id', notificationId)
 
   if (error) {
-    console.error('Erreur suppression notification:', error)
+    logger.error('Erreur suppression notification:', error)
   }
 }
 
@@ -284,7 +285,7 @@ export async function dismissAllNotifications(userId: string): Promise<void> {
     .eq('user_id', userId)
 
   if (error) {
-    console.error('Erreur suppression toutes notifications:', error)
+    logger.error('Erreur suppression toutes notifications:', error)
   }
 }
 
@@ -300,7 +301,7 @@ export async function deleteExpiredNotifications(userId: string): Promise<void> 
     .lt('expires_at', new Date().toISOString())
 
   if (error) {
-    console.error('Erreur suppression notifications expirées:', error)
+    logger.error('Erreur suppression notifications expirées:', error)
   }
 }
 
@@ -423,7 +424,7 @@ export async function updateNotificationPreferences(
     })
 
   if (error) {
-    console.error('Erreur mise à jour préférences:', error)
+    logger.error('Erreur mise à jour préférences:', error)
   }
 }
 
@@ -606,7 +607,7 @@ export async function createTeamMemberAddedNotification(
       actionUrl: '/dashboard',
     })
   } catch (err) {
-    console.error('Erreur notification ajout aidant:', err)
+    logger.error('Erreur notification ajout aidant:', err)
     return null
   }
 }
@@ -625,7 +626,7 @@ export async function createTeamMemberRemovedNotification(
       actionUrl: '/dashboard',
     })
   } catch (err) {
-    console.error('Erreur notification retrait aidant:', err)
+    logger.error('Erreur notification retrait aidant:', err)
     return null
   }
 }
@@ -650,7 +651,7 @@ export async function createContractCreatedNotification(
       data: { employerName, contractType },
     })
   } catch (err) {
-    console.error('Erreur notification nouveau contrat:', err)
+    logger.error('Erreur notification nouveau contrat:', err)
     return null
   }
 }
@@ -670,7 +671,7 @@ export async function createContractTerminatedNotification(
       data: { employerName },
     })
   } catch (err) {
-    console.error('Erreur notification fin contrat:', err)
+    logger.error('Erreur notification fin contrat:', err)
     return null
   }
 }
@@ -702,7 +703,7 @@ export async function createShiftCreatedNotification(
       data: { employerName, shiftDate: shiftDate.toISOString(), startTime },
     })
   } catch (err) {
-    console.error('Erreur notification shift créé:', err)
+    logger.error('Erreur notification shift créé:', err)
     return null
   }
 }
@@ -729,7 +730,7 @@ export async function createShiftCancelledNotification(
       data: { shiftDate: shiftDate.toISOString(), startTime },
     })
   } catch (err) {
-    console.error('Erreur notification shift annulé:', err)
+    logger.error('Erreur notification shift annulé:', err)
     return null
   }
 }
@@ -760,7 +761,7 @@ export async function createUrgentLogEntryNotification(
       }))
     )
   } catch (err) {
-    console.error('Erreur notification logbook urgent:', err)
+    logger.error('Erreur notification logbook urgent:', err)
     return []
   }
 }
@@ -784,7 +785,7 @@ export async function createPermissionsUpdatedNotification(
       data: { employerName },
     })
   } catch (err) {
-    console.error('Erreur notification permissions:', err)
+    logger.error('Erreur notification permissions:', err)
     return null
   }
 }
@@ -815,7 +816,7 @@ export async function createShiftModifiedNotification(
       data: { shiftDate: shiftDate.toISOString(), startTime },
     })
   } catch (err) {
-    console.error('Erreur notification shift modifié:', err)
+    logger.error('Erreur notification shift modifié:', err)
     return null
   }
 }
@@ -854,7 +855,7 @@ export async function createAbsenceRequestedNotification(
       data: { employeeName, absenceType, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
     })
   } catch (err) {
-    console.error('Erreur notification demande absence:', err)
+    logger.error('Erreur notification demande absence:', err)
     return null
   }
 }
@@ -880,7 +881,7 @@ export async function createAbsenceResolvedNotification(
       data: { status, startDate: startDate.toISOString(), endDate: endDate.toISOString() },
     })
   } catch (err) {
-    console.error('Erreur notification absence résolue:', err)
+    logger.error('Erreur notification absence résolue:', err)
     return null
   }
 }
@@ -907,7 +908,7 @@ export async function createLogEntryDirectedNotification(
       data: { authorName, contentPreview: preview },
     })
   } catch (err) {
-    console.error('Erreur notification logbook dirigée:', err)
+    logger.error('Erreur notification logbook dirigée:', err)
     return null
   }
 }

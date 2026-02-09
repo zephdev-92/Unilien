@@ -13,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AccessibleSelect, AccessibleButton } from '@/components/ui'
 import { createLogEntry } from '@/services/logbookService'
+import { logger } from '@/lib/logger'
 import type { UserRole } from '@/types'
 
 const logEntrySchema = z.object({
@@ -98,7 +99,7 @@ export function NewLogEntryModal({
       onSuccess()
       onClose()
     } catch (error) {
-      console.error('Erreur création entrée cahier:', error)
+      logger.error('Erreur création entrée cahier:', error)
       setSubmitError(
         error instanceof Error ? error.message : 'Une erreur est survenue'
       )
