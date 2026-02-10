@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 10 février 2026 (post-corrections sécurité + FK fix + Sprint 1 ClockInPage)
+**Dernière mise à jour**: 10 février 2026 (post-corrections sécurité + FK fix + Sprint 1 & 2 ClockInPage)
 **Version**: 1.1.0
 **Statut projet**: 🟡 En développement actif
 
@@ -21,7 +21,7 @@
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
 | **Tests** | 20% | 🔴 Critique (16 fichiers, couverture limitée) |
-| **Sécurité** | 85% | ✅ Bon (routes protégées, sanitisation, fail-fast, FK fix) |
+| **Sécurité** | 87% | ✅ Bon (routes protégées, sanitisation, fail-fast, FK fix, RLS audit shifts) |
 
 ### Métriques Clés
 
@@ -61,7 +61,21 @@ Analyse multi-domaine de `ClockInPage.tsx` (803 lignes, 28 problèmes identifié
 | C-02 | Moyenne | Métier | `hasNightAction: false` au lieu de `undefined` (reset DB correct) |
 | P-06 | Moyenne | Performance | `useMemo` deps scalaires au lieu de référence objet |
 
-Sprints 2 et 3 restants (17 problèmes architecture, perf, accessibilité avancée).
+### Corrections Sprint 2 ClockInPage (10/02/2026)
+
+Suite de l'analyse multi-domaine. Sprint 2 appliqué (7 items hauts) :
+
+| ID | Sévérité | Domaine | Correction |
+|----|----------|---------|------------|
+| A-03 | Haute | Accessibilité | Switch nuit : label programmatique (htmlFor/id) + `aria-live` sur majoration |
+| A-04 | Haute | Accessibilité | Boutons filtre historique : `aria-pressed` + `accessibleLabel` + `role="group"` |
+| A-05 | Haute | Accessibilité | `aria-hidden="true"` sur 7 emojis décoratifs |
+| A-06 | Haute | Accessibilité | `accessibleLabel="Annuler le pointage en cours"` sur bouton Annuler |
+| S-01 | Haute | Sécurité | `sanitizeText()` sur tasks affichées (3 emplacements, defense in depth) |
+| S-03 | Haute | Sécurité | Audit RLS : ownership shift vérifié via FK contracts (déjà sécurisé) |
+| C-01 | Haute | Conformité | Validation conformité post clock-out avec affichage warnings |
+
+Sprint 3 restant (10 problèmes architecture & performance avancée).
 
 ### Fonctionnalités Complétées
 
@@ -443,6 +457,9 @@ Aucune `aria-live` region détectée pour les alertes dynamiques (conformité, n
 [x] ClockInPage : aria-live="polite" sur messages succès, role="alert" sur erreurs (10/02/2026)
 [x] ClockInPage : role="status" sur indicateur "intervention en cours" (10/02/2026)
 [x] ClockInPage : role="status" aria-label sur les 3 Spinners de chargement (10/02/2026)
+[x] ClockInPage : aria-live sur majoration nuit, aria-pressed sur filtres historique (10/02/2026)
+[x] ClockInPage : aria-hidden sur 7 emojis décoratifs (10/02/2026)
+[x] ClockInPage : accessibleLabel sur bouton Annuler, htmlFor/id sur switch nuit (10/02/2026)
 [ ] Ajouter aria-live="assertive" sur les alertes de conformité critiques
 [ ] Ajouter aria-live="polite" sur les notifications, indicateurs de frappe
 [ ] Tester avec NVDA/VoiceOver
@@ -1242,7 +1259,7 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 10 février 2026 - Corrections sécurité 0b-0f + Sprint 1 ClockInPage (accessibilité, qualité, performance)
+> **Dernière review**: 10 février 2026 - Corrections sécurité 0b-0f + Sprint 1 & 2 ClockInPage (accessibilité, sécurité, conformité)
 
 ---
 
