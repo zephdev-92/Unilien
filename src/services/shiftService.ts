@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type { Shift, UserRole } from '@/types'
 import {
   getProfileName,
@@ -82,8 +83,8 @@ export async function createShift(
       start_time: shiftData.startTime,
       end_time: shiftData.endTime,
       break_duration: shiftData.breakDuration || 0,
-      tasks: shiftData.tasks || [],
-      notes: shiftData.notes || null,
+      tasks: (shiftData.tasks || []).map(sanitizeText),
+      notes: shiftData.notes ? sanitizeText(shiftData.notes) : null,
       has_night_action: shiftData.hasNightAction ?? null,
       status: 'planned',
       computed_pay: {},
@@ -142,8 +143,8 @@ export async function updateShift(
   if (updates.startTime) payload.start_time = updates.startTime
   if (updates.endTime) payload.end_time = updates.endTime
   if (updates.breakDuration !== undefined) payload.break_duration = updates.breakDuration
-  if (updates.tasks) payload.tasks = updates.tasks
-  if (updates.notes !== undefined) payload.notes = updates.notes
+  if (updates.tasks) payload.tasks = updates.tasks.map(sanitizeText)
+  if (updates.notes !== undefined) payload.notes = updates.notes ? sanitizeText(updates.notes) : null
   if (updates.hasNightAction !== undefined) payload.has_night_action = updates.hasNightAction
   if (updates.status) payload.status = updates.status
 
