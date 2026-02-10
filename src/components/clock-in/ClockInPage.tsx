@@ -373,11 +373,11 @@ export function ClockInPage() {
             <Stack gap={3}>
               <Flex justify="space-between" align="center">
                 <Text color="gray.600">Début prévu</Text>
-                <Text fontWeight="semibold">{activeShift.startTime}</Text>
+                <Text fontWeight="semibold">{formatTime(activeShift.startTime)}</Text>
               </Flex>
               <Flex justify="space-between" align="center">
                 <Text color="gray.600">Fin prévue</Text>
-                <Text fontWeight="semibold">{activeShift.endTime}</Text>
+                <Text fontWeight="semibold">{formatTime(activeShift.endTime)}</Text>
               </Flex>
               <Flex justify="space-between" align="center">
                 <Text color="gray.600">Pointé à</Text>
@@ -548,6 +548,11 @@ export function ClockInPage() {
       </Stack>
     </DashboardLayout>
   )
+}
+
+/** Supprime les secondes d'un horaire DB ("16:26:00" → "16:26") */
+function formatTime(time: string): string {
+  return time.slice(0, 5)
 }
 
 /**
@@ -770,7 +775,7 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
         />
         <Box>
           <Text fontSize="sm" fontWeight="semibold" color="gray.800">
-            {shift.startTime} - {shift.endTime}
+            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
           </Text>
           <Flex align="center" gap={2} mt={0.5}>
             <Text fontSize="xs" color="gray.500">
@@ -836,7 +841,7 @@ function ShiftCard({
       <Flex justify="space-between" align="start">
         <Box>
           <Text fontSize="lg" fontWeight="semibold" color={completed ? 'gray.600' : 'gray.900'}>
-            {shift.startTime} - {shift.endTime}
+            {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
           </Text>
           {shift.tasks.length > 0 && (
             <Text fontSize="sm" color="gray.500" mt={1}>
