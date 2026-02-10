@@ -132,3 +132,96 @@ export interface AbsenceDbRow {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
 }
+
+// ============================================================
+// LIAISON MESSAGE
+// ============================================================
+
+export interface LiaisonMessageDbRow {
+  id: string
+  employer_id: string
+  sender_id: string
+  sender_role: 'employer' | 'employee' | 'caregiver'
+  content: string
+  audio_url: string | null
+  attachments: unknown[] | null
+  is_edited: boolean
+  read_by: string[] | null
+  created_at: string
+  updated_at: string
+  sender?: {
+    first_name: string
+    last_name: string
+    avatar_url: string | null
+  }
+}
+
+// ============================================================
+// LOG ENTRY
+// ============================================================
+
+export interface LogEntryDbRow {
+  id: string
+  employer_id: string
+  author_id: string
+  author_role: 'employer' | 'employee' | 'caregiver'
+  type: string
+  importance: string
+  content: string
+  audio_url: string | null
+  attachments: unknown[] | null
+  recipient_id: string | null
+  read_by: string[] | null
+  created_at: string
+  updated_at: string
+  author?: {
+    first_name: string
+    last_name: string
+  }
+}
+
+// ============================================================
+// NOTIFICATION
+// ============================================================
+
+export interface NotificationDbRow {
+  id: string
+  user_id: string
+  type: string
+  priority: string | null
+  title: string
+  message: string
+  data: Record<string, unknown> | null
+  action_url: string | null
+  is_read: boolean
+  is_dismissed: boolean
+  created_at: string
+  read_at: string | null
+  expires_at: string | null
+}
+
+// ============================================================
+// CAREGIVER
+// ============================================================
+
+export interface CaregiverDbRow {
+  profile_id: string
+  employer_id: string
+  permissions: Record<string, boolean> | null
+  permissions_locked: boolean
+  relationship: string | null
+  relationship_details: string | null
+  legal_status: string | null
+  address: Record<string, unknown> | null
+  emergency_phone: string | null
+  availability_hours: string | null
+  can_replace_employer: boolean
+  created_at: string
+  profile?: {
+    first_name: string
+    last_name: string
+    email: string | null
+    phone: string | null
+    avatar_url: string | null
+  }
+}

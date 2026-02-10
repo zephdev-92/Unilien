@@ -7,6 +7,7 @@ import type {
   NotificationData,
   NotificationPreferences,
 } from '@/types'
+import type { NotificationDbRow } from '@/types/database'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // ============================================
@@ -930,8 +931,7 @@ export { getProfileName }
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapNotificationFromDb(data: any): Notification {
+function mapNotificationFromDb(data: NotificationDbRow): Notification {
   return {
     id: data.id,
     userId: data.user_id,

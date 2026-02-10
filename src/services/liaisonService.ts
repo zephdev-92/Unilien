@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type { LiaisonMessage, LiaisonMessageWithSender, UserRole, Attachment } from '@/types'
+import type { LiaisonMessageDbRow } from '@/types/database'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 // ============================================
@@ -107,7 +109,7 @@ export async function createLiaisonMessage(
       employer_id: employerId,
       sender_id: senderId,
       sender_role: senderRole,
-      content: content.trim(),
+      content: sanitizeText(content.trim()),
       audio_url: audioUrl || null,
       attachments: [],
       is_edited: false,
@@ -135,7 +137,7 @@ export async function updateLiaisonMessage(
   const { error } = await supabase
     .from('liaison_messages')
     .update({
-      content: content.trim(),
+      content: sanitizeText(content.trim()),
       is_edited: true,
       updated_at: new Date().toISOString(),
     })
@@ -383,8 +385,7 @@ export function subscribeTypingIndicator(
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapMessageFromDb(data: any): LiaisonMessageWithSender {
+function mapMessageFromDb(data: LiaisonMessageDbRow): LiaisonMessageWithSender {
   return {
     id: data.id,
     employerId: data.employer_id,
