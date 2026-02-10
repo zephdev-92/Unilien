@@ -197,7 +197,7 @@ export function ClockInPage() {
           boxShadow="sm"
         >
           <Flex align="center" gap={3} mb={2}>
-            <Text fontSize="2xl">⏱️</Text>
+            <Text fontSize="2xl" aria-hidden="true">⏱️</Text>
             <Box>
               <Text fontSize="xl" fontWeight="bold" color="gray.900">
                 Pointage
@@ -264,7 +264,7 @@ export function ClockInPage() {
 
             {plannedShifts.length === 0 && completedShifts.length === 0 && (
               <Box p={6} textAlign="center">
-                <Text fontSize="3xl" mb={2}>📭</Text>
+                <Text fontSize="3xl" mb={2} aria-hidden="true">📭</Text>
                 <Text color="gray.500">
                   Aucune intervention prévue aujourd'hui
                 </Text>
