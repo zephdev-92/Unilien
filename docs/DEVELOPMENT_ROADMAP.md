@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 10 février 2026 (post-corrections sécurité + FK fix + Sprint 1 & 2 ClockInPage)
+**Dernière mise à jour**: 10 février 2026 (post-corrections sécurité + FK fix + Sprint 1-2-3 ClockInPage)
 **Version**: 1.1.0
 **Statut projet**: 🟡 En développement actif
 
@@ -21,7 +21,7 @@
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
 | **Tests** | 20% | 🔴 Critique (16 fichiers, couverture limitée) |
-| **Sécurité** | 87% | ✅ Bon (routes protégées, sanitisation, fail-fast, FK fix, RLS audit shifts) |
+| **Sécurité** | 90% | ✅ Excellent (routes protégées, sanitisation, fail-fast, FK fix, RLS audité, compliance post-clockout) |
 
 ### Métriques Clés
 
@@ -63,19 +63,38 @@ Analyse multi-domaine de `ClockInPage.tsx` (803 lignes, 28 problèmes identifié
 
 ### Corrections Sprint 2 ClockInPage (10/02/2026)
 
-Suite de l'analyse multi-domaine. Sprint 2 appliqué (7 items hauts) :
+Sprint 2 (hautes) appliqué sur ClockInPage.tsx :
 
 | ID | Sévérité | Domaine | Correction |
 |----|----------|---------|------------|
-| A-03 | Haute | Accessibilité | Switch nuit : label programmatique (htmlFor/id) + `aria-live` sur majoration |
-| A-04 | Haute | Accessibilité | Boutons filtre historique : `aria-pressed` + `accessibleLabel` + `role="group"` |
-| A-05 | Haute | Accessibilité | `aria-hidden="true"` sur 7 emojis décoratifs |
-| A-06 | Haute | Accessibilité | `accessibleLabel="Annuler le pointage en cours"` sur bouton Annuler |
-| S-01 | Haute | Sécurité | `sanitizeText()` sur tasks affichées (3 emplacements, defense in depth) |
-| S-03 | Haute | Sécurité | Audit RLS : ownership shift vérifié via FK contracts (déjà sécurisé) |
-| C-01 | Haute | Conformité | Validation conformité post clock-out avec affichage warnings |
+| A-03 | Haute | Accessibilité | Label switch nuit : `<Flex as="label" htmlFor>` + `id` sur HiddenInput |
+| A-04 | Haute | Accessibilité | Boutons filtre historique : `role="group"`, `aria-pressed`, `accessibleLabel` |
+| A-05 | Haute | Accessibilité | `aria-hidden="true"` sur 7 emojis décoratifs (⏱️, 📭, 📊, 🌙, 💊, 📋) |
+| A-06 | Moyenne | Accessibilité | `accessibleLabel="Annuler le pointage en cours"` sur bouton Annuler |
+| S-01 | Haute | Sécurité | `sanitizeText()` sur tasks dans 3 composants (défense en profondeur) |
+| S-03 | Haute | Sécurité | Audit RLS shifts : ownership via `contracts.employee_id = auth.uid()` confirmé OK |
+| C-01 | Haute | Conformité | Validation `checkCompliance()` post clock-out avec warnings dans message succès |
 
-Sprint 3 restant (10 problèmes architecture & performance avancée).
+### Refactoring Sprint 3 ClockInPage (10/02/2026)
+
+Décomposition architecturale de ClockInPage.tsx (878 → 260 lignes, 1 → 10 fichiers) :
+
+| Fichier | Lignes | Rôle |
+|---------|--------|------|
+| `ClockInPage.tsx` | 260 | Orchestrateur (state, handlers, layout) |
+| `useClockInShifts.ts` | 125 | Hook : chargement, filtrage, groupement, stats |
+| `ActiveShiftPanel.tsx` | 187 | Panneau intervention en cours + switch nuit |
+| `HistorySection.tsx` | 157 | Section historique avec filtres période + stats |
+| `ShiftCard.tsx` | 80 | Carte intervention (React.memo) |
+| `HistoryShiftRow.tsx` | 65 | Ligne historique (React.memo) |
+| `StatItem.tsx` | 24 | Stat compacte (React.memo) |
+| `types.ts` | 16 | ClockInStep, HistoryDay, HistoryStats |
+| `utils.ts` | 16 | formatDayLabel, formatHours |
+| `index.ts` | 1 | Barrel export |
+
+Tous les fixes Sprint 1+2 préservés dans les sous-composants. 281 tests OK, 0 erreurs TS/lint.
+
+Sprints restants : problèmes performance, accessibilité avancée (10 items restants).
 
 ### Fonctionnalités Complétées
 
@@ -457,9 +476,10 @@ Aucune `aria-live` region détectée pour les alertes dynamiques (conformité, n
 [x] ClockInPage : aria-live="polite" sur messages succès, role="alert" sur erreurs (10/02/2026)
 [x] ClockInPage : role="status" sur indicateur "intervention en cours" (10/02/2026)
 [x] ClockInPage : role="status" aria-label sur les 3 Spinners de chargement (10/02/2026)
-[x] ClockInPage : aria-live sur majoration nuit, aria-pressed sur filtres historique (10/02/2026)
-[x] ClockInPage : aria-hidden sur 7 emojis décoratifs (10/02/2026)
-[x] ClockInPage : accessibleLabel sur bouton Annuler, htmlFor/id sur switch nuit (10/02/2026)
+[x] ClockInPage : label switch nuit via htmlFor/id, aria-live sur état majoration (10/02/2026)
+[x] ClockInPage : aria-pressed + role="group" sur filtres historique (10/02/2026)
+[x] ClockInPage : aria-hidden="true" sur 7 emojis décoratifs (10/02/2026)
+[x] ClockInPage : accessibleLabel sur bouton Annuler (10/02/2026)
 [ ] Ajouter aria-live="assertive" sur les alertes de conformité critiques
 [ ] Ajouter aria-live="polite" sur les notifications, indicateurs de frappe
 [ ] Tester avec NVDA/VoiceOver
@@ -474,6 +494,9 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 **Actions**:
 ```
 [x] ClockInPage : focus géré après clock-in, clock-out et annulation via useRef (10/02/2026)
+[x] ClockInPage : sanitizeText() sur tasks dans 3 composants (défense en profondeur) (10/02/2026)
+[x] ClockInPage : validation conformité post clock-out avec warnings affichés (10/02/2026)
+[x] ClockInPage : refactoring architecture 1→10 fichiers, React.memo sur composants liste (10/02/2026)
 [ ] Implémenter un hook useRouteAnnouncer() ou composant <RouteAnnouncer />
 [ ] Déplacer le focus vers le h1 de la nouvelle page après navigation
 [ ] Annoncer le titre de la page aux lecteurs d'écran
@@ -1027,6 +1050,7 @@ npx playwright install
 - ✅ Corrections sécurité post-audit (clé VAPID, git init, fallback Supabase, sanitisation, FK fix)
 - ✅ Créer ProtectedRoute + sanitisation 6 services + fail-fast Supabase
 - ✅ Migration 024 : auto-création employees/employers à l'inscription + backfill
+- ✅ Sprint 1-2-3 ClockInPage : a11y critique, sécurité, conformité, refactoring archi
 - 🔴 Extraire mapProfileFromDb, supprimer duplications useAuth.ts
 - 🔴 Ajouter Error Boundary global
 - 🟡 Finaliser Web Push (avec nouvelles clés VAPID régénérées)
@@ -1259,7 +1283,7 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 10 février 2026 - Corrections sécurité 0b-0f + Sprint 1 & 2 ClockInPage (accessibilité, sécurité, conformité)
+> **Dernière review**: 10 février 2026 - Corrections sécurité 0b-0f + Sprint 1-2-3 ClockInPage (a11y, sécurité, conformité, refactoring archi)
 
 ---
 
