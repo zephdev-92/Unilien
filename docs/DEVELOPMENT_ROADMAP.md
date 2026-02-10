@@ -21,7 +21,7 @@
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
 | **Tests** | 20% | 🔴 Critique (16 fichiers, couverture limitée) |
-| **Sécurité** | 70% | 🔴 À corriger (secrets exposés, routes non protégées) |
+| **Sécurité** | 75% | 🟡 En cours (secrets OK, routes non protégées) |
 
 ### Métriques Clés
 
@@ -94,46 +94,57 @@ Audit multi-domaines réalisé couvrant sécurité, qualité, architecture, acce
 
 ---
 
-### 0b. 🔴 CRITIQUE : Fichier .env avec Credentials en Clair (hors git)
+### 0b. ✅ RÉSOLU : Fichier .env avec Credentials en Clair (hors git)
 
 **Fichier**: `.env`
-**Impact**: 🔴 CRITIQUE - Credentials Supabase exposées
+**Impact**: Initial 🔴 CRITIQUE → Résolu ✅
 **Effort**: 15 min
-**Statut**: ❌ À CORRIGER IMMÉDIATEMENT
+**Statut**: ✅ RÉSOLU (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème**: Le fichier `.env` contient l'URL et la clé Supabase live (`lczfygydhnyygguvponw.supabase.co`). Le projet **n'est pas un dépôt git**, donc `.gitignore` ne protège rien. Toute copie du dossier inclut les credentials.
+**Diagnostic (10/02/2026)** : Après analyse approfondie, la criticité initiale était **surévaluée** :
+- Le dépôt git est **initialisé** (09/02/2026) et `.gitignore` est **actif**
+- `.env` n'a **jamais été commité** dans l'historique git
+- `.vapid-keys.json` n'a **jamais été commité** non plus
+- Le `.env` ne contient **aucun secret réel** :
+  - `VITE_SUPABASE_ANON_KEY` = clé anonyme/publique par design (exposée dans le bundle client via `import.meta.env`)
+  - `VITE_VAPID_PUBLIC_KEY` = clé publique, zéro risque
+  - `VITE_SUPABASE_URL` = URL publique
+- La `service_role_key` (vrai secret) est correctement isolée dans les variables d'environnement serveur de l'Edge Function (`Deno.env.get()`)
+- La sécurité repose sur les **RLS policies** PostgreSQL, pas sur le secret de la `anon_key`
 
 **Actions**:
 ```
-[ ] Initialiser le dépôt git IMMÉDIATEMENT (git init)
-[ ] Vérifier que .env est bien dans .gitignore (déjà OK dans le fichier)
-[ ] Utiliser .env.local pour les variables sensibles (Vite le supporte nativement)
-[ ] Auditer les copies/backups du dossier F:\warp
-[ ] Considérer une rotation de la clé anon Supabase si exposée
+[x] Initialiser le dépôt git (09/02/2026)
+[x] Vérifier que .env est bien dans .gitignore (ligne 18 — OK)
+[x] Vérifier que .env n'a jamais été commité (git log — confirmé)
+[x] Vérifier absence de service_role_key côté client (confirmé)
+[x] Ajouter supabase/.temp/ au .gitignore (10/02/2026)
+[ ] Auditer les RLS policies (sécurité dépend des RLS, pas de la clé anon)
 ```
 
 ---
 
-### 0c. 🔴 HAUTE : Routes Protégées Sans Garde Centralisée
+### 0c. ✅ CORRIGÉ : Routes Protégées Sans Garde Centralisée
 
-**Fichier**: `src/App.tsx:104-129`
-**Impact**: 🔴 HAUTE - Accès non autorisé possible
+**Fichier**: `src/App.tsx`
+**Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 1h
-**Statut**: ❌ À CORRIGER
+**Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème**: Les routes `/dashboard`, `/settings`, `/planning`, `/clock-in`, `/logbook`, `/liaison`, `/team`, `/compliance`, `/documents` n'ont **aucune garde centralisée**. Chaque composant gère sa propre authentification individuellement (commentaires : "gère sa propre protection"). Pattern fragile :
-- Si un composant oublie la vérification → faille de sécurité
-- Un composant `PublicRoute` existe déjà mais pas de `ProtectedRoute` équivalent
-- Duplication du code de vérification dans chaque page
+**Problème résolu**: Les 9 routes protégées géraient chacune leur propre authentification individuellement (pattern fragile, dupliqué, inconsistant).
 
-**Actions**:
+**Corrections appliquées**:
 ```
-[ ] Créer composant <ProtectedRoute> (même pattern que PublicRoute existant)
-[ ] Wrapper toutes les routes authentifiées dans App.tsx
-[ ] Supprimer les vérifications individuelles redondantes dans chaque page
-[ ] Ajouter option de restriction par rôle (<ProtectedRoute allowedRoles={['employer']}>)
+[x] Créer composant <ProtectedRoute> dans App.tsx (même pattern que PublicRoute)
+[x] Support prop allowedRoles?: UserRole[] pour restriction par rôle
+[x] Wrapper les 9 routes authentifiées dans App.tsx avec <ProtectedRoute>
+[x] Routes avec restriction de rôle : /clock-in (employee), /team /compliance /documents (employer, caregiver)
+[x] Supprimer les gardes auth individuelles dans 9 composants (Dashboard, ProfilePage, PlanningPage, ClockInPage, LogbookPage, LiaisonPage, TeamPage, CompliancePage, DocumentsPage)
+[x] Nettoyer les imports inutilisés (Navigate, isAuthenticated, isLoading)
+[x] Conserver les vérifications fines de permissions internes (canManageTeam, canExportData)
+[x] Build TypeScript + Vite : 0 erreur
 [ ] Tests unitaires du composant ProtectedRoute
 ```
 
@@ -1009,7 +1020,7 @@ npx playwright install
 - [ ] Coverage tests ≥ 60% (actuellement ~20%)
 - [ ] 0 bugs critiques en production
 - [ ] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git)
-- [ ] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute)
+- [x] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute) ✅ 10/02/2026
 - [ ] **NOUVEAU** : Sanitisation systématique des entrées utilisateur dans tous les services
 - [x] Notifications in-app + Realtime (Supabase)
 - [ ] Notifications multi-canal Push + Email (Push: code prêt, config manquante)
@@ -1135,10 +1146,11 @@ npx playwright install
    - [x] ✅ config.toml corrigé (clés non supportées retirées) (09/02/2026)
    - [ ] Faire échouer explicitement le client Supabase si env vars manquantes (supprimer les fallbacks placeholder)
 
-**1. Protection des routes (CETTE SEMAINE)**:
-   - [ ] Créer composant `<ProtectedRoute>` centralisé
-   - [ ] L'appliquer à toutes les routes authentifiées dans `App.tsx`
-   - [ ] Ajouter support restriction par rôle
+**1. Protection des routes** ✅ (10/02/2026):
+   - [x] Créer composant `<ProtectedRoute>` centralisé
+   - [x] L'appliquer à toutes les routes authentifiées dans `App.tsx`
+   - [x] Ajouter support restriction par rôle (`allowedRoles`)
+   - [x] Supprimer les gardes auth individuelles dans 9 composants
 
 **2. Sanitisation des entrées (CETTE SEMAINE)**:
    - [ ] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`

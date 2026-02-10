@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Box, Flex, Text, Center, Spinner } from '@chakra-ui/react'
 import {
   startOfWeek,
@@ -33,7 +33,7 @@ import type { Shift, Absence, Caregiver } from '@/types'
 type ViewMode = 'week' | 'month'
 
 export function PlanningPage() {
-  const { profile, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { profile, isInitialized } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -183,21 +183,15 @@ export function PlanningPage() {
   }
   const goToToday = () => setCurrentDate(new Date())
 
-  // Loading state
-  if (!isInitialized || isLoading) {
+  // Profile not loaded yet
+  if (!profile) {
     return (
-      <Center minH="100vh">
-        <Box textAlign="center">
-          <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
-          <Text fontSize="lg" color="gray.600">Chargement...</Text>
-        </Box>
-      </Center>
+      <DashboardLayout title="Planning">
+        <Center py={12}>
+          <Spinner size="xl" color="brand.500" />
+        </Center>
+      </DashboardLayout>
     )
-  }
-
-  // Not authenticated
-  if (!isAuthenticated || !profile) {
-    return <Navigate to="/login" replace />
   }
 
   const dateLabel = viewMode === 'week'
