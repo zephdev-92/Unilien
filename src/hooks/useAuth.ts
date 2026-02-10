@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
+import type { ProfileDbRow } from '@/types/database'
 import { logger } from '@/lib/logger'
+import { mapProfileFromDb, createDefaultProfile } from '@/lib/mappers'
 
 interface SignUpData {
   email: string
@@ -113,32 +115,20 @@ export function useAuth() {
         }
 
         if (profileData) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const data = profileData as any
-          setProfile({
-            id: data.id,
-            role: data.role,
-            firstName: data.first_name,
-            lastName: data.last_name,
-            email: currentSession.user.email || '',
-            phone: data.phone || undefined,
-            avatarUrl: data.avatar_url || undefined,
-            accessibilitySettings: data.accessibility_settings || {},
-            createdAt: new Date(data.created_at),
-            updatedAt: new Date(data.updated_at),
-          })
+          setProfile(mapProfileFromDb(profileData as ProfileDbRow, currentSession.user.email || ''))
         } else {
           // Profil manquant - créer automatiquement à partir des métadonnées auth
-          const userMeta = currentSession.user.user_metadata
-          const firstName = userMeta?.first_name || 'Utilisateur'
-          const lastName = userMeta?.last_name || ''
-          const userRole = (userMeta?.role as UserRole) || 'employer'
+          const defaultProfile = createDefaultProfile(
+            currentSession.user.id,
+            currentSession.user.email || '',
+            currentSession.user.user_metadata
+          )
 
           const { error: createError } = await supabase.from('profiles').insert({
-            id: currentSession.user.id,
-            role: userRole,
-            first_name: firstName,
-            last_name: lastName,
+            id: defaultProfile.id,
+            role: defaultProfile.role,
+            first_name: defaultProfile.firstName,
+            last_name: defaultProfile.lastName,
             email: currentSession.user.email || null,
             phone: null,
             avatar_url: null,
@@ -148,18 +138,7 @@ export function useAuth() {
           if (createError) {
             logger.error('Erreur création profil fallback:', createError)
           } else {
-            setProfile({
-              id: currentSession.user.id,
-              role: userRole,
-              firstName,
-              lastName,
-              email: currentSession.user.email || '',
-              phone: undefined,
-              avatarUrl: undefined,
-              accessibilitySettings: {},
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            })
+            setProfile(defaultProfile)
           }
         }
       }
@@ -275,32 +254,20 @@ export function useAuth() {
           .maybeSingle()
 
         if (profileData) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const pData = profileData as any
-          setProfile({
-            id: pData.id,
-            role: pData.role,
-            firstName: pData.first_name,
-            lastName: pData.last_name,
-            email: authData.user.email || '',
-            phone: pData.phone || undefined,
-            avatarUrl: pData.avatar_url || undefined,
-            accessibilitySettings: pData.accessibility_settings || {},
-            createdAt: new Date(pData.created_at),
-            updatedAt: new Date(pData.updated_at),
-          })
+          setProfile(mapProfileFromDb(profileData as ProfileDbRow, authData.user.email || ''))
         } else {
           // Profil manquant - créer automatiquement à partir des métadonnées auth
-          const userMeta = authData.user.user_metadata
-          const firstName = userMeta?.first_name || 'Utilisateur'
-          const lastName = userMeta?.last_name || ''
-          const userRole = (userMeta?.role as UserRole) || 'employer'
+          const defaultProfile = createDefaultProfile(
+            authData.user.id,
+            authData.user.email || '',
+            authData.user.user_metadata
+          )
 
           const { error: createError } = await supabase.from('profiles').insert({
-            id: authData.user.id,
-            role: userRole,
-            first_name: firstName,
-            last_name: lastName,
+            id: defaultProfile.id,
+            role: defaultProfile.role,
+            first_name: defaultProfile.firstName,
+            last_name: defaultProfile.lastName,
             email: authData.user.email || null,
             phone: null,
             avatar_url: null,
@@ -308,18 +275,7 @@ export function useAuth() {
           })
 
           if (!createError) {
-            setProfile({
-              id: authData.user.id,
-              role: userRole,
-              firstName,
-              lastName,
-              email: authData.user.email || '',
-              phone: undefined,
-              avatarUrl: undefined,
-              accessibilitySettings: {},
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            })
+            setProfile(defaultProfile)
           }
         }
 

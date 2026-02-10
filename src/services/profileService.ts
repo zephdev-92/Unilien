@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type { Profile, Employer, Employee } from '@/types'
 
 // ============================================
@@ -13,8 +14,8 @@ export async function updateProfile(
   const { error } = await supabase
     .from('profiles')
     .update({
-      first_name: data.firstName,
-      last_name: data.lastName,
+      first_name: data.firstName ? sanitizeText(data.firstName) : undefined,
+      last_name: data.lastName ? sanitizeText(data.lastName) : undefined,
       phone: data.phone || null,
       updated_at: new Date().toISOString(),
     })
@@ -197,8 +198,8 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     profile_id: profileId,
     address: data.address || {},
     handicap_type: data.handicapType || null,
-    handicap_name: data.handicapName || null,
-    specific_needs: data.specificNeeds || null,
+    handicap_name: data.handicapName ? sanitizeText(data.handicapName) : null,
+    specific_needs: data.specificNeeds ? sanitizeText(data.specificNeeds) : null,
     cesu_number: data.cesuNumber || null,
     pch_beneficiary: data.pchBeneficiary ?? false,
     pch_monthly_amount: data.pchMonthlyAmount || null,
@@ -276,8 +277,8 @@ export async function upsertEmployee(profileId: string, data: Partial<Employee>)
   // Mapper address vers le format DB
   const addressDb = data.address
     ? {
-        street: data.address.street || null,
-        city: data.address.city || null,
+        street: data.address.street ? sanitizeText(data.address.street) : null,
+        city: data.address.city ? sanitizeText(data.address.city) : null,
         postalCode: data.address.postalCode || null,
       }
     : null

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type { LogEntry, UserRole, Attachment } from '@/types'
+import type { LogEntryDbRow } from '@/types/database'
 import {
   getProfileName,
   createUrgentLogEntryNotification,
@@ -147,7 +149,7 @@ export async function createLogEntry(
       author_role: authorRole,
       type: data.type,
       importance: data.importance,
-      content: data.content,
+      content: sanitizeText(data.content),
       recipient_id: data.recipientId || null,
       audio_url: null,
       attachments: [],
@@ -244,7 +246,7 @@ export async function updateLogEntry(
 
   if (updates.type) payload.type = updates.type
   if (updates.importance) payload.importance = updates.importance
-  if (updates.content) payload.content = updates.content
+  if (updates.content) payload.content = sanitizeText(updates.content)
   if (updates.recipientId !== undefined) payload.recipient_id = updates.recipientId
 
   const { error } = await supabase
@@ -367,8 +369,7 @@ export async function getRecentLogEntries(
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapLogEntryFromDb(data: any): LogEntryWithAuthor {
+function mapLogEntryFromDb(data: LogEntryDbRow): LogEntryWithAuthor {
   return {
     id: data.id,
     employerId: data.employer_id,
