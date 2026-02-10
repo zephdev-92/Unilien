@@ -3,7 +3,7 @@
  * Permet de démarrer et terminer une intervention rapidement
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Box,
   Stack,
@@ -29,6 +29,8 @@ type ClockInStep = 'idle' | 'in-progress' | 'completing'
 
 export function ClockInPage() {
   const { profile } = useAuth()
+  const inProgressRef = useRef<HTMLDivElement>(null)
+  const idleSectionRef = useRef<HTMLDivElement>(null)
   const [todayShifts, setTodayShifts] = useState<Shift[]>([])
   const [isLoadingShifts, setIsLoadingShifts] = useState(true)
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null)
@@ -172,11 +174,18 @@ export function ClockInPage() {
     setError(null)
     setSuccessMessage(null)
     setHasNightAction(shift.hasNightAction ?? false)
+    // Déplacer le focus vers la section en cours après le render
+    setTimeout(() => inProgressRef.current?.focus(), 100)
   }
 
   // Terminer une intervention
   const handleClockOut = async () => {
     if (!activeShift) return
+
+    if (!clockInTime) {
+      setError('Heure de début non enregistrée. Veuillez annuler et recommencer le pointage.')
+      return
+    }
 
     setStep('completing')
     setIsSubmitting(true)
@@ -187,9 +196,9 @@ export function ClockInPage() {
 
       await updateShift(activeShift.id, {
         status: 'completed',
-        startTime: clockInTime || activeShift.startTime,
+        startTime: clockInTime,
         endTime: clockOutTime,
-        hasNightAction: hasNightHours ? hasNightAction : undefined,
+        hasNightAction: hasNightHours ? hasNightAction : false,
       })
 
       setSuccessMessage(
@@ -204,6 +213,8 @@ export function ClockInPage() {
       setClockInTime(null)
       setStep('idle')
       setHasNightAction(false)
+      // Déplacer le focus vers la liste des interventions
+      setTimeout(() => idleSectionRef.current?.focus(), 100)
     } catch (err) {
       logger.error('Erreur clock-out:', err)
       setError(
@@ -222,13 +233,14 @@ export function ClockInPage() {
     setStep('idle')
     setHasNightAction(false)
     setError(null)
+    setTimeout(() => idleSectionRef.current?.focus(), 100)
   }
 
   // Profile not loaded yet
   if (!profile) {
     return (
       <DashboardLayout title="Pointage">
-        <Center minH="50vh">
+        <Center minH="50vh" role="status" aria-label="Chargement en cours">
           <Spinner size="xl" />
         </Center>
       </DashboardLayout>
@@ -264,21 +276,21 @@ export function ClockInPage() {
 
         {/* Message de succès */}
         {successMessage && (
-          <Box p={4} bg="green.50" borderRadius="lg" borderWidth="1px" borderColor="green.200">
+          <Box role="status" aria-live="polite" p={4} bg="green.50" borderRadius="lg" borderWidth="1px" borderColor="green.200">
             <Text color="green.700" fontWeight="medium">{successMessage}</Text>
           </Box>
         )}
 
         {/* Message d'erreur */}
         {error && (
-          <Box p={4} bg="red.50" borderRadius="lg" borderWidth="1px" borderColor="red.200">
+          <Box role="alert" p={4} bg="red.50" borderRadius="lg" borderWidth="1px" borderColor="red.200">
             <Text color="red.700">{error}</Text>
           </Box>
         )}
 
         {/* Chargement */}
         {isLoadingShifts && (
-          <Center py={8}>
+          <Center py={8} role="status" aria-label="Chargement des interventions">
             <Spinner size="lg" />
           </Center>
         )}
@@ -286,15 +298,19 @@ export function ClockInPage() {
         {/* Intervention en cours */}
         {step === 'in-progress' && activeShift && (
           <Box
+            ref={inProgressRef}
+            tabIndex={-1}
             bg="white"
             borderRadius="xl"
             borderWidth="2px"
             borderColor="blue.400"
             p={6}
             boxShadow="md"
+            _focus={{ outline: '2px solid', outlineColor: 'blue.400', outlineOffset: '2px' }}
           >
-            <Flex align="center" gap={2} mb={4}>
+            <Flex role="status" aria-live="polite" align="center" gap={2} mb={4}>
               <Box
+                aria-hidden="true"
                 w="12px"
                 h="12px"
                 borderRadius="full"
@@ -305,6 +321,9 @@ export function ClockInPage() {
                     '0%': { opacity: 1 },
                     '50%': { opacity: 0.5 },
                     '100%': { opacity: 1 },
+                  },
+                  '@media (prefers-reduced-motion: reduce)': {
+                    animation: 'none',
                   },
                 }}
               />
@@ -419,12 +438,15 @@ export function ClockInPage() {
         {/* Interventions planifiées */}
         {step === 'idle' && !isLoadingShifts && (
           <Box
+            ref={idleSectionRef}
+            tabIndex={-1}
             bg="white"
             borderRadius="xl"
             borderWidth="1px"
             borderColor="gray.200"
             p={6}
             boxShadow="sm"
+            _focus={{ outline: '2px solid', outlineColor: 'blue.400', outlineOffset: '2px' }}
           >
             <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={4}>
               Interventions du jour
@@ -594,7 +616,7 @@ function HistorySection({
 
       {/* Loading */}
       {isLoading && (
-        <Center py={6}>
+        <Center py={6} role="status" aria-label="Chargement de l'historique">
           <Spinner size="md" />
         </Center>
       )}
@@ -676,7 +698,7 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
     } catch {
       return 0
     }
-  }, [shift])
+  }, [shift.date, shift.startTime, shift.endTime])
 
   return (
     <Flex
@@ -748,7 +770,7 @@ function ShiftCard({
     } catch {
       return 0
     }
-  }, [shift])
+  }, [shift.date, shift.startTime, shift.endTime])
 
   return (
     <Box

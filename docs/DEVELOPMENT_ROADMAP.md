@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 9 février 2026 (post-audit complet)
+**Dernière mise à jour**: 10 février 2026 (post-corrections sécurité + FK fix + Sprint 1 ClockInPage)
 **Version**: 1.1.0
 **Statut projet**: 🟡 En développement actif
 
@@ -21,14 +21,14 @@
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
 | **Tests** | 20% | 🔴 Critique (16 fichiers, couverture limitée) |
-| **Sécurité** | 75% | 🟡 En cours (secrets OK, routes non protégées) |
+| **Sécurité** | 85% | ✅ Bon (routes protégées, sanitisation, fail-fast, FK fix) |
 
 ### Métriques Clés
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
 - **Tests**: 16 fichiers (~20% coverage)
-- **Migrations DB**: 23 migrations
+- **Migrations DB**: 24 migrations
 - **Composants UI**: ~65 composants
 - **Services**: 13 services
 - **Hooks**: 8 hooks
@@ -43,8 +43,25 @@
 Audit multi-domaines réalisé couvrant sécurité, qualité, architecture, accessibilité et performance. Résultats :
 - **2 problèmes critiques** : clé VAPID privée exposée, credentials .env sans protection git
 - **4 problèmes hauts** : routes sans garde, client Supabase silencieux, sanitisation manquante, duplication code
+- **1 bug FK** : trigger handle_new_user ne créait pas la ligne employees/employers (erreur 23503)
 - **6 problèmes moyens** : error boundary absent, code splitting manquant, types Supabase génériques, emojis accessibilité, ARIA live regions, performance calculateNightHours
 - **5 problèmes bas** : focus SPA, refetchOnWindowFocus désactivé, paramètre _date inutilisé
+
+### Corrections Sprint 1 ClockInPage (10/02/2026)
+
+Analyse multi-domaine de `ClockInPage.tsx` (803 lignes, 28 problèmes identifiés). Sprint 1 appliqué :
+
+| ID | Sévérité | Domaine | Correction |
+|----|----------|---------|------------|
+| A-01 | CRITIQUE | Accessibilité | `role="status"` / `role="alert"` sur messages succès/erreur |
+| A-02 | CRITIQUE | Accessibilité | `aria-hidden` + `prefers-reduced-motion` sur indicateur animé |
+| A-07 | Haute | Accessibilité | Focus management via `useRef` après clock-in/out/cancel |
+| A-08 | Moyenne | Accessibilité | `role="status" aria-label` sur les 3 Spinners |
+| Q-05 | Haute | Qualité | Guard explicite si `clockInTime` null (plus de fallback silencieux) |
+| C-02 | Moyenne | Métier | `hasNightAction: false` au lieu de `undefined` (reset DB correct) |
+| P-06 | Moyenne | Performance | `useMemo` deps scalaires au lieu de référence objet |
+
+Sprints 2 et 3 restants (17 problèmes architecture, perf, accessibilité avancée).
 
 ### Fonctionnalités Complétées
 
@@ -60,7 +77,7 @@ Audit multi-domaines réalisé couvrant sécurité, qualité, architecture, acce
 | **Push Notifications** | Code implémenté, service worker, Edge Function (config VAPID restante) |
 | **Messaging Realtime** | Cahier de liaison temps réel avec indicateurs de frappe |
 | **Navigation Responsive** | Sidebar rôle-based, mobile overlay, accessibility (skip link) |
-| **23 Migrations DB** | Tables, RLS policies, fonctions, storage buckets, realtime |
+| **24 Migrations DB** | Tables, RLS policies, fonctions, storage buckets, realtime |
 | **16 Fichiers Tests** | Compliance (7), Auth (4), Services (3), Store (1), Hook (1) |
 | **13 Services** | CRUD complet pour toutes les entités métier |
 | **Composants Accessibles** | AccessibleInput, AccessibleButton, AccessibleSelect, VoiceInput |
@@ -150,42 +167,68 @@ Audit multi-domaines réalisé couvrant sécurité, qualité, architecture, acce
 
 ---
 
-### 0d. 🔴 HAUTE : Client Supabase Silencieux en Cas de Config Manquante
+### 0d. ✅ CORRIGÉ : Client Supabase Silencieux en Cas de Config Manquante
 
-**Fichier**: `src/lib/supabase/client.ts:14-16`
-**Impact**: 🔴 HAUTE - Bugs silencieux en production
+**Fichier**: `src/lib/supabase/client.ts`
+**Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 15 min
-**Statut**: ❌ À CORRIGER
+**Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème**: Quand les variables d'environnement sont absentes, le client Supabase se rabat silencieusement sur `'https://placeholder.supabase.co'` avec `'placeholder-key'`. Cela masque les erreurs de configuration en production et provoque des comportements imprévisibles au lieu d'un crash explicite.
+**Problème résolu**: Quand les variables d'environnement étaient absentes, le client Supabase se rabattait silencieusement sur des placeholders. Remplacé par un `throw Error` explicite.
 
-**Actions**:
+**Corrections appliquées**:
 ```
-[ ] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
-[ ] Idem pour VITE_SUPABASE_ANON_KEY
-[ ] Garder un message clair pour aider au debug ("Variables VITE_SUPABASE_* manquantes")
+[x] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
+[x] Idem pour VITE_SUPABASE_ANON_KEY
+[x] Message clair en français pour aider au debug
+[x] Import logger supprimé (plus nécessaire)
 ```
 
 ---
 
-### 0e. 🔴 HAUTE : Sanitisation Manquante dans les Services
+### 0e. ✅ CORRIGÉ : Sanitisation Manquante dans les Services
 
-**Fichier**: `src/services/shiftService.ts` (lignes 86, 147)
-**Impact**: 🔴 HAUTE - XSS potentiel via données stockées
+**Fichier**: `src/services/shiftService.ts` et 5 autres services
+**Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 1h
-**Statut**: ❌ À CORRIGER
+**Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème**: Le module `sanitize.ts` existe avec DOMPurify, mais les champs `notes` et `tasks` dans `shiftService.ts` sont envoyés directement à Supabase sans sanitisation. Tout texte utilisateur pourrait contenir du HTML/JS malicieux.
+**Problème résolu**: Les champs texte utilisateur étaient envoyés à Supabase sans sanitisation DOMPurify. Corrigé dans 6 services (25 champs).
 
-**Actions**:
+**Corrections appliquées**:
 ```
-[ ] Appeler sanitizeText() sur le champ notes dans createShift()
-[ ] Appeler sanitizeText() sur chaque élément du tableau tasks
-[ ] Auditer les autres services (caregiverService, absenceService, liaisonService)
-[ ] Appliquer sanitizeText() à tout champ texte libre avant écriture en DB
+[x] shiftService.ts : notes, tasks[] (createShift + updateShift)
+[x] liaisonService.ts : content (createLiaisonMessage + updateLiaisonMessage)
+[x] absenceService.ts : reason
+[x] logbookService.ts : content (createLogEntry + updateLogEntry)
+[x] profileService.ts : firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, adresses
+[x] caregiverService.ts : relationshipDetails, emergencyPhone, availabilityHours, adresses
 [ ] Ajouter tests unitaires vérifiant la sanitisation
+```
+
+---
+
+### 0f. ✅ CORRIGÉ : FK Violation Création Contrat (employees manquant)
+
+**Fichier**: `supabase/migrations/024_auto_create_role_row_on_signup.sql`, `src/services/contractService.ts`
+**Impact**: 🔴 HAUTE - Impossible de créer un contrat avec un auxiliaire nouveau
+**Effort**: 1h
+**Statut**: ✅ CORRIGÉ (10/02/2026)
+**Découvert**: Erreur console 409 (23503 FK constraint)
+
+**Problème résolu**: Le trigger `handle_new_user` ne créait qu'une ligne `profiles` à l'inscription. La ligne `employees` (ou `employers`) n'était créée que lorsque l'utilisateur visitait sa page Profil. Cela provoquait une erreur FK `contracts_employee_id_fkey` quand un employeur tentait de créer un contrat avec un auxiliaire qui n'avait pas encore complété son profil.
+
+**Corrections appliquées**:
+```
+[x] Migration 024 : handle_new_user crée automatiquement la ligne employees/employers avec valeurs par défaut
+[x] Migration 024 : rattrapage des utilisateurs existants (backfill)
+[x] contractService.ts : searchEmployeeByEmail vérifie l'existence dans la table employees (profileComplete flag)
+[x] contractService.ts : message d'erreur spécifique pour l'erreur FK 23503
+[x] NewContractModal.tsx : bloque la création avec message clair si profil auxiliaire incomplet
+[x] contractService.test.ts : tests mis à jour pour le nouveau champ profileComplete
+[x] Migration appliquée sur Supabase distant (db push OK)
 ```
 
 ---
@@ -397,6 +440,9 @@ Aucune `aria-live` region détectée pour les alertes dynamiques (conformité, n
 
 **Actions**:
 ```
+[x] ClockInPage : aria-live="polite" sur messages succès, role="alert" sur erreurs (10/02/2026)
+[x] ClockInPage : role="status" sur indicateur "intervention en cours" (10/02/2026)
+[x] ClockInPage : role="status" aria-label sur les 3 Spinners de chargement (10/02/2026)
 [ ] Ajouter aria-live="assertive" sur les alertes de conformité critiques
 [ ] Ajouter aria-live="polite" sur les notifications, indicateurs de frappe
 [ ] Tester avec NVDA/VoiceOver
@@ -410,6 +456,7 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 **Actions**:
 ```
+[x] ClockInPage : focus géré après clock-in, clock-out et annulation via useRef (10/02/2026)
 [ ] Implémenter un hook useRouteAnnouncer() ou composant <RouteAnnouncer />
 [ ] Déplacer le focus vers le h1 de la nouvelle page après navigation
 [ ] Annoncer le titre de la page aux lecteurs d'écran
@@ -960,8 +1007,9 @@ npx playwright install
 - 🟡 Finaliser Web Push (config VAPID restante)
 
 **Semaine 7** (Actuelle - 10-14 février):
-- 🔴 **URGENT** : Corrections sécurité post-audit (clé VAPID, git init, fallback Supabase)
-- 🔴 **URGENT** : Créer ProtectedRoute + sanitisation services
+- ✅ Corrections sécurité post-audit (clé VAPID, git init, fallback Supabase, sanitisation, FK fix)
+- ✅ Créer ProtectedRoute + sanitisation 6 services + fail-fast Supabase
+- ✅ Migration 024 : auto-création employees/employers à l'inscription + backfill
 - 🔴 Extraire mapProfileFromDb, supprimer duplications useAuth.ts
 - 🔴 Ajouter Error Boundary global
 - 🟡 Finaliser Web Push (avec nouvelles clés VAPID régénérées)
@@ -1019,9 +1067,11 @@ npx playwright install
 
 - [ ] Coverage tests ≥ 60% (actuellement ~20%)
 - [ ] 0 bugs critiques en production
-- [ ] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git)
+- [x] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git) ✅
 - [x] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute) ✅ 10/02/2026
-- [ ] **NOUVEAU** : Sanitisation systématique des entrées utilisateur dans tous les services
+- [x] **NOUVEAU** : Sanitisation systématique des entrées utilisateur dans tous les services ✅ 10/02/2026
+- [x] **NOUVEAU** : Client Supabase fail-fast si env vars manquantes ✅ 10/02/2026
+- [x] **NOUVEAU** : Trigger handle_new_user crée employees/employers automatiquement ✅ 10/02/2026
 - [x] Notifications in-app + Realtime (Supabase)
 - [ ] Notifications multi-canal Push + Email (Push: code prêt, config manquante)
 - [ ] Export documents conformes légalement (majorations en cours)
@@ -1144,7 +1194,7 @@ npx playwright install
    - [x] ✅ Secrets VAPID configurés sur Supabase + Edge Function redéployée v12 (09/02/2026)
    - [x] ✅ Migrations synchronisées (22 marquées applied) (09/02/2026)
    - [x] ✅ config.toml corrigé (clés non supportées retirées) (09/02/2026)
-   - [ ] Faire échouer explicitement le client Supabase si env vars manquantes (supprimer les fallbacks placeholder)
+   - [x] ✅ Faire échouer explicitement le client Supabase si env vars manquantes (10/02/2026)
 
 **1. Protection des routes** ✅ (10/02/2026):
    - [x] Créer composant `<ProtectedRoute>` centralisé
@@ -1152,9 +1202,14 @@ npx playwright install
    - [x] Ajouter support restriction par rôle (`allowedRoles`)
    - [x] Supprimer les gardes auth individuelles dans 9 composants
 
-**2. Sanitisation des entrées (CETTE SEMAINE)**:
-   - [ ] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
-   - [ ] Auditer et corriger les autres services (caregiver, absence, liaison)
+**2. Sanitisation des entrées** ✅ (10/02/2026):
+   - [x] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
+   - [x] Auditer et corriger les autres services (caregiver, absence, liaison, logbook, profile)
+
+**2b. Fix FK constraint** ✅ (10/02/2026):
+   - [x] Migration 024 : handle_new_user crée employees/employers automatiquement
+   - [x] Rattrapage utilisateurs existants (backfill)
+   - [x] Validation côté front (profileComplete check)
 
 **3. Qualité code (CETTE SEMAINE)**:
    - [ ] Extraire helper `mapProfileFromDb()` dans `useAuth.ts` (supprimer 4x duplication)
@@ -1187,7 +1242,7 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 9 février 2026 - Mise à jour post-audit complet (sécurité, qualité, architecture, accessibilité, performance)
+> **Dernière review**: 10 février 2026 - Corrections sécurité 0b-0f + Sprint 1 ClockInPage (accessibilité, qualité, performance)
 
 ---
 
