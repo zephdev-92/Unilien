@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
 import {
   Box,
   Stack,
@@ -29,7 +28,7 @@ import type { Shift } from '@/types'
 type ClockInStep = 'idle' | 'in-progress' | 'completing'
 
 export function ClockInPage() {
-  const { profile, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { profile } = useAuth()
   const [todayShifts, setTodayShifts] = useState<Shift[]>([])
   const [isLoadingShifts, setIsLoadingShifts] = useState(true)
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null)
@@ -225,8 +224,8 @@ export function ClockInPage() {
     setError(null)
   }
 
-  // Guards
-  if (!isInitialized || isLoading) {
+  // Profile not loaded yet
+  if (!profile) {
     return (
       <DashboardLayout title="Pointage">
         <Center minH="50vh">
@@ -234,14 +233,6 @@ export function ClockInPage() {
         </Center>
       </DashboardLayout>
     )
-  }
-
-  if (!isAuthenticated || !profile) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (profile.role !== 'employee') {
-    return <Navigate to="/dashboard" replace />
   }
 
   const todayFormatted = format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })

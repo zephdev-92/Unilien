@@ -36,7 +36,7 @@ import { logger } from '@/lib/logger'
 import type { Caregiver } from '@/types'
 
 export function TeamPage() {
-  const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { profile, userRole } = useAuth()
 
   // Auxiliaires state
   const [auxiliaries, setAuxiliaries] = useState<AuxiliarySummary[]>([])
@@ -150,28 +150,15 @@ export function TeamPage() {
     }
   }
 
-  // Loading state
-  if (!isInitialized || isLoading || isLoadingCurrentCaregiver) {
+  // Loading state (caregiver data still loading)
+  if (isLoadingCurrentCaregiver || !profile) {
     return (
-      <Center minH="100vh">
-        <Box textAlign="center">
-          <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
-          <Text fontSize="lg" color="gray.600">
-            Chargement...
-          </Text>
-        </Box>
-      </Center>
+      <DashboardLayout title="Équipe">
+        <Center py={12}>
+          <Spinner size="xl" color="brand.500" />
+        </Center>
+      </DashboardLayout>
     )
-  }
-
-  // Not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  // Seuls les employeurs et les aidants peuvent accéder
-  if (userRole !== 'employer' && userRole !== 'caregiver') {
-    return <Navigate to="/dashboard" replace />
   }
 
   // Aidants: vérifier la permission canManageTeam

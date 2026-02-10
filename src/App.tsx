@@ -13,6 +13,7 @@ import { DocumentsPage } from '@/pages/DocumentsPage'
 import { HomePage } from '@/pages/HomePage'
 import { ContactPage } from '@/pages/ContactPage'
 import { useAuth } from '@/hooks/useAuth'
+import type { UserRole } from '@/types'
 
 // Page de chargement
 function LoadingPage() {
@@ -37,6 +38,25 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
+}
+
+// Composant de route protégée (redirige si non connecté)
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
+  const { isAuthenticated, isLoading, isInitialized, userRole } = useAuth()
+
+  if (!isInitialized || isLoading) {
+    return <LoadingPage />
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -101,32 +121,18 @@ function App() {
         }
       />
 
-      {/* Dashboard - gère sa propre protection et layout */}
-      <Route path="/dashboard" element={<Dashboard />} />
+      {/* Routes protégées - authentification requise */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/planning" element={<ProtectedRoute><PlanningPage /></ProtectedRoute>} />
+      <Route path="/logbook" element={<ProtectedRoute><LogbookPage /></ProtectedRoute>} />
+      <Route path="/liaison" element={<ProtectedRoute><LiaisonPage /></ProtectedRoute>} />
 
-      {/* Paramètres - gère sa propre protection et layout */}
-      <Route path="/settings" element={<ProfilePage />} />
-
-      {/* Planning - gère sa propre protection et layout */}
-      <Route path="/planning" element={<PlanningPage />} />
-
-      {/* Pointage auxiliaire - gère sa propre protection et layout */}
-      <Route path="/clock-in" element={<ClockInPage />} />
-
-      {/* Cahier de liaison - gère sa propre protection et layout */}
-      <Route path="/logbook" element={<LogbookPage />} />
-
-      {/* Messagerie en temps réel - gère sa propre protection et layout */}
-      <Route path="/liaison" element={<LiaisonPage />} />
-
-      {/* Équipe / Auxiliaires - gère sa propre protection et layout */}
-      <Route path="/team" element={<TeamPage />} />
-
-      {/* Conformité - gère sa propre protection et layout */}
-      <Route path="/compliance" element={<CompliancePage />} />
-
-      {/* Documents - Export CESU */}
-      <Route path="/documents" element={<DocumentsPage />} />
+      {/* Routes protégées avec restriction de rôle */}
+      <Route path="/clock-in" element={<ProtectedRoute allowedRoles={['employee']}><ClockInPage /></ProtectedRoute>} />
+      <Route path="/team" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><TeamPage /></ProtectedRoute>} />
+      <Route path="/compliance" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><CompliancePage /></ProtectedRoute>} />
+      <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><DocumentsPage /></ProtectedRoute>} />
 
       {/* Redirection par défaut pour les routes inconnues */}
       <Route path="*" element={<Navigate to="/" replace />} />
