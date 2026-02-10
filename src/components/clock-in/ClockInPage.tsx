@@ -22,6 +22,9 @@ import { DashboardLayout } from '@/components/dashboard'
 import { AccessibleButton } from '@/components/ui'
 import { getShifts, updateShift } from '@/services/shiftService'
 import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
+import { validateShift as checkCompliance } from '@/lib/compliance/complianceChecker'
+import type { ShiftForValidation } from '@/lib/compliance/types'
+import { sanitizeText } from '@/lib/sanitize'
 import { logger } from '@/lib/logger'
 import type { Shift } from '@/types'
 
@@ -201,8 +204,43 @@ export function ClockInPage() {
         hasNightAction: hasNightHours ? hasNightAction : false,
       })
 
+      // C-01 : Validation conformité post clock-out
+      let complianceWarnings = ''
+      try {
+        const completedShift: ShiftForValidation = {
+          id: activeShift.id,
+          contractId: activeShift.contractId,
+          employeeId: profile.id,
+          date: new Date(activeShift.date),
+          startTime: clockInTime,
+          endTime: clockOutTime,
+          breakDuration: activeShift.breakDuration,
+          hasNightAction: hasNightHours ? hasNightAction : false,
+        }
+        const otherShifts: ShiftForValidation[] = [
+          ...todayShifts.filter((s) => s.id !== activeShift.id),
+          ...historyShifts,
+        ].map((s) => ({
+          id: s.id,
+          contractId: s.contractId,
+          employeeId: profile.id,
+          date: new Date(s.date),
+          startTime: s.startTime,
+          endTime: s.endTime,
+          breakDuration: s.breakDuration,
+          hasNightAction: s.hasNightAction,
+        }))
+
+        const result = checkCompliance(completedShift, otherShifts)
+        if (result.warnings.length > 0) {
+          complianceWarnings = ' ' + result.warnings.map((w) => w.message).join(' ')
+        }
+      } catch (err) {
+        logger.error('Erreur validation conformité post clock-out:', err)
+      }
+
       setSuccessMessage(
-        `Intervention terminée à ${clockOutTime}. Durée effective enregistrée.`
+        `Intervention terminée à ${clockOutTime}. Durée effective enregistrée.${complianceWarnings}`
       )
 
       // Recharger tous les shifts
@@ -262,7 +300,7 @@ export function ClockInPage() {
           boxShadow="sm"
         >
           <Flex align="center" gap={3} mb={2}>
-            <Text fontSize="2xl">⏱️</Text>
+            <Text fontSize="2xl" aria-hidden="true">⏱️</Text>
             <Box>
               <Text fontSize="xl" fontWeight="bold" color="gray.900">
                 Pointage
@@ -357,7 +395,7 @@ export function ClockInPage() {
                       {activeShift.tasks.map((task, i) => (
                         <Flex key={i} align="center" gap={2}>
                           <Box w="5px" h="5px" borderRadius="full" bg="blue.400" />
-                          <Text fontSize="sm">{task}</Text>
+                          <Text fontSize="sm">{sanitizeText(task)}</Text>
                         </Flex>
                       ))}
                     </Stack>
@@ -377,18 +415,22 @@ export function ClockInPage() {
                     borderColor="purple.200"
                   >
                     <Text fontWeight="medium" color="purple.800" mb={1}>
-                      🌙 Heures de nuit : {nightHoursForActive.toFixed(1)}h
+                      <span aria-hidden="true">🌙 </span>
+                      Heures de nuit : {nightHoursForActive.toFixed(1)}h
                     </Text>
                     <Text fontSize="sm" color="purple.600" mb={3}>
                       La majoration +20% s'applique uniquement si vous effectuez un acte
                       (soin, aide...) pendant la nuit.
                     </Text>
                     <Flex
+                      as="label"
+                      htmlFor="night-action-switch"
                       justify="space-between"
                       align="center"
                       p={3}
                       bg="white"
                       borderRadius="md"
+                      cursor="pointer"
                     >
                       <Text fontSize="sm" fontWeight="medium" color="gray.700">
                         J'effectue un acte cette nuit
@@ -397,17 +439,22 @@ export function ClockInPage() {
                         checked={hasNightAction}
                         onCheckedChange={(e) => setHasNightAction(e.checked)}
                       >
-                        <Switch.HiddenInput aria-label="Acte effectué pendant les heures de nuit" />
+                        <Switch.HiddenInput id="night-action-switch" />
                         <Switch.Control>
                           <Switch.Thumb />
                         </Switch.Control>
                       </Switch.Root>
                     </Flex>
-                    {hasNightAction && (
-                      <Text fontSize="xs" color="green.600" mt={2}>
-                        Majoration nuit appliquée : +20%
-                      </Text>
-                    )}
+                    <Text
+                      aria-live="polite"
+                      fontSize="xs"
+                      color={hasNightAction ? 'green.600' : 'gray.500'}
+                      mt={2}
+                    >
+                      {hasNightAction
+                        ? 'Majoration nuit appliquée : +20%'
+                        : 'Pas de majoration nuit'}
+                    </Text>
                   </Box>
                 </>
               )}
@@ -427,6 +474,7 @@ export function ClockInPage() {
                   variant="outline"
                   onClick={handleCancel}
                   disabled={isSubmitting}
+                  accessibleLabel="Annuler le pointage en cours"
                 >
                   Annuler
                 </AccessibleButton>
@@ -454,7 +502,7 @@ export function ClockInPage() {
 
             {plannedShifts.length === 0 && completedShifts.length === 0 && (
               <Box p={6} textAlign="center">
-                <Text fontSize="3xl" mb={2}>📭</Text>
+                <Text fontSize="3xl" mb={2} aria-hidden="true">📭</Text>
                 <Text color="gray.500">
                   Aucune intervention prévue aujourd'hui
                 </Text>
@@ -555,12 +603,12 @@ function HistorySection({
       {/* En-tête historique */}
       <Flex justify="space-between" align="center" mb={4}>
         <Flex align="center" gap={2}>
-          <Text fontSize="lg">📊</Text>
+          <Text fontSize="lg" aria-hidden="true">📊</Text>
           <Text fontSize="lg" fontWeight="semibold" color="gray.900">
             Historique des heures
           </Text>
         </Flex>
-        <Flex gap={1}>
+        <Flex gap={1} role="group" aria-label="Période d'historique">
           {[7, 14, 30].map((days) => (
             <AccessibleButton
               key={days}
@@ -568,6 +616,8 @@ function HistorySection({
               variant={historyDays === days ? 'solid' : 'outline'}
               colorPalette={historyDays === days ? 'blue' : 'gray'}
               onClick={() => setHistoryDays(days)}
+              aria-pressed={historyDays === days}
+              accessibleLabel={`Afficher les ${days} derniers jours`}
             >
               {days}j
             </AccessibleButton>
@@ -624,7 +674,7 @@ function HistorySection({
       {/* Aucun historique */}
       {!isLoading && historyStats.shiftCount === 0 && (
         <Box p={6} textAlign="center">
-          <Text fontSize="3xl" mb={2}>📭</Text>
+          <Text fontSize="3xl" mb={2} aria-hidden="true">📭</Text>
           <Text color="gray.500">
             Aucune intervention terminée sur les {historyDays} derniers jours
           </Text>
@@ -674,7 +724,7 @@ function HistorySection({
 function StatItem({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
     <Flex align="center" gap={2} minW="120px">
-      <Text fontSize="lg">{icon}</Text>
+      <Text fontSize="lg" aria-hidden="true">{icon}</Text>
       <Box>
         <Text fontSize="lg" fontWeight="bold" color="blue.800" lineHeight="1.2">
           {value}
@@ -733,7 +783,8 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
                 colorPalette={shift.hasNightAction ? 'purple' : 'gray'}
                 variant="subtle"
               >
-                🌙 {nightHours.toFixed(1)}h {shift.hasNightAction ? '(acte)' : '(présence)'}
+                <span aria-hidden="true">🌙 </span>
+                {nightHours.toFixed(1)}h {shift.hasNightAction ? '(acte)' : '(présence)'}
               </Badge>
             )}
           </Flex>
@@ -741,7 +792,7 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
       </Flex>
       {shift.tasks.length > 0 && (
         <Text fontSize="xs" color="gray.400" maxW="120px" truncate textAlign="right">
-          {shift.tasks.slice(0, 2).join(', ')}
+          {shift.tasks.slice(0, 2).map(sanitizeText).join(', ')}
         </Text>
       )}
     </Flex>
@@ -789,14 +840,15 @@ function ShiftCard({
           </Text>
           {shift.tasks.length > 0 && (
             <Text fontSize="sm" color="gray.500" mt={1}>
-              {shift.tasks.slice(0, 2).join(', ')}
+              {shift.tasks.slice(0, 2).map(sanitizeText).join(', ')}
               {shift.tasks.length > 2 && ` +${shift.tasks.length - 2}`}
             </Text>
           )}
           {nightHours > 0 && (
             <Flex align="center" gap={1} mt={1}>
               <Text fontSize="xs" color="purple.600">
-                🌙 {nightHours.toFixed(1)}h de nuit
+                <span aria-hidden="true">🌙 </span>
+                {nightHours.toFixed(1)}h de nuit
                 {shift.hasNightAction ? ' (acte)' : ' (présence)'}
               </Text>
             </Flex>
