@@ -333,8 +333,9 @@ describe('contractService', () => {
   })
 
   describe('searchEmployeeByEmail', () => {
-    it('devrait trouver un employé par email', async () => {
-      mockMaybeSingle.mockResolvedValue({
+    it('devrait trouver un employé avec profil complet', async () => {
+      // 1er appel: profiles (trouvé)
+      mockMaybeSingle.mockResolvedValueOnce({
         data: {
           id: 'employee-123',
           first_name: 'Marie',
@@ -343,12 +344,41 @@ describe('contractService', () => {
         },
         error: null,
       })
+      // 2e appel: employees (existe)
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: { profile_id: 'employee-123' },
+        error: null,
+      })
 
       const result = await searchEmployeeByEmail('marie@example.com')
 
       expect(result).not.toBeNull()
       expect(result?.firstName).toBe('Marie')
       expect(result?.lastName).toBe('Martin')
+      expect(result?.profileComplete).toBe(true)
+    })
+
+    it('devrait indiquer profil incomplet si pas de ligne employees', async () => {
+      // 1er appel: profiles (trouvé)
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: {
+          id: 'employee-123',
+          first_name: 'Marie',
+          last_name: 'Martin',
+          role: 'employee',
+        },
+        error: null,
+      })
+      // 2e appel: employees (n'existe pas)
+      mockMaybeSingle.mockResolvedValueOnce({
+        data: null,
+        error: null,
+      })
+
+      const result = await searchEmployeeByEmail('marie@example.com')
+
+      expect(result).not.toBeNull()
+      expect(result?.profileComplete).toBe(false)
     })
 
     it('devrait retourner null si l\'email n\'existe pas', async () => {
