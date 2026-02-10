@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type { LiaisonMessage, LiaisonMessageWithSender, UserRole, Attachment } from '@/types'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
@@ -107,7 +108,7 @@ export async function createLiaisonMessage(
       employer_id: employerId,
       sender_id: senderId,
       sender_role: senderRole,
-      content: content.trim(),
+      content: sanitizeText(content.trim()),
       audio_url: audioUrl || null,
       attachments: [],
       is_edited: false,
@@ -135,7 +136,7 @@ export async function updateLiaisonMessage(
   const { error } = await supabase
     .from('liaison_messages')
     .update({
-      content: content.trim(),
+      content: sanitizeText(content.trim()),
       is_edited: true,
       updated_at: new Date().toISOString(),
     })

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type { Absence } from '@/types'
 import {
   getProfileName,
@@ -234,7 +235,7 @@ export async function createAbsence(
       absence_type: absenceData.absenceType,
       start_date: absenceData.startDate.toISOString().split('T')[0],
       end_date: absenceData.endDate.toISOString().split('T')[0],
-      reason: absenceData.reason || null,
+      reason: absenceData.reason ? sanitizeText(absenceData.reason) : null,
       justification_url: absenceData.justificationUrl || null,
       status: 'pending',
     })

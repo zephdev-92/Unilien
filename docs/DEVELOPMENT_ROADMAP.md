@@ -150,41 +150,45 @@ Audit multi-domaines réalisé couvrant sécurité, qualité, architecture, acce
 
 ---
 
-### 0d. 🔴 HAUTE : Client Supabase Silencieux en Cas de Config Manquante
+### 0d. ✅ CORRIGÉ : Client Supabase Silencieux en Cas de Config Manquante
 
-**Fichier**: `src/lib/supabase/client.ts:14-16`
-**Impact**: 🔴 HAUTE - Bugs silencieux en production
+**Fichier**: `src/lib/supabase/client.ts`
+**Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 15 min
-**Statut**: ❌ À CORRIGER
+**Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème**: Quand les variables d'environnement sont absentes, le client Supabase se rabat silencieusement sur `'https://placeholder.supabase.co'` avec `'placeholder-key'`. Cela masque les erreurs de configuration en production et provoque des comportements imprévisibles au lieu d'un crash explicite.
+**Problème résolu**: Le client Supabase se rabattait silencieusement sur des placeholders fictifs quand les variables d'environnement étaient absentes, masquant les erreurs de configuration.
 
-**Actions**:
+**Corrections appliquées**:
 ```
-[ ] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
-[ ] Idem pour VITE_SUPABASE_ANON_KEY
-[ ] Garder un message clair pour aider au debug ("Variables VITE_SUPABASE_* manquantes")
+[x] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
+[x] Idem pour VITE_SUPABASE_ANON_KEY
+[x] Message clair avec instructions ("Copiez .env.example vers .env...")
+[x] Suppression des placeholders fictifs — le client reçoit les vraies valeurs
+[x] Suppression de l'import logger inutilisé
 ```
 
 ---
 
-### 0e. 🔴 HAUTE : Sanitisation Manquante dans les Services
+### 0e. ✅ CORRIGÉ : Sanitisation Manquante dans les Services
 
-**Fichier**: `src/services/shiftService.ts` (lignes 86, 147)
-**Impact**: 🔴 HAUTE - XSS potentiel via données stockées
+**Fichiers**: 6 services modifiés
+**Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 1h
-**Statut**: ❌ À CORRIGER
+**Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème**: Le module `sanitize.ts` existe avec DOMPurify, mais les champs `notes` et `tasks` dans `shiftService.ts` sont envoyés directement à Supabase sans sanitisation. Tout texte utilisateur pourrait contenir du HTML/JS malicieux.
+**Problème résolu**: Le module `sanitize.ts` (DOMPurify) existait mais n'était utilisé par aucun service. 25 champs texte libre étaient envoyés à Supabase sans sanitisation.
 
-**Actions**:
+**Corrections appliquées**:
 ```
-[ ] Appeler sanitizeText() sur le champ notes dans createShift()
-[ ] Appeler sanitizeText() sur chaque élément du tableau tasks
-[ ] Auditer les autres services (caregiverService, absenceService, liaisonService)
-[ ] Appliquer sanitizeText() à tout champ texte libre avant écriture en DB
+[x] shiftService.ts : sanitizeText() sur notes + tasks[].map(sanitizeText) (create + update)
+[x] liaisonService.ts : sanitizeText() sur content (create + update)
+[x] absenceService.ts : sanitizeText() sur reason (create)
+[x] logbookService.ts : sanitizeText() sur content (create + update)
+[x] profileService.ts : sanitizeText() sur firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, address.* (updateProfile + upsertEmployer + upsertEmployee)
+[x] caregiverService.ts : sanitizeText() sur relationship, relationshipDetails, emergencyPhone, availabilityHours, address.* (upsert + updateProfile)
 [ ] Ajouter tests unitaires vérifiant la sanitisation
 ```
 
@@ -1021,7 +1025,7 @@ npx playwright install
 - [ ] 0 bugs critiques en production
 - [ ] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git)
 - [x] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute) ✅ 10/02/2026
-- [ ] **NOUVEAU** : Sanitisation systématique des entrées utilisateur dans tous les services
+- [x] **NOUVEAU** : Sanitisation systématique des entrées utilisateur dans tous les services ✅ 10/02/2026
 - [x] Notifications in-app + Realtime (Supabase)
 - [ ] Notifications multi-canal Push + Email (Push: code prêt, config manquante)
 - [ ] Export documents conformes légalement (majorations en cours)
@@ -1144,7 +1148,7 @@ npx playwright install
    - [x] ✅ Secrets VAPID configurés sur Supabase + Edge Function redéployée v12 (09/02/2026)
    - [x] ✅ Migrations synchronisées (22 marquées applied) (09/02/2026)
    - [x] ✅ config.toml corrigé (clés non supportées retirées) (09/02/2026)
-   - [ ] Faire échouer explicitement le client Supabase si env vars manquantes (supprimer les fallbacks placeholder)
+   - [x] ✅ Faire échouer explicitement le client Supabase si env vars manquantes (10/02/2026)
 
 **1. Protection des routes** ✅ (10/02/2026):
    - [x] Créer composant `<ProtectedRoute>` centralisé
@@ -1152,9 +1156,9 @@ npx playwright install
    - [x] Ajouter support restriction par rôle (`allowedRoles`)
    - [x] Supprimer les gardes auth individuelles dans 9 composants
 
-**2. Sanitisation des entrées (CETTE SEMAINE)**:
-   - [ ] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
-   - [ ] Auditer et corriger les autres services (caregiver, absence, liaison)
+**2. Sanitisation des entrées** ✅ (10/02/2026):
+   - [x] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
+   - [x] Auditer et corriger les autres services (liaison, absence, logbook, profile, caregiver)
 
 **3. Qualité code (CETTE SEMAINE)**:
    - [ ] Extraire helper `mapProfileFromDb()` dans `useAuth.ts` (supprimer 4x duplication)
