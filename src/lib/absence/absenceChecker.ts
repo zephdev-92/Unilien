@@ -26,9 +26,12 @@ export function validateAbsenceRequest(
   const errors: string[] = []
   const warnings: string[] = []
 
-  // 1. Chevauchement (BLOQUANT)
+  // 1. Chevauchement (BLOQUANT — court-circuit, les autres erreurs ne sont pas pertinentes)
   const overlapError = validateOverlap(request, existingAbsences)
-  if (overlapError) errors.push(overlapError)
+  if (overlapError) {
+    errors.push(overlapError)
+    return { valid: false, errors, warnings }
+  }
 
   // 2. Solde de congés (BLOQUANT pour vacation)
   const balanceError = validateBalance(request, leaveBalance)
