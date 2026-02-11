@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Navigate } from 'react-router-dom'
 import {
   Box,
   Flex,
@@ -115,7 +114,7 @@ function DateSeparator({ date }: { date: Date }) {
 // ============================================
 
 export function LiaisonPage() {
-  const { profile, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { profile, isInitialized } = useAuth()
 
   const [messages, setMessages] = useState<LiaisonMessageWithSender[]>([])
   const [isLoadingMessages, setIsLoadingMessages] = useState(true)
@@ -365,23 +364,15 @@ export function LiaisonPage() {
     return groups
   }, [])
 
-  // Loading state
-  if (!isInitialized || isLoading || isResolvingEmployer) {
+  // Loading state (resolving employer for caregivers)
+  if (!profile || isResolvingEmployer) {
     return (
-      <Center minH="100vh">
-        <Box textAlign="center">
-          <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
-          <Text fontSize="lg" color="gray.600">
-            Chargement...
-          </Text>
-        </Box>
-      </Center>
+      <DashboardLayout title="Liaison">
+        <Center py={12}>
+          <Spinner size="xl" color="brand.500" />
+        </Center>
+      </DashboardLayout>
     )
-  }
-
-  // Not authenticated
-  if (!isAuthenticated || !profile) {
-    return <Navigate to="/login" replace />
   }
 
   // Access denied

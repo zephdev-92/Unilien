@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
 import { Box, Stack, Flex, Text, Center, Spinner, Badge } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
@@ -26,7 +25,7 @@ import type { CaregiverPermissions } from '@/types'
 const PAGE_SIZE = 20
 
 export function LogbookPage() {
-  const { profile, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { profile, isInitialized } = useAuth()
 
   const [entries, setEntries] = useState<LogEntryWithAuthor[]>([])
   const [isLoadingEntries, setIsLoadingEntries] = useState(true)
@@ -205,23 +204,15 @@ export function LogbookPage() {
     loadEntries(true)
   }
 
-  // Loading state
-  if (!isInitialized || isLoading || isResolvingEmployer) {
+  // Loading state (resolving employer for caregivers)
+  if (!profile || isResolvingEmployer) {
     return (
-      <Center minH="100vh">
-        <Box textAlign="center">
-          <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
-          <Text fontSize="lg" color="gray.600">
-            Chargement...
-          </Text>
-        </Box>
-      </Center>
+      <DashboardLayout title="Cahier de liaison">
+        <Center py={12}>
+          <Spinner size="xl" color="brand.500" />
+        </Center>
+      </DashboardLayout>
     )
-  }
-
-  // Not authenticated
-  if (!isAuthenticated || !profile) {
-    return <Navigate to="/login" replace />
   }
 
   // Access denied for caregivers without permission

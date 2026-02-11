@@ -5,6 +5,7 @@ import {
   createShiftReminderNotification,
 } from '@/services/notificationService'
 import { logger } from '@/lib/logger'
+import type { ContractDbRow } from '@/types/database'
 
 /**
  * Hook qui crée des rappels de notification pour les shifts des prochaines 24h.
@@ -67,8 +68,7 @@ export function useShiftReminders(userId: string | undefined, role: string | und
         for (const shift of shifts) {
           if (alreadyNotifiedShiftIds.has(shift.id)) continue
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const contract = shift.contract as any
+          const contract = shift.contract as ContractDbRow | undefined
           if (!contract) continue
 
           try {

@@ -158,11 +158,16 @@ export async function createContract(
 
   if (error) {
     logger.error('Erreur création contrat:', error)
-    throw new Error(
-      error.code === '23505'
-        ? 'Un contrat actif existe déjà avec cet auxiliaire'
-        : 'Erreur lors de la création du contrat'
-    )
+    if (error.code === '23505') {
+      throw new Error('Un contrat actif existe déjà avec cet auxiliaire')
+    }
+    if (error.code === '23503') {
+      throw new Error(
+        'L\'auxiliaire n\'a pas encore complété son profil. ' +
+        'Demandez-lui de se connecter et de remplir ses informations dans la page Profil.'
+      )
+    }
+    throw new Error('Erreur lors de la création du contrat')
   }
 
   // Notifier l'auxiliaire du nouveau contrat
@@ -304,7 +309,7 @@ export async function resumeContract(contractId: string): Promise<void> {
  */
 export async function searchEmployeeByEmail(
   email: string
-): Promise<{ id: string; firstName: string; lastName: string } | null> {
+): Promise<{ id: string; firstName: string; lastName: string; profileComplete: boolean } | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, role')
@@ -316,10 +321,19 @@ export async function searchEmployeeByEmail(
     return null
   }
 
+  // Vérifier que l'auxiliaire a bien une ligne dans la table employees
+  // (créée quand il complète son profil)
+  const { data: employeeRow } = await supabase
+    .from('employees')
+    .select('profile_id')
+    .eq('profile_id', data.id)
+    .maybeSingle()
+
   return {
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
+    profileComplete: !!employeeRow,
   }
 }
 

@@ -7,6 +7,7 @@ import type {
   NotificationData,
   NotificationPreferences,
 } from '@/types'
+import type { NotificationDbRow } from '@/types/database'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 // ============================================
@@ -22,30 +23,24 @@ async function triggerPushNotification(notification: Notification): Promise<void
     // Vérifier les préférences utilisateur
     const prefs = await getNotificationPreferences(notification.userId)
     if (!prefs.pushEnabled) {
+      logger.debug('[Push] Push désactivé par les préférences utilisateur')
       return
     }
 
-    // Appeler l'Edge Function pour envoyer le push
+    // Appeler l'Edge Function avec uniquement l'ID de la notification
+    // La fonction edge récupère les données depuis la DB (source de vérité)
     const { error } = await supabase.functions.invoke('send-push-notification', {
       body: {
-        userId: notification.userId,
-        title: notification.title,
-        body: notification.message,
-        data: {
-          url: notification.actionUrl || '/',
-          notificationId: notification.id,
-          type: notification.type,
-          priority: notification.priority,
-        },
+        notificationId: notification.id,
       },
     })
 
     if (error) {
-      logger.warn('Erreur envoi push notification:', error)
+      logger.warn('[Push] Erreur Edge Function:', error)
     }
   } catch (err) {
     // Ne pas bloquer si le push échoue
-    logger.warn('Push notification non envoyée:', err)
+    logger.warn('[Push] Push notification non envoyée:', err)
   }
 }
 
@@ -198,8 +193,8 @@ export async function createNotification(
   const notification = mapNotificationFromDb(data)
 
   // Déclencher le push notification en arrière-plan (non bloquant)
-  triggerPushNotification(notification).catch(() => {
-    // Ignorer les erreurs push silencieusement
+  triggerPushNotification(notification).catch((err) => {
+    logger.warn('[Push] Échec triggerPushNotification:', err)
   })
 
   return notification
@@ -923,8 +918,7 @@ export { getProfileName }
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapNotificationFromDb(data: any): Notification {
+function mapNotificationFromDb(data: NotificationDbRow): Notification {
   return {
     id: data.id,
     userId: data.user_id,

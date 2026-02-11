@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
 import { Box, Tabs, Text, Center, Spinner } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
@@ -22,7 +21,7 @@ import { logger } from '@/lib/logger'
 import type { Profile, Employer, Employee } from '@/types'
 
 export function ProfilePage() {
-  const { profile, userRole, isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { profile, userRole, isInitialized } = useAuth()
   const setProfile = useAuthStore((state) => state.setProfile)
 
   const [employer, setEmployer] = useState<Employer | null>(null)
@@ -54,25 +53,6 @@ export function ProfilePage() {
       loadRoleData()
     }
   }, [profile, isInitialized, loadRoleData])
-
-  // Loading state
-  if (!isInitialized || isLoading) {
-    return (
-      <Center minH="100vh">
-        <Box textAlign="center">
-          <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
-          <Text fontSize="lg" color="gray.600">
-            Chargement...
-          </Text>
-        </Box>
-      </Center>
-    )
-  }
-
-  // Not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
 
   // Profile not loaded - show message to complete profile
   if (!profile) {

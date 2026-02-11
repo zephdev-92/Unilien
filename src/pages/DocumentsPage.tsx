@@ -39,7 +39,7 @@ import { DocumentManagementSection } from '@/components/documents'
 import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
-  const { profile, isLoading: authLoading } = useAuth()
+  const { profile } = useAuth()
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -67,7 +67,7 @@ export function DocumentsPage() {
   const canExport = profile?.role === 'employer' ||
     (profile?.role === 'caregiver' && caregiver?.permissions?.canExportData)
 
-  if (authLoading || isLoadingCaregiver) {
+  if (!profile || isLoadingCaregiver) {
     return (
       <DashboardLayout>
         <Center py={12}>
