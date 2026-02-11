@@ -245,6 +245,11 @@ export async function createAbsence(
 
   if (error) {
     logger.error('Erreur création absence:', error)
+    if (error.code === '23P01' || error.message?.includes('absences_no_overlap')) {
+      throw new Error(
+        'Une absence existe déjà sur cette période. Veuillez choisir des dates différentes ou annuler l\'absence existante.'
+      )
+    }
     throw new Error(error.message)
   }
 
