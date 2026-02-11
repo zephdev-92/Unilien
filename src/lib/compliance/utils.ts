@@ -34,8 +34,8 @@ export function calculateShiftDuration(
   const startMinutes = timeToMinutes(startTime)
   let endMinutes = timeToMinutes(endTime)
 
-  // Si l'intervention passe minuit
-  if (endMinutes < startMinutes) {
+  // Si l'intervention passe minuit ou dure 24h (même heure début/fin)
+  if (endMinutes <= startMinutes) {
     endMinutes += 24 * 60
   }
 

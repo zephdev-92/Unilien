@@ -49,8 +49,26 @@ const absenceTypeLabels: Record<Absence['absenceType'], string> = {
 export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftClick, onAbsenceClick }: WeekViewProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  const getShiftsForDay = (date: Date) => {
-    return shifts.filter((shift) => isSameDay(new Date(shift.date), date))
+  // Détecte si une intervention déborde sur le jour suivant (passage minuit ou 24h)
+  const shiftSpansNextDay = (shift: Shift): boolean => {
+    const [startH, startM] = shift.startTime.split(':').map(Number)
+    const [endH, endM] = shift.endTime.split(':').map(Number)
+    return endH * 60 + endM <= startH * 60 + startM
+  }
+
+  const getShiftsForDay = (date: Date): Array<{ shift: Shift; isContinuation: boolean }> => {
+    const entries: Array<{ shift: Shift; isContinuation: boolean }> = []
+
+    for (const shift of shifts) {
+      const shiftDate = new Date(shift.date)
+      if (isSameDay(shiftDate, date)) {
+        entries.push({ shift, isContinuation: false })
+      } else if (isSameDay(shiftDate, addDays(date, -1)) && shiftSpansNextDay(shift)) {
+        entries.push({ shift, isContinuation: true })
+      }
+    }
+
+    return entries
   }
 
   const getAbsencesForDay = (date: Date) => {
@@ -136,10 +154,11 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
                 ))}
 
                 {/* Shifts */}
-                {dayShifts.map((shift) => (
+                {dayShifts.map(({ shift, isContinuation }) => (
                   <ShiftCard
-                    key={shift.id}
+                    key={`${shift.id}${isContinuation ? '-cont' : ''}`}
                     shift={shift}
+                    isContinuation={isContinuation}
                     userRole={userRole}
                     onClick={() => onShiftClick?.(shift)}
                   />
@@ -166,11 +185,12 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
 
 interface ShiftCardProps {
   shift: Shift
+  isContinuation?: boolean
   userRole: UserRole
   onClick?: () => void
 }
 
-function ShiftCard({ shift, onClick }: ShiftCardProps) {
+function ShiftCard({ shift, isContinuation, onClick }: ShiftCardProps) {
   return (
     <Box
       p={2}
@@ -178,6 +198,7 @@ function ShiftCard({ shift, onClick }: ShiftCardProps) {
       borderRadius="md"
       borderLeftWidth="3px"
       borderLeftColor={`${statusColors[shift.status]}.500`}
+      borderLeftStyle={isContinuation ? 'dashed' : 'solid'}
       boxShadow="sm"
       cursor="pointer"
       transition="all 0.2s"
@@ -197,18 +218,18 @@ function ShiftCard({ shift, onClick }: ShiftCardProps) {
     >
       <Flex justify="space-between" align="start" mb={1}>
         <Text fontSize="sm" fontWeight="semibold" color="gray.800">
-          {shift.startTime} - {shift.endTime}
+          {isContinuation ? `...${shift.endTime}` : `${shift.startTime} - ${shift.endTime}`}
         </Text>
         <Badge
           size="sm"
-          colorPalette={statusColors[shift.status]}
+          colorPalette={isContinuation ? 'purple' : statusColors[shift.status]}
           fontSize="2xs"
         >
-          {statusLabels[shift.status]}
+          {isContinuation ? 'Suite' : statusLabels[shift.status]}
         </Badge>
       </Flex>
 
-      {shift.tasks.length > 0 && (
+      {!isContinuation && shift.tasks.length > 0 && (
         <Text fontSize="xs" color="gray.600" lineClamp={2}>
           {shift.tasks.slice(0, 2).join(', ')}
           {shift.tasks.length > 2 && ` +${shift.tasks.length - 2}`}

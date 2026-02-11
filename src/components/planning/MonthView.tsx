@@ -63,8 +63,26 @@ export function MonthView({
     day = addDays(day, 1)
   }
 
-  const getShiftsForDay = (date: Date) => {
-    return shifts.filter((shift) => isSameDay(new Date(shift.date), date))
+  // Détecte si une intervention déborde sur le jour suivant (passage minuit ou 24h)
+  const shiftSpansNextDay = (shift: Shift): boolean => {
+    const [startH, startM] = shift.startTime.split(':').map(Number)
+    const [endH, endM] = shift.endTime.split(':').map(Number)
+    return endH * 60 + endM <= startH * 60 + startM
+  }
+
+  const getShiftsForDay = (date: Date): Array<{ shift: Shift; isContinuation: boolean }> => {
+    const entries: Array<{ shift: Shift; isContinuation: boolean }> = []
+
+    for (const shift of shifts) {
+      const shiftDate = new Date(shift.date)
+      if (isSameDay(shiftDate, date)) {
+        entries.push({ shift, isContinuation: false })
+      } else if (isSameDay(shiftDate, addDays(date, -1)) && shiftSpansNextDay(shift)) {
+        entries.push({ shift, isContinuation: true })
+      }
+    }
+
+    return entries
   }
 
   const getAbsencesForDay = (date: Date) => {
@@ -155,10 +173,11 @@ export function MonthView({
                 ))}
 
                 {/* Shifts (max 2 affichés) */}
-                {dayShifts.slice(0, 2).map((shift) => (
+                {dayShifts.slice(0, 2).map(({ shift, isContinuation }) => (
                   <MonthShiftCard
-                    key={shift.id}
+                    key={`${shift.id}${isContinuation ? '-cont' : ''}`}
                     shift={shift}
+                    isContinuation={isContinuation}
                     onClick={() => onShiftClick?.(shift)}
                   />
                 ))}
@@ -186,10 +205,11 @@ export function MonthView({
 
 interface MonthShiftCardProps {
   shift: Shift
+  isContinuation?: boolean
   onClick?: () => void
 }
 
-function MonthShiftCard({ shift, onClick }: MonthShiftCardProps) {
+function MonthShiftCard({ shift, isContinuation, onClick }: MonthShiftCardProps) {
   return (
     <Box
       px={1}
@@ -198,6 +218,7 @@ function MonthShiftCard({ shift, onClick }: MonthShiftCardProps) {
       borderRadius="sm"
       borderLeftWidth="2px"
       borderLeftColor={`${statusColors[shift.status]}.500`}
+      borderLeftStyle={isContinuation ? 'dashed' : 'solid'}
       cursor="pointer"
       transition="all 0.2s"
       _hover={{ bg: `${statusColors[shift.status]}.200` }}
@@ -212,7 +233,7 @@ function MonthShiftCard({ shift, onClick }: MonthShiftCardProps) {
       }}
     >
       <Text fontSize="2xs" fontWeight="medium" color={`${statusColors[shift.status]}.700`} lineClamp={1}>
-        {shift.startTime}-{shift.endTime}
+        {isContinuation ? `...${shift.endTime}` : `${shift.startTime}-${shift.endTime}`}
       </Text>
     </Box>
   )

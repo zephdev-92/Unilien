@@ -11,6 +11,7 @@ import {
   calculateShiftDuration,
   type ShiftForValidation,
   type ContractForCalculation,
+  type AbsenceForValidation,
 } from '@/lib/compliance'
 import { logger } from '@/lib/logger'
 
@@ -34,6 +35,9 @@ interface UseComplianceCheckOptions {
 
   // Interventions existantes pour comparaison
   existingShifts: ShiftForValidation[]
+
+  // Absences approuvées pour validation de conflit
+  approvedAbsences?: AbsenceForValidation[]
 
   // ID de l'intervention en cours d'édition (pour exclusion)
   editingShiftId?: string
@@ -66,6 +70,7 @@ export function useComplianceCheck({
   shift,
   contract,
   existingShifts,
+  approvedAbsences = [],
   editingShiftId,
   debounceMs = 300,
 }: UseComplianceCheckOptions): UseComplianceCheckResult {
@@ -119,7 +124,7 @@ export function useComplianceCheck({
 
     try {
       // Validation de conformité
-      const result = validateShift(shiftForValidation, existingShifts)
+      const result = validateShift(shiftForValidation, existingShifts, approvedAbsences)
       setComplianceResult(result)
 
       // Calcul de la paie si contrat fourni
@@ -154,7 +159,7 @@ export function useComplianceCheck({
     } finally {
       setIsValidating(false)
     }
-  }, [shiftForValidation, existingShifts, contract])
+  }, [shiftForValidation, existingShifts, approvedAbsences, contract])
 
   // Validation avec debounce
   useEffect(() => {

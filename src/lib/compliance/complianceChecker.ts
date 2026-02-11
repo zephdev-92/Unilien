@@ -12,6 +12,7 @@ import { validateWeeklyHours, getRemainingWeeklyHours } from './rules/validateWe
 import { validateDailyHours, getRemainingDailyHours } from './rules/validateDailyHours'
 import { validateOverlap, findOverlappingShifts } from './rules/validateOverlap'
 import { validateWeeklyRest, getWeeklyRestStatus } from './rules/validateWeeklyRest'
+import { validateAbsenceConflict, type AbsenceForValidation } from './rules/validateAbsenceConflict'
 import { calculateShiftDuration } from './utils'
 
 /**
@@ -20,10 +21,17 @@ import { calculateShiftDuration } from './utils'
  */
 export function validateShift(
   newShift: ShiftForValidation,
-  existingShifts: ShiftForValidation[]
+  existingShifts: ShiftForValidation[],
+  approvedAbsences: AbsenceForValidation[] = []
 ): ComplianceResult {
   const errors: ComplianceError[] = []
   const warnings: ComplianceWarning[] = []
+
+  // 0. Validation conflit absence approuvée (BLOQUANT)
+  if (approvedAbsences.length > 0) {
+    const absenceResult = validateAbsenceConflict(newShift, approvedAbsences)
+    processResult(absenceResult, errors, warnings, true)
+  }
 
   // 1. Validation chevauchement (BLOQUANT)
   const overlapResult = validateOverlap(newShift, existingShifts)
@@ -35,9 +43,13 @@ export function validateShift(
     processResult(result, errors, warnings, true)
   }
 
-  // 3. Validation durée quotidienne max (BLOQUANT)
+  // 3. Validation durée quotidienne max (AVERTISSEMENT avec infos repos IDCC 3239)
   const dailyHoursResult = validateDailyHours(newShift, existingShifts)
-  processResult(dailyHoursResult, errors, warnings, true)
+  if (!dailyHoursResult.valid && dailyHoursResult.details?.isWarning) {
+    processResult(dailyHoursResult, errors, warnings, false)
+  } else {
+    processResult(dailyHoursResult, errors, warnings, true)
+  }
 
   // 4. Validation durée hebdomadaire max (BLOQUANT si > 48h, AVERTISSEMENT si > 44h)
   const weeklyHoursResult = validateWeeklyHours(newShift, existingShifts)
@@ -277,8 +289,11 @@ export {
   validateDailyHours,
   validateOverlap,
   validateWeeklyRest,
+  validateAbsenceConflict,
   getRecommendedBreak,
   getRemainingWeeklyHours,
   getRemainingDailyHours,
   getWeeklyRestStatus,
 }
+
+export type { AbsenceForValidation }
