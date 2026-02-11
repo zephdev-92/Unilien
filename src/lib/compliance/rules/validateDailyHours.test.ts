@@ -64,7 +64,7 @@ describe('validateDailyHours', () => {
       expect(result.valid).toBe(false)
       expect(result.code).toBe(COMPLIANCE_RULES.DAILY_MAX_HOURS)
       expect(result.message).toContain('11')
-      expect(result.details?.isBlocking).toBe(true)
+      expect(result.details?.isWarning).toBe(true)
     })
 
     it('devrait rejeter 10h01 (juste au-dessus du maximum)', () => {
