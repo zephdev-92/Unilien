@@ -334,10 +334,10 @@ export function NewContractModal({
                       </Box>
                       <Box flex={1}>
                         <AccessibleInput
-                          label="Taux horaire (€)"
+                          label="Taux horaire brut (€)"
                           type="number"
                           step="0.01"
-                          helperText="Minimum SMIC: 11,65€"
+                          helperText="Minimum SMIC brut: 11,65€"
                           error={contractForm.formState.errors.hourlyRate?.message}
                           required
                           {...contractForm.register('hourlyRate')}
