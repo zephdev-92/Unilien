@@ -44,20 +44,9 @@ export default defineConfig({
         // Importer le code push dans le service worker
         importScripts: ['sw-push.js'],
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*supabase\.co\/rest\/v1\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 // 1 heure
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
+          // Pas de cache sur /rest/v1/ : toutes les tables contiennent des
+          // données utilisateur sensibles (profils, contrats, données handicap).
+          // Seul le storage (avatars, fichiers statiques) est mis en cache.
           {
             urlPattern: /^https:\/\/.*supabase\.co\/storage\/v1\/.*/i,
             handler: 'CacheFirst',
