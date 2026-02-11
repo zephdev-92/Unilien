@@ -211,16 +211,49 @@ export interface Attachment {
 }
 
 // Absence
+export type AbsenceType = 'sick' | 'vacation' | 'family_event' | 'training' | 'unavailable' | 'emergency'
+
 export interface Absence {
   id: string
   employeeId: string
-  absenceType: 'sick' | 'vacation' | 'training' | 'unavailable' | 'emergency'
+  absenceType: AbsenceType
   startDate: Date
   endDate: Date
   reason?: string
   justificationUrl?: string
   status: 'pending' | 'approved' | 'rejected'
+  businessDaysCount?: number
+  justificationDueDate?: Date
+  familyEventType?: FamilyEventType
+  leaveYear?: string
   createdAt: Date
+}
+
+// Types d'événements familiaux (IDCC 3239)
+export type FamilyEventType =
+  | 'marriage'
+  | 'pacs'
+  | 'birth'
+  | 'adoption'
+  | 'death_spouse'
+  | 'death_parent'
+  | 'death_child'
+  | 'death_sibling'
+  | 'death_in_law'
+  | 'child_marriage'
+  | 'disability_announcement'
+
+// Solde de congés
+export interface LeaveBalance {
+  id: string
+  employeeId: string
+  employerId: string
+  contractId: string
+  leaveYear: string
+  acquiredDays: number
+  takenDays: number
+  adjustmentDays: number
+  remainingDays: number
 }
 
 // Types de notification
