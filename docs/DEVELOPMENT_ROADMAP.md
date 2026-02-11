@@ -206,36 +206,37 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème résolu**: Quand les variables d'environnement étaient absentes, le client Supabase se rabattait silencieusement sur des placeholders. Remplacé par un `throw Error` explicite.
+**Problème résolu**: Le client Supabase se rabattait silencieusement sur des placeholders fictifs quand les variables d'environnement étaient absentes, masquant les erreurs de configuration.
 
 **Corrections appliquées**:
 ```
 [x] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
 [x] Idem pour VITE_SUPABASE_ANON_KEY
-[x] Message clair en français pour aider au debug
-[x] Import logger supprimé (plus nécessaire)
+[x] Message clair avec instructions ("Copiez .env.example vers .env...")
+[x] Suppression des placeholders fictifs — le client reçoit les vraies valeurs
+[x] Suppression de l'import logger inutilisé
 ```
 
 ---
 
 ### 0e. ✅ CORRIGÉ : Sanitisation Manquante dans les Services
 
-**Fichier**: `src/services/shiftService.ts` et 5 autres services
+**Fichiers**: 6 services modifiés
 **Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 1h
 **Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème résolu**: Les champs texte utilisateur étaient envoyés à Supabase sans sanitisation DOMPurify. Corrigé dans 6 services (25 champs).
+**Problème résolu**: Le module `sanitize.ts` (DOMPurify) existait mais n'était utilisé par aucun service. 25 champs texte libre étaient envoyés à Supabase sans sanitisation.
 
 **Corrections appliquées**:
 ```
-[x] shiftService.ts : notes, tasks[] (createShift + updateShift)
-[x] liaisonService.ts : content (createLiaisonMessage + updateLiaisonMessage)
-[x] absenceService.ts : reason
-[x] logbookService.ts : content (createLogEntry + updateLogEntry)
-[x] profileService.ts : firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, adresses
-[x] caregiverService.ts : relationshipDetails, emergencyPhone, availabilityHours, adresses
+[x] shiftService.ts : sanitizeText() sur notes + tasks[].map(sanitizeText) (create + update)
+[x] liaisonService.ts : sanitizeText() sur content (create + update)
+[x] absenceService.ts : sanitizeText() sur reason (create)
+[x] logbookService.ts : sanitizeText() sur content (create + update)
+[x] profileService.ts : sanitizeText() sur firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, address.* (updateProfile + upsertEmployer + upsertEmployee)
+[x] caregiverService.ts : sanitizeText() sur relationship, relationshipDetails, emergencyPhone, availabilityHours, address.* (upsert + updateProfile)
 [ ] Ajouter tests unitaires vérifiant la sanitisation
 ```
 
@@ -1230,7 +1231,7 @@ npx playwright install
 
 **2. Sanitisation des entrées** ✅ (10/02/2026):
    - [x] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
-   - [x] Auditer et corriger les autres services (caregiver, absence, liaison, logbook, profile)
+   - [x] Auditer et corriger les autres services (liaison, absence, logbook, profile, caregiver)
 
 **2b. Fix FK constraint** ✅ (10/02/2026):
    - [x] Migration 024 : handle_new_user crée employees/employers automatiquement

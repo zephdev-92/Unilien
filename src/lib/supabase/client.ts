@@ -1,19 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
-import { logger } from '@/lib/logger'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  logger.warn(
-    'Supabase URL ou clé manquante. Veuillez configurer les variables d\'environnement.'
+  throw new Error(
+    'Variables d\'environnement manquantes : VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont requises. ' +
+    'Copiez .env.example vers .env et configurez vos valeurs Supabase.'
   )
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       autoRefreshToken: true,

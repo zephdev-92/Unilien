@@ -159,7 +159,7 @@ export async function upsertCaregiver(
     profile_id: profileId,
     employer_id: data.employerId,
     permissions: data.permissions,
-    relationship: data.relationship || null,
+    relationship: data.relationship ? sanitizeText(data.relationship) : null,
   }
 
   const { error } = await supabase
@@ -187,12 +187,19 @@ export async function updateCaregiverProfile(
     canReplaceEmployer?: boolean
   }
 ): Promise<void> {
+  const sanitizedAddress = data.address ? {
+    street: data.address.street ? sanitizeText(data.address.street) : '',
+    city: data.address.city ? sanitizeText(data.address.city) : '',
+    postalCode: data.address.postalCode ? sanitizeText(data.address.postalCode) : '',
+    country: data.address.country || 'France',
+  } : null
+
   const updateData = {
     relationship: data.relationship || null,
     relationship_details: data.relationshipDetails ? sanitizeText(data.relationshipDetails) : null,
     legal_status: data.legalStatus || null,
-    address: data.address || null,
-    emergency_phone: data.emergencyPhone || null,
+    address: sanitizedAddress,
+    emergency_phone: data.emergencyPhone ? sanitizeText(data.emergencyPhone) : null,
     availability_hours: data.availabilityHours ? sanitizeText(data.availabilityHours) : null,
     can_replace_employer: data.canReplaceEmployer ?? false,
   }
