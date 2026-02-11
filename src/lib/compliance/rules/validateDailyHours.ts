@@ -41,11 +41,21 @@ export function validateDailyHours(
   const totalHours = existingHours + newShiftHours
 
   if (totalHours > MAXIMUM_DAILY_HOURS) {
+    const restHours = 24 - totalHours
+    const restInfo = restHours < 11
+      ? ` Attention : il ne restera que ${restHours.toFixed(1)}h de repos (minimum légal : 11h consécutives).`
+      : ''
+
     return {
       valid: false,
       code: COMPLIANCE_RULES.DAILY_MAX_HOURS,
       rule: COMPLIANCE_MESSAGES.DAILY_MAX_HOURS.rule,
-      message: COMPLIANCE_MESSAGES.DAILY_MAX_HOURS.error(totalHours),
+      message: COMPLIANCE_MESSAGES.DAILY_MAX_HOURS.error(totalHours)
+        + restInfo
+        + '\n\nObligations de repos (IDCC 3239) :'
+        + '\n• Repos quotidien : 11h consécutives minimum (Art. L3131-1)'
+        + '\n• Repos hebdomadaire : 35h consécutives minimum (Art. L3132-2)'
+        + '\n• Pause : 20 min obligatoire après 6h de travail (Art. L3121-16)',
       details: {
         date: format(newShift.date, 'EEEE d MMMM yyyy', { locale: fr }),
         totalHours: Math.round(totalHours * 10) / 10,
@@ -53,7 +63,7 @@ export function validateDailyHours(
         newShiftHours: Math.round(newShiftHours * 10) / 10,
         maximumAllowed: MAXIMUM_DAILY_HOURS,
         excessHours: Math.round((totalHours - MAXIMUM_DAILY_HOURS) * 10) / 10,
-        isBlocking: true,
+        isWarning: true,
       },
     }
   }

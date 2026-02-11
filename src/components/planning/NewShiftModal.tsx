@@ -18,10 +18,11 @@ import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/component
 import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compliance'
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import { createShift, getShifts } from '@/services/shiftService'
+import { getAbsencesForEmployer } from '@/services/absenceService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { calculateNightHours } from '@/lib/compliance'
 import { logger } from '@/lib/logger'
-import type { ShiftForValidation } from '@/lib/compliance'
+import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
 
 const shiftSchema = z.object({
   contractId: z.string().min(1, 'Veuillez sélectionner un auxiliaire'),
@@ -31,18 +32,7 @@ const shiftSchema = z.object({
   breakDuration: z.coerce.number().min(0, 'La pause ne peut pas être négative').default(0),
   tasks: z.string().optional(),
   notes: z.string().optional(),
-}).refine(
-  (data) => {
-    // Permettre les interventions qui passent minuit
-    if (!data.startTime || !data.endTime) return true
-    // Si l'heure de fin est avant l'heure de début, c'est une intervention de nuit
-    return true
-  },
-  {
-    message: "Vérifiez les horaires",
-    path: ['endTime'],
-  }
-)
+})
 
 type ShiftFormData = z.infer<typeof shiftSchema>
 
@@ -63,6 +53,7 @@ export function NewShiftModal({
 }: NewShiftModalProps) {
   const [contracts, setContracts] = useState<ContractWithEmployee[]>([])
   const [existingShifts, setExistingShifts] = useState<ShiftForValidation[]>([])
+  const [approvedAbsences, setApprovedAbsences] = useState<AbsenceForValidation[]>([])
   const [isLoadingContracts, setIsLoadingContracts] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -146,6 +137,7 @@ export function NewShiftModal({
       ? { weeklyHours: selectedContract.weeklyHours, hourlyRate: selectedContract.hourlyRate }
       : null,
     existingShifts,
+    approvedAbsences,
   })
 
   // Charger les contrats et les interventions existantes
@@ -181,6 +173,23 @@ export function NewShiftModal({
           setExistingShifts(shiftsForValidation)
         })
         .catch((err) => logger.error('Erreur chargement shifts pour validation:', err))
+
+      // Charger les absences approuvées
+      getAbsencesForEmployer(employerId)
+        .then((absences) => {
+          const approved: AbsenceForValidation[] = absences
+            .filter((a) => a.status === 'approved')
+            .map((a) => ({
+              id: a.id,
+              employeeId: a.employeeId,
+              absenceType: a.absenceType,
+              startDate: new Date(a.startDate),
+              endDate: new Date(a.endDate),
+              status: a.status,
+            }))
+          setApprovedAbsences(approved)
+        })
+        .catch((err) => logger.error('Erreur chargement absences:', err))
     }
   }, [isOpen, employerId, defaultDate])
 
