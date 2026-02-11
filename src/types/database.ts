@@ -124,13 +124,34 @@ export interface ShiftDbRow {
 export interface AbsenceDbRow {
   id: string
   employee_id: string
-  absence_type: 'sick' | 'vacation' | 'training' | 'unavailable' | 'emergency'
+  absence_type: 'sick' | 'vacation' | 'family_event' | 'training' | 'unavailable' | 'emergency'
   start_date: string
   end_date: string
   reason: string | null
   justification_url: string | null
   status: 'pending' | 'approved' | 'rejected'
+  business_days_count: number | null
+  justification_due_date: string | null
+  family_event_type: string | null
+  leave_year: string | null
   created_at: string
+}
+
+// ============================================================
+// LEAVE BALANCE
+// ============================================================
+
+export interface LeaveBalanceDbRow {
+  id: string
+  employee_id: string
+  employer_id: string
+  contract_id: string
+  leave_year: string
+  acquired_days: number
+  taken_days: number
+  adjustment_days: number
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================
