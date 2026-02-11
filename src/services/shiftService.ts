@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Shift, UserRole } from '@/types'
+import type { ShiftDbRow } from '@/types/database'
 import {
   getProfileName,
   createShiftCreatedNotification,
@@ -247,8 +248,7 @@ export async function validateShift(
 }
 
 // Mapper les données DB vers le type Shift
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapShiftFromDb(data: any): Shift {
+function mapShiftFromDb(data: ShiftDbRow): Shift {
   return {
     id: data.id,
     contractId: data.contract_id,

@@ -9,6 +9,7 @@ import type {
   Address,
   Shift,
 } from '@/types'
+import type { CaregiverDbRow, ShiftDbRow } from '@/types/database'
 import {
   getProfileName,
   createTeamMemberAddedNotification,
@@ -498,8 +499,7 @@ export async function removeCaregiverFromEmployer(
 // Mappers
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapCaregiverWithProfileFromDb(data: any): CaregiverWithProfile {
+function mapCaregiverWithProfileFromDb(data: CaregiverDbRow): CaregiverWithProfile {
   return {
     profileId: data.profile_id,
     employerId: data.employer_id,
@@ -525,8 +525,7 @@ function mapCaregiverWithProfileFromDb(data: any): CaregiverWithProfile {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapCaregiverFromDb(data: any): Caregiver {
+function mapCaregiverFromDb(data: CaregiverDbRow): Caregiver {
   return {
     profileId: data.profile_id,
     employerId: data.employer_id,
@@ -550,8 +549,7 @@ function mapCaregiverFromDb(data: any): Caregiver {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapShiftFromDb(data: any): Shift {
+function mapShiftFromDb(data: ShiftDbRow): Shift {
   return {
     id: data.id,
     contractId: data.contract_id,

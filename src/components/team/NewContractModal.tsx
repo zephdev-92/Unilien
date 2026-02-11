@@ -84,6 +84,7 @@ export function NewContractModal({
     id: string
     firstName: string
     lastName: string
+    profileComplete: boolean
   } | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -129,6 +130,14 @@ export function NewContractModal({
         setSearchError(
           'Aucun auxiliaire trouvé avec cette adresse email. ' +
             'L\'auxiliaire doit d\'abord créer un compte sur Unilien.'
+        )
+        return
+      }
+
+      if (!employee.profileComplete) {
+        setSearchError(
+          `${employee.firstName} ${employee.lastName} a un compte mais n'a pas encore complété son profil. ` +
+            'Demandez-lui de se connecter et de remplir ses informations dans la page Profil avant de créer un contrat.'
         )
         return
       }

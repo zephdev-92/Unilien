@@ -3,3 +3,4 @@ export { AccessibleButton, type AccessibleButtonProps } from './AccessibleButton
 export { AccessibleSelect, type AccessibleSelectProps, type SelectOption } from './AccessibleSelect'
 export { VoiceInput, type VoiceInputProps } from './VoiceInput'
 export { DevelopmentBanner } from './DevelopmentBanner'
+export { ErrorBoundary } from './ErrorBoundary'

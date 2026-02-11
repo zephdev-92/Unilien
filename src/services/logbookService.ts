@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { LogEntry, UserRole, Attachment } from '@/types'
+import type { LogEntryDbRow } from '@/types/database'
 import {
   getProfileName,
   createUrgentLogEntryNotification,
@@ -368,8 +369,7 @@ export async function getRecentLogEntries(
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapLogEntryFromDb(data: any): LogEntryWithAuthor {
+function mapLogEntryFromDb(data: LogEntryDbRow): LogEntryWithAuthor {
   return {
     id: data.id,
     employerId: data.employer_id,

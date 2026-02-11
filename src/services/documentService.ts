@@ -5,6 +5,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import type { Absence } from '@/types'
+import type { AbsenceDbRow, ContractWithEmployeeDbRow } from '@/types/database'
 
 // ============================================
 // TYPES
@@ -60,8 +61,7 @@ export async function getDocumentsForEmployer(
   // Créer un map employeeId -> employeeInfo
   const employeeMap = new Map<string, { id: string; firstName: string; lastName: string }>()
   for (const contract of contracts) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const profile = (contract as any).employee_profile?.profile
+    const profile = (contract as ContractWithEmployeeDbRow).employee_profile?.profile
     if (profile) {
       employeeMap.set(contract.employee_id, {
         id: profile.id,
@@ -155,8 +155,7 @@ export async function getPendingDocuments(
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapAbsenceFromDb(data: any): Absence {
+function mapAbsenceFromDb(data: AbsenceDbRow): Absence {
   return {
     id: data.id,
     employeeId: data.employee_id,

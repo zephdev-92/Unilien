@@ -35,7 +35,7 @@ export function calculateShiftDuration(
   let endMinutes = timeToMinutes(endTime)
 
   // Si l'intervention passe minuit
-  if (endMinutes <= startMinutes) {
+  if (endMinutes < startMinutes) {
     endMinutes += 24 * 60
   }
 
@@ -64,7 +64,7 @@ export function getShiftEndDateTime(date: Date, startTime: string, endTime: stri
   endDate.setHours(hours, minutes, 0, 0)
 
   // Si l'intervention passe minuit, ajouter un jour
-  if (endMinutes <= startMinutes) {
+  if (endMinutes < startMinutes) {
     endDate = addDays(endDate, 1)
   }
 
@@ -108,7 +108,7 @@ export function calculateNightHours(
   let endMinutes = timeToMinutes(endTime)
 
   // Gestion du passage à minuit
-  if (endMinutes <= startMinutes) {
+  if (endMinutes < startMinutes) {
     endMinutes += 24 * 60
   }
 

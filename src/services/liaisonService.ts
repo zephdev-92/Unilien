@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { LiaisonMessage, LiaisonMessageWithSender, UserRole, Attachment } from '@/types'
+import type { LiaisonMessageDbRow } from '@/types/database'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 // ============================================
@@ -384,8 +385,7 @@ export function subscribeTypingIndicator(
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapMessageFromDb(data: any): LiaisonMessageWithSender {
+function mapMessageFromDb(data: LiaisonMessageDbRow): LiaisonMessageWithSender {
   return {
     id: data.id,
     employerId: data.employer_id,

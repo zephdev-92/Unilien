@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Absence } from '@/types'
+import type { AbsenceDbRow } from '@/types/database'
 import {
   getProfileName,
   createAbsenceRequestedNotification,
@@ -376,8 +377,7 @@ export async function deleteAbsence(absenceId: string): Promise<void> {
 // HELPER: MAP FROM DB
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapAbsenceFromDb(data: any): Absence {
+function mapAbsenceFromDb(data: AbsenceDbRow): Absence {
   return {
     id: data.id,
     employeeId: data.employee_id,
