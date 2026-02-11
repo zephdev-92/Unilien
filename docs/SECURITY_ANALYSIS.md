@@ -12,7 +12,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 - ~~**P0 — Critique** : IDOR dans `send-push-notification`~~ ✅ Corrigé — la fonction edge utilise désormais `notificationId` (lookup DB) au lieu de `userId` brut + CORS restreint.
 - **P1 — Élevé** : absence de `Content-Security-Policy` côté hébergement ; la réduction d'impact d'un XSS reste insuffisante.
-- **P2 — Moyen** : stratégie de cache PWA potentiellement trop large pour des réponses API sensibles.
+- ~~**P2 — Moyen** : cache PWA + rate limiting~~ ✅ Cache REST supprimé, rate limiting ajouté sur edge function.
 
 ---
 
@@ -126,27 +126,23 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 **Recommandation**
 - Restreindre les origines autorisées aux domaines applicatifs connus (prod + preview).
 
-#### 4. Cache PWA sur endpoints API Supabase
+#### ~~4. Cache PWA sur endpoints API Supabase~~ ✅ Corrigé (2026-02-11)
 
-**Constat**
-- `runtimeCaching` applique une stratégie `NetworkFirst` pour `https://*.supabase.co/rest/v1/*`.
-
-**Impact**
-- Risque de mise en cache locale de réponses API contenant des données potentiellement sensibles, selon les requêtes effectuées et le comportement offline.
-
-**Recommandation**
-- Réduire le cache API aux seules routes non sensibles ou désactiver le cache pour les ressources utilisateurs.
-- Préférer des règles de cache explicitement listées (allowlist) plutôt qu'un pattern global.
+**Correction appliquée**
+- Supprimé le `runtimeCaching` `NetworkFirst` sur `rest/v1/*` dans `vite.config.ts`.
+- Toutes les tables contiennent des données utilisateur sensibles (profils, contrats, données handicap) — aucune n'est candidate au cache.
+- Seul le cache `CacheFirst` sur `/storage/v1/*` (avatars, fichiers statiques) est conservé.
 
 #### 5. Chiffrement des données sensibles
 
 - Envisager le chiffrement côté client pour les données médicales (`handicap_type`, `specific_needs`).
 - Utiliser `pgsodium` de Supabase pour le chiffrement au repos.
 
-#### 6. Rate limiting
+#### ~~6. Rate limiting~~ ✅ Corrigé (2026-02-11)
 
-- Configurer des limites de requêtes sur les endpoints sensibles (auth, upload).
-- Utiliser les fonctionnalités de rate limiting de Supabase.
+**Correction appliquée**
+- Rate limiting en mémoire ajouté dans la fonction edge `send-push-notification` : max 30 appels/min par utilisateur authentifié (HTTP 429).
+- Note : rate limiting global API (auth, REST) à configurer via le dashboard Supabase (settings > Rate Limiting).
 
 ---
 
@@ -157,9 +153,9 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | ~~**P0 immédiat**~~ | ~~Corriger l'autorisation dans `send-push-notification`~~ | ✅ Fait |
 | **P1 court terme** | Déployer une CSP monitorée (Report-Only → enforcement) | Moyen |
 | ~~**P2 court terme**~~ | ~~Restreindre CORS edge aux domaines connus~~ | ✅ Fait |
-| **P2 court terme** | Revoir les patterns de cache Workbox (allowlist) | Faible |
+| ~~**P2 court terme**~~ | ~~Revoir les patterns de cache Workbox~~ | ✅ Fait |
 | **P2 moyen terme** | Chiffrement données sensibles (`pgsodium`) | Élevé |
-| **P2 moyen terme** | Rate limiting endpoints sensibles | Moyen |
+| ~~**P2 moyen terme**~~ | ~~Rate limiting edge function~~ | ✅ Fait |
 | **P2 continu** | Audits RLS à chaque migration de schéma | Faible |
 
 ---
