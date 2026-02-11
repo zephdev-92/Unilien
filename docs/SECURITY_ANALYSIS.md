@@ -11,7 +11,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 ## Résumé exécutif
 
 - ~~**P0 — Critique** : IDOR dans `send-push-notification`~~ ✅ Corrigé — la fonction edge utilise désormais `notificationId` (lookup DB) au lieu de `userId` brut + CORS restreint.
-- **P1 — Élevé** : absence de `Content-Security-Policy` côté hébergement ; la réduction d'impact d'un XSS reste insuffisante.
+- **P1 — Élevé** : CSP déployée en mode `Report-Only` — à basculer en enforcement après validation en production.
 - **P2 — Moyen** : stratégie de cache PWA potentiellement trop large pour des réponses API sensibles.
 
 ---
@@ -94,22 +94,29 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ---
 
-### P1 — Élevé
+### P1 — Élevé (en cours)
 
-#### 2. CSP manquante sur l'hébergement
+#### 2. CSP sur l'hébergement
 
-**Constat**
-- Les headers Netlify n'incluent pas de `Content-Security-Policy`.
+**Constat initial**
+- Les headers Netlify n'incluaient pas de `Content-Security-Policy`.
 
-**Impact**
-- En cas d'injection XSS, l'absence de CSP réduit fortement la capacité à contenir l'exécution de scripts arbitraires.
-
-**Recommandation**
-- Ajouter une CSP stricte et l'ajuster progressivement :
+**Correction appliquée (2026-02-11)**
+- CSP déployée en mode `Content-Security-Policy-Report-Only` dans `netlify.toml` :
   ```
-  default-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'
+  default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  img-src 'self' data: blob: https://*.supabase.co;
+  font-src 'self'; worker-src 'self'; manifest-src 'self';
+  object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   ```
-- Déployer d'abord en mode `Content-Security-Policy-Report-Only` puis basculer en enforcement.
+- `style-src 'unsafe-inline'` requis par Chakra UI v3 (emotion — styles injectés dynamiquement).
+- `blob:` dans `img-src` pour les prévisualisations d'avatars.
+- `wss://*.supabase.co` pour les connexions Realtime.
+
+**Prochaine étape**
+- Valider en production via la console navigateur (aucune violation CSP reportée).
+- Basculer `Content-Security-Policy-Report-Only` → `Content-Security-Policy` (enforcement).
 
 ---
 
@@ -155,7 +162,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | Priorité | Action | Effort estimé |
 |----------|--------|---------------|
 | ~~**P0 immédiat**~~ | ~~Corriger l'autorisation dans `send-push-notification`~~ | ✅ Fait |
-| **P1 court terme** | Déployer une CSP monitorée (Report-Only → enforcement) | Moyen |
+| **P1 court terme** | ~~Déployer une CSP monitorée~~ Report-Only déployée → valider puis enforcement | ✅ Phase 1 |
 | ~~**P2 court terme**~~ | ~~Restreindre CORS edge aux domaines connus~~ | ✅ Fait |
 | **P2 court terme** | Revoir les patterns de cache Workbox (allowlist) | Faible |
 | **P2 moyen terme** | Chiffrement données sensibles (`pgsodium`) | Élevé |

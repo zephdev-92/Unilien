@@ -20,6 +20,9 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(self), geolocation=()"
+    # CSP en mode Report-Only pour validation avant enforcement
+    # Passer à Content-Security-Policy une fois validé en production
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
 # Cache long pour les assets statiques (hash dans le nom)
 [[headers]]
