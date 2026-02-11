@@ -39,6 +39,7 @@ export const COMPLIANCE_RULES = {
   WEEKLY_MAX_HOURS: 'WEEKLY_MAX_HOURS',
   DAILY_MAX_HOURS: 'DAILY_MAX_HOURS',
   SHIFT_OVERLAP: 'SHIFT_OVERLAP',
+  ABSENCE_CONFLICT: 'ABSENCE_CONFLICT',
 } as const
 
 export type ComplianceRuleCode = (typeof COMPLIANCE_RULES)[keyof typeof COMPLIANCE_RULES]
@@ -78,6 +79,11 @@ export const COMPLIANCE_MESSAGES = {
     error: (existingShift: string) =>
       `Chevauchement avec une intervention existante : ${existingShift}`,
     rule: 'Une seule intervention à la fois par auxiliaire',
+  },
+  ABSENCE_CONFLICT: {
+    error: (absenceType: string, dateInfo: string) =>
+      `L'auxiliaire est en ${absenceType} ${dateInfo}. Impossible de planifier une intervention pendant une absence approuvée.`,
+    rule: 'Pas d\'intervention pendant une absence approuvée',
   },
 } as const
 
