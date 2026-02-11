@@ -149,7 +149,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ sent, failed }), { status: 200, headers: corsHeaders })
-  } catch (e) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Internal error' }), { status: 500, headers: corsHeaders })
   }
 })
