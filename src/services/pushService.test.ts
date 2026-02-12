@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// Stub env AVANT l'import du module (VAPID_PUBLIC_KEY est évaluée au module-level)
-vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'BFake_VAPID_PUBLIC_KEY_FOR_TESTING_1234567890abcdef')
+// Hoisted : s'exécute AVANT le chargement des modules importés.
+// Nécessaire car VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+// est évaluée au module-level dans pushService.ts.
+vi.hoisted(() => {
+  import.meta.env.VITE_VAPID_PUBLIC_KEY = 'BFake_VAPID_PUBLIC_KEY_FOR_TESTING_1234567890abcdef'
+})
 
 // ============================================
 // MOCKS
