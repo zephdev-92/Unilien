@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Helpers de test partagés — wrappers de rendu et utilitaires.
  *

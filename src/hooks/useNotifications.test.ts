@@ -113,7 +113,7 @@ describe('useNotifications', () => {
   })
 
   it('devrait ne pas charger automatiquement si autoFetch est false', async () => {
-    const { result } = renderHook(() =>
+    renderHook(() =>
       useNotifications({ userId: 'user-123', autoFetch: false })
     )
 

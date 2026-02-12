@@ -159,9 +159,7 @@ describe('useShiftReminders', () => {
     // Deuxième appel : from('notifications') retourne les notifs existantes
     const notifsChain = createChain({ data: [], error: null })
 
-    let callCount = 0
     mockFrom.mockImplementation((table: string) => {
-      callCount++
       if (table === 'shifts') return shiftsChain
       if (table === 'notifications') return notifsChain
       return shiftsChain

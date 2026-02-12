@@ -103,28 +103,6 @@ function mockSupabaseQuery(result: { data?: unknown; error?: unknown; count?: nu
   return chain
 }
 
-/** Crée un mock pour enchaîner plusieurs appels successifs à from() */
-function mockSupabaseQuerySequence(results: Array<{ data?: unknown; error?: unknown; count?: number | null }>) {
-  results.forEach((result) => {
-    const chain: Record<string, unknown> = {}
-    const handler = () => chain
-    chain.select = vi.fn().mockReturnValue(chain)
-    chain.insert = vi.fn().mockReturnValue(chain)
-    chain.update = vi.fn().mockReturnValue(chain)
-    chain.delete = vi.fn().mockReturnValue(chain)
-    chain.upsert = vi.fn().mockReturnValue(chain)
-    chain.eq = vi.fn().mockReturnValue(chain)
-    chain.in = vi.fn().mockReturnValue(chain)
-    chain.lt = vi.fn().mockReturnValue(chain)
-    chain.order = vi.fn().mockReturnValue(chain)
-    chain.limit = vi.fn().mockReturnValue(chain)
-    chain.single = vi.fn().mockResolvedValue(result)
-    chain.maybeSingle = vi.fn().mockResolvedValue(result)
-    chain.then = vi.fn().mockImplementation((resolve: (val: unknown) => unknown) => Promise.resolve(resolve(result)))
-    mockFrom.mockImplementationOnce(handler)
-  })
-}
-
 const USER_ID = 'user-123'
 
 // ─── Tests ──────────────────────────────────────────────────────────

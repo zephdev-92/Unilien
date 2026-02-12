@@ -49,30 +49,6 @@ vi.mock('date-fns/locale', () => ({
 // HELPERS
 // ============================================
 
-function mockSupabaseQuery(result: { data?: unknown; error?: unknown; count?: number | null }) {
-  const chain: Record<string, unknown> = {}
-  chain.select = vi.fn().mockReturnValue(chain)
-  chain.insert = vi.fn().mockReturnValue(chain)
-  chain.update = vi.fn().mockReturnValue(chain)
-  chain.delete = vi.fn().mockReturnValue(chain)
-  chain.upsert = vi.fn().mockReturnValue(chain)
-  chain.eq = vi.fn().mockReturnValue(chain)
-  chain.in = vi.fn().mockReturnValue(chain)
-  chain.gte = vi.fn().mockReturnValue(chain)
-  chain.lte = vi.fn().mockReturnValue(chain)
-  chain.lt = vi.fn().mockReturnValue(chain)
-  chain.not = vi.fn().mockReturnValue(chain)
-  chain.or = vi.fn().mockReturnValue(chain)
-  chain.order = vi.fn().mockReturnValue(chain)
-  chain.limit = vi.fn().mockReturnValue(chain)
-  chain.range = vi.fn().mockReturnValue(chain)
-  chain.single = vi.fn().mockResolvedValue(result)
-  chain.maybeSingle = vi.fn().mockResolvedValue(result)
-  chain.then = vi.fn().mockImplementation((resolve: (v: unknown) => unknown) => Promise.resolve(resolve(result)))
-  mockFrom.mockImplementation(() => chain)
-  return chain
-}
-
 function mockSupabaseQuerySequence(results: Array<{ data?: unknown; error?: unknown; count?: number | null }>) {
   results.forEach((result) => {
     const chain: Record<string, unknown> = {}
