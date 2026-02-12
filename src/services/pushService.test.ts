@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+// Stub env AVANT l'import du module (VAPID_PUBLIC_KEY est évaluée au module-level)
+vi.stubEnv('VITE_VAPID_PUBLIC_KEY', 'BFake_VAPID_PUBLIC_KEY_FOR_TESTING_1234567890abcdef')
+
 // ============================================
 // MOCKS
 // ============================================
@@ -465,9 +468,13 @@ describe('pushService', () => {
       // Permission accordee mais SW retourne un registration sans pushManager
       ;(window.Notification as unknown as Record<string, unknown>).permission = 'granted'
 
+      const rejectedReady = Promise.reject(new Error('SW not available'))
+      // Empêcher l'unhandled rejection en ajoutant un catch no-op
+      rejectedReady.catch(() => {})
+
       Object.defineProperty(navigator, 'serviceWorker', {
         value: {
-          ready: Promise.reject(new Error('SW not available')),
+          ready: rejectedReady,
         },
         writable: true,
         configurable: true,
