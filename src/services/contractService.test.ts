@@ -134,25 +134,176 @@ describe('contractService', () => {
     })
   })
 
-  // Note: getContractsForEmployer nécessite un mock plus complexe avec joins
   describe('getContractsForEmployer', () => {
-    it('devrait être une fonction exportée', () => {
-      expect(typeof getContractsForEmployer).toBe('function')
+    // Chaine: .select().eq('employer_id').eq('status').order()
+    // Le dernier maillon est .order() qui doit resoudre la promesse
+
+    it('devrait récupérer les contrats actifs avec profil employé', async () => {
+      const mockRows = [
+        {
+          ...createMockContractDbData(),
+          employee_profile: {
+            profile: { first_name: 'Marie', last_name: 'Martin' },
+          },
+        },
+      ]
+      mockOrder.mockResolvedValueOnce({ data: mockRows, error: null })
+
+      const result = await getContractsForEmployer('employer-456')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('contract-123')
+      expect(result[0].employee?.firstName).toBe('Marie')
+      expect(result[0].employee?.lastName).toBe('Martin')
+    })
+
+    it('devrait retourner un tableau vide en cas d\'erreur', async () => {
+      mockOrder.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Database error' },
+      })
+
+      const result = await getContractsForEmployer('employer-456')
+
+      expect(result).toEqual([])
+    })
+
+    it('devrait retourner un tableau vide si data est null', async () => {
+      mockOrder.mockResolvedValueOnce({ data: null, error: null })
+
+      const result = await getContractsForEmployer('employer-456')
+
+      expect(result).toEqual([])
+    })
+
+    it('devrait gérer un profil employé absent', async () => {
+      const mockRows = [
+        {
+          ...createMockContractDbData(),
+          employee_profile: undefined,
+        },
+      ]
+      mockOrder.mockResolvedValueOnce({ data: mockRows, error: null })
+
+      const result = await getContractsForEmployer('employer-456')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].employee).toBeUndefined()
     })
   })
 
-  // Note: getContractsForEmployee nécessite un mock plus complexe avec joins
   describe('getContractsForEmployee', () => {
-    it('devrait être une fonction exportée', () => {
-      expect(typeof getContractsForEmployee).toBe('function')
+    it('devrait récupérer les contrats avec profil employeur', async () => {
+      const mockRows = [
+        {
+          ...createMockContractDbData(),
+          employer_profile: {
+            profile: { first_name: 'Jean', last_name: 'Dupont' },
+          },
+        },
+      ]
+      mockOrder.mockResolvedValue({ data: mockRows, error: null })
+
+      const result = await getContractsForEmployee('employee-789')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('contract-123')
+      expect(result[0].employee?.firstName).toBe('Jean')
+      expect(result[0].employee?.lastName).toBe('Dupont')
+    })
+
+    it('devrait retourner un tableau vide en cas d\'erreur', async () => {
+      mockOrder.mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+      })
+
+      const result = await getContractsForEmployee('employee-789')
+
+      expect(result).toEqual([])
+    })
+
+    it('devrait retourner un tableau vide si data est null sans erreur', async () => {
+      mockOrder.mockResolvedValue({ data: null, error: null })
+
+      const result = await getContractsForEmployee('employee-789')
+
+      expect(result).toEqual([])
+    })
+
+    it('devrait gérer un profil employeur absent (employer_profile undefined)', async () => {
+      const mockRows = [
+        {
+          ...createMockContractDbData(),
+          employer_profile: undefined,
+        },
+      ]
+      mockOrder.mockResolvedValue({ data: mockRows, error: null })
+
+      const result = await getContractsForEmployee('employee-789')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].employee).toBeUndefined()
+    })
+
+    it('devrait gérer un profil employeur avec profile null', async () => {
+      const mockRows = [
+        {
+          ...createMockContractDbData(),
+          employer_profile: { profile: null },
+        },
+      ]
+      mockOrder.mockResolvedValue({ data: mockRows, error: null })
+
+      const result = await getContractsForEmployee('employee-789')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].employee).toBeUndefined()
     })
   })
 
-  // Note: getActiveContractsCount nécessite un mock plus complexe
-  // Ces tests sont commentés pour éviter des erreurs de mock chaîné
   describe('getActiveContractsCount', () => {
-    it('devrait être une fonction exportée', () => {
-      expect(typeof getActiveContractsCount).toBe('function')
+    // Chaine: .select('*', { count, head }).eq('employer_id').eq('status')
+    // 2 appels .eq() : le 1er doit retourner le chainage, le 2e doit resoudre
+
+    it('devrait retourner le nombre de contrats actifs', async () => {
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
+        .mockResolvedValueOnce({ count: 3, error: null })
+
+      const result = await getActiveContractsCount('employer-456')
+
+      expect(result).toBe(3)
+    })
+
+    it('devrait retourner 0 si count est null', async () => {
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
+        .mockResolvedValueOnce({ count: null, error: null })
+
+      const result = await getActiveContractsCount('employer-456')
+
+      expect(result).toBe(0)
+    })
+
+    it('devrait retourner 0 en cas d\'erreur', async () => {
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
+        .mockResolvedValueOnce({ count: null, error: { message: 'Database error' } })
+
+      const result = await getActiveContractsCount('employer-456')
+
+      expect(result).toBe(0)
+    })
+
+    it('devrait retourner 0 quand aucun contrat actif', async () => {
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
+        .mockResolvedValueOnce({ count: 0, error: null })
+
+      const result = await getActiveContractsCount('employer-456')
+
+      expect(result).toBe(0)
     })
   })
 
@@ -222,6 +373,65 @@ describe('contractService', () => {
         })
       ).rejects.toThrow('Erreur lors de la création du contrat')
     })
+
+    it('devrait lancer une erreur FK quand le profil auxiliaire est incomplet (23503)', async () => {
+      mockSingle.mockResolvedValue({
+        data: null,
+        error: { code: '23503', message: 'Foreign key violation' },
+      })
+
+      await expect(
+        createContract('employer-456', 'employee-789', {
+          contractType: 'CDI',
+          startDate: new Date(),
+          weeklyHours: 35,
+          hourlyRate: 12,
+        })
+      ).rejects.toThrow('L\'auxiliaire n\'a pas encore complété son profil')
+    })
+
+    it('devrait envoyer une notification après création réussie', async () => {
+      const { getProfileName, createContractCreatedNotification } = await import(
+        '@/services/notificationService'
+      )
+      const mockCreatedContract = createMockContractDbData()
+      mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
+
+      await createContract('employer-456', 'employee-789', {
+        contractType: 'CDI',
+        startDate: new Date('2024-01-01'),
+        weeklyHours: 35,
+        hourlyRate: 12.5,
+      })
+
+      expect(getProfileName).toHaveBeenCalledWith('employer-456')
+      expect(createContractCreatedNotification).toHaveBeenCalledWith(
+        'employee-789',
+        'Jean Dupont',
+        'CDI'
+      )
+    })
+
+    it('ne devrait pas échouer si la notification échoue', async () => {
+      const { createContractCreatedNotification } = await import(
+        '@/services/notificationService'
+      )
+      const mockCreatedContract = createMockContractDbData()
+      mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
+      vi.mocked(createContractCreatedNotification).mockRejectedValueOnce(
+        new Error('Notification failed')
+      )
+
+      const result = await createContract('employer-456', 'employee-789', {
+        contractType: 'CDI',
+        startDate: new Date('2024-01-01'),
+        weeklyHours: 35,
+        hourlyRate: 12.5,
+      })
+
+      // La creation doit reussir meme si la notification echoue
+      expect(result.id).toBe('contract-123')
+    })
   })
 
   describe('updateContract', () => {
@@ -281,6 +491,78 @@ describe('contractService', () => {
       await expect(
         terminateContract('contract-123', new Date('2024-06-30'))
       ).resolves.not.toThrow()
+    })
+
+    it('devrait envoyer une notification de fin de contrat', async () => {
+      const { createContractTerminatedNotification, getProfileName } = await import(
+        '@/services/notificationService'
+      )
+      mockSingle.mockResolvedValueOnce({
+        data: { employee_id: 'emp-123', employer_id: 'employer-456' },
+        error: null,
+      })
+      // 1er eq (fetch contrat): retourne chainage -> single
+      // 2e eq (updateContract): resolve { error: null }
+      mockEq
+        .mockReturnValueOnce({ single: mockSingle, maybeSingle: mockMaybeSingle, eq: mockEq, order: mockOrder })
+        .mockResolvedValueOnce({ error: null })
+
+      await terminateContract('contract-123')
+
+      expect(getProfileName).toHaveBeenCalledWith('employer-456')
+      expect(createContractTerminatedNotification).toHaveBeenCalledWith(
+        'emp-123',
+        'Jean Dupont'
+      )
+    })
+
+    it('ne devrait pas échouer si la notification de fin échoue', async () => {
+      const { createContractTerminatedNotification } = await import(
+        '@/services/notificationService'
+      )
+      mockSingle.mockResolvedValueOnce({
+        data: { employee_id: 'emp-123', employer_id: 'employer-456' },
+        error: null,
+      })
+      mockEq
+        .mockReturnValueOnce({ single: mockSingle, maybeSingle: mockMaybeSingle, eq: mockEq, order: mockOrder })
+        .mockResolvedValueOnce({ error: null })
+      vi.mocked(createContractTerminatedNotification).mockRejectedValueOnce(
+        new Error('Notification failed')
+      )
+
+      await expect(terminateContract('contract-123')).resolves.not.toThrow()
+    })
+
+    it('devrait continuer sans notification si le contrat est introuvable', async () => {
+      const { createContractTerminatedNotification } = await import(
+        '@/services/notificationService'
+      )
+      mockSingle.mockResolvedValueOnce({ data: null, error: null })
+      // 1er eq (fetch contrat): retourne chainage -> single
+      // 2e eq (updateContract): resolve { error: null }
+      mockEq
+        .mockReturnValueOnce({ single: mockSingle, maybeSingle: mockMaybeSingle, eq: mockEq, order: mockOrder })
+        .mockResolvedValueOnce({ error: null })
+
+      await expect(terminateContract('contract-123')).resolves.not.toThrow()
+      expect(createContractTerminatedNotification).not.toHaveBeenCalled()
+    })
+
+    it('devrait continuer si la récupération du contrat échoue (fallback silencieux)', async () => {
+      const { createContractTerminatedNotification } = await import(
+        '@/services/notificationService'
+      )
+      mockSingle.mockRejectedValueOnce(new Error('DB unavailable'))
+      // Le 1er eq retourne chainage -> single (qui throw)
+      // Le try/catch attrape l'erreur, puis updateContract est appele
+      // Le 2e eq (updateContract) resolve { error: null }
+      mockEq
+        .mockReturnValueOnce({ single: mockSingle, maybeSingle: mockMaybeSingle, eq: mockEq, order: mockOrder })
+        .mockResolvedValueOnce({ error: null })
+
+      await expect(terminateContract('contract-123')).resolves.not.toThrow()
+      expect(createContractTerminatedNotification).not.toHaveBeenCalled()
     })
   })
 
@@ -410,10 +692,47 @@ describe('contractService', () => {
     })
   })
 
-  // Note: hasActiveContract nécessite un mock avec chaînage multiple .eq().eq().eq()
   describe('hasActiveContract', () => {
-    it('devrait être une fonction exportée', () => {
-      expect(typeof hasActiveContract).toBe('function')
+    // Chaine: .select('*', { count, head }).eq('employer_id').eq('employee_id').eq('status')
+    // 3 appels .eq() : les 2 premiers retournent le chainage, le 3e resolve
+
+    function setupHasActiveContractMock(resolvedValue: Record<string, unknown>) {
+      mockEq
+        .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
+        .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
+        .mockResolvedValueOnce(resolvedValue)
+    }
+
+    it('devrait retourner true quand un contrat actif existe', async () => {
+      setupHasActiveContractMock({ count: 1, error: null })
+
+      const result = await hasActiveContract('employer-456', 'employee-789')
+
+      expect(result).toBe(true)
+    })
+
+    it('devrait retourner false quand aucun contrat actif', async () => {
+      setupHasActiveContractMock({ count: 0, error: null })
+
+      const result = await hasActiveContract('employer-456', 'employee-789')
+
+      expect(result).toBe(false)
+    })
+
+    it('devrait retourner false quand count est null', async () => {
+      setupHasActiveContractMock({ count: null, error: null })
+
+      const result = await hasActiveContract('employer-456', 'employee-789')
+
+      expect(result).toBe(false)
+    })
+
+    it('devrait retourner false en cas d\'erreur', async () => {
+      setupHasActiveContractMock({ count: null, error: { message: 'Database error' } })
+
+      const result = await hasActiveContract('employer-456', 'employee-789')
+
+      expect(result).toBe(false)
     })
   })
 
