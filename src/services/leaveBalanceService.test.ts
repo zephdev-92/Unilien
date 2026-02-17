@@ -83,6 +83,7 @@ function makeLeaveBalanceDbRow(overrides: Partial<{
   acquired_days: number
   taken_days: number
   adjustment_days: number
+  is_manual_init: boolean
   created_at: string
   updated_at: string
 }> = {}) {
@@ -95,6 +96,7 @@ function makeLeaveBalanceDbRow(overrides: Partial<{
     acquired_days: overrides.acquired_days ?? 25,
     taken_days: overrides.taken_days ?? 5,
     adjustment_days: overrides.adjustment_days ?? 2,
+    is_manual_init: overrides.is_manual_init ?? false,
     created_at: overrides.created_at ?? '2025-06-01T00:00:00Z',
     updated_at: overrides.updated_at ?? '2025-06-01T00:00:00Z',
   }
@@ -465,6 +467,64 @@ describe('leaveBalanceService', () => {
           expect.objectContaining({ taken_days: 0 })
         )
       }
+    })
+  })
+
+  describe('initializeLeaveBalanceWithOverride', () => {
+    it('devrait initialiser un solde avec les valeurs fournies', async () => {
+      // Premier appel: check existence (pas de solde existant)
+      const checkResult = { data: null, error: null }
+      // Deuxième appel: insert
+      const insertResult = {
+        data: makeLeaveBalanceDbRow({
+          acquired_days: 13,
+          taken_days: 3,
+          is_manual_init: true,
+        }),
+        error: null,
+      }
+
+      mockSupabaseQuerySequence([checkResult, insertResult])
+
+      const { initializeLeaveBalanceWithOverride } = await import('@/services/leaveBalanceService')
+      const result = await initializeLeaveBalanceWithOverride(
+        'c-001', 'emp-001', 'er-001', '2025-2026', 13, 3
+      )
+
+      expect(result).not.toBeNull()
+      expect(result?.acquiredDays).toBe(13)
+      expect(result?.takenDays).toBe(3)
+      expect(result?.isManualInit).toBe(true)
+    })
+
+    it('devrait ne pas écraser un solde existant', async () => {
+      // Un solde existe déjà
+      const checkResult = { data: { id: 'existing-id' }, error: null }
+
+      mockSupabaseQuery(checkResult)
+
+      const { initializeLeaveBalanceWithOverride } = await import('@/services/leaveBalanceService')
+      const result = await initializeLeaveBalanceWithOverride(
+        'c-001', 'emp-001', 'er-001', '2025-2026', 13, 3
+      )
+
+      expect(result).toBeNull()
+    })
+
+    it('devrait retourner null en cas d\'erreur d\'insertion', async () => {
+      // Pas de solde existant
+      const checkResult = { data: null, error: null }
+      // Erreur à l'insertion
+      const insertResult = { data: null, error: { message: 'DB error', code: '42000' } }
+
+      mockSupabaseQuerySequence([checkResult, insertResult])
+
+      const { initializeLeaveBalanceWithOverride } = await import('@/services/leaveBalanceService')
+      const result = await initializeLeaveBalanceWithOverride(
+        'c-001', 'emp-001', 'er-001', '2025-2026', 13, 3
+      )
+
+      expect(result).toBeNull()
     })
   })
 })
