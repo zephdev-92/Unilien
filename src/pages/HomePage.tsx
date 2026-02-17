@@ -7,6 +7,7 @@ import {
   Text,
   Grid,
   GridItem,
+  Image,
   Link,
 } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
@@ -86,10 +87,13 @@ export function HomePage() {
         zIndex={100}
       >
         <Container maxW="container.xl">
-          <Flex h="64px" align="center" justify="space-between">
-            <Text fontSize="xl" fontWeight="bold" color="brand.500">
-              Unilien
-            </Text>
+          <Flex h="100px" align="center" justify="space-between">
+            <Image
+              src="/Logo_Unilien.svg"
+              alt="Unilien"
+              h="40px"
+              objectFit="contain"
+            />
             <Flex gap={4} align="center">
               <Link asChild color="gray.600" _hover={{ color: 'brand.500' }}>
                 <RouterLink to="/contact">Contact</RouterLink>
@@ -107,7 +111,7 @@ export function HomePage() {
 
       {/* Hero Section */}
       <Box
-        pt="120px"
+        pt="180px"
         pb="80px"
         bgGradient="to-br"
         gradientFrom="brand.50"

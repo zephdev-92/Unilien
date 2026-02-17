@@ -7,6 +7,7 @@ import {
   Text,
   IconButton,
   Avatar,
+  Image,
   Link,
 } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
@@ -47,7 +48,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false)
   const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
-  
+
   // Initialiser showBanner directement depuis localStorage
   const [showBanner, setShowBanner] = useState(() => {
     const isDismissed = localStorage.getItem('unilien_dev_banner_dismissed')
@@ -123,7 +124,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         top={showBanner ? '80px' : 0}
         left={0}
         right={0}
-        h="64px"
+        h="80px"
         bg="white"
         borderBottomWidth="1px"
         borderColor="gray.200"
@@ -144,9 +145,12 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
             >
               {isSidebarOpen ? '✕' : '☰'}
             </IconButton>
-            <Text fontSize="xl" fontWeight="bold" color="brand.500">
-              Unilien
-            </Text>
+            <Image
+              src="/Logo_Unilien.svg"
+              alt="Unilien"
+              h="40px"
+              objectFit="contain"
+            />
           </Flex>
 
           {/* Center: Page title */}
@@ -207,7 +211,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         aria-label="Navigation principale"
         position="fixed"
         left={0}
-        top={showBanner ? 'calc(80px + 64px)' : '64px'}
+        top={showBanner ? 'calc(80px + 80px)' : '80px'}
         bottom={0}
         w={{ base: isSidebarOpen ? '240px' : '0', md: '240px' }}
         bg="white"
@@ -288,7 +292,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         <Box
           position="fixed"
           inset={0}
-          top={showBanner ? 'calc(80px + 64px)' : '64px'}
+          top={showBanner ? 'calc(80px + 80px)' : '80px'}
           bg="blackAlpha.600"
           zIndex={80}
           display={{ base: 'block', md: 'none' }}
@@ -302,9 +306,9 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
         as="main"
         id="main-content"
         ml={{ base: 0, md: '240px' }}
-        mt={showBanner ? 'calc(80px + 64px)' : '64px'}
+        mt={showBanner ? 'calc(80px + 80px)' : '80px'}
         p={{ base: 4, md: 6 }}
-        minH={showBanner ? 'calc(100vh - 80px - 64px)' : 'calc(100vh - 64px)'}
+        minH={showBanner ? 'calc(100vh - 80px - 80px)' : 'calc(100vh - 80px)'}
       >
         {children}
       </Box>
