@@ -111,6 +111,56 @@ describe('validateDailyRest', () => {
     })
   })
 
+  describe('Exemption garde : enchaînement effectif ↔ présence', () => {
+    it('devrait autoriser effectif suivi de présence nuit sans repos', () => {
+      const previousShift = createShift('2025-01-15', '19:00', '22:00')
+      // @ts-expect-error shiftType not in helper
+      previousShift.shiftType = 'effective'
+      const newShift = createShift('2025-01-15', '22:00', '07:00')
+      // @ts-expect-error shiftType not in helper
+      newShift.shiftType = 'presence_night'
+
+      const result = validateDailyRest(newShift, previousShift)
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.presenceExemption).toBe(true)
+    })
+
+    it('devrait autoriser présence nuit suivie de travail effectif', () => {
+      const previousShift = createShift('2025-01-15', '22:00', '07:00')
+      // @ts-expect-error shiftType not in helper
+      previousShift.shiftType = 'presence_night'
+      const newShift = createShift('2025-01-16', '08:00', '12:00')
+
+      const result = validateDailyRest(newShift, previousShift)
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.presenceExemption).toBe(true)
+    })
+
+    it('devrait autoriser effectif suivi de présence jour sans repos', () => {
+      const previousShift = createShift('2025-01-15', '06:00', '09:00')
+      const newShift = createShift('2025-01-15', '09:00', '12:00')
+      // @ts-expect-error shiftType not in helper
+      newShift.shiftType = 'presence_day'
+
+      const result = validateDailyRest(newShift, previousShift)
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.presenceExemption).toBe(true)
+    })
+
+    it('devrait toujours valider repos entre deux effectifs normalement', () => {
+      const previousShift = createShift('2025-01-14', '08:00', '22:00')
+      const newShift = createShift('2025-01-15', '07:00', '12:00')
+
+      const result = validateDailyRest(newShift, previousShift)
+
+      expect(result.valid).toBe(false)
+      expect(result.details?.presenceExemption).toBeUndefined()
+    })
+  })
+
   describe('Cas limites', () => {
     it('devrait gérer les interventions le même jour avec assez de repos', () => {
       const previousShift = createShift('2025-01-14', '06:00', '08:00')

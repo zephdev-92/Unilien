@@ -155,6 +155,9 @@ export interface Contract {
   updatedAt: Date
 }
 
+// Type d'intervention (Convention Collective IDCC 3239)
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night'
+
 // Intervention (Shift)
 export interface Shift {
   id: string
@@ -166,6 +169,10 @@ export interface Shift {
   tasks: string[]
   notes?: string
   hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule
+  shiftType: ShiftType // Type d'intervention (défaut: 'effective')
+  nightInterventionsCount?: number // Nombre d'interventions pendant présence nuit
+  isRequalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
+  effectiveHours?: number // Heures effectives après conversion (2/3 pour présence jour)
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   computedPay: ComputedPay
   validatedByEmployer: boolean
@@ -181,6 +188,8 @@ export interface ComputedPay {
   holidayMajoration: number
   nightMajoration: number
   overtimeMajoration: number
+  presenceResponsiblePay: number // Heures converties (2/3) × taux horaire (présence jour)
+  nightPresenceAllowance: number // Indemnité forfaitaire nuit (>= 1/4 du taux horaire)
   totalPay: number
 }
 

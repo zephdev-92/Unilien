@@ -191,3 +191,29 @@ export function calculateTotalHours(
     return total + calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration) / 60
   }, 0)
 }
+
+/**
+ * Calcule les heures effectives d'une intervention selon son type
+ * - effective (défaut) : 100% du temps
+ * - presence_day : 2/3 du temps (Art. 137.1 IDCC 3239)
+ * - presence_night : 0 (repos sur place, pas du travail — Art. 148 IDCC 3239)
+ */
+export function getEffectiveHours(
+  shift: { startTime: string; endTime: string; breakDuration: number; shiftType?: string }
+): number {
+  const rawHours = calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration) / 60
+  const type = shift.shiftType || 'effective'
+
+  if (type === 'presence_night') return 0
+  if (type === 'presence_day') return rawHours * (2 / 3)
+  return rawHours
+}
+
+/**
+ * Calcule le total d'heures effectives (pondérées par type)
+ */
+export function calculateTotalEffectiveHours(
+  shifts: Array<{ startTime: string; endTime: string; breakDuration: number; shiftType?: string }>
+): number {
+  return shifts.reduce((total, shift) => total + getEffectiveHours(shift), 0)
+}

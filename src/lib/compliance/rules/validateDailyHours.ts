@@ -8,7 +8,7 @@ import { format, isSameDay } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { ShiftForValidation, RuleValidationResult } from '../types'
 import { COMPLIANCE_RULES, COMPLIANCE_MESSAGES } from '../types'
-import { calculateShiftDuration, calculateTotalHours } from '../utils'
+import { getEffectiveHours } from '../utils'
 
 const MAXIMUM_DAILY_HOURS = 10
 
@@ -31,12 +31,11 @@ export function validateDailyHours(
     return isSameDay(shift.date, newShift.date)
   })
 
-  // Calculer le total des heures existantes ce jour
-  const existingHours = calculateTotalHours(dayShifts)
+  // Calculer le total des heures effectives existantes ce jour
+  const existingHours = dayShifts.reduce((sum, s) => sum + getEffectiveHours(s), 0)
 
-  // Calculer la durée de la nouvelle intervention
-  const newShiftHours =
-    calculateShiftDuration(newShift.startTime, newShift.endTime, newShift.breakDuration) / 60
+  // Calculer la durée effective de la nouvelle intervention
+  const newShiftHours = getEffectiveHours(newShift)
 
   const totalHours = existingHours + newShiftHours
 
@@ -92,6 +91,6 @@ export function getRemainingDailyHours(
     return isSameDay(shift.date, date)
   })
 
-  const usedHours = calculateTotalHours(dayShifts)
+  const usedHours = dayShifts.reduce((sum, s) => sum + getEffectiveHours(s), 0)
   return Math.max(0, MAXIMUM_DAILY_HOURS - usedHours)
 }

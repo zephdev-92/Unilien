@@ -81,8 +81,32 @@ export function calculateShiftPay(
     overtimeMajoration += beyond8h * hourlyRate * MAJORATION_RATES.OVERTIME_BEYOND_8H
   }
 
+  // Présence responsable (jour : conversion 2/3, nuit : forfaitaire 1/4)
+  let presenceResponsiblePay = 0
+  let nightPresenceAllowance = 0
+  const shiftType = shift.shiftType || 'effective'
+
+  if (shiftType === 'presence_day') {
+    // Présence responsable de jour : 1h = 2/3h de travail effectif (Art. 137.1 IDCC 3239)
+    const effectiveHours = durationHours * (2 / 3)
+    presenceResponsiblePay = effectiveHours * hourlyRate
+  } else if (shiftType === 'presence_night') {
+    const isRequalified = (shift.nightInterventionsCount ?? 0) >= 4
+    if (isRequalified) {
+      // Requalification : toute la plage est rémunérée en travail effectif (Art. 148 IDCC 3239)
+      nightPresenceAllowance = durationHours * hourlyRate
+    } else {
+      // Indemnité forfaitaire >= 1/4 du salaire contractuel horaire
+      nightPresenceAllowance = durationHours * hourlyRate * 0.25
+    }
+  }
+
   // Total
-  const totalPay = basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
+  const totalPay = shiftType === 'effective'
+    ? basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
+    : shiftType === 'presence_day'
+      ? presenceResponsiblePay + sundayMajoration + holidayMajoration
+      : nightPresenceAllowance + nightMajoration
 
   return {
     basePay: Math.round(basePay * 100) / 100,
@@ -90,6 +114,8 @@ export function calculateShiftPay(
     holidayMajoration: Math.round(holidayMajoration * 100) / 100,
     nightMajoration: Math.round(nightMajoration * 100) / 100,
     overtimeMajoration: Math.round(overtimeMajoration * 100) / 100,
+    presenceResponsiblePay: Math.round(presenceResponsiblePay * 100) / 100,
+    nightPresenceAllowance: Math.round(nightPresenceAllowance * 100) / 100,
     totalPay: Math.round(totalPay * 100) / 100,
   }
 }
@@ -228,6 +254,20 @@ export function getPayBreakdown(pay: ComputedPay): Array<{
     breakdown.push({
       label: 'Majoration heures supplémentaires',
       amount: pay.overtimeMajoration,
+    })
+  }
+
+  if (pay.presenceResponsiblePay > 0) {
+    breakdown.push({
+      label: 'Présence responsable jour (×2/3)',
+      amount: pay.presenceResponsiblePay,
+    })
+  }
+
+  if (pay.nightPresenceAllowance > 0) {
+    breakdown.push({
+      label: 'Indemnité présence de nuit',
+      amount: pay.nightPresenceAllowance,
     })
   }
 

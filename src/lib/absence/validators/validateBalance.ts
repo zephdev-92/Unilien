@@ -15,7 +15,7 @@ export function validateBalance(
   if (request.absenceType !== 'vacation') return null
 
   if (!balance) {
-    return 'Aucun solde de congés trouvé. Contactez votre employeur.'
+    return 'Le solde de congés n\'a pas encore été initialisé. Veuillez réessayer ou contacter votre employeur si le problème persiste.'
   }
 
   const daysRequested = countBusinessDays(request.startDate, request.endDate)

@@ -34,15 +34,6 @@ const absenceSchema = z.object({
     return new Date(data.endDate) >= new Date(data.startDate)
   },
   {
-    message: 'La date de début ne peut pas être postérieure à la date de fin',
-    path: ['startDate'],
-  }
-).refine(
-  (data) => {
-    if (!data.startDate || !data.endDate) return true
-    return new Date(data.endDate) >= new Date(data.startDate)
-  },
-  {
     message: 'La date de fin ne peut pas être antérieure à la date de début',
     path: ['endDate'],
   }
@@ -149,7 +140,7 @@ export function AbsenceRequestModal({
   // Synchroniser la date de fin avec la date de début quand "Toute la journée" est coché
   useEffect(() => {
     if (isSingleDay && startDateValue) {
-      setValue('endDate', startDateValue)
+      setValue('endDate', startDateValue, { shouldValidate: true })
     }
   }, [isSingleDay, startDateValue, setValue])
 

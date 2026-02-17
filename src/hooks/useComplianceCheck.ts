@@ -25,6 +25,8 @@ interface UseComplianceCheckOptions {
     endTime: string
     breakDuration: number
     hasNightAction?: boolean
+    shiftType?: 'effective' | 'presence_day' | 'presence_night'
+    nightInterventionsCount?: number
   } | null
 
   // Contrat pour le calcul de paie
@@ -93,6 +95,8 @@ export function useComplianceCheck({
       endTime: shift.endTime,
       breakDuration: shift.breakDuration || 0,
       hasNightAction: shift.hasNightAction,
+      shiftType: shift.shiftType,
+      nightInterventionsCount: shift.nightInterventionsCount,
     }
   }, [shift, editingShiftId])
 

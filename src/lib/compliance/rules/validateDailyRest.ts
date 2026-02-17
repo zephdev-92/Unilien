@@ -18,6 +18,13 @@ import {
 const MINIMUM_DAILY_REST_HOURS = 11
 
 /**
+ * Vérifie si un type d'intervention est une présence responsable
+ */
+function isPresenceType(shift: ShiftForValidation): boolean {
+  return shift.shiftType === 'presence_day' || shift.shiftType === 'presence_night'
+}
+
+/**
  * Valide que le repos quotidien de 11h est respecté entre la dernière
  * intervention et la nouvelle intervention proposée
  */
@@ -31,6 +38,18 @@ export function validateDailyRest(
       valid: true,
       code: COMPLIANCE_RULES.DAILY_REST,
       rule: COMPLIANCE_MESSAGES.DAILY_REST.rule,
+    }
+  }
+
+  // Exemption garde : enchaînement travail effectif ↔ présence responsable
+  // La présence de nuit/jour n'est pas du travail effectif continu,
+  // le repos de 11h ne s'applique pas entre les deux (Art. 137.1 / 148 IDCC 3239)
+  if (isPresenceType(newShift) || isPresenceType(previousShift)) {
+    return {
+      valid: true,
+      code: COMPLIANCE_RULES.DAILY_REST,
+      rule: COMPLIANCE_MESSAGES.DAILY_REST.rule,
+      details: { presenceExemption: true },
     }
   }
 
