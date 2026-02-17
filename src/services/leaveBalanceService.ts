@@ -112,6 +112,57 @@ export async function initializeLeaveBalance(
 }
 
 // ============================================
+// INITIALIZE WITH MANUAL OVERRIDE (reprise historique)
+// ============================================
+
+export async function initializeLeaveBalanceWithOverride(
+  contractId: string,
+  employeeId: string,
+  employerId: string,
+  leaveYear: string,
+  acquiredDays: number,
+  takenDays: number
+): Promise<LeaveBalance | null> {
+  // Vérifier si un solde existe déjà (éviter écrasement silencieux)
+  const { data: existing } = await supabase
+    .from('leave_balances')
+    .select('id')
+    .eq('contract_id', contractId)
+    .eq('leave_year', leaveYear)
+    .maybeSingle()
+
+  if (existing) {
+    logger.warn(
+      'Solde congés déjà existant, reprise ignorée:',
+      { contractId, leaveYear, existingId: existing.id }
+    )
+    return null
+  }
+
+  const { data, error } = await supabase
+    .from('leave_balances')
+    .insert({
+      contract_id: contractId,
+      employee_id: employeeId,
+      employer_id: employerId,
+      leave_year: leaveYear,
+      acquired_days: acquiredDays,
+      taken_days: takenDays,
+      adjustment_days: 0,
+      is_manual_init: true,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    logger.error('Erreur initialisation solde congés (reprise):', error)
+    return null
+  }
+
+  return mapLeaveBalanceFromDb(data)
+}
+
+// ============================================
 // UPDATE TAKEN DAYS
 // ============================================
 
@@ -203,5 +254,6 @@ function mapLeaveBalanceFromDb(data: LeaveBalanceDbRow): LeaveBalance {
     takenDays: balance.takenDays,
     adjustmentDays: balance.adjustmentDays,
     remainingDays: calculateRemainingDays(balance),
+    isManualInit: data.is_manual_init ?? false,
   }
 }

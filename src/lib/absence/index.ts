@@ -2,8 +2,11 @@ export { validateAbsenceRequest } from './absenceChecker'
 export { countBusinessDays, getLeaveYear, calculateJustificationDueDate } from './utils'
 export {
   calculateAcquiredDays,
+  calculateAcquiredFromMonths,
+  calculateDefaultMonthsWorked,
   calculateRemainingDays,
   calculateFractionnement,
+  countWorkingDays,
   getLeaveYearStartDate,
   getLeaveYearEndDate,
 } from './balanceCalculator'

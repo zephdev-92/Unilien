@@ -263,6 +263,7 @@ export interface LeaveBalance {
   takenDays: number
   adjustmentDays: number
   remainingDays: number
+  isManualInit: boolean
 }
 
 // Types de notification

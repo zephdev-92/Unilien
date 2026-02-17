@@ -13,6 +13,7 @@
 
 import type { Contract } from '@/types'
 import type { LeaveBalanceForValidation } from './types'
+import { getLeaveYear } from './utils'
 
 /**
  * Calcule le nombre de jours de congés acquis pour un contrat
@@ -84,10 +85,43 @@ export function getLeaveYearEndDate(leaveYear: string): Date {
 }
 
 /**
+ * Calcule les jours acquis à partir d'un nombre de mois travaillés.
+ * Utilisé pour la reprise manuelle de l'historique congés.
+ *
+ * - 2.5 jours/mois (Art. L3141-3)
+ * - Max 30 jours/an (Art. L3141-3)
+ * - Arrondi supérieur (Art. L3141-7)
+ */
+export function calculateAcquiredFromMonths(months: number): number {
+  if (months <= 0) return 0
+  return Math.ceil(Math.min(months * 2.5, 30))
+}
+
+/**
+ * Calcule le nombre de mois travaillés par défaut (suggestion automatique).
+ * Borné à l'année de congés en cours : compte depuis max(startDate, leaveYearStart).
+ */
+export function calculateDefaultMonthsWorked(startDate: Date): number {
+  const today = new Date()
+  if (startDate > today) return 0
+
+  // Borner au début de l'année de congés en cours
+  const leaveYear = getLeaveYear(today)
+  const leaveYearStart = getLeaveYearStartDate(leaveYear)
+
+  const effectiveStart = startDate > leaveYearStart ? startDate : leaveYearStart
+
+  if (effectiveStart > today) return 0
+
+  const workingDays = countWorkingDays(effectiveStart, today)
+  return Math.min(Math.floor(workingDays / 24), 12)
+}
+
+/**
  * Compte les jours ouvrables (lundi à samedi) entre deux dates incluses.
  * Art. L3141-4 : 24 jours ouvrables = 1 mois de travail effectif.
  */
-function countWorkingDays(start: Date, end: Date): number {
+export function countWorkingDays(start: Date, end: Date): number {
   let count = 0
   const day = new Date(start)
   day.setHours(0, 0, 0, 0)

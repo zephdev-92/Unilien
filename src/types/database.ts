@@ -156,6 +156,7 @@ export interface LeaveBalanceDbRow {
   acquired_days: number
   taken_days: number
   adjustment_days: number
+  is_manual_init: boolean
   created_at: string
   updated_at: string
 }

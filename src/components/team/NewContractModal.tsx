@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Dialog,
   Portal,
@@ -7,6 +7,7 @@ import {
   Flex,
   Text,
   Steps,
+  Separator,
 } from '@chakra-ui/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -15,6 +16,13 @@ import { format, addMonths } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
 import { logger } from '@/lib/logger'
 import { createContract, searchAuxiliaryByEmail } from '@/services/auxiliaryService'
+import {
+  calculateAcquiredFromMonths,
+  calculateDefaultMonthsWorked,
+  getLeaveYear,
+  getLeaveYearStartDate,
+  getLeaveYearEndDate,
+} from '@/lib/absence'
 
 const searchSchema = z.object({
   email: z.string().email('Adresse email invalide'),
@@ -32,6 +40,9 @@ const contractSchema = z.object({
     .number()
     .min(11.65, 'Le taux horaire minimum est de 11,65€ (SMIC)')
     .max(100, 'Taux horaire maximum dépassé'),
+  // Reprise historique congés (optionnel, contrat antérieur)
+  monthsWorked: z.coerce.number().min(0).max(12).optional(),
+  initialTakenDays: z.coerce.number().min(0).max(30).optional(),
 }).refine(
   (data) => {
     if (data.contractType === 'CDD' && !data.endDate) {
@@ -61,6 +72,16 @@ const contractSchema = z.object({
     message: 'La date de fin ne peut pas être antérieure à la date de début',
     path: ['endDate'],
   }
+).refine(
+  (data) => {
+    if (data.monthsWorked === undefined || data.initialTakenDays === undefined) return true
+    const acquired = calculateAcquiredFromMonths(data.monthsWorked)
+    return data.initialTakenDays <= acquired
+  },
+  {
+    message: 'Les jours pris ne peuvent pas dépasser les jours acquis',
+    path: ['initialTakenDays'],
+  }
 )
 
 type SearchFormData = z.infer<typeof searchSchema>
@@ -84,7 +105,6 @@ export function NewContractModal({
     id: string
     firstName: string
     lastName: string
-    profileComplete: boolean
   } | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -106,6 +126,45 @@ export function NewContractModal({
   })
 
   const watchContractType = contractForm.watch('contractType')
+  const watchStartDate = contractForm.watch('startDate')
+  const watchMonthsWorked = contractForm.watch('monthsWorked')
+  const watchTakenDays = contractForm.watch('initialTakenDays')
+
+  // Détection contrat antérieur
+  const isRetroactive = useMemo(() => {
+    if (!watchStartDate) return false
+    const start = new Date(watchStartDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return start < today
+  }, [watchStartDate])
+
+  // Année de congés en cours
+  const leaveYearInfo = useMemo(() => {
+    const now = new Date()
+    const year = getLeaveYear(now)
+    const start = getLeaveYearStartDate(year)
+    const end = getLeaveYearEndDate(year)
+    return {
+      year,
+      startLabel: format(start, 'dd/MM/yyyy'),
+      endLabel: format(end, 'dd/MM/yyyy'),
+    }
+  }, [])
+
+  // Suggestion automatique des mois travaillés
+  const suggestedMonths = useMemo(() => {
+    if (!isRetroactive || !watchStartDate) return 0
+    return calculateDefaultMonthsWorked(new Date(watchStartDate))
+  }, [isRetroactive, watchStartDate])
+
+  // Calcul temps réel du solde
+  const leavePreview = useMemo(() => {
+    const months = watchMonthsWorked ?? suggestedMonths
+    const acquired = calculateAcquiredFromMonths(months)
+    const taken = watchTakenDays ?? 0
+    return { acquired, taken, balance: acquired - taken }
+  }, [watchMonthsWorked, watchTakenDays, suggestedMonths])
 
   // Réinitialiser à la fermeture
   const handleClose = () => {
@@ -134,14 +193,6 @@ export function NewContractModal({
         return
       }
 
-      if (!employee.profileComplete) {
-        setSearchError(
-          `${employee.firstName} ${employee.lastName} a un compte mais n'a pas encore complété son profil. ` +
-            'Demandez-lui de se connecter et de remplir ses informations dans la page Profil avant de créer un contrat.'
-        )
-        return
-      }
-
       setFoundEmployee(employee)
       setStep(1)
     } catch (error) {
@@ -166,6 +217,13 @@ export function NewContractModal({
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         weeklyHours: data.weeklyHours,
         hourlyRate: data.hourlyRate,
+        // Reprise historique si renseignée
+        initialMonthsWorked: isRetroactive
+          ? (data.monthsWorked ?? suggestedMonths)
+          : undefined,
+        initialTakenDays: isRetroactive
+          ? (data.initialTakenDays ?? 0)
+          : undefined,
       })
 
       onSuccess()
@@ -290,6 +348,8 @@ export function NewContractModal({
                       </Flex>
                     </Box>
 
+
+
                     <AccessibleSelect
                       label="Type de contrat"
                       options={[
@@ -345,7 +405,7 @@ export function NewContractModal({
                       </Box>
                     </Flex>
 
-                    {/* Récapitulatif */}
+                    {/* Récapitulatif mensuel */}
                     <Box p={4} bg="gray.50" borderRadius="md">
                       <Text fontWeight="medium" mb={2}>
                         Estimation mensuelle
@@ -363,6 +423,85 @@ export function NewContractModal({
                         </Text>
                       </Text>
                     </Box>
+
+                    {/* === Section reprise historique congés === */}
+                    {isRetroactive && (
+                      <>
+                        <Separator />
+                        <Box
+                          p={4}
+                          bg="blue.50"
+                          borderRadius="md"
+                          borderWidth="1px"
+                          borderColor="blue.200"
+                        >
+                          <Text fontWeight="semibold" mb={1} color="blue.700">
+                            Reprise de l'historique congés
+                          </Text>
+                          <Text fontSize="sm" color="gray.600" mb={1}>
+                            La date de début est antérieure à aujourd'hui.
+                            Renseignez l'historique pour un solde de congés correct.
+                          </Text>
+                          <Text fontSize="xs" color="blue.600" mb={4}>
+                            Année de congés en cours : {leaveYearInfo.startLabel} au {leaveYearInfo.endLabel}
+                          </Text>
+
+                          <Flex gap={4}>
+                            <Box flex={1}>
+                              <AccessibleInput
+                                label="Mois travaillés"
+                                type="number"
+                                min={0}
+                                max={12}
+                                helperText={`Suggestion : ${suggestedMonths} mois`}
+                                error={contractForm.formState.errors.monthsWorked?.message}
+                                {...contractForm.register('monthsWorked')}
+                              />
+                            </Box>
+                            <Box flex={1}>
+                              <AccessibleInput
+                                label="CP déjà pris (jours)"
+                                type="number"
+                                min={0}
+                                max={30}
+                                helperText="Jours de congés déjà utilisés"
+                                error={contractForm.formState.errors.initialTakenDays?.message}
+                                {...contractForm.register('initialTakenDays')}
+                              />
+                            </Box>
+                          </Flex>
+
+                          {/* Récapitulatif congés */}
+                          <Box mt={3} p={3} bg="white" borderRadius="md">
+                            <Text fontSize="sm" fontWeight="medium" mb={2}>
+                              Solde de congés calculé :
+                            </Text>
+                            <Flex justify="space-between">
+                              <Text fontSize="sm" color="gray.600">
+                                Acquis : <Text as="span" fontWeight="bold">{leavePreview.acquired} j</Text>
+                              </Text>
+                              <Text fontSize="sm" color="gray.600">
+                                Pris : <Text as="span" fontWeight="bold">{leavePreview.taken} j</Text>
+                              </Text>
+                              <Text
+                                fontSize="sm"
+                                fontWeight="bold"
+                                color={leavePreview.balance >= 0 ? 'green.600' : 'red.600'}
+                              >
+                                Solde : {leavePreview.balance} j
+                              </Text>
+                            </Flex>
+                          </Box>
+
+                          {/* Avertissement légal */}
+                          <Text fontSize="xs" color="gray.500" mt={3} fontStyle="italic">
+                            Les informations saisies engagent votre responsabilité en tant
+                            qu'employeur. En cas de doute, référez-vous aux bulletins de salaire
+                            précédents.
+                          </Text>
+                        </Box>
+                      </>
+                    )}
 
                     {submitError && (
                       <Box p={4} bg="red.50" borderRadius="md">

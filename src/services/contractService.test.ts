@@ -39,6 +39,17 @@ vi.mock('@/services/notificationService', () => ({
   createContractTerminatedNotification: vi.fn().mockResolvedValue(undefined),
 }))
 
+// Mock du service de solde de congés
+vi.mock('@/services/leaveBalanceService', () => ({
+  initializeLeaveBalanceWithOverride: vi.fn().mockResolvedValue(null),
+}))
+
+// Mock des fonctions de calcul absence
+vi.mock('@/lib/absence', () => ({
+  calculateAcquiredFromMonths: vi.fn((months: number) => Math.ceil(Math.min(months * 2.5, 30))),
+  getLeaveYear: vi.fn(() => '2025-2026'),
+}))
+
 // Helper pour créer des données de contrat mock
 function createMockContractDbData(overrides = {}) {
   return {
@@ -432,6 +443,93 @@ describe('contractService', () => {
       // La creation doit reussir meme si la notification echoue
       expect(result.id).toBe('contract-123')
     })
+
+    it('devrait appeler initializeLeaveBalanceWithOverride si reprise historique fournie', async () => {
+      const { initializeLeaveBalanceWithOverride } = await import(
+        '@/services/leaveBalanceService'
+      )
+      const { calculateAcquiredFromMonths, getLeaveYear } = await import('@/lib/absence')
+      const mockCreatedContract = createMockContractDbData()
+      mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
+
+      await createContract('employer-456', 'employee-789', {
+        contractType: 'CDI',
+        startDate: new Date('2024-01-01'),
+        weeklyHours: 20,
+        hourlyRate: 12,
+        initialMonthsWorked: 6,
+        initialTakenDays: 3,
+      })
+
+      expect(getLeaveYear).toHaveBeenCalled()
+      expect(calculateAcquiredFromMonths).toHaveBeenCalledWith(6)
+      expect(initializeLeaveBalanceWithOverride).toHaveBeenCalledWith(
+        'contract-123',
+        'employee-789',
+        'employer-456',
+        '2025-2026',
+        15, // ceil(6 * 2.5) = 15
+        3
+      )
+    })
+
+    it('ne devrait pas appeler initializeLeaveBalanceWithOverride sans reprise', async () => {
+      const { initializeLeaveBalanceWithOverride } = await import(
+        '@/services/leaveBalanceService'
+      )
+      const mockCreatedContract = createMockContractDbData()
+      mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
+
+      await createContract('employer-456', 'employee-789', {
+        contractType: 'CDI',
+        startDate: new Date('2024-01-01'),
+        weeklyHours: 35,
+        hourlyRate: 12.5,
+      })
+
+      expect(initializeLeaveBalanceWithOverride).not.toHaveBeenCalled()
+    })
+
+    it('ne devrait pas appeler initializeLeaveBalanceWithOverride si initialMonthsWorked est 0', async () => {
+      const { initializeLeaveBalanceWithOverride } = await import(
+        '@/services/leaveBalanceService'
+      )
+      const mockCreatedContract = createMockContractDbData()
+      mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
+
+      await createContract('employer-456', 'employee-789', {
+        contractType: 'CDI',
+        startDate: new Date('2024-01-01'),
+        weeklyHours: 35,
+        hourlyRate: 12.5,
+        initialMonthsWorked: 0,
+      })
+
+      expect(initializeLeaveBalanceWithOverride).not.toHaveBeenCalled()
+    })
+
+    it('ne devrait pas échouer si la reprise congés échoue', async () => {
+      const { initializeLeaveBalanceWithOverride } = await import(
+        '@/services/leaveBalanceService'
+      )
+      vi.mocked(initializeLeaveBalanceWithOverride).mockRejectedValueOnce(
+        new Error('Leave init failed')
+      )
+      const mockCreatedContract = createMockContractDbData()
+      mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
+
+      const result = await createContract('employer-456', 'employee-789', {
+        contractType: 'CDI',
+        startDate: new Date('2024-01-01'),
+        weeklyHours: 20,
+        hourlyRate: 12,
+        initialMonthsWorked: 6,
+        initialTakenDays: 2,
+      })
+
+      // Le contrat est créé même si la reprise échoue
+      expect(result.id).toBe('contract-123')
+    })
   })
 
   describe('updateContract', () => {
@@ -615,8 +713,7 @@ describe('contractService', () => {
   })
 
   describe('searchEmployeeByEmail', () => {
-    it('devrait trouver un employé avec profil complet', async () => {
-      // 1er appel: profiles (trouvé)
+    it('devrait trouver un employé par email', async () => {
       mockMaybeSingle.mockResolvedValueOnce({
         data: {
           id: 'employee-123',
@@ -626,41 +723,13 @@ describe('contractService', () => {
         },
         error: null,
       })
-      // 2e appel: employees (existe)
-      mockMaybeSingle.mockResolvedValueOnce({
-        data: { profile_id: 'employee-123' },
-        error: null,
-      })
 
       const result = await searchEmployeeByEmail('marie@example.com')
 
       expect(result).not.toBeNull()
+      expect(result?.id).toBe('employee-123')
       expect(result?.firstName).toBe('Marie')
       expect(result?.lastName).toBe('Martin')
-      expect(result?.profileComplete).toBe(true)
-    })
-
-    it('devrait indiquer profil incomplet si pas de ligne employees', async () => {
-      // 1er appel: profiles (trouvé)
-      mockMaybeSingle.mockResolvedValueOnce({
-        data: {
-          id: 'employee-123',
-          first_name: 'Marie',
-          last_name: 'Martin',
-          role: 'employee',
-        },
-        error: null,
-      })
-      // 2e appel: employees (n'existe pas)
-      mockMaybeSingle.mockResolvedValueOnce({
-        data: null,
-        error: null,
-      })
-
-      const result = await searchEmployeeByEmail('marie@example.com')
-
-      expect(result).not.toBeNull()
-      expect(result?.profileComplete).toBe(false)
     })
 
     it('devrait retourner null si l\'email n\'existe pas', async () => {
