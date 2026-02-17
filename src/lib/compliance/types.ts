@@ -3,6 +3,9 @@
  * Convention Collective IDCC 3239 - Particuliers Employeurs
  */
 
+// Type d'intervention
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night'
+
 // Intervention simplifiée pour validation
 export interface ShiftForValidation {
   id?: string
@@ -13,6 +16,8 @@ export interface ShiftForValidation {
   endTime: string // "HH:mm"
   breakDuration: number // minutes
   hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule (pas de majoration)
+  shiftType?: ShiftType // Type d'intervention (défaut: 'effective')
+  nightInterventionsCount?: number // Nombre d'interventions pendant présence nuit (pour seuil requalification)
 }
 
 // Contrat simplifié pour calculs
@@ -40,6 +45,9 @@ export const COMPLIANCE_RULES = {
   DAILY_MAX_HOURS: 'DAILY_MAX_HOURS',
   SHIFT_OVERLAP: 'SHIFT_OVERLAP',
   ABSENCE_CONFLICT: 'ABSENCE_CONFLICT',
+  NIGHT_PRESENCE_MAX_DURATION: 'NIGHT_PRESENCE_MAX_DURATION',
+  CONSECUTIVE_NIGHTS_MAX: 'CONSECUTIVE_NIGHTS_MAX',
+  GUARD_MAX_AMPLITUDE: 'GUARD_MAX_AMPLITUDE',
 } as const
 
 export type ComplianceRuleCode = (typeof COMPLIANCE_RULES)[keyof typeof COMPLIANCE_RULES]
@@ -84,6 +92,21 @@ export const COMPLIANCE_MESSAGES = {
     error: (absenceType: string, dateInfo: string) =>
       `L'auxiliaire est en ${absenceType} ${dateInfo}. Impossible de planifier une intervention pendant une absence approuvée.`,
     rule: 'Pas d\'intervention pendant une absence approuvée',
+  },
+  NIGHT_PRESENCE_MAX_DURATION: {
+    error: (hours: number) =>
+      `Présence de nuit trop longue : ${hours.toFixed(1)}h au lieu de 12h maximum consécutives.`,
+    rule: 'Présence responsable de nuit limitée à 12h consécutives (Art. 148 IDCC 3239)',
+  },
+  CONSECUTIVE_NIGHTS_MAX: {
+    error: (nights: number) =>
+      `Trop de nuits consécutives : ${nights} au lieu de 5 maximum.`,
+    rule: 'Maximum 5 nuits consécutives de présence responsable (Art. 148 IDCC 3239)',
+  },
+  GUARD_MAX_AMPLITUDE: {
+    error: (hours: number) =>
+      `Amplitude de garde trop longue : ${hours.toFixed(1)}h au lieu de 24h maximum. Le cumul travail effectif + présence responsable ne peut pas dépasser 24h.`,
+    rule: 'Amplitude maximale de garde de 24h (IDCC 3239)',
   },
 } as const
 

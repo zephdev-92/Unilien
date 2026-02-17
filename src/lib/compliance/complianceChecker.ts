@@ -13,6 +13,9 @@ import { validateDailyHours, getRemainingDailyHours } from './rules/validateDail
 import { validateOverlap, findOverlappingShifts } from './rules/validateOverlap'
 import { validateWeeklyRest, getWeeklyRestStatus } from './rules/validateWeeklyRest'
 import { validateAbsenceConflict, type AbsenceForValidation } from './rules/validateAbsenceConflict'
+import { validateNightPresenceDuration } from './rules/validateNightPresenceDuration'
+import { validateConsecutiveNights } from './rules/validateConsecutiveNights'
+import { validateGuardAmplitude } from './rules/validateGuardAmplitude'
 import { calculateShiftDuration } from './utils'
 
 /**
@@ -66,6 +69,18 @@ export function validateShift(
   // 6. Validation pause obligatoire (AVERTISSEMENT)
   const breakResult = validateBreak(newShift)
   processResult(breakResult, errors, warnings, false)
+
+  // 7. Validation durée max présence de nuit — 12h (BLOQUANT)
+  const nightPresenceDurationResult = validateNightPresenceDuration(newShift)
+  processResult(nightPresenceDurationResult, errors, warnings, true)
+
+  // 8. Validation nuits consécutives — max 5 (BLOQUANT)
+  const consecutiveNightsResult = validateConsecutiveNights(newShift, existingShifts)
+  processResult(consecutiveNightsResult, errors, warnings, true)
+
+  // 9. Validation amplitude maximale de garde — 24h (BLOQUANT)
+  const guardAmplitudeResult = validateGuardAmplitude(newShift, existingShifts)
+  processResult(guardAmplitudeResult, errors, warnings, true)
 
   return {
     valid: errors.length === 0,
@@ -143,6 +158,24 @@ export function quickValidate(
   const weeklyHoursResult = validateWeeklyHours(newShift, existingShifts)
   if (!weeklyHoursResult.valid && weeklyHoursResult.message) {
     blockingErrors.push(weeklyHoursResult.message)
+  }
+
+  // Durée max présence de nuit (12h)
+  const nightPresenceDurationResult = validateNightPresenceDuration(newShift)
+  if (!nightPresenceDurationResult.valid && nightPresenceDurationResult.message) {
+    blockingErrors.push(nightPresenceDurationResult.message)
+  }
+
+  // Nuits consécutives max (5)
+  const consecutiveNightsResult = validateConsecutiveNights(newShift, existingShifts)
+  if (!consecutiveNightsResult.valid && consecutiveNightsResult.message) {
+    blockingErrors.push(consecutiveNightsResult.message)
+  }
+
+  // Amplitude max garde (24h)
+  const guardAmplitudeResult = validateGuardAmplitude(newShift, existingShifts)
+  if (!guardAmplitudeResult.valid && guardAmplitudeResult.message) {
+    blockingErrors.push(guardAmplitudeResult.message)
   }
 
   return {
@@ -290,6 +323,9 @@ export {
   validateOverlap,
   validateWeeklyRest,
   validateAbsenceConflict,
+  validateNightPresenceDuration,
+  validateConsecutiveNights,
+  validateGuardAmplitude,
   getRecommendedBreak,
   getRemainingWeeklyHours,
   getRemainingDailyHours,

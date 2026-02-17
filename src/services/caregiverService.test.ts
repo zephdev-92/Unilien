@@ -368,6 +368,8 @@ describe('getShiftsForCaregiver', () => {
       holidayMajoration: 0,
       nightMajoration: 0,
       overtimeMajoration: 0,
+      presenceResponsiblePay: 0,
+      nightPresenceAllowance: 0,
       totalPay: 0,
     })
     expect(result[0].breakDuration).toBe(0)

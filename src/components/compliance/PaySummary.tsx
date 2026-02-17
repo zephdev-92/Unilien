@@ -33,7 +33,9 @@ export function PaySummary({
     pay.sundayMajoration > 0 ||
     pay.holidayMajoration > 0 ||
     pay.nightMajoration > 0 ||
-    pay.overtimeMajoration > 0
+    pay.overtimeMajoration > 0 ||
+    pay.presenceResponsiblePay > 0 ||
+    pay.nightPresenceAllowance > 0
 
   if (compact) {
     return (
@@ -191,6 +193,12 @@ export function MajorationIndicator({ pay }: { pay: ComputedPay }) {
   }
   if (pay.overtimeMajoration > 0) {
     majorations.push({ label: 'Heures sup', icon: '⏰' })
+  }
+  if (pay.presenceResponsiblePay > 0) {
+    majorations.push({ label: 'Présence jour', icon: '👁' })
+  }
+  if (pay.nightPresenceAllowance > 0) {
+    majorations.push({ label: 'Présence nuit', icon: '🛏' })
   }
 
   if (majorations.length === 0) return null
