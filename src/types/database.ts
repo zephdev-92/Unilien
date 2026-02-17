@@ -102,6 +102,8 @@ export interface ContractWithEmployerDbRow extends ContractDbRow {
 // SHIFT
 // ============================================================
 
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night'
+
 export interface ShiftDbRow {
   id: string
   contract_id: string
@@ -112,6 +114,10 @@ export interface ShiftDbRow {
   tasks: string[] | null
   notes: string | null
   has_night_action: boolean | null // true = acte de nuit (majoration 20%), null/false = présence seule
+  shift_type: ShiftType // Type d'intervention (défaut: 'effective')
+  night_interventions_count: number | null // Nombre d'interventions pendant présence nuit
+  is_requalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
+  effective_hours: number | null // Heures effectives après conversion (2/3 pour présence jour)
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   created_at: string
   updated_at: string

@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { Shift, UserRole } from '@/types'
+import type { Shift, ShiftType, UserRole } from '@/types'
 import type { ShiftDbRow } from '@/types/database'
 import {
   getProfileName,
@@ -74,6 +74,10 @@ export async function createShift(
     tasks?: string[]
     notes?: string
     hasNightAction?: boolean
+    shiftType?: ShiftType
+    nightInterventionsCount?: number
+    isRequalified?: boolean
+    effectiveHours?: number
   }
 ): Promise<Shift | null> {
   const { data, error } = await supabase
@@ -87,6 +91,10 @@ export async function createShift(
       tasks: (shiftData.tasks || []).map(sanitizeText),
       notes: shiftData.notes ? sanitizeText(shiftData.notes) : null,
       has_night_action: shiftData.hasNightAction ?? null,
+      shift_type: shiftData.shiftType || 'effective',
+      night_interventions_count: shiftData.nightInterventionsCount ?? null,
+      is_requalified: shiftData.isRequalified ?? false,
+      effective_hours: shiftData.effectiveHours ?? null,
       status: 'planned',
       computed_pay: {},
       validated_by_employer: false,
@@ -133,6 +141,10 @@ export async function updateShift(
     tasks: string[]
     notes: string
     hasNightAction: boolean
+    shiftType: ShiftType
+    nightInterventionsCount: number
+    isRequalified: boolean
+    effectiveHours: number
     status: Shift['status']
   }>
 ): Promise<void> {
@@ -147,6 +159,10 @@ export async function updateShift(
   if (updates.tasks) payload.tasks = updates.tasks.map(sanitizeText)
   if (updates.notes !== undefined) payload.notes = updates.notes ? sanitizeText(updates.notes) : null
   if (updates.hasNightAction !== undefined) payload.has_night_action = updates.hasNightAction
+  if (updates.shiftType) payload.shift_type = updates.shiftType
+  if (updates.nightInterventionsCount !== undefined) payload.night_interventions_count = updates.nightInterventionsCount
+  if (updates.isRequalified !== undefined) payload.is_requalified = updates.isRequalified
+  if (updates.effectiveHours !== undefined) payload.effective_hours = updates.effectiveHours
   if (updates.status) payload.status = updates.status
 
   const { error } = await supabase
@@ -259,6 +275,10 @@ function mapShiftFromDb(data: ShiftDbRow): Shift {
     tasks: data.tasks || [],
     notes: data.notes || undefined,
     hasNightAction: data.has_night_action ?? undefined,
+    shiftType: data.shift_type || 'effective',
+    nightInterventionsCount: data.night_interventions_count ?? undefined,
+    isRequalified: data.is_requalified ?? false,
+    effectiveHours: data.effective_hours ?? undefined,
     status: data.status,
     computedPay: data.computed_pay || {
       basePay: 0,
@@ -266,6 +286,8 @@ function mapShiftFromDb(data: ShiftDbRow): Shift {
       holidayMajoration: 0,
       nightMajoration: 0,
       overtimeMajoration: 0,
+      presenceResponsiblePay: 0,
+      nightPresenceAllowance: 0,
       totalPay: 0,
     },
     validatedByEmployer: data.validated_by_employer,
