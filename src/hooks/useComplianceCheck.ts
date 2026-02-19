@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import type { ComplianceResult, ComputedPay } from '@/types'
+import type { ComplianceResult, ComputedPay, GuardSegment } from '@/types'
 import {
   validateShift,
   quickValidate,
@@ -25,8 +25,9 @@ interface UseComplianceCheckOptions {
     endTime: string
     breakDuration: number
     hasNightAction?: boolean
-    shiftType?: 'effective' | 'presence_day' | 'presence_night'
+    shiftType?: 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
     nightInterventionsCount?: number
+    guardSegments?: GuardSegment[]
   } | null
 
   // Contrat pour le calcul de paie
@@ -97,6 +98,7 @@ export function useComplianceCheck({
       hasNightAction: shift.hasNightAction,
       shiftType: shift.shiftType,
       nightInterventionsCount: shift.nightInterventionsCount,
+      guardSegments: shift.guardSegments,
     }
   }, [shift, editingShiftId])
 

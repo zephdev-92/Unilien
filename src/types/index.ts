@@ -156,7 +156,14 @@ export interface Contract {
 }
 
 // Type d'intervention (Convention Collective IDCC 3239)
-export type ShiftType = 'effective' | 'presence_day' | 'presence_night'
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
+
+// Segment d'une Garde 24h libre (N segments)
+export interface GuardSegment {
+  startTime: string   // "HH:mm" — début du segment
+  type: 'effective' | 'presence_day' | 'presence_night'
+  breakMinutes?: number   // minutes de pause, seulement pour type='effective'
+}
 
 // Intervention (Shift)
 export interface Shift {
@@ -165,7 +172,7 @@ export interface Shift {
   date: Date
   startTime: string
   endTime: string
-  breakDuration: number // minutes
+  breakDuration: number // minutes — pour guard_24h : somme des breakMinutes des segments effectifs
   tasks: string[]
   notes?: string
   hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule
@@ -173,6 +180,7 @@ export interface Shift {
   nightInterventionsCount?: number // Nombre d'interventions pendant présence nuit
   isRequalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
   effectiveHours?: number // Heures effectives après conversion (2/3 pour présence jour)
+  guardSegments?: GuardSegment[] // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   computedPay: ComputedPay
   validatedByEmployer: boolean
