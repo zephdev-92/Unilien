@@ -10,7 +10,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'json-summary', 'lcov', 'html'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/**/*.test.{ts,tsx}',
@@ -21,12 +21,12 @@ export default defineConfig({
         'src/main.tsx',
       ],
       thresholds: {
-        // Baseline réel au 12/02/2026 — augmenter progressivement
-        // Cible Q1: 30% | Cible Q2: 60% | Cible finale: 70%
-        statements: 14,
-        branches: 10,
-        functions: 12,
-        lines: 14,
+        // Baseline réel au 19/02/2026 (~42% global, 91% services, 89% hooks)
+        // Augmenter progressivement — Cible Q2: 60% | Cible finale: 70%
+        statements: 38,
+        branches: 26,
+        functions: 28,
+        lines: 38,
       },
     },
   },

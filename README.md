@@ -1,5 +1,8 @@
 # UniLien
 
+[![CI](https://github.com/zephdev-92/Unilien/actions/workflows/ci.yml/badge.svg)](https://github.com/zephdev-92/Unilien/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/zephdev-92/Unilien/branch/main/graph/badge.svg)](https://codecov.io/gh/zephdev-92/Unilien)
+
 Application web de gestion pour les services d'aide à domicile et auxiliaires de vie.
 
 ## 📋 Description
