@@ -3,22 +3,22 @@ name: PR Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    
+
 permissions:
   contents: read
   issues: write
   pull-requests: write
-  
+
 jobs:
   quality:
-    name: Code Quality
+    name: Qualité & Coverage
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Pour l'analyse complète
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -34,107 +34,134 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test:coverage
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_APP_NAME: Unilien
 
-      - name: Check bundle size
+      - name: Commentaire coverage sur la PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const summaryPath = './coverage/coverage-summary.json';
+
+            if (!fs.existsSync(summaryPath)) {
+              console.log('Fichier coverage-summary.json introuvable, passage ignoré.');
+              return;
+            }
+
+            const { total } = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
+
+            const fmt  = (m) => `${m.pct.toFixed(1)}% (${m.covered}/${m.total})`;
+            const icon = (m) => m.pct >= 60 ? '🟢' : m.pct >= 40 ? '🟡' : '🔴';
+
+            const body = [
+              '<!-- unilien-coverage-comment -->',
+              '## 🧪 Couverture de Tests',
+              '',
+              '| Métrique | Couverture | Statut |',
+              '|----------|-----------|:------:|',
+              `| **Statements** | ${fmt(total.statements)} | ${icon(total.statements)} |`,
+              `| **Branches**   | ${fmt(total.branches)}   | ${icon(total.branches)}   |`,
+              `| **Functions**  | ${fmt(total.functions)}  | ${icon(total.functions)}  |`,
+              `| **Lines**      | ${fmt(total.lines)}      | ${icon(total.lines)}      |`,
+              '',
+              '> 🟢 ≥ 60% · 🟡 ≥ 40% · 🔴 < 40% — Cible Q2 : **60%**',
+              '',
+              '_Généré automatiquement par GitHub Actions_',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('<!-- unilien-coverage-comment -->')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Build (vérification bundle)
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_APP_NAME: Unilien
+          VITE_APP_URL: http://localhost:5173
 
-      - name: Comment PR with build size
-        uses: actions/github-script@v8
-        if: always() 
+      - name: Commentaire taille du build sur la PR
+        uses: actions/github-script@v7
+        if: always()
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
 
-            // Fonction pour obtenir la taille d'un répertoire
             function getDirSize(dirPath) {
-              let size = 0;
-              const files = fs.readdirSync(dirPath);
-
-              files.forEach(file => {
-                const filePath = path.join(dirPath, file);
-                const stats = fs.statSync(filePath);
-
-                if (stats.isDirectory()) {
-                  size += getDirSize(filePath);
-                } else {
-                  size += stats.size;
-                }
-              });
-
-              return size;
+              if (!fs.existsSync(dirPath)) return 0;
+              return fs.readdirSync(dirPath).reduce((acc, file) => {
+                const stats = fs.statSync(path.join(dirPath, file));
+                return acc + (stats.isDirectory() ? getDirSize(path.join(dirPath, file)) : stats.size);
+              }, 0);
             }
 
-            // Obtenir la taille du build
-            const distPath = './dist';
-            if (fs.existsSync(distPath)) {
-              const sizeInBytes = getDirSize(distPath);
-              const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-              const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
-
-              const comment = `## 📦 Build Size Report\n\n` +
-                `- **Total size**: ${sizeInMB} MB (${sizeInKB} KB)\n` +
-                `- **Build successful**: ✅\n\n` +
-                `_This comment is automatically generated by GitHub Actions._`;
-
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
-
+            const bytes = getDirSize('./dist');
+            if (bytes === 0) {
+              console.log('Dossier dist introuvable — build probablement en erreur.');
               return;
             }
 
-            const sizeInBytes = getDirSize(distPath);
-            const sizeInKB = (sizeInBytes / 1024).toFixed(2);
-            const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
-
             const body =
-              `## 📦 Build Size Report\n\n` +
-              `- **Total size**: ${sizeInMB} MB (${sizeInKB} KB)\n` +
-              `- **Build successful**: ✅\n\n` +
-              `_This comment is automatically generated by GitHub Actions._`;
+              `<!-- unilien-build-comment -->\n` +
+              `## 📦 Taille du Build\n\n` +
+              `| Métrique | Valeur |\n` +
+              `|----------|--------|\n` +
+              `| **Taille totale** | ${(bytes / (1024 * 1024)).toFixed(2)} MB |\n` +
+              `| **Build** | ✅ Succès |\n\n` +
+              `_Généré automatiquement par GitHub Actions_`;
 
-            try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('<!-- unilien-build-comment -->')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body
+                body,
               });
-            } catch (error) {
-              console.log(
-                `Comment skipped (GitHub restriction): ${error?.status || ''} ${error?.message || error}`
-              );
             }
-
-  accessibility:
-    name: Accessibility Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-        env:
-          VITE_SUPABASE_URL: "https://placeholder.supabase.co"
-          VITE_SUPABASE_ANON_KEY: "placeholder-key"
-          VITE_APP_NAME: Unilien
-          VITE_APP_URL: "http://localhost:5173"
-
-      - name: Run accessibility tests
-        run: npm run test:run
-        continue-on-error: true
