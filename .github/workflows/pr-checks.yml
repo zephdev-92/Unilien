@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   quality:
-    name: Qualité & Coverage
+    name: Code Quality
     runs-on: ubuntu-latest
 
     steps:
@@ -165,3 +165,28 @@ jobs:
                 body,
               });
             }
+
+  accessibility:
+    name: Accessibility Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run accessibility tests
+        run: npm run test:run
+        continue-on-error: true
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+          VITE_APP_NAME: Unilien
