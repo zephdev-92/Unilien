@@ -20,7 +20,8 @@ export interface Profile {
 // Paramètres d'accessibilité
 export interface AccessibilitySettings {
   highContrast: boolean
-  largeText: boolean
+  largeText: boolean         // active le texte agrandi
+  textScale: number          // 80–130, taille choisie quand largeText = true
   reducedMotion: boolean
   screenReaderOptimized: boolean
   voiceControlEnabled: boolean

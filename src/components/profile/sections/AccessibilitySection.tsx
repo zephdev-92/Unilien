@@ -1,9 +1,9 @@
-import { Box, Stack, Flex, Text, Switch } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Switch, Slider, HStack } from '@chakra-ui/react'
 import { useAccessibilityStore } from '@/stores/authStore'
 import type { AccessibilitySettings } from '@/types'
 
 interface AccessibilitySetting {
-  key: keyof AccessibilitySettings
+  key: keyof Omit<AccessibilitySettings, 'textScale'>
   label: string
   description: string
 }
@@ -36,10 +36,14 @@ const accessibilitySettings: AccessibilitySetting[] = [
   },
 ]
 
+const SCALE_MIN = 80
+const SCALE_MAX = 150
+const SCALE_STEP = 5
+
 export function AccessibilitySection() {
   const { settings, updateSettings } = useAccessibilityStore()
 
-  const handleToggle = (key: keyof AccessibilitySettings) => {
+  const handleToggle = (key: keyof Omit<AccessibilitySettings, 'textScale'>) => {
     updateSettings({ [key]: !settings[key] })
   }
 
@@ -60,34 +64,76 @@ export function AccessibilitySection() {
 
       <Stack gap={4}>
         {accessibilitySettings.map((setting) => (
-          <Flex
-            key={setting.key}
-            justify="space-between"
-            align="center"
-            p={4}
-            bg="gray.50"
-            borderRadius="md"
-            _hover={{ bg: 'gray.100' }}
-          >
-            <Box flex={1} pr={4}>
-              <Text fontWeight="medium" mb={1}>
-                {setting.label}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                {setting.description}
-              </Text>
-            </Box>
-            <Switch.Root
-              checked={settings[setting.key]}
-              onCheckedChange={() => handleToggle(setting.key)}
-              disabled={setting.key === 'voiceControlEnabled'}
+          <Box key={setting.key}>
+            <Flex
+              justify="space-between"
+              align="center"
+              p={4}
+              bg="gray.50"
+              borderRadius={settings.largeText && setting.key === 'largeText' ? 'md md 0 0' : 'md'}
+              _hover={{ bg: 'gray.100' }}
             >
-              <Switch.HiddenInput aria-label={setting.label} />
-              <Switch.Control>
-                <Switch.Thumb />
-              </Switch.Control>
-            </Switch.Root>
-          </Flex>
+              <Box flex={1} pr={4}>
+                <Text fontWeight="medium" mb={1}>
+                  {setting.label}
+                </Text>
+                <Text fontSize="sm" color="gray.600">
+                  {setting.description}
+                </Text>
+              </Box>
+              <Switch.Root
+                checked={settings[setting.key]}
+                onCheckedChange={() => handleToggle(setting.key)}
+                disabled={setting.key === 'voiceControlEnabled'}
+              >
+                <Switch.HiddenInput aria-label={setting.label} />
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Root>
+            </Flex>
+
+            {/* Slider taille de police — affiché sous le toggle largeText quand actif */}
+            {setting.key === 'largeText' && settings.largeText && (
+              <Box
+                px={4}
+                pt={3}
+                pb={4}
+                bg="gray.50"
+                borderTopWidth="1px"
+                borderTopColor="gray.200"
+                borderRadius="0 0 md md"
+              >
+                <HStack justify="space-between" mb={3}>
+                  <Text fontSize="sm" color="gray.600">Taille choisie</Text>
+                  <Text fontSize="sm" fontWeight="semibold" color="brand.600">
+                    {settings.textScale}%
+                  </Text>
+                </HStack>
+                <Slider.Root
+                  min={SCALE_MIN}
+                  max={SCALE_MAX}
+                  step={SCALE_STEP}
+                  value={[settings.textScale]}
+                  onValueChange={(details) => updateSettings({ textScale: details.value[0] })}
+                >
+                  <Slider.Control>
+                    <Slider.Track>
+                      <Slider.Range />
+                    </Slider.Track>
+                    <Slider.Thumb index={0}>
+                      <Slider.HiddenInput aria-label="Taille du texte" />
+                    </Slider.Thumb>
+                  </Slider.Control>
+                  <Slider.MarkerGroup>
+                    <Slider.Marker value={80}><Text fontSize="xs" color="gray.400">80%</Text></Slider.Marker>
+                    <Slider.Marker value={100}><Text fontSize="xs" color="gray.400">100%</Text></Slider.Marker>
+                    <Slider.Marker value={150}><Text fontSize="xs" color="gray.400">150%</Text></Slider.Marker>
+                  </Slider.MarkerGroup>
+                </Slider.Root>
+              </Box>
+            )}
+          </Box>
         ))}
       </Stack>
 
