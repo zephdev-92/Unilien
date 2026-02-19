@@ -656,16 +656,16 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 - ❌ Notifications Email (non implémenté)
 - ❌ Notifications SMS (non implémenté)
 
-#### 4.1 Web Push (Finalisation)
+#### 4.1 Web Push (Finalisation) ✅ (19/02/2026)
 
-**Actions restantes**:
+**Actions complétées**:
 ```
-[ ] Générer clés VAPID
-[ ] Configurer variables env (VITE_VAPID_PUBLIC_KEY)
-[ ] Configurer secrets Supabase
-[ ] Déployer Edge Function send-push-notification
-[ ] Tests navigateurs (Chrome, Firefox, Safari)
-[ ] Documentation utilisateur
+[x] Générer clés VAPID
+[x] Configurer variables env (VITE_VAPID_PUBLIC_KEY)
+[x] Configurer secrets Supabase (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT)
+[x] Déployer Edge Function send-push-notification (v12)
+[x] Tests navigateurs (Chrome, Firefox, Safari)
+[x] Documentation utilisateur
 ```
 
 **Effort**: 2-3 heures
@@ -759,19 +759,100 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 **Manquants**:
 
-#### 6.1 Export Bulletins de Paie
+#### 6.1 Export Bulletins de Paie ✅ (19/02/2026)
 
-**Format**: PDF
-**Contenu**: Salaire brut, cotisations, net à payer
-**Effort**: 3 jours
+**Format**: PDF — jsPDF · **Taux** : IDCC 3239 / 2025 — indicatif
 
 ```
-[ ] Design template bulletin
-[ ] Calculs cotisations sociales
-[ ] Génération PDF (jsPDF)
-[ ] Stockage documents (Supabase Storage)
-[ ] Historique bulletins (table DB)
+[x] Design template bulletin (5 sections : header, parties, brut, cotisations, nets)
+[x] Calculs cotisations sociales salariales (CSG/CRDS/vieillesse/AGIRC-ARRCO T1)
+[x] Calculs cotisations patronales (maladie/vieillesse/alloc. fam./chômage/FNAL/CSA/AT-MP)
+[x] Exonération cotisations patronales SS (Art. L241-10 CSS — employeurs PCH/invalide/MTP/PCTP)
+[x] Génération PDF (jsPDF) — téléchargement direct
+[x] Onglet "Bulletins de paie" dans DocumentManagementSection
+[ ] Stockage documents (Supabase Storage) — v2
+[ ] Historique bulletins (table DB) — v2
+[ ] Taux PAS configurable par employé (contrats) — v2
 ```
+
+---
+
+### 6b. 🏥 PCH — Prestation de Compensation du Handicap
+
+**Impact** : 🔴 CRITIQUE MÉTIER — La PCH finance les auxiliaires de vie des employeurs Unilien
+**Documentation** : `docs/PCH_PRESTATION_COMPENSATION_HANDICAP.md`
+**Référence tarifaire** : Tarifs au 01/01/2026 (indexés IDCC 3239 + SMIC)
+
+> Tarif PCH emploi direct 2026 : **19,34 €/h** (150% × salaire horaire brut AV-C IDCC 3239)
+
+#### 6b.1 Données employeur PCH (Niveau 1 — sprint court)
+
+**Effort** : 2 jours · **Timeline** : Semaine 10/2026
+
+```
+[ ] Enrichir type Employer : pchType ('emploiDirect'|'mandataire'|'prestataire'|'aidantFamilial')
+[ ] Enrichir type Employer : pchMonthlyHours (heures allouées par le plan de compensation)
+[ ] Enrichir type Employer : pchElement1Rate (tarif horaire PCH auto-calculé via pchType)
+[ ] Migration DB : pch_type, pch_monthly_hours, pch_element1_rate
+[ ] Mettre à jour EmployerSection.tsx (nouveaux champs + sélecteur pchType)
+[ ] Créer src/lib/pch/pchTariffs.ts avec constantes 2026
+[ ] Auto-suggestion exonération SS si pchBeneficiary === true (bulletin de paie)
+```
+
+**Constantes PCH 2026 à intégrer** :
+```ts
+emploiDirectGeneral : 19,34 €/h
+emploiDirectSoins   : 20,10 €/h
+mandataireGeneral   : 21,27 €/h
+mandataireSoins     : 22,11 €/h
+prestataire         : 25,00 €/h
+aidantFamilial      : 4,78 €/h
+aidantFamilialCessation : 7,16 €/h
+```
+
+#### 6b.2 Widget Enveloppe PCH — Dashboard (Niveau 2)
+
+**Effort** : 2 jours · **Timeline** : Semaine 11/2026
+
+```
+[ ] Composant PchEnvelopeWidget dans EmployerDashboard
+[ ] Calcul mensuel : consommé (coût total employeur) vs alloué (pchMonthlyHours × tarif)
+[ ] Barre de progression avec reste à charge
+[ ] Alerte si dépassement prévu en fin de mois
+[ ] Comparaison avec / sans exonération patronale SS
+```
+
+**Formule reste à charge** :
+```
+Coût total employeur = brut + cotisations patronales
+Enveloppe PCH = pchMonthlyHours × pchElement1Rate
+Reste à charge = max(0, coût total - enveloppe PCH)
+```
+
+#### 6b.3 Bulletin de paie — Section PCH (Niveau 3)
+
+**Effort** : 1 jour · **Timeline** : Semaine 12/2026
+
+```
+[ ] Section "Récapitulatif PCH" dans le PDF généré
+    → Enveloppe allouée / coût réel / reste à charge
+[ ] Mention exonération auto si pchBeneficiary === true
+[ ] Note légale : "PCH versée par le Conseil Départemental"
+```
+
+#### 6b.4 Module PCH complet (Niveau 4 — long terme)
+
+**Effort** : 1 semaine · **Timeline** : Q2 2026
+
+```
+[ ] Suivi du plan de compensation (dates d'attribution, révisions)
+[ ] Alertes échéance plan PCH (renouvelable tous les 3 ou 5 ans)
+[ ] Multi-éléments PCH (aides techniques, aménagement logement, charges spécifiques)
+[ ] Historique décisions Conseil Départemental (upload PDF notification)
+[ ] Export "attestation employeur" pour justification PCH
+```
+
+---
 
 #### 6.2 Export Planning (PDF/Excel)
 
@@ -1420,11 +1501,11 @@ npx playwright install
    - [ ] Tests d'intégration export CESU
    - [ ] Code review + Merge
 
-4. **Web Push finalization**
-   - [ ] ~~Générer clés VAPID~~ → Inclus dans actions urgentes ci-dessus
-   - [ ] Config variables env (VITE_VAPID_PUBLIC_KEY)
-   - [ ] Déployer Edge Function send-push-notification
-   - [ ] Tests navigateurs
+4. **Web Push finalization** ✅ (19/02/2026)
+   - [x] ~~Générer clés VAPID~~ → Inclus dans actions urgentes ci-dessus
+   - [x] Config variables env (VITE_VAPID_PUBLIC_KEY)
+   - [x] Déployer Edge Function send-push-notification (v12)
+   - [x] Tests navigateurs
 
 5. **Sprint tests services + hooks** ✅ (12/02/2026)
    - [x] 13/13 services testés (488 tests services au total)
@@ -1450,13 +1531,24 @@ npx playwright install
    - [x] Logo SVG dans header (PR #73)
    - [x] Reprise historique congés pour contrats antérieurs
 
-### Semaine Prochaine (Semaine 9 - 18-24 février)
+### Semaine 9 (18-24 février 2026)
 
-9. **Setup CI/CD tests**
-   - [ ] GitHub Actions : vitest run --coverage sur chaque PR
-   - [ ] Badge coverage dans README
+9. **Setup CI/CD tests** ✅ (19/02/2026)
+   - [x] GitHub Actions : vitest coverage sur chaque PR (pr-checks.yml)
+   - [x] Job `Code Quality` + job `Accessibility Check` (noms requis branch protection)
+   - [x] Commentaire automatique coverage + taille build sur chaque PR
 
-10. **Début tests composants UI** (Phase 3, pour atteindre 60%)
+10. **Export Bulletins de Paie PDF** ✅ (19/02/2026)
+    - [x] Générateur PDF complet (jsPDF) — cotisations salariales + patronales + net à payer
+    - [x] Exonération cotisations patronales SS (Art. L241-10 CSS — PCH/invalide/MTP/PCTP)
+    - [x] Onglet "Bulletins de paie" dans page Documents
+    - [x] Tarifs IDCC 3239 2025 (`cotisationsCalculator.ts`)
+
+11. **Documentation PCH** ✅ (19/02/2026)
+    - [x] `docs/PCH_PRESTATION_COMPENSATION_HANDICAP.md` — tarifs 2026, connexion IDCC 3239
+    - [x] Plan d'implémentation 4 niveaux intégré dans la roadmap
+
+12. **Début tests composants UI** (Phase 3, pour atteindre 60%)
     - [ ] Dashboard widgets prioritaires
     - [ ] Planning views (WeekView, MonthView)
 

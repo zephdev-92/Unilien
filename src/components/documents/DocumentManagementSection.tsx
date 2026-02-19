@@ -26,6 +26,8 @@ import {
   type DocumentStats,
 } from '@/services/documentService'
 import { updateAbsenceStatus } from '@/services/absenceService'
+import { getContractsForEmployer } from '@/services/contractService'
+import { PayslipGeneratorModal, type PayslipEmployee } from '@/components/documents/PayslipGeneratorModal'
 import { logger } from '@/lib/logger'
 import type { Absence } from '@/types'
 
@@ -80,6 +82,8 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('all')
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false)
+  const [employeesForPayslip, setEmployeesForPayslip] = useState<PayslipEmployee[]>([])
 
   // Charger les documents
   const loadDocuments = async () => {
@@ -102,6 +106,19 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
 
   useEffect(() => {
     loadDocuments()
+    // Charger les employés actifs pour le générateur de bulletins
+    getContractsForEmployer(employerId).then((contracts) => {
+      setEmployeesForPayslip(
+        contracts
+          .filter((c) => c.employee)
+          .map((c) => ({
+            id: c.employeeId,
+            firstName: c.employee!.firstName,
+            lastName: c.employee!.lastName,
+            pasRate: 0,
+          }))
+      )
+    }).catch((err) => logger.error('Erreur chargement employés bulletins:', err))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employerId])
 
@@ -203,9 +220,41 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
           <Tabs.Trigger value="approved">
             Approuvées ({stats?.approvedAbsences || 0})
           </Tabs.Trigger>
+          <Tabs.Trigger value="payslips">
+            Bulletins de paie
+          </Tabs.Trigger>
         </Tabs.List>
 
-        <Tabs.Content value={activeTab} pt={4}>
+        <Tabs.Content value="payslips" pt={4}>
+          <VStack gap={4} align="stretch">
+            <Text color="gray.600" fontSize="sm">
+              Générez un bulletin de paie individuel (PDF) pour un employé et un mois donné.
+              Le document est calculé selon la Convention Collective IDCC 3239 (barèmes 2025, à titre indicatif).
+            </Text>
+            <Button
+              onClick={() => setIsPayslipModalOpen(true)}
+              disabled={employeesForPayslip.length === 0}
+              alignSelf="flex-start"
+              style={{ backgroundColor: '#4E6478', color: 'white' }}
+            >
+              Générer un bulletin de paie
+            </Button>
+            {employeesForPayslip.length === 0 && (
+              <Alert.Root status="info">
+                <Alert.Indicator />
+                <Alert.Title>Aucun employé actif trouvé.</Alert.Title>
+              </Alert.Root>
+            )}
+          </VStack>
+          <PayslipGeneratorModal
+            isOpen={isPayslipModalOpen}
+            onClose={() => setIsPayslipModalOpen(false)}
+            employerId={employerId}
+            employees={employeesForPayslip}
+          />
+        </Tabs.Content>
+
+        {activeTab !== 'payslips' && <Tabs.Content value={activeTab} pt={4}>
           {filteredDocuments.length === 0 ? (
             <EmptyState.Root>
               <EmptyState.Content>
@@ -233,7 +282,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
               ))}
             </VStack>
           )}
-        </Tabs.Content>
+        </Tabs.Content>}
       </Tabs.Root>
     </VStack>
   )
