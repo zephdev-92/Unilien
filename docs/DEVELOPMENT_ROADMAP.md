@@ -601,9 +601,8 @@ Les boutons d'affichage/masquage du mot de passe utilisent des emojis (`🙈` / 
 
 **Actions**:
 ```
-[ ] Remplacer les emojis par des icônes SVG (Chakra UI icons ou lucide-react)
-[ ] Exemple : <EyeIcon /> et <EyeOffIcon />
-[ ] Garder les aria-label existants
+[x] Remplacer les emojis par des icônes SVG (PasswordToggleButton, SVG inline) (19/02/2026)
+[x] aria-hidden="true" sur les SVG, aria-label sur le bouton
 ```
 
 **Effort**: 30 min
