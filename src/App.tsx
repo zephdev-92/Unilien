@@ -26,9 +26,9 @@ function AccessibilityApplier() {
   useEffect(() => {
     const html = document.documentElement
     html.toggleAttribute('data-high-contrast', settings.highContrast)
-    html.toggleAttribute('data-large-text', settings.largeText)
     html.toggleAttribute('data-reduced-motion', settings.reducedMotion)
     html.toggleAttribute('data-screen-reader', settings.screenReaderOptimized)
+    html.style.fontSize = settings.textScale !== 100 ? `${settings.textScale}%` : ''
   }, [settings])
 
   return null

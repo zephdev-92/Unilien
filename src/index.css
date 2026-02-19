@@ -83,11 +83,6 @@ li {
   border: 2px solid currentColor !important;
 }
 
-/* Texte agrandi (+12%) */
-html[data-large-text] {
-  font-size: 112% !important;
-}
-
 /* Mouvement réduit (priorité utilisateur > préférence OS) */
 [data-reduced-motion] *,
 [data-reduced-motion] *::before,

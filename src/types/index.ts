@@ -20,7 +20,7 @@ export interface Profile {
 // Paramètres d'accessibilité
 export interface AccessibilitySettings {
   highContrast: boolean
-  largeText: boolean
+  textScale: number          // 80–130, 100 = taille normale
   reducedMotion: boolean
   screenReaderOptimized: boolean
   voiceControlEnabled: boolean

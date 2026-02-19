@@ -84,7 +84,7 @@ interface AccessibilityState {
 
 const defaultAccessibilitySettings: AccessibilitySettings = {
   highContrast: false,
-  largeText: false,
+  textScale: 100,
   reducedMotion: false,
   screenReaderOptimized: false,
   voiceControlEnabled: false,
