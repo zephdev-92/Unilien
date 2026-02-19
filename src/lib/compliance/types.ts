@@ -4,7 +4,14 @@
  */
 
 // Type d'intervention
-export type ShiftType = 'effective' | 'presence_day' | 'presence_night'
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
+
+// Segment d'une Garde 24h libre
+export interface GuardSegment {
+  startTime: string   // "HH:mm"
+  type: 'effective' | 'presence_day' | 'presence_night'
+  breakMinutes?: number
+}
 
 // Intervention simplifiée pour validation
 export interface ShiftForValidation {
@@ -18,6 +25,7 @@ export interface ShiftForValidation {
   hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule (pas de majoration)
   shiftType?: ShiftType // Type d'intervention (défaut: 'effective')
   nightInterventionsCount?: number // Nombre d'interventions pendant présence nuit (pour seuil requalification)
+  guardSegments?: GuardSegment[] // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
 }
 
 // Contrat simplifié pour calculs
@@ -48,6 +56,7 @@ export const COMPLIANCE_RULES = {
   NIGHT_PRESENCE_MAX_DURATION: 'NIGHT_PRESENCE_MAX_DURATION',
   CONSECUTIVE_NIGHTS_MAX: 'CONSECUTIVE_NIGHTS_MAX',
   GUARD_MAX_AMPLITUDE: 'GUARD_MAX_AMPLITUDE',
+  GUARD_24H_EFFECTIVE_MAX: 'GUARD_24H_EFFECTIVE_MAX',
 } as const
 
 export type ComplianceRuleCode = (typeof COMPLIANCE_RULES)[keyof typeof COMPLIANCE_RULES]
@@ -107,6 +116,14 @@ export const COMPLIANCE_MESSAGES = {
     error: (hours: number) =>
       `Amplitude de garde trop longue : ${hours.toFixed(1)}h au lieu de 24h maximum. Le cumul travail effectif + présence responsable ne peut pas dépasser 24h.`,
     rule: 'Amplitude maximale de garde de 24h (IDCC 3239)',
+  },
+  GUARD_24H_EFFECTIVE_MAX: {
+    error: (hours: number) =>
+      `Total travail effectif trop long : ${hours.toFixed(1)}h (maximum 12h par jour, Art. L3121-18). Réduisez les segments effectifs.`,
+    warningNight: (hours: number) =>
+      `Présence de nuit longue : ${hours.toFixed(1)}h. Vérifiez que cela est conforme à votre accord avec l'employé.`,
+    missingSegments: 'Aucun segment défini pour cette garde 24h. Ajoutez au moins 2 segments.',
+    rule: 'Garde 24h : total travail effectif ≤ 12h (Art. L3121-18 Code du travail)',
   },
 } as const
 

@@ -199,13 +199,30 @@ export function calculateTotalHours(
  * - presence_night : 0 (repos sur place, pas du travail — Art. 148 IDCC 3239)
  */
 export function getEffectiveHours(
-  shift: { startTime: string; endTime: string; breakDuration: number; shiftType?: string }
+  shift: {
+    startTime: string
+    endTime: string
+    breakDuration: number
+    shiftType?: string
+    guardSegments?: Array<{ startTime: string; type: string; breakMinutes?: number }>
+  }
 ): number {
   const rawHours = calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration) / 60
   const type = shift.shiftType || 'effective'
 
   if (type === 'presence_night') return 0
   if (type === 'presence_day') return rawHours * (2 / 3)
+  if (type === 'guard_24h') {
+    // Somme des heures effectives de tous les segments de type 'effective' (hors pause)
+    if (!shift.guardSegments?.length) return rawHours // fallback gracieux
+    return shift.guardSegments.reduce((total, seg, i, arr) => {
+      const end = arr[i + 1]?.startTime ?? shift.startTime
+      const mins = calculateShiftDuration(seg.startTime, end, 0)
+      return seg.type === 'effective'
+        ? total + Math.max(0, mins - (seg.breakMinutes ?? 0)) / 60
+        : total
+    }, 0)
+  }
   return rawHours
 }
 

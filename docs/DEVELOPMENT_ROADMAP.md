@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 12 février 2026 (sprint tests massif — 786 tests, couverture 37%, tous services testés)
-**Version**: 1.3.1
+**Dernière mise à jour**: 17 février 2026 (présence responsable IDCC 3239, reprise congés, 835 tests 42% — tous hooks testés)
+**Version**: 1.4.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -20,7 +20,7 @@
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | 37% | 🟡 En progression (786 tests / 32 fichiers, cible Q1 30% atteinte ✅) |
+| **Tests** | 42% | 🟡 En progression (835 tests / 35 fichiers, 7/7 hooks testés ✅) |
 | **Sécurité** | 92% | ✅ Excellent (routes protégées, sanitisation 6/9 services, fail-fast, FK fix, RLS audit) |
 | **Qualité code** | 90% | ✅ Bon (ErrorBoundary, code splitting, 0 `as any`, 0 `eslint-disable` type) |
 
@@ -28,16 +28,63 @@
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
-- **Tests**: 786 tests / 32 fichiers (~37% coverage)
+- **Tests**: 835 tests / 35 fichiers (~42% coverage)
 - **Migrations DB**: 24 migrations
 - **Composants UI**: ~65 composants
 - **Services**: 13 services
-- **Hooks**: 8 hooks
+- **Hooks**: 8 hooks (7/7 testés)
 - **Routes**: 16 routes (dont 10 protégées)
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-7 - Février 2026)
+## ✅ Réalisations Récentes (Semaines 6-8 - Février 2026)
+
+### Sprint Tests Hooks Restants + Feature Présence Responsable (17/02/2026)
+
+#### Sprint Tests — 835 tests, 42% coverage, 7/7 hooks (PR #71)
+
+Complétion de la Phase 2 hooks : les 3 hooks restants sont maintenant couverts. Passage de 786 tests/37% à **835 tests / 35 fichiers / 42% coverage**.
+
+| Fichier | Tests | Fonctions couvertes |
+|---------|-------|---------------------|
+| `useComplianceMonitor.test.ts` | ~15 | Monitoring continu, polling, alertes, cleanup |
+| `usePushNotifications.test.ts` | ~17 | Souscription, permission, envoi, désabonnement |
+| `useSpeechRecognition.test.ts` | ~17 | Démarrage, arrêt, résultats, gestion erreurs |
+
+**Couverture hooks** : **7/7** ✅ (useAuth, useNotifications, useComplianceCheck, useShiftReminders, useComplianceMonitor, usePushNotifications, useSpeechRecognition)
+
+#### Feature Présence Responsable Jour/Nuit — IDCC 3239 (PR #72)
+
+Implémentation complète du concept de présence responsable conforme à la Convention Collective IDCC 3239 dans la gestion des shifts.
+
+| Élément | Détails |
+|---------|---------|
+| **Nouveau type shift** | `shift_type` : `effective` / `presence_day` / `presence_night` |
+| **Présence responsable jour** | Conversion 2/3 h de travail effectif (Art. 137.1) |
+| **Présence responsable nuit** | Indemnité forfaitaire ≥ 1/4 salaire horaire (Art. 148) |
+| **Seuil requalification** | ≥ 4 interventions pendant présence nuit → requalifiée 100% travail effectif |
+| **Nouvelles validations compliance** | Limite 12h consécutives nuit, max 5 nuits consécutives |
+| **Récapitulatif temps réel** | Heures converties + calcul paie enrichi dans la modale |
+| **Modèle de données** | Champs `night_interventions_count`, `is_requalified`, `effective_hours` |
+| **Documentation** | `docs/presence_responsable.md`, `docs/Garde_de_24_heures.md` |
+
+#### Logo SVG Unilien dans Header (PR #73)
+
+Intégration du logo SVG Unilien dans la navigation principale.
+
+#### Feature Reprise Historique Congés à la Création de Contrat Antérieur
+
+Résolution du problème de solde de congés incorrect lors de la saisie d'un contrat avec date de début antérieure à aujourd'hui.
+
+| Élément | Détails |
+|---------|---------|
+| **Problème corrigé** | Contrat antérieur → `taken_days` initialisé à 0 et acquis surestimés |
+| **Section optionnelle** | Apparaît dans `NewContractModal` si date début < aujourd'hui |
+| **Saisie historique** | Mois effectivement travaillés + jours de congés déjà pris |
+| **Calcul automatique** | Solde réel = jours acquis (prorata mois saisis) − jours déjà pris |
+| **Documentation** | `docs/feature_reprise_conges_contrat.md` |
+
+---
 
 ### Sprint Tests Massif — Couverture ×2.5 (12/02/2026)
 
@@ -395,7 +442,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Effort**: 6-8 semaines (Phase 1+2 terminées en 1 jour)
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: ~37% coverage — 786 tests / 32 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
+**État actuel**: ~42% coverage — 835 tests / 35 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
 
 **Services testés (13/13)** ✅ Phase 1 terminée (12/02/2026):
 ```
@@ -416,15 +463,15 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] src/services/shiftService.test.ts (existant, complété)
 ```
 
-**Hooks testés (4/8)** — Phase 2 partiellement terminée (12/02/2026):
+**Hooks testés (7/7)** ✅ — Phase 2 terminée (17/02/2026):
 ```
 [x] useAuth.test.ts (existant)
 [x] useNotifications.test.ts (20 tests)
 [x] useComplianceCheck.test.ts (16 tests)
 [x] useShiftReminders.test.ts (12 tests)
-[ ] useComplianceMonitor.ts — P2
-[ ] usePushNotifications.ts — P2
-[ ] useSpeechRecognition.ts — P3
+[x] useComplianceMonitor.test.ts (~15 tests) — ✅ 17/02/2026
+[x] usePushNotifications.test.ts (~17 tests) — ✅ 17/02/2026
+[x] useSpeechRecognition.test.ts (~17 tests) — ✅ 17/02/2026
 ```
 
 **Autres tests existants**:
@@ -452,8 +499,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 
 **Timeline**:
 - ~~Phase 1 (Services critiques): Semaines 6-8/2026~~ ✅ Terminé 12/02/2026
-- ~~Phase 2 (Hooks): Semaine 9/2026~~ ✅ Partiellement terminé 12/02/2026 (4/8)
-- Phase 2b (Hooks restants): Semaine 8-9/2026
+- ~~Phase 2 (Hooks): Semaine 9/2026~~ ✅ Terminé 17/02/2026 (7/7)
 - Phase 3 (UI + exports): Semaines 10-14/2026
 - Phase 4 (E2E): Q2 2026
 
@@ -1152,8 +1198,13 @@ npx playwright install
 - ✅ **Sprint tests massif** : 13/13 services testés + 4 hooks + declarationService (786 tests, 37% coverage)
 - 🟡 Finaliser Web Push (avec nouvelles clés VAPID régénérées)
 
-**Semaines 8-10**:
-- 🟡 Tests hooks restants (useComplianceMonitor, usePushNotifications) — Phase 2b
+**Semaine 8** (17-21 février) :
+- ✅ Sprint tests hooks restants : useComplianceMonitor, usePushNotifications, useSpeechRecognition (835 tests, 42% coverage, 7/7 hooks) — PR #71
+- ✅ Feature Présence Responsable Jour/Nuit — IDCC 3239 (PR #72)
+- ✅ Logo SVG Unilien dans header (PR #73)
+- ✅ Feature Reprise historique congés à la création de contrat antérieur
+
+**Semaines 9-10**:
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
 - 🟡 Setup GitHub Actions coverage
@@ -1305,7 +1356,7 @@ npx playwright install
 - `CODE_MODERNITY_ANALYSIS.md` - Analyse modernité du code (mise à jour 11/02/2026)
 - `README.md` - Setup & installation
 
-> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0f), 2b (✅ corrigé 10/02/2026), 2c, et 16 (16.1 code splitting ✅). Semaine 7 : 4 PRs mergées (absences IDCC 3239, interventions 24h, label brut, fix validation) + sprint tests massif le 12/02 (786 tests, couverture 37%, objectif Q1 atteint).
+> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0f), 2b (✅ corrigé 10/02/2026), 2c, et 16 (16.1 code splitting ✅). Semaine 7 : 4 PRs mergées (absences IDCC 3239, interventions 24h, label brut, fix validation) + sprint tests massif le 12/02 (786 tests, couverture 37%, objectif Q1 atteint). Semaine 8 : sprint hooks terminé (835 tests, 42%, 7/7 hooks), feature présence responsable IDCC 3239 (#72), logo SVG (#73), reprise historique congés.
 
 ---
 
@@ -1381,19 +1432,33 @@ npx playwright install
    - [x] Couverture services : 91.42% statements
    - [ ] Setup GitHub Actions coverage (30 min)
 
-### Semaine Prochaine (Semaine 8 - 17-21 février)
+### Semaine 8 - Bilan (17 février) ✅
 
-6. **Tests hooks restants** (Phase 2b)
-   - [ ] useComplianceMonitor.test.ts
-   - [ ] usePushNotifications.test.ts
+6. **Tests hooks restants** (Phase 2b) ✅ (17/02/2026)
+   - [x] useComplianceMonitor.test.ts
+   - [x] usePushNotifications.test.ts
+   - [x] useSpeechRecognition.test.ts
+   - [x] 835 tests / 35 fichiers / 42% coverage
 
-7. **Setup CI/CD tests**
+7. **Feature Présence Responsable** ✅ PR #72 (17/02/2026)
+   - [x] Nouveau type shift (effective, presence_day, presence_night)
+   - [x] Conversion 2/3 jour, indemnité forfaitaire nuit
+   - [x] Seuil requalification ≥4 interventions
+   - [x] Validations compliance supplémentaires
+
+8. **Logo SVG + Reprise congés** ✅ (17/02/2026)
+   - [x] Logo SVG dans header (PR #73)
+   - [x] Reprise historique congés pour contrats antérieurs
+
+### Semaine Prochaine (Semaine 9 - 18-24 février)
+
+9. **Setup CI/CD tests**
    - [ ] GitHub Actions : vitest run --coverage sur chaque PR
    - [ ] Badge coverage dans README
 
-8. **Début tests composants UI** (Phase 3, pour atteindre 60%)
-   - [ ] Dashboard widgets prioritaires
-   - [ ] Planning views (WeekView, MonthView)
+10. **Début tests composants UI** (Phase 3, pour atteindre 60%)
+    - [ ] Dashboard widgets prioritaires
+    - [ ] Planning views (WeekView, MonthView)
 
 ---
 
@@ -1403,10 +1468,10 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 12 février 2026 - Sprint tests massif (786 tests, 37% coverage, 13/13 services testés, 4/8 hooks testés)
+> **Dernière review**: 17 février 2026 - Sprint hooks (835 tests, 42% coverage, 7/7 hooks), feature présence responsable IDCC 3239 (#72), logo SVG (#73), reprise historique congés
 
 ---
 
 **Maintenu par**: Tech Lead
-**Prochaine revue**: 17 février 2026
+**Prochaine revue**: 24 février 2026
 **Feedback**: [Ouvrir une issue](https://github.com/zephdev-92/Unilien/issues)

@@ -20,6 +20,7 @@ interface PaySummaryProps {
   durationHours: number
   showDetails?: boolean
   compact?: boolean
+  shiftType?: string
 }
 
 export function PaySummary({
@@ -28,6 +29,7 @@ export function PaySummary({
   durationHours,
   showDetails = true,
   compact = false,
+  shiftType,
 }: PaySummaryProps) {
   const hasMajorations =
     pay.sundayMajoration > 0 ||
@@ -52,6 +54,7 @@ export function PaySummary({
   }
 
   const breakdown = getPayBreakdown(pay)
+  const isGuard24h = shiftType === 'guard_24h'
 
   return (
     <Box
@@ -72,7 +75,9 @@ export function PaySummary({
           </Text>
         </Flex>
         <Text fontSize="sm" color="gray.500" mt={1}>
-          {durationHours.toFixed(1)} heures × {formatCurrency(hourlyRate)}/h
+          {isGuard24h
+            ? `Garde 24h — ${durationHours.toFixed(1)}h × ${formatCurrency(hourlyRate)}/h (selon segments)`
+            : `${durationHours.toFixed(1)} heures × ${formatCurrency(hourlyRate)}/h`}
         </Text>
       </Box>
 
@@ -96,11 +101,13 @@ export function PaySummary({
             >
               <Flex justify="space-between" align="center">
                 <Text fontSize="sm" fontWeight="medium" color="gray.600">
-                  Détail des majorations
+                  {isGuard24h ? 'Détail de la rémunération' : 'Détail des majorations'}
                 </Text>
-                <Text fontSize="sm" color="brand.600">
-                  +{formatCurrency(pay.totalPay - pay.basePay)}
-                </Text>
+                {!isGuard24h && (
+                  <Text fontSize="sm" color="brand.600">
+                    +{formatCurrency(pay.totalPay - pay.basePay)}
+                  </Text>
+                )}
               </Flex>
             </Box>
           </Collapsible.Trigger>

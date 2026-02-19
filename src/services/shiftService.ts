@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { Shift, ShiftType, UserRole } from '@/types'
+import type { Shift, ShiftType, GuardSegment, UserRole } from '@/types'
 import type { ShiftDbRow } from '@/types/database'
 import {
   getProfileName,
@@ -78,8 +78,15 @@ export async function createShift(
     nightInterventionsCount?: number
     isRequalified?: boolean
     effectiveHours?: number
+    guardSegments?: GuardSegment[]
   }
 ): Promise<Shift | null> {
+  // Pour guard_24h : breakDuration = somme des breakMinutes des segments effectifs
+  const breakDuration = shiftData.shiftType === 'guard_24h' && shiftData.guardSegments
+    ? shiftData.guardSegments.reduce((sum, seg) =>
+        seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
+    : (shiftData.breakDuration || 0)
+
   const { data, error } = await supabase
     .from('shifts')
     .insert({
@@ -87,7 +94,7 @@ export async function createShift(
       date: shiftData.date.toISOString().split('T')[0],
       start_time: shiftData.startTime,
       end_time: shiftData.endTime,
-      break_duration: shiftData.breakDuration || 0,
+      break_duration: breakDuration,
       tasks: (shiftData.tasks || []).map(sanitizeText),
       notes: shiftData.notes ? sanitizeText(shiftData.notes) : null,
       has_night_action: shiftData.hasNightAction ?? null,
@@ -95,6 +102,7 @@ export async function createShift(
       night_interventions_count: shiftData.nightInterventionsCount ?? null,
       is_requalified: shiftData.isRequalified ?? false,
       effective_hours: shiftData.effectiveHours ?? null,
+      guard_segments: shiftData.guardSegments ?? null,
       status: 'planned',
       computed_pay: {},
       validated_by_employer: false,
@@ -145,6 +153,7 @@ export async function updateShift(
     nightInterventionsCount: number
     isRequalified: boolean
     effectiveHours: number
+    guardSegments: GuardSegment[]
     status: Shift['status']
   }>
 ): Promise<void> {
@@ -163,6 +172,12 @@ export async function updateShift(
   if (updates.nightInterventionsCount !== undefined) payload.night_interventions_count = updates.nightInterventionsCount
   if (updates.isRequalified !== undefined) payload.is_requalified = updates.isRequalified
   if (updates.effectiveHours !== undefined) payload.effective_hours = updates.effectiveHours
+  if (updates.guardSegments !== undefined) {
+    payload.guard_segments = updates.guardSegments
+    // Recalculer break_duration à partir des segments effectifs
+    payload.break_duration = updates.guardSegments.reduce((sum, seg) =>
+      seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
+  }
   if (updates.status) payload.status = updates.status
 
   const { error } = await supabase
@@ -279,6 +294,7 @@ function mapShiftFromDb(data: ShiftDbRow): Shift {
     nightInterventionsCount: data.night_interventions_count ?? undefined,
     isRequalified: data.is_requalified ?? false,
     effectiveHours: data.effective_hours ?? undefined,
+    guardSegments: data.guard_segments ?? undefined,
     status: data.status,
     computedPay: data.computed_pay || {
       basePay: 0,

@@ -102,7 +102,13 @@ export interface ContractWithEmployerDbRow extends ContractDbRow {
 // SHIFT
 // ============================================================
 
-export type ShiftType = 'effective' | 'presence_day' | 'presence_night'
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
+
+export interface GuardSegmentDb {
+  startTime: string   // "HH:mm"
+  type: 'effective' | 'presence_day' | 'presence_night'
+  breakMinutes?: number
+}
 
 export interface ShiftDbRow {
   id: string
@@ -118,6 +124,7 @@ export interface ShiftDbRow {
   night_interventions_count: number | null // Nombre d'interventions pendant présence nuit
   is_requalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
   effective_hours: number | null // Heures effectives après conversion (2/3 pour présence jour)
+  guard_segments: GuardSegmentDb[] | null // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   created_at: string
   updated_at: string

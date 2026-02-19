@@ -646,6 +646,7 @@ export function ShiftDetailModal({
                         hourlyRate={contract.hourlyRate}
                         durationHours={durationHours}
                         showDetails={true}
+                        shiftType={shiftType}
                       />
                     )}
 
@@ -844,6 +845,7 @@ export function ShiftDetailModal({
                         hourlyRate={contract?.hourlyRate || 0}
                         durationHours={displayDuration}
                         showDetails={false}
+                        shiftType={shift.shiftType}
                       />
                     </Box>
                   )}

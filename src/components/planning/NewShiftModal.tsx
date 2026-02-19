@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Dialog,
   Portal,
@@ -23,17 +23,24 @@ import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
 import { logger } from '@/lib/logger'
 import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
-import type { ShiftType } from '@/types'
+import type { ShiftType, GuardSegment } from '@/types'
+
+const SHIFT_TYPE_VALUES = ['effective', 'presence_day', 'presence_night', 'guard_24h'] as const
 
 const shiftSchema = z.object({
   contractId: z.string().min(1, 'Veuillez sélectionner un auxiliaire'),
+  shiftType: z.enum(SHIFT_TYPE_VALUES).default('effective'),
   date: z.string().min(1, 'La date est requise'),
   startTime: z.string().min(1, "L'heure de début est requise"),
   endTime: z.string().min(1, "L'heure de fin est requise"),
   breakDuration: z.coerce.number().min(0, 'La pause ne peut pas être négative').default(0),
   tasks: z.string().optional(),
   notes: z.string().optional(),
-}).refine((data) => data.startTime !== data.endTime, {
+}).refine((data) => {
+  // Pour guard_24h : endTime = startTime = 24h, c'est intentionnel
+  if (data.shiftType === 'guard_24h') return true
+  return data.startTime !== data.endTime
+}, {
   message: "L'heure de fin doit être différente de l'heure de début",
   path: ['endTime'],
 })
@@ -44,9 +51,45 @@ const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
   { value: 'presence_day', label: 'Présence responsable (jour)' },
   { value: 'presence_night', label: 'Présence responsable (nuit)' },
+  { value: 'guard_24h', label: 'Garde 24h' },
 ]
 
 const REQUALIFICATION_THRESHOLD = 4
+
+/**
+ * Pause minimale légale pour un segment effectif d'une garde 24h.
+ *
+ * Art. L3121-16 : pause de 20 min dès que le travail effectif CONTINU atteint 6h.
+ * Dans une garde 24h, les segments de présence responsable (jour/nuit) séparent
+ * les plages effectives et constituent eux-mêmes des temps de repos bien supérieurs
+ * à 20 min — la règle du cumul journalier ne s'applique donc pas.
+ * Seul un segment individuel > 6h continus déclenche l'obligation.
+ */
+function getMinBreakForSegment(index: number, segments: GuardSegment[]): number {
+  const seg = segments[index]
+  if (seg.type !== 'effective') return 0
+
+  const segEnd = segments[index + 1]?.startTime ?? segments[0].startTime
+  const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
+
+  // Segment effectif continu > 6h → 20 min minimum (Art. L3121-16)
+  if (durMins > 360) return 20
+
+  return 0
+}
+
+/**
+ * Recalcule la pause minimale légale pour chaque segment effectif.
+ * Remet toujours à jour la pause (à la hausse ET à la baisse) en fonction
+ * de la durée réelle du segment — ex. segment raccourci sous 6h → pause à 0.
+ */
+function applyMinBreaks(segments: GuardSegment[]): GuardSegment[] {
+  return segments.map((seg, i) => {
+    if (seg.type !== 'effective') return seg
+    const minBreak = getMinBreakForSegment(i, segments)
+    return { ...seg, breakMinutes: minBreak }
+  })
+}
 
 interface NewShiftModalProps {
   isOpen: boolean
@@ -73,16 +116,24 @@ export function NewShiftModal({
   const [hasNightAction, setHasNightAction] = useState(false)
   const [shiftType, setShiftType] = useState<ShiftType>('effective')
   const [nightInterventionsCount, setNightInterventionsCount] = useState(0)
+  const [guardSegments, setGuardSegments] = useState<GuardSegment[]>(() =>
+    applyMinBreaks([
+      { startTime: '09:00', type: 'effective', breakMinutes: 0 },
+      { startTime: '21:00', type: 'presence_night' },
+    ])
+  )
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<ShiftFormData>({
     resolver: zodResolver(shiftSchema),
     defaultValues: {
+      shiftType: 'effective',
       date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       startTime: '09:00',
       endTime: '12:00',
@@ -99,6 +150,27 @@ export function NewShiftModal({
   const selectedContract = useMemo(() => {
     return contracts.find((c) => c.id === watchedValues.contractId)
   }, [contracts, watchedValues.contractId])
+
+  // Pour guard_24h : endTime = startTime (même heure = 24h via calculateShiftDuration)
+  // + synchroniser le premier segment avec l'heure de début
+  useEffect(() => {
+    if (shiftType === 'guard_24h' && watchedValues.startTime) {
+      setValue('endTime', watchedValues.startTime)
+      setGuardSegments(prev => {
+        if (prev[0]?.startTime === watchedValues.startTime) return prev
+        return [{ ...prev[0], startTime: watchedValues.startTime }, ...prev.slice(1)]
+      })
+    }
+  }, [shiftType, watchedValues.startTime, setValue])
+
+  // Pour guard_24h : synchroniser breakDuration avec la somme des pausees des segments effectifs
+  useEffect(() => {
+    if (shiftType === 'guard_24h') {
+      const totalBreak = guardSegments.reduce((sum, seg) =>
+        seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
+      setValue('breakDuration', totalBreak)
+    }
+  }, [shiftType, guardSegments, setValue])
 
   // Détecter les heures de nuit (21h-6h)
   const nightHoursCount = useMemo(() => {
@@ -137,11 +209,75 @@ export function NewShiftModal({
       if (shiftType === 'presence_night' && isRequalified) {
         return durationHours // Requalifié = 100% travail effectif
       }
+      if (shiftType === 'guard_24h' && guardSegments.length > 0) {
+        // Total des heures de travail effectif sur tous les segments 'effective'
+        const total = guardSegments.reduce((sum, seg, i) => {
+          const end = guardSegments[i + 1]?.startTime ?? (watchedValues.startTime || '09:00')
+          const mins = calculateShiftDuration(seg.startTime, end, 0)
+          return seg.type === 'effective'
+            ? sum + Math.max(0, mins - (seg.breakMinutes ?? 0)) / 60
+            : sum
+        }, 0)
+        return Math.round(total * 100) / 100
+      }
       return null // Travail effectif standard ou nuit non requalifiée
     } catch {
       return null
     }
-  }, [watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, shiftType, isRequalified])
+  }, [watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, shiftType, isRequalified, guardSegments])
+
+  // Pour guard_24h : helpers segments
+  const addGuardSegment = useCallback((afterIndex: number) => {
+    setGuardSegments(prev => {
+      const next = [...prev]
+      const segStart = next[afterIndex].startTime
+      const segEnd = next[afterIndex + 1]?.startTime ?? next[0].startTime
+      // Calculer le milieu du segment en minutes
+      const [sh, sm] = segStart.split(':').map(Number)
+      const [eh, em] = segEnd.split(':').map(Number)
+      let endTotal = eh * 60 + em
+      const startTotal = sh * 60 + sm
+      if (endTotal <= startTotal) endTotal += 1440
+      const midTotal = Math.floor((startTotal + endTotal) / 2) % 1440
+      const midTime = `${Math.floor(midTotal / 60).toString().padStart(2, '0')}:${(midTotal % 60).toString().padStart(2, '0')}`
+      next.splice(afterIndex + 1, 0, { startTime: midTime, type: 'effective', breakMinutes: 0 })
+      return applyMinBreaks(next)
+    })
+  }, [])
+
+  const removeGuardSegment = useCallback((index: number) => {
+    setGuardSegments(prev => {
+      if (prev.length <= 2) return prev
+      return applyMinBreaks(prev.filter((_, i) => i !== index))
+    })
+  }, [])
+
+  const updateGuardSegmentEnd = useCallback((index: number, newEndTime: string) => {
+    setGuardSegments(prev => {
+      const next = [...prev]
+      if (index + 1 < next.length) {
+        next[index + 1] = { ...next[index + 1], startTime: newEndTime }
+      }
+      return applyMinBreaks(next)
+    })
+  }, [])
+
+  const updateGuardSegmentType = useCallback((index: number, type: GuardSegment['type']) => {
+    setGuardSegments(prev => {
+      const next = [...prev]
+      next[index] = { ...next[index], type, breakMinutes: type === 'effective' ? (next[index].breakMinutes ?? 0) : undefined }
+      return applyMinBreaks(next)
+    })
+  }, [])
+
+  const updateGuardSegmentBreak = useCallback((index: number, breakMinutes: number) => {
+    setGuardSegments(prev => {
+      const next = [...prev]
+      const minBreak = getMinBreakForSegment(index, next)
+      next[index] = { ...next[index], breakMinutes: Math.max(minBreak, breakMinutes) }
+      return next
+    })
+  }, [])
 
   // Construire l'objet shift pour validation
   const shiftForCompliance = useMemo(() => {
@@ -162,9 +298,10 @@ export function NewShiftModal({
       breakDuration: watchedValues.breakDuration || 0,
       hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
       shiftType,
-      nightInterventionsCount: shiftType === 'presence_night' ? nightInterventionsCount : undefined,
+      nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
+      guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
     }
-  }, [watchedValues, contracts, hasNightHours, hasNightAction, shiftType, nightInterventionsCount])
+  }, [watchedValues, contracts, hasNightHours, hasNightAction, shiftType, nightInterventionsCount, guardSegments])
 
   // Hook de validation de conformité
   const {
@@ -253,6 +390,10 @@ export function NewShiftModal({
       setHasNightAction(false)
       setShiftType('effective')
       setNightInterventionsCount(0)
+      setGuardSegments(applyMinBreaks([
+        { startTime: '09:00', type: 'effective', breakMinutes: 0 },
+        { startTime: '21:00', type: 'presence_night' },
+      ]))
     }
   }, [isOpen, defaultDate, reset])
 
@@ -283,9 +424,10 @@ export function NewShiftModal({
         notes: data.notes || undefined,
         hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
         shiftType,
-        nightInterventionsCount: shiftType === 'presence_night' ? nightInterventionsCount : undefined,
+        nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
         isRequalified,
         effectiveHours: effectiveHoursComputed ?? undefined,
+        guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
       })
 
       onSuccess()
@@ -377,6 +519,7 @@ export function NewShiftModal({
                   )}
 
                   {/* Type d'intervention */}
+                  <input type="hidden" {...register('shiftType')} />
                   <AccessibleSelect
                     label="Type d'intervention"
                     options={SHIFT_TYPE_OPTIONS}
@@ -384,8 +527,9 @@ export function NewShiftModal({
                     onChange={(e) => {
                       const newType = e.target.value as ShiftType
                       setShiftType(newType)
+                      setValue('shiftType', newType)
                       // Reset des états liés au type précédent
-                      if (newType !== 'presence_night') {
+                      if (newType !== 'presence_night' && newType !== 'guard_24h') {
                         setNightInterventionsCount(0)
                       }
                       if (newType !== 'effective') {
@@ -414,15 +558,35 @@ export function NewShiftModal({
                         {...register('startTime')}
                       />
                     </Box>
-                    <Box flex={1}>
-                      <AccessibleInput
-                        label="Heure de fin"
-                        type="time"
-                        error={errors.endTime?.message}
-                        required
-                        {...register('endTime')}
-                      />
-                    </Box>
+                    {shiftType === 'guard_24h' ? (
+                      <Box flex={1}>
+                        <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                          Heure de fin
+                        </Text>
+                        <Box
+                          p={2}
+                          borderWidth="2px"
+                          borderColor="gray.200"
+                          borderRadius="md"
+                          bg="gray.50"
+                        >
+                          <Text fontSize="sm" color="gray.500">
+                            {watchedValues.startTime || '—'} <Text as="span" fontWeight="bold" color="gray.700">+24h</Text> (auto)
+                          </Text>
+                        </Box>
+                        <input type="hidden" {...register('endTime')} />
+                      </Box>
+                    ) : (
+                      <Box flex={1}>
+                        <AccessibleInput
+                          label="Heure de fin"
+                          type="time"
+                          error={errors.endTime?.message}
+                          required
+                          {...register('endTime')}
+                        />
+                      </Box>
+                    )}
                   </Flex>
 
                   {/* Durée affichée */}
@@ -435,14 +599,16 @@ export function NewShiftModal({
                     </Text>
                   )}
 
-                  {/* Pause */}
-                  <AccessibleInput
-                    label="Pause (minutes)"
-                    type="number"
-                    helperText="Durée de la pause en minutes (20 min obligatoire si > 6h)"
-                    error={errors.breakDuration?.message}
-                    {...register('breakDuration')}
-                  />
+                  {/* Pause globale — masquée pour guard_24h (calculée automatiquement depuis les segments) */}
+                  {shiftType !== 'guard_24h' && (
+                    <AccessibleInput
+                      label="Pause (minutes)"
+                      type="number"
+                      helperText="Durée de la pause en minutes (20 min obligatoire si > 6h)"
+                      error={errors.breakDuration?.message}
+                      {...register('breakDuration')}
+                    />
+                  )}
 
                   {/* ── Section présence responsable JOUR ── */}
                   {shiftType === 'presence_day' && durationHours > 0 && (
@@ -549,6 +715,201 @@ export function NewShiftModal({
                     </Box>
                   )}
 
+                  {/* ── Section Garde 24h ── */}
+                  {shiftType === 'guard_24h' && (
+                    <Box
+                      p={4}
+                      bg="teal.50"
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor="teal.200"
+                    >
+                      <Text fontWeight="medium" color="teal.800" mb={4}>
+                        Garde 24h — N segments libres
+                      </Text>
+
+                      {/* Barre visuelle colorée (lecture seule) */}
+                      <Flex gap={1} mb={4} borderRadius="md" overflow="hidden" h="32px">
+                        {guardSegments.map((seg, i) => {
+                          const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+                          const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
+                          const bg = seg.type === 'effective'
+                            ? 'blue.200'
+                            : seg.type === 'presence_day'
+                              ? 'cyan.200'
+                              : 'purple.200'
+                          const color = seg.type === 'effective'
+                            ? 'blue.800'
+                            : seg.type === 'presence_day'
+                              ? 'cyan.800'
+                              : 'purple.800'
+                          return (
+                            <Flex
+                              key={i}
+                              flex={Math.max(durMins, 30)}
+                              bg={bg}
+                              minW="32px"
+                              align="center"
+                              justify="center"
+                            >
+                              <Text fontSize="xs" color={color} fontWeight="medium">
+                                {(durMins / 60).toFixed(1)}h
+                              </Text>
+                            </Flex>
+                          )
+                        })}
+                      </Flex>
+
+                      {/* Liste de segments */}
+                      <Stack gap={3} mb={4}>
+                        {guardSegments.map((seg, i) => {
+                          const isLast = i === guardSegments.length - 1
+                          const canDelete = guardSegments.length > 2
+                          const minBreakRequired = getMinBreakForSegment(i, guardSegments)
+                          return (
+                            <Box
+                              key={i}
+                              p={3}
+                              bg="white"
+                              borderRadius="md"
+                              borderWidth="1px"
+                              borderColor="gray.200"
+                            >
+                              {/* En-tête : plage horaire + boutons actions */}
+                              <Flex align="center" gap={2} mb={2}>
+                                <Text fontSize="sm" fontWeight="medium" color="gray.700" minW="45px">
+                                  {seg.startTime}
+                                </Text>
+                                <Text fontSize="xs" color="gray.400">→</Text>
+                                {isLast ? (
+                                  <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                                    {guardSegments[0].startTime} +1j
+                                  </Text>
+                                ) : (
+                                  <input
+                                    type="time"
+                                    value={guardSegments[i + 1].startTime}
+                                    onChange={(e) => updateGuardSegmentEnd(i, e.target.value)}
+                                    style={{
+                                      fontSize: '0.875rem',
+                                      border: '1px solid #CBD5E0',
+                                      borderRadius: '4px',
+                                      padding: '2px 6px',
+                                    }}
+                                  />
+                                )}
+                                <Box flex={1} />
+                                <AccessibleButton
+                                  size="sm"
+                                  variant="ghost"
+                                  accessibleLabel={`Diviser le segment ${i + 1}`}
+                                  title="Diviser ce segment en deux"
+                                  onClick={() => addGuardSegment(i)}
+                                >
+                                  ÷
+                                </AccessibleButton>
+                                <AccessibleButton
+                                  size="sm"
+                                  variant="ghost"
+                                  accessibleLabel={`Supprimer le segment ${i + 1}`}
+                                  title="Supprimer ce segment"
+                                  disabled={!canDelete}
+                                  onClick={() => { if (canDelete) removeGuardSegment(i) }}
+                                >
+                                  ×
+                                </AccessibleButton>
+                              </Flex>
+
+                              {/* Type de segment */}
+                              <Box mb={seg.type === 'effective' ? 2 : 0}>
+                                <AccessibleSelect
+                                  label="Type de segment"
+                                  options={[
+                                    { value: 'effective', label: 'Travail effectif' },
+                                    { value: 'presence_day', label: 'Présence responsable (jour)' },
+                                    { value: 'presence_night', label: 'Présence de nuit' },
+                                  ]}
+                                  value={seg.type}
+                                  onChange={(e) => updateGuardSegmentType(i, e.target.value as GuardSegment['type'])}
+                                />
+                              </Box>
+
+                              {/* Pause — uniquement pour les segments travail effectif */}
+                              {seg.type === 'effective' && (
+                                <AccessibleInput
+                                  label="Pause (minutes)"
+                                  type="number"
+                                  helperText={minBreakRequired > 0
+                                    ? '20 min minimum légal (segment effectif > 6h — Art. L3121-16)'
+                                    : undefined}
+                                  value={seg.breakMinutes ?? 0}
+                                  onChange={(e) => updateGuardSegmentBreak(i, Math.max(0, parseInt(e.target.value) || 0))}
+                                />
+                              )}
+                            </Box>
+                          )
+                        })}
+                      </Stack>
+
+                      {/* Bouton ajouter un segment */}
+                      <Box mb={4}>
+                        <AccessibleButton
+                          size="sm"
+                          variant="outline"
+                          accessibleLabel="Ajouter un segment"
+                          onClick={() => addGuardSegment(guardSegments.length - 1)}
+                        >
+                          + Ajouter un segment
+                        </AccessibleButton>
+                      </Box>
+
+                      {/* Compteur total travail effectif */}
+                      <Box p={3} bg="white" borderRadius="md" mb={4}>
+                        <Flex justify="space-between" align="center">
+                          <Text fontSize="sm" color="gray.600">Total travail effectif</Text>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="bold"
+                            color={(effectiveHoursComputed ?? 0) > 12 ? 'red.600' : 'green.700'}
+                          >
+                            {(effectiveHoursComputed ?? 0).toFixed(1)}h / 12h max
+                          </Text>
+                        </Flex>
+                      </Box>
+
+                      {/* Nombre d'interventions nocturnes */}
+                      <Box mb={nightInterventionsCount >= REQUALIFICATION_THRESHOLD ? 3 : 0}>
+                        <AccessibleInput
+                          label="Interventions pendant la présence de nuit"
+                          type="number"
+                          helperText={`Chaque intervention (change, aide, urgence…) doit être comptée. Si ≥ ${REQUALIFICATION_THRESHOLD} : requalification en travail effectif (Art. 148 IDCC 3239)`}
+                          value={nightInterventionsCount}
+                          onChange={(e) => setNightInterventionsCount(Math.max(0, parseInt(e.target.value) || 0))}
+                        />
+                      </Box>
+
+                      {/* Alerte requalification */}
+                      {nightInterventionsCount >= REQUALIFICATION_THRESHOLD && (
+                        <Box
+                          p={3}
+                          bg="orange.100"
+                          borderRadius="md"
+                          borderWidth="1px"
+                          borderColor="orange.300"
+                        >
+                          <Text fontWeight="bold" color="orange.800" fontSize="sm">
+                            Requalification de la présence de nuit
+                          </Text>
+                          <Text fontSize="xs" color="orange.700" mt={1}>
+                            {nightInterventionsCount} interventions (seuil : {REQUALIFICATION_THRESHOLD}).
+                            Les segments présence de nuit sont requalifiés en travail effectif rémunéré à 100%
+                            (Art. 148 IDCC 3239).
+                          </Text>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
+
                   {/* Toggle action de nuit — uniquement pour travail effectif avec heures de nuit */}
                   {shiftType === 'effective' && hasNightHours && (
                     <Box
@@ -605,7 +966,7 @@ export function NewShiftModal({
                   )}
 
                   {/* ── Récapitulatif heures (Idée C) ── */}
-                  {shiftType !== 'effective' && durationHours > 0 && selectedContract && (
+                  {shiftType !== 'effective' && shiftType !== 'guard_24h' && durationHours > 0 && selectedContract && (
                     <Box
                       p={4}
                       bg="gray.50"
@@ -682,6 +1043,7 @@ export function NewShiftModal({
                       hourlyRate={selectedContract.hourlyRate}
                       durationHours={durationHours}
                       showDetails={true}
+                      shiftType={shiftType}
                     />
                   )}
 
