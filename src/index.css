@@ -68,6 +68,47 @@ li {
   max-width: 70ch;
 }
 
+/* ===== Accessibilité : modes activés via data-attributes ===== */
+
+/* Contraste élevé */
+[data-high-contrast] body {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+[data-high-contrast] a {
+  color: #4fc3f7 !important;
+}
+[data-high-contrast] button,
+[data-high-contrast] [role='button'] {
+  border: 2px solid currentColor !important;
+}
+
+/* Texte agrandi (+12%) */
+html[data-large-text] {
+  font-size: 112% !important;
+}
+
+/* Mouvement réduit (priorité utilisateur > préférence OS) */
+[data-reduced-motion] *,
+[data-reduced-motion] *::before,
+[data-reduced-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Optimisation lecteur d'écran : focus bien visible sur tous les éléments */
+[data-screen-reader] :focus,
+[data-screen-reader] :focus-visible {
+  outline: 3px solid #0056e0 !important;
+  outline-offset: 4px !important;
+  border-radius: 2px;
+}
+[data-screen-reader] :focus:not(:focus-visible) {
+  outline: 3px solid #0056e0 !important;
+}
+
 /* Masquer visuellement mais garder accessible */
 .visually-hidden {
   position: absolute;
