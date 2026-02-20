@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
-import { addDays, startOfMonth } from 'date-fns'
 import { renderWithProviders } from '@/test/helpers'
 import { createMockShift } from '@/test/fixtures'
 import { MonthView } from './MonthView'
@@ -10,7 +9,6 @@ import type { Absence } from '@/types'
 
 // Mois fixe : février 2026
 const CURRENT_DATE = new Date('2026-02-15T12:00:00')
-const MONTH_START = startOfMonth(CURRENT_DATE) // 2026-02-01
 
 function makeShiftOnDate(date: Date, overrides = {}) {
   return createMockShift({
