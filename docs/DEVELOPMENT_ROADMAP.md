@@ -588,8 +588,10 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 
 **Impact**: 🟡 IMPORTANT - Mission critique du projet
 **Effort**: 1 jour
-**Statut**: ❌ À CORRIGER
+**Statut**: 🟡 EN COURS (toggles settings implémentés ✅, ARIA live regions partielles)
 **Découvert**: Audit 09/02/2026
+
+> ✅ **19/02/2026** — Toggles d'accessibilité fonctionnels : contraste élevé, mouvement réduit, optimisation lecteur d'écran, taille du texte ajustable (slider 80–150%).
 
 #### Emojis dans les Boutons (LoginForm, SignupForm)
 
@@ -599,9 +601,8 @@ Les boutons d'affichage/masquage du mot de passe utilisent des emojis (`🙈` / 
 
 **Actions**:
 ```
-[ ] Remplacer les emojis par des icônes SVG (Chakra UI icons ou lucide-react)
-[ ] Exemple : <EyeIcon /> et <EyeOffIcon />
-[ ] Garder les aria-label existants
+[x] Remplacer les emojis par des icônes SVG (PasswordToggleButton, SVG inline) (19/02/2026)
+[x] aria-hidden="true" sur les SVG, aria-label sur le bouton
 ```
 
 **Effort**: 30 min
@@ -1511,7 +1512,7 @@ npx playwright install
    - [x] 13/13 services testés (488 tests services au total)
    - [x] 4/8 hooks testés (useNotifications, useComplianceCheck, useShiftReminders)
    - [x] Couverture services : 91.42% statements
-   - [ ] Setup GitHub Actions coverage (30 min)
+   - [x] Setup GitHub Actions coverage (30 min)
 
 ### Semaine 8 - Bilan (17 février) ✅
 
@@ -1548,7 +1549,14 @@ npx playwright install
     - [x] `docs/PCH_PRESTATION_COMPENSATION_HANDICAP.md` — tarifs 2026, connexion IDCC 3239
     - [x] Plan d'implémentation 4 niveaux intégré dans la roadmap
 
-12. **Début tests composants UI** (Phase 3, pour atteindre 60%)
+12. **Toggles d'accessibilité fonctionnels** ✅ (19/02/2026)
+    - [x] `AccessibilityApplier` dans `App.tsx` — data-attributes sur `<html>` réactifs au store Zustand
+    - [x] Contraste élevé : fond noir / texte blanc (`[data-high-contrast]`)
+    - [x] Mouvement réduit : animations/transitions à 0ms (`[data-reduced-motion]`)
+    - [x] Lecteur d'écran : focus ring 3px bleu sur tous les éléments (`[data-screen-reader]`)
+    - [x] Taille du texte : toggle on/off + slider 80–150% (pas 5%, défaut 120%) — scale tous les `rem` Chakra UI
+
+13. **Début tests composants UI** (Phase 3, pour atteindre 60%)
     - [ ] Dashboard widgets prioritaires
     - [ ] Planning views (WeekView, MonthView)
 

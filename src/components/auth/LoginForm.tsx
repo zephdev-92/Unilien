@@ -9,10 +9,9 @@ import {
   Text,
   Link,
   Alert,
-  IconButton,
 } from '@chakra-ui/react'
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
-import { AccessibleInput, AccessibleButton } from '@/components/ui'
+import { AccessibleInput, AccessibleButton, PasswordToggleButton } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 
 // Schéma de validation
@@ -122,15 +121,10 @@ export function LoginForm() {
               error={errors.password?.message}
               required
               rightElement={
-                <IconButton
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  variant="ghost"
-                  size="sm"
+                <PasswordToggleButton
+                  visible={showPassword}
                   onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={0}
-                >
-                  {showPassword ? '🙈' : '👁️'}
-                </IconButton>
+                />
               }
               {...register('password')}
             />
