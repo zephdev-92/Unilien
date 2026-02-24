@@ -63,10 +63,12 @@ export function useShiftValidationData({
       .catch(() => dispatch({ type: 'CONTRACTS_LOADED', contracts: [] }))
 
     const centerDate = defaultDate || new Date()
+    // ±4 semaines autour de la date cible : suffisant pour toutes les règles IDCC 3239
+    // (repos hebdomadaire 35h, heures semaine, repos journalier 11h, nuits consécutives).
     const startDate = new Date(centerDate)
-    startDate.setMonth(startDate.getMonth() - 1)
+    startDate.setDate(startDate.getDate() - 28)
     const endDate = new Date(centerDate)
-    endDate.setMonth(endDate.getMonth() + 2)
+    endDate.setDate(endDate.getDate() + 28)
 
     getShifts(employerId, 'employer', startDate, endDate)
       .then((shifts) => {
