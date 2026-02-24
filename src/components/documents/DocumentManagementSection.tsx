@@ -2,7 +2,7 @@
  * Section de gestion des documents (absences, justificatifs)
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   VStack,
   HStack,
@@ -86,7 +86,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   const [employeesForPayslip, setEmployeesForPayslip] = useState<PayslipEmployee[]>([])
 
   // Charger les documents
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
@@ -102,12 +102,15 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [employerId])
 
   useEffect(() => {
+    let cancelled = false
+
     loadDocuments()
     // Charger les employés actifs pour le générateur de bulletins
     getContractsForEmployer(employerId).then((contracts) => {
+      if (cancelled) return
       setEmployeesForPayslip(
         contracts
           .filter((c) => c.employee)
@@ -119,8 +122,9 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
           }))
       )
     }).catch((err) => logger.error('Erreur chargement employés bulletins:', err))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employerId])
+
+    return () => { cancelled = true }
+  }, [employerId, loadDocuments])
 
   // Filtrer les documents selon l'onglet actif
   const filteredDocuments = documents.filter((doc) => {
