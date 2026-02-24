@@ -37,8 +37,8 @@ export function calculateShiftPay(
   )
   const durationHours = durationMinutes / 60
 
-  // Salaire de base
-  const basePay = durationHours * hourlyRate
+  // Salaire de base (pour guard_24h, sera recalculé segment par segment)
+  let basePay = durationHours * hourlyRate
 
   // Majoration dimanche (+30%)
   let sundayMajoration = 0
@@ -81,8 +81,83 @@ export function calculateShiftPay(
     overtimeMajoration += beyond8h * hourlyRate * MAJORATION_RATES.OVERTIME_BEYOND_8H
   }
 
+  // Présence responsable (jour : conversion 2/3, nuit : forfaitaire 1/4)
+  let presenceResponsiblePay = 0
+  let nightPresenceAllowance = 0
+  const shiftType = shift.shiftType || 'effective'
+
+  if (shiftType === 'presence_day') {
+    // Présence responsable de jour : 1h = 2/3h de travail effectif (Art. 137.1 IDCC 3239)
+    const effectiveHours = durationHours * (2 / 3)
+    presenceResponsiblePay = effectiveHours * hourlyRate
+  } else if (shiftType === 'presence_night') {
+    const isRequalified = (shift.nightInterventionsCount ?? 0) >= 4
+    if (isRequalified) {
+      // Requalification : toute la plage est rémunérée en travail effectif (Art. 148 IDCC 3239)
+      nightPresenceAllowance = durationHours * hourlyRate
+    } else {
+      // Indemnité forfaitaire >= 1/4 du salaire contractuel horaire
+      nightPresenceAllowance = durationHours * hourlyRate * 0.25
+    }
+  } else if (shiftType === 'guard_24h' && shift.guardSegments?.length) {
+    // ── Garde 24h N segments libres ───────────────────────────────
+    // basePay recalculé : seulement les segments effectifs (hors pause)
+    // presenceResponsiblePay : seulement les segments présence_day (×2/3)
+    nightMajoration = 0
+    const isNightRequalified = (shift.nightInterventionsCount ?? 0) >= 4
+    const segs = shift.guardSegments
+    let guard24hEffectivePay = 0
+
+    for (let i = 0; i < segs.length; i++) {
+      const seg = segs[i]
+      // La fin du segment = début du suivant ; pour le dernier → startTime du shift (+24h)
+      const segEnd = segs[i + 1]?.startTime ?? segs[0].startTime
+      const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
+      const durH = durMins / 60
+
+      if (seg.type === 'effective') {
+        const effH = Math.max(0, durMins - (seg.breakMinutes ?? 0)) / 60
+        // Salaire effectif → basePay (affiché comme "Salaire de base" dans le détail)
+        guard24hEffectivePay += effH * hourlyRate
+        // Majoration nuit (+20%) automatique sur les heures 21h-6h de ce segment effectif
+        const segNightH = calculateNightHours(shift.date, seg.startTime, segEnd)
+        nightMajoration += segNightH * hourlyRate * MAJORATION_RATES.NIGHT
+
+      } else if (seg.type === 'presence_day') {
+        // Présence jour : coefficient 2/3 (Art. 137.1 IDCC 3239)
+        presenceResponsiblePay += durH * (2 / 3) * hourlyRate
+
+      } else if (seg.type === 'presence_night') {
+        // Présence nuit : forfaitaire 1/4 ou 100% si requalifié (Art. 148 IDCC 3239)
+        nightPresenceAllowance += isNightRequalified
+          ? durH * hourlyRate
+          : durH * hourlyRate * 0.25
+      }
+    }
+
+    // Remplacer basePay par le salaire effectif calculé segment par segment
+    basePay = guard24hEffectivePay
+
+    // Majorations dimanche/férié sur la paie rémunérée (effectif + présence jour)
+    const guard24hPayBase = guard24hEffectivePay + presenceResponsiblePay
+    sundayMajoration = isSunday(shift.date)
+      ? guard24hPayBase * MAJORATION_RATES.SUNDAY
+      : 0
+    holidayMajoration = isPublicHoliday(shift.date)
+      ? guard24hPayBase * (isHabitualWorkOnHolidays
+          ? MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED
+          : MAJORATION_RATES.PUBLIC_HOLIDAY_EXCEPTIONAL)
+      : 0
+  }
+
   // Total
-  const totalPay = basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
+  const totalPay = shiftType === 'effective'
+    ? basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
+    : shiftType === 'presence_day'
+      ? presenceResponsiblePay + sundayMajoration + holidayMajoration
+      : shiftType === 'guard_24h'
+        ? basePay + presenceResponsiblePay + nightPresenceAllowance + sundayMajoration + holidayMajoration + nightMajoration
+        : nightPresenceAllowance + nightMajoration
 
   return {
     basePay: Math.round(basePay * 100) / 100,
@@ -90,6 +165,8 @@ export function calculateShiftPay(
     holidayMajoration: Math.round(holidayMajoration * 100) / 100,
     nightMajoration: Math.round(nightMajoration * 100) / 100,
     overtimeMajoration: Math.round(overtimeMajoration * 100) / 100,
+    presenceResponsiblePay: Math.round(presenceResponsiblePay * 100) / 100,
+    nightPresenceAllowance: Math.round(nightPresenceAllowance * 100) / 100,
     totalPay: Math.round(totalPay * 100) / 100,
   }
 }
@@ -228,6 +305,20 @@ export function getPayBreakdown(pay: ComputedPay): Array<{
     breakdown.push({
       label: 'Majoration heures supplémentaires',
       amount: pay.overtimeMajoration,
+    })
+  }
+
+  if (pay.presenceResponsiblePay > 0) {
+    breakdown.push({
+      label: 'Présence responsable jour (×2/3)',
+      amount: pay.presenceResponsiblePay,
+    })
+  }
+
+  if (pay.nightPresenceAllowance > 0) {
+    breakdown.push({
+      label: 'Indemnité présence de nuit',
+      amount: pay.nightPresenceAllowance,
     })
   }
 

@@ -256,6 +256,201 @@ describe('calculateShiftPay', () => {
       expect(pay.totalPay).toBe(103.5) // 45 + 13.5 + 45
     })
   })
+
+  describe('Présence responsable de jour (presence_day)', () => {
+    it('devrait calculer 2/3 des heures en salaire effectif (Art. 137.1 IDCC 3239)', () => {
+      // 12h de présence jour → 8h effectives rémunérées
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-15', '08:00', '20:00'),
+        shiftType: 'presence_day',
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.presenceResponsiblePay).toBe(96) // 12 * (2/3) * 12 = 96
+      expect(pay.basePay).toBe(144) // 12h * 12€ (non utilisé dans total)
+      expect(pay.totalPay).toBe(96)
+    })
+
+    it('devrait appliquer majoration dimanche sur présence_day', () => {
+      // Dimanche 12h de présence jour
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-19', '08:00', '20:00'),
+        shiftType: 'presence_day',
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      // presenceResponsiblePay = 12h × 2/3 × 12€ = 96€
+      expect(pay.presenceResponsiblePay).toBe(96)
+      // sundayMajoration basé sur basePay = 12h × 12€ × 0.30 = 43.2€
+      expect(pay.sundayMajoration).toBe(43.2)
+      expect(pay.totalPay).toBe(139.2) // 96 + 43.2
+    })
+  })
+
+  describe('Présence de nuit (presence_night)', () => {
+    it('devrait calculer indemnité forfaitaire 1/4 du taux horaire sans requalification', () => {
+      // 10h de présence nuit, 0 interventions
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-15', '21:00', '07:00'),
+        shiftType: 'presence_night',
+        nightInterventionsCount: 0,
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.nightPresenceAllowance).toBe(30) // 10h * 12€ * 0.25
+      expect(pay.totalPay).toBe(30)
+    })
+
+    it('devrait requalifier en travail effectif à 100% si >= 4 interventions (Art. 148 IDCC 3239)', () => {
+      // 10h de présence nuit, 4 interventions → requalification
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-15', '21:00', '07:00'),
+        shiftType: 'presence_night',
+        nightInterventionsCount: 4,
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.nightPresenceAllowance).toBe(120) // 10h * 12€ * 1.00
+      expect(pay.totalPay).toBe(120)
+    })
+  })
+
+  describe('Garde 24h — N segments libres (guard_24h)', () => {
+    it('devrait calculer une garde 2 segments (effectif + présence nuit)', () => {
+      // Garde jeudi : 10h-22h effectif (12h) + 22h-10h présence nuit (12h)
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-16', '10:00', '10:00'),
+        shiftType: 'guard_24h',
+        nightInterventionsCount: 0,
+        guardSegments: [
+          { startTime: '10:00', type: 'effective', breakMinutes: 0 },
+          { startTime: '22:00', type: 'presence_night' },
+        ],
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      // Seg effectif 10-22 : 12h × 12€ = 144€ → dans basePay
+      expect(pay.basePay).toBe(144)
+      expect(pay.presenceResponsiblePay).toBe(0) // pas de présence_day ici
+      // Seg présence nuit 22-10 : 12h × 12€ × 0.25 = 36€
+      expect(pay.nightPresenceAllowance).toBe(36)
+      // Heures de nuit sur segment effectif : 21h-22h = 1h × 12€ × 0.20 = 2.4€
+      expect(pay.nightMajoration).toBe(2.4)
+      expect(pay.sundayMajoration).toBe(0)
+      expect(pay.totalPay).toBe(182.4)
+    })
+
+    it("devrait calculer la garde 5 segments de l'exemple utilisateur", () => {
+      // 10h→13h effectif | 13h→18h30 présence_jour | 18h30→22h effectif
+      // 22h→07h présence_nuit | 07h→10h effectif → total effectif 9.5h ≤ 12h ✅
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-16', '10:00', '10:00'),
+        shiftType: 'guard_24h',
+        nightInterventionsCount: 0,
+        guardSegments: [
+          { startTime: '10:00', type: 'effective', breakMinutes: 0 },
+          { startTime: '13:00', type: 'presence_day' },
+          { startTime: '18:30', type: 'effective', breakMinutes: 0 },
+          { startTime: '22:00', type: 'presence_night' },
+          { startTime: '07:00', type: 'effective', breakMinutes: 0 },
+        ],
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      // Effectif 10→13 : 3h × 12 = 36€
+      // Effectif 18h30→22h : 3.5h × 12 = 42€
+      // Effectif 07→10 : 3h × 12 = 36€
+      expect(pay.basePay).toBe(114) // 36 + 42 + 36 → salaire effectif
+      // Présence jour 13→18h30 : 5.5h × 2/3 × 12 = 44€
+      expect(pay.presenceResponsiblePay).toBe(44)
+      // Présence nuit 22h→07h : 9h × 12 × 0.25 = 27€
+      expect(pay.nightPresenceAllowance).toBe(27)
+      // Nuit sur segment effectif 18h30→22h : 21h→22h = 1h × 12 × 0.20 = 2.4€
+      expect(pay.nightMajoration).toBe(2.4)
+      expect(pay.sundayMajoration).toBe(0)
+      expect(pay.totalPay).toBe(187.4) // 114 + 44 + 27 + 2.4
+    })
+
+    it('devrait appliquer majoration dimanche sur presenceResponsiblePay (pas basePay)', () => {
+      // Même garde 2 segments mais un dimanche
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-19', '10:00', '10:00'), // Dimanche
+        shiftType: 'guard_24h',
+        nightInterventionsCount: 0,
+        guardSegments: [
+          { startTime: '10:00', type: 'effective', breakMinutes: 0 },
+          { startTime: '22:00', type: 'presence_night' },
+        ],
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.basePay).toBe(144) // effectif 10-22h
+      expect(pay.presenceResponsiblePay).toBe(0) // pas de présence_day
+      // Majoration dimanche sur basePay (144€), pas l'ancien basePay 24h (288€)
+      expect(pay.sundayMajoration).toBe(43.2) // 144 * 0.30
+      expect(pay.nightPresenceAllowance).toBe(36)
+      expect(pay.nightMajoration).toBe(2.4)
+      expect(pay.totalPay).toBe(225.6) // 144 + 36 + 43.2 + 2.4
+    })
+
+    it('devrait requalifier les segments présence_nuit si >= 4 interventions', () => {
+      // Garde 2 segments avec 4 interventions → requalification nuit 100%
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-16', '10:00', '10:00'),
+        shiftType: 'guard_24h',
+        nightInterventionsCount: 4,
+        guardSegments: [
+          { startTime: '10:00', type: 'effective', breakMinutes: 0 },
+          { startTime: '22:00', type: 'presence_night' },
+        ],
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.basePay).toBe(144) // effectif 10-22h
+      expect(pay.presenceResponsiblePay).toBe(0)
+      // Requalifié : 12h × 12€ × 1.00 = 144€ (pas 36€)
+      expect(pay.nightPresenceAllowance).toBe(144)
+      expect(pay.totalPay).toBe(290.4) // 144 + 144 + 2.4
+    })
+
+    it('devrait déduire les breakMinutes des segments effectifs', () => {
+      // Garde simple : effectif 8h avec 30 min de pause → 7.5h rémunérées
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-16', '10:00', '10:00'),
+        shiftType: 'guard_24h',
+        nightInterventionsCount: 0,
+        guardSegments: [
+          { startTime: '10:00', type: 'effective', breakMinutes: 30 },
+          { startTime: '18:00', type: 'presence_night' },
+        ],
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      // Seg effectif 10→18 : 8h - 30min pause = 7.5h × 12€ = 90€ → basePay
+      expect(pay.basePay).toBe(90)
+      expect(pay.presenceResponsiblePay).toBe(0)
+      // Seg présence nuit 18→10 : 16h × 12 × 0.25 = 48€
+      expect(pay.nightPresenceAllowance).toBe(48)
+    })
+  })
 })
 
 describe('calculateMonthlyEstimate', () => {
@@ -310,6 +505,8 @@ describe('getPayBreakdown', () => {
       holidayMajoration: 0,
       nightMajoration: 0,
       overtimeMajoration: 0,
+      presenceResponsiblePay: 0,
+      nightPresenceAllowance: 0,
       totalPay: 96,
     }
 
@@ -327,6 +524,8 @@ describe('getPayBreakdown', () => {
       holidayMajoration: 96,
       nightMajoration: 4.8,
       overtimeMajoration: 12,
+      presenceResponsiblePay: 0,
+      nightPresenceAllowance: 0,
       totalPay: 237.6,
     }
 
@@ -346,6 +545,8 @@ describe('getPayBreakdown', () => {
       holidayMajoration: 0,
       nightMajoration: 4.8,
       overtimeMajoration: 0,
+      presenceResponsiblePay: 0,
+      nightPresenceAllowance: 0,
       totalPay: 129.6,
     }
 

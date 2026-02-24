@@ -9,7 +9,6 @@ import {
   Textarea,
   Separator,
   Badge,
-  Switch,
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,11 +20,28 @@ import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compl
 import { updateShift, deleteShift, validateShift, getShifts } from '@/services/shiftService'
 import { getContractById } from '@/services/contractService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
-import { calculateNightHours } from '@/lib/compliance'
 import { sanitizeText } from '@/lib/sanitize'
 import { logger } from '@/lib/logger'
-import type { Shift, UserRole, Contract } from '@/types'
+import type { Shift, ShiftType, UserRole, Contract } from '@/types'
 import type { ShiftForValidation } from '@/lib/compliance'
+import { useShiftNightHours } from '@/hooks/useShiftNightHours'
+import { useShiftRequalification } from '@/hooks/useShiftRequalification'
+import { useShiftEffectiveHours } from '@/hooks/useShiftEffectiveHours'
+import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
+import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
+import { NightActionToggle } from './NightActionToggle'
+
+const SHIFT_TYPE_OPTIONS = [
+  { value: 'effective', label: 'Travail effectif' },
+  { value: 'presence_day', label: 'Présence responsable (jour)' },
+  { value: 'presence_night', label: 'Présence responsable (nuit)' },
+]
+
+const SHIFT_TYPE_LABELS: Record<ShiftType, string> = {
+  effective: 'Travail effectif',
+  presence_day: 'Présence responsable (jour)',
+  presence_night: 'Présence responsable (nuit)',
+}
 
 const shiftSchema = z.object({
   date: z.string().min(1, 'La date est requise'),
@@ -35,6 +51,9 @@ const shiftSchema = z.object({
   tasks: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(['planned', 'completed', 'cancelled', 'absent']),
+}).refine((data) => data.startTime !== data.endTime, {
+  message: "L'heure de fin doit être différente de l'heure de début",
+  path: ['endTime'],
 })
 
 type ShiftFormData = z.infer<typeof shiftSchema>
@@ -90,6 +109,8 @@ export function ShiftDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
   const [hasNightAction, setHasNightAction] = useState(false)
+  const [shiftType, setShiftType] = useState<ShiftType>('effective')
+  const [nightInterventionsCount, setNightInterventionsCount] = useState(0)
 
   const canEdit = userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)
   const canDelete = (userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)) && shift?.status === 'planned'
@@ -121,20 +142,32 @@ export function ShiftDetailModal({
   // Observer les valeurs du formulaire
   const watchedValues = useWatch({ control })
 
-  // Détecter les heures de nuit
-  const nightHoursCount = useMemo(() => {
-    const st = isEditing ? watchedValues.startTime : shift?.startTime
-    const et = isEditing ? watchedValues.endTime : shift?.endTime
-    const d = isEditing ? watchedValues.date : (shift ? format(new Date(shift.date), 'yyyy-MM-dd') : null)
-    if (!st || !et || !d) return 0
-    try {
-      return calculateNightHours(new Date(d), st, et)
-    } catch {
-      return 0
-    }
-  }, [isEditing, watchedValues.startTime, watchedValues.endTime, watchedValues.date, shift])
+  // Sources de données selon le mode édition/lecture
+  const stForHooks = isEditing ? watchedValues.startTime : shift?.startTime
+  const etForHooks = isEditing ? watchedValues.endTime : shift?.endTime
+  const bdForHooks = isEditing ? (watchedValues.breakDuration || 0) : (shift?.breakDuration || 0)
+  const dateForHooks = isEditing
+    ? watchedValues.date
+    : (shift ? format(new Date(shift.date), 'yyyy-MM-dd') : undefined)
 
-  const hasNightHours = nightHoursCount > 0
+  // Heures de nuit (21h–6h)
+  const { nightHoursCount, hasNightHours } = useShiftNightHours({
+    startTime: stForHooks,
+    endTime: etForHooks,
+    date: dateForHooks,
+  })
+
+  // Requalification présence de nuit (>= 4 interventions)
+  const { isRequalified } = useShiftRequalification({ shiftType, nightInterventionsCount })
+
+  // Heures effectives pondérées selon le type (édition uniquement — vue utilise shift.effectiveHours)
+  const { effectiveHoursComputed } = useShiftEffectiveHours({
+    startTime: stForHooks,
+    endTime: etForHooks,
+    breakDuration: bdForHooks,
+    shiftType,
+    isRequalified,
+  })
 
   // Construire l'objet shift pour validation compliance
   const shiftForCompliance = useMemo(() => {
@@ -149,9 +182,11 @@ export function ShiftDetailModal({
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,
       breakDuration: watchedValues.breakDuration || 0,
-      hasNightAction: hasNightHours ? hasNightAction : undefined,
+      hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+      shiftType,
+      nightInterventionsCount: shiftType === 'presence_night' ? nightInterventionsCount : undefined,
     }
-  }, [watchedValues, contract, shift, isEditing, hasNightHours, hasNightAction])
+  }, [watchedValues, contract, shift, isEditing, hasNightHours, hasNightAction, shiftType, nightInterventionsCount])
 
   // Hook de validation de conformité (seulement en mode édition)
   const {
@@ -199,6 +234,7 @@ export function ShiftDetailModal({
             startTime: s.startTime,
             endTime: s.endTime,
             breakDuration: s.breakDuration,
+            shiftType: s.shiftType,
           }))
           setExistingShifts(shiftsForValidation)
         })
@@ -215,6 +251,8 @@ export function ShiftDetailModal({
         status: shift.status,
       })
       setHasNightAction(shift.hasNightAction ?? false)
+      setShiftType(shift.shiftType || 'effective')
+      setNightInterventionsCount(shift.nightInterventionsCount ?? 0)
     }
   }, [isOpen, shift, profileId, userRole, reset])
 
@@ -255,7 +293,11 @@ export function ShiftDetailModal({
         breakDuration: data.breakDuration,
         tasks: data.tasks ? data.tasks.split('\n').filter(Boolean) : [],
         notes: data.notes || undefined,
-        hasNightAction: hasNightHours ? hasNightAction : undefined,
+        hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+        shiftType,
+        nightInterventionsCount: shiftType === 'presence_night' ? nightInterventionsCount : undefined,
+        isRequalified,
+        effectiveHours: effectiveHoursComputed ?? undefined,
         status: data.status,
       })
 
@@ -329,6 +371,11 @@ export function ShiftDetailModal({
     setIsEditing(false)
     setSubmitError(null)
     setAcknowledgeWarnings(false)
+    if (shift) {
+      setHasNightAction(shift.hasNightAction ?? false)
+      setShiftType(shift.shiftType || 'effective')
+      setNightInterventionsCount(shift.nightInterventionsCount ?? 0)
+    }
   }
 
   if (!shift) return null
@@ -447,42 +494,46 @@ export function ShiftDetailModal({
                       {...register('status')}
                     />
 
-                    {/* Toggle action de nuit */}
-                    {hasNightHours && (
-                      <Box
-                        p={4}
-                        bg="purple.50"
-                        borderRadius="lg"
-                        borderWidth="1px"
-                        borderColor="purple.200"
-                      >
-                        <Text fontWeight="medium" color="purple.800" mb={1}>
-                          🌙 Heures de nuit : {nightHoursCount.toFixed(1)}h
-                        </Text>
-                        <Text fontSize="sm" color="purple.600" mb={3}>
-                          La majoration +20% ne s'applique que si un acte est effectué.
-                        </Text>
-                        <Flex
-                          justify="space-between"
-                          align="center"
-                          p={3}
-                          bg="white"
-                          borderRadius="md"
-                        >
-                          <Text fontSize="sm" fontWeight="medium" color="gray.700">
-                            Acte effectué pendant la nuit
-                          </Text>
-                          <Switch.Root
-                            checked={hasNightAction}
-                            onCheckedChange={(e) => setHasNightAction(e.checked)}
-                          >
-                            <Switch.HiddenInput aria-label="Acte effectué pendant les heures de nuit" />
-                            <Switch.Control>
-                              <Switch.Thumb />
-                            </Switch.Control>
-                          </Switch.Root>
-                        </Flex>
-                      </Box>
+                    {/* Type d'intervention */}
+                    <AccessibleSelect
+                      label="Type d'intervention"
+                      options={SHIFT_TYPE_OPTIONS}
+                      value={shiftType}
+                      onChange={(e) => {
+                        const newType = e.target.value as ShiftType
+                        setShiftType(newType)
+                        if (newType !== 'presence_night') setNightInterventionsCount(0)
+                        if (newType !== 'effective') setHasNightAction(false)
+                      }}
+                    />
+
+                    {/* Section présence responsable JOUR (édition) */}
+                    {shiftType === 'presence_day' && (
+                      <PresenceResponsibleDaySection
+                        durationHours={durationHours}
+                        effectiveHoursComputed={effectiveHoursComputed}
+                      />
+                    )}
+
+                    {/* Section présence responsable NUIT (édition) */}
+                    {shiftType === 'presence_night' && (
+                      <PresenceResponsibleNightSection
+                        mode="edit"
+                        durationHours={durationHours}
+                        nightInterventionsCount={nightInterventionsCount}
+                        isRequalified={isRequalified}
+                        onInterventionCountChange={setNightInterventionsCount}
+                      />
+                    )}
+
+                    {/* Toggle action de nuit — uniquement pour travail effectif */}
+                    {shiftType === 'effective' && hasNightHours && (
+                      <NightActionToggle
+                        mode="edit"
+                        nightHoursCount={nightHoursCount}
+                        hasNightAction={hasNightAction}
+                        onToggle={setHasNightAction}
+                      />
                     )}
 
                     <Separator />
@@ -502,6 +553,7 @@ export function ShiftDetailModal({
                         hourlyRate={contract.hourlyRate}
                         durationHours={durationHours}
                         showDetails={true}
+                        shiftType={shiftType}
                       />
                     )}
 
@@ -560,22 +612,47 @@ export function ShiftDetailModal({
                     </Text>
                   </Box>
 
-                  {/* Indicateur heures de nuit */}
-                  {hasNightHours && (
-                    <Box p={3} bg="purple.50" borderRadius="md">
-                      <Flex align="center" gap={2}>
-                        <Text>🌙</Text>
-                        <Box>
-                          <Text fontSize="sm" fontWeight="medium" color="purple.800">
-                            {nightHoursCount.toFixed(1)}h de nuit
-                            {shift.hasNightAction
-                              ? ' — Acte effectué (majoration +20%)'
-                              : ' — Présence seule (pas de majoration)'
-                            }
-                          </Text>
-                        </Box>
-                      </Flex>
+                  {/* Type d'intervention */}
+                  {shift.shiftType && shift.shiftType !== 'effective' && (
+                    <Box>
+                      <Text fontWeight="medium" color="gray.500" fontSize="sm" mb={1}>
+                        Type d'intervention
+                      </Text>
+                      <Badge
+                        colorPalette={shift.shiftType === 'presence_day' ? 'blue' : 'purple'}
+                        size="lg"
+                      >
+                        {SHIFT_TYPE_LABELS[shift.shiftType]}
+                      </Badge>
                     </Box>
+                  )}
+
+                  {/* Détail présence responsable JOUR */}
+                  {shift.shiftType === 'presence_day' && (
+                    <PresenceResponsibleDaySection
+                      mode="view"
+                      durationHours={displayDuration}
+                      effectiveHoursComputed={shift.effectiveHours ?? (displayDuration * (2 / 3))}
+                    />
+                  )}
+
+                  {/* Détail présence responsable NUIT */}
+                  {shift.shiftType === 'presence_night' && (
+                    <PresenceResponsibleNightSection
+                      mode="view"
+                      displayDuration={displayDuration}
+                      nightInterventionsCount={shift.nightInterventionsCount ?? null}
+                      isRequalified={shift.isRequalified ?? null}
+                    />
+                  )}
+
+                  {/* Indicateur heures de nuit (travail effectif uniquement) */}
+                  {shift.shiftType !== 'presence_night' && hasNightHours && (
+                    <NightActionToggle
+                      mode="view"
+                      nightHoursCount={nightHoursCount}
+                      hasNightAction={shift.hasNightAction ?? false}
+                    />
                   )}
 
                   {/* Auxiliaire */}
@@ -635,6 +712,7 @@ export function ShiftDetailModal({
                         hourlyRate={contract?.hourlyRate || 0}
                         durationHours={displayDuration}
                         showDetails={false}
+                        shiftType={shift.shiftType}
                       />
                     </Box>
                   )}

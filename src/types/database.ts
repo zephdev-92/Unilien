@@ -102,6 +102,14 @@ export interface ContractWithEmployerDbRow extends ContractDbRow {
 // SHIFT
 // ============================================================
 
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
+
+export interface GuardSegmentDb {
+  startTime: string   // "HH:mm"
+  type: 'effective' | 'presence_day' | 'presence_night'
+  breakMinutes?: number
+}
+
 export interface ShiftDbRow {
   id: string
   contract_id: string
@@ -112,6 +120,11 @@ export interface ShiftDbRow {
   tasks: string[] | null
   notes: string | null
   has_night_action: boolean | null // true = acte de nuit (majoration 20%), null/false = présence seule
+  shift_type: ShiftType // Type d'intervention (défaut: 'effective')
+  night_interventions_count: number | null // Nombre d'interventions pendant présence nuit
+  is_requalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
+  effective_hours: number | null // Heures effectives après conversion (2/3 pour présence jour)
+  guard_segments: GuardSegmentDb[] | null // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   created_at: string
   updated_at: string
@@ -124,13 +137,35 @@ export interface ShiftDbRow {
 export interface AbsenceDbRow {
   id: string
   employee_id: string
-  absence_type: 'sick' | 'vacation' | 'training' | 'unavailable' | 'emergency'
+  absence_type: 'sick' | 'vacation' | 'family_event' | 'training' | 'unavailable' | 'emergency'
   start_date: string
   end_date: string
   reason: string | null
   justification_url: string | null
   status: 'pending' | 'approved' | 'rejected'
+  business_days_count: number | null
+  justification_due_date: string | null
+  family_event_type: string | null
+  leave_year: string | null
   created_at: string
+}
+
+// ============================================================
+// LEAVE BALANCE
+// ============================================================
+
+export interface LeaveBalanceDbRow {
+  id: string
+  employee_id: string
+  employer_id: string
+  contract_id: string
+  leave_year: string
+  acquired_days: number
+  taken_days: number
+  adjustment_days: number
+  is_manual_init: boolean
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================

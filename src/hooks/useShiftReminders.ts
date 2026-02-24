@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { getUpcomingShiftsForEmployee } from '@/services/shiftService'
 import {
+  getAlreadyNotifiedShiftIds,
   getProfileName,
   createShiftReminderNotification,
 } from '@/services/notificationService'
 import { logger } from '@/lib/logger'
-import type { ContractDbRow } from '@/types/database'
 
 /**
  * Hook qui crée des rappels de notification pour les shifts des prochaines 24h.
@@ -23,7 +23,6 @@ export function useShiftReminders(userId: string | undefined, role: string | und
 
     async function checkAndCreateReminders() {
       try {
-        // 1. Récupérer les shifts des prochaines 24h
         const now = new Date()
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
@@ -31,48 +30,21 @@ export function useShiftReminders(userId: string | undefined, role: string | und
         const todayStr = now.toISOString().split('T')[0]
         const tomorrowStr = tomorrow.toISOString().split('T')[0]
 
-        const { data: shifts, error: shiftsError } = await supabase
-          .from('shifts')
-          .select(`
-            id,
-            date,
-            start_time,
-            contract_id,
-            contract:contracts!inner(
-              employer_id,
-              employee_id
-            )
-          `)
-          .eq('contract.employee_id', userId)
-          .eq('status', 'planned')
-          .gte('date', todayStr)
-          .lte('date', tomorrowStr)
-
-        if (shiftsError || !shifts || shifts.length === 0) return
+        // 1. Récupérer les shifts des prochaines 24h
+        const shifts = await getUpcomingShiftsForEmployee(userId!, todayStr, tomorrowStr)
+        if (shifts.length === 0) return
 
         // 2. Vérifier quels rappels existent déjà
-        const { data: existingNotifs } = await supabase
-          .from('notifications')
-          .select('data')
-          .eq('user_id', userId)
-          .eq('type', 'shift_reminder')
-          .gte('created_at', new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString())
-
-        const alreadyNotifiedShiftIds = new Set(
-          (existingNotifs || [])
-            .map((n) => (n.data as Record<string, unknown>)?.shiftId as string)
-            .filter(Boolean)
-        )
+        const since = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+        const alreadyNotifiedShiftIds = await getAlreadyNotifiedShiftIds(userId!, since)
 
         // 3. Créer les rappels manquants
         for (const shift of shifts) {
           if (alreadyNotifiedShiftIds.has(shift.id)) continue
-
-          const contract = shift.contract as ContractDbRow | undefined
-          if (!contract) continue
+          if (!shift.contract) continue
 
           try {
-            const employerName = await getProfileName(contract.employer_id)
+            const employerName = await getProfileName(shift.contract.employer_id)
             await createShiftReminderNotification(
               userId!,
               employerName,

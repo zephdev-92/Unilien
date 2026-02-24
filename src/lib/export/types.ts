@@ -95,3 +95,71 @@ export const MONTHS_FR = [
 export function getMonthLabel(year: number, month: number): string {
   return `${MONTHS_FR[month - 1]} ${year}`
 }
+
+// ─── Bulletin de paie ────────────────────────────────────────────────────────
+
+/** Une ligne de cotisation (salariale ou patronale) */
+export interface CotisationLine {
+  label: string
+  base: number      // Assiette de calcul
+  rate: number      // Taux en décimal (ex: 0.068 pour 6.8%)
+  amount: number    // Montant calculé (0 si exonérée)
+  isEmployer: boolean
+  exempted?: boolean  // true = exonérée (montant = 0)
+}
+
+/** Résultat complet du calcul des cotisations */
+export interface CotisationsResult {
+  passMonthly: number
+  smicMonthly: number
+  grossPay: number
+  employeeCotisations: CotisationLine[]
+  totalEmployeeDeductions: number
+  employerCotisations: CotisationLine[]
+  totalEmployerContributions: number
+  netImposable: number
+  pasAmount: number
+  netAPayer: number
+  pasRate: number
+  isExemptPatronalSS: boolean
+}
+
+/** Données complètes pour générer un bulletin de paie individuel */
+export interface PayslipData {
+  year: number
+  month: number
+  periodLabel: string
+  // Employeur
+  employerId: string
+  employerFirstName: string
+  employerLastName: string
+  employerAddress: string
+  // Employé
+  employeeId: string
+  employeeFirstName: string
+  employeeLastName: string
+  // Contrat
+  contractType: 'CDI' | 'CDD'
+  hourlyRate: number
+  weeklyHours: number
+  // Détail du brut
+  totalHours: number
+  normalHours: number
+  sundayHours: number
+  holidayHours: number
+  nightHours: number
+  overtimeHours: number
+  basePay: number
+  sundayMajoration: number
+  holidayMajoration: number
+  nightMajoration: number
+  overtimeMajoration: number
+  presenceResponsiblePay: number
+  nightPresenceAllowance: number
+  totalGrossPay: number
+  shiftsCount: number
+  // Cotisations calculées
+  cotisations: CotisationsResult
+  generatedAt: Date
+  isExemptPatronalSS: boolean
+}

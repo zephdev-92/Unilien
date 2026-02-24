@@ -20,7 +20,8 @@ export interface Profile {
 // Paramètres d'accessibilité
 export interface AccessibilitySettings {
   highContrast: boolean
-  largeText: boolean
+  largeText: boolean         // active le texte agrandi
+  textScale: number          // 80–130, taille choisie quand largeText = true
   reducedMotion: boolean
   screenReaderOptimized: boolean
   voiceControlEnabled: boolean
@@ -155,6 +156,16 @@ export interface Contract {
   updatedAt: Date
 }
 
+// Type d'intervention (Convention Collective IDCC 3239)
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
+
+// Segment d'une Garde 24h libre (N segments)
+export interface GuardSegment {
+  startTime: string   // "HH:mm" — début du segment
+  type: 'effective' | 'presence_day' | 'presence_night'
+  breakMinutes?: number   // minutes de pause, seulement pour type='effective'
+}
+
 // Intervention (Shift)
 export interface Shift {
   id: string
@@ -162,10 +173,15 @@ export interface Shift {
   date: Date
   startTime: string
   endTime: string
-  breakDuration: number // minutes
+  breakDuration: number // minutes — pour guard_24h : somme des breakMinutes des segments effectifs
   tasks: string[]
   notes?: string
   hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule
+  shiftType: ShiftType // Type d'intervention (défaut: 'effective')
+  nightInterventionsCount?: number // Nombre d'interventions pendant présence nuit
+  isRequalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
+  effectiveHours?: number // Heures effectives après conversion (2/3 pour présence jour)
+  guardSegments?: GuardSegment[] // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   computedPay: ComputedPay
   validatedByEmployer: boolean
@@ -181,6 +197,8 @@ export interface ComputedPay {
   holidayMajoration: number
   nightMajoration: number
   overtimeMajoration: number
+  presenceResponsiblePay: number // Heures converties (2/3) × taux horaire (présence jour)
+  nightPresenceAllowance: number // Indemnité forfaitaire nuit (>= 1/4 du taux horaire)
   totalPay: number
 }
 
@@ -211,16 +229,50 @@ export interface Attachment {
 }
 
 // Absence
+export type AbsenceType = 'sick' | 'vacation' | 'family_event' | 'training' | 'unavailable' | 'emergency'
+
 export interface Absence {
   id: string
   employeeId: string
-  absenceType: 'sick' | 'vacation' | 'training' | 'unavailable' | 'emergency'
+  absenceType: AbsenceType
   startDate: Date
   endDate: Date
   reason?: string
   justificationUrl?: string
   status: 'pending' | 'approved' | 'rejected'
+  businessDaysCount?: number
+  justificationDueDate?: Date
+  familyEventType?: FamilyEventType
+  leaveYear?: string
   createdAt: Date
+}
+
+// Types d'événements familiaux (IDCC 3239)
+export type FamilyEventType =
+  | 'marriage'
+  | 'pacs'
+  | 'birth'
+  | 'adoption'
+  | 'death_spouse'
+  | 'death_parent'
+  | 'death_child'
+  | 'death_sibling'
+  | 'death_in_law'
+  | 'child_marriage'
+  | 'disability_announcement'
+
+// Solde de congés
+export interface LeaveBalance {
+  id: string
+  employeeId: string
+  employerId: string
+  contractId: string
+  leaveYear: string
+  acquiredDays: number
+  takenDays: number
+  adjustmentDays: number
+  remainingDays: number
+  isManualInit: boolean
 }
 
 // Types de notification

@@ -236,50 +236,54 @@ export function MessageInput({
       )}
 
       <Flex gap={3} align="flex-end">
-        {/* Voice input button */}
-        {isVoiceSupported && (
-          <Box position="relative">
-            <IconButton
-              aria-label={isListening ? 'Arrêter la saisie vocale' : 'Saisie vocale'}
-              aria-pressed={isListening}
-              variant={isListening ? 'solid' : 'ghost'}
-              colorPalette={isListening ? 'red' : 'blue'}
-              onClick={handleVoiceToggle}
-              disabled={disabled || isSending}
-              minW="44px"
-              minH="44px"
-              css={{
-                ...(isListening && {
-                  animation: 'voicePulse 1.5s ease-in-out infinite',
-                  '@keyframes voicePulse': {
-                    '0%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0.4)' },
-                    '70%': { boxShadow: '0 0 0 10px rgba(229, 62, 62, 0)' },
-                    '100%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0)' },
-                  },
-                }),
-                '@media (prefers-reduced-motion: reduce)': {
-                  animation: 'none',
+        {/* Voice input button — toujours affiché, opacifié si non supporté */}
+        <Box position="relative" opacity={isVoiceSupported ? 1 : 0.4}>
+          <IconButton
+            aria-label={
+              !isVoiceSupported
+                ? 'Saisie vocale (non supportée par ce navigateur)'
+                : isListening
+                ? 'Arrêter la saisie vocale'
+                : 'Saisie vocale'
+            }
+            aria-pressed={isListening}
+            variant={isListening ? 'solid' : 'ghost'}
+            colorPalette={isListening ? 'red' : 'blue'}
+            onClick={handleVoiceToggle}
+            disabled={disabled || isSending}
+            minW="44px"
+            minH="44px"
+            css={{
+              ...(isListening && {
+                animation: 'voicePulse 1.5s ease-in-out infinite',
+                '@keyframes voicePulse': {
+                  '0%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0.4)' },
+                  '70%': { boxShadow: '0 0 0 10px rgba(229, 62, 62, 0)' },
+                  '100%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0)' },
                 },
-              }}
-            >
-              {isListening ? <MicOffIcon /> : <MicIcon />}
-            </IconButton>
+              }),
+              '@media (prefers-reduced-motion: reduce)': {
+                animation: 'none',
+              },
+            }}
+          >
+            {isListening ? <MicOffIcon /> : <MicIcon />}
+          </IconButton>
 
-            {isListening && (
-              <Badge
-                colorPalette="red"
-                position="absolute"
-                top="-4px"
-                right="-4px"
-                borderRadius="full"
-                fontSize="2xs"
-                px={1.5}
-              >
-                REC
-              </Badge>
-            )}
-          </Box>
-        )}
+          {isListening && (
+            <Badge
+              colorPalette="red"
+              position="absolute"
+              top="-4px"
+              right="-4px"
+              borderRadius="full"
+              fontSize="2xs"
+              px={1.5}
+            >
+              REC
+            </Badge>
+          )}
+        </Box>
 
         {/* Text input */}
         <Box flex={1} position="relative">

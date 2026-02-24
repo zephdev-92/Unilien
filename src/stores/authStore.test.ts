@@ -42,6 +42,7 @@ function createMockProfile(overrides: Partial<Profile> = {}): Profile {
     accessibilitySettings: {
       highContrast: false,
       largeText: false,
+      textScale: 100,
       reducedMotion: false,
       screenReaderOptimized: false,
       voiceControlEnabled: false,
@@ -259,6 +260,7 @@ describe('useAccessibilityStore', () => {
 
       expect(settings.highContrast).toBe(false)
       expect(settings.largeText).toBe(false)
+      expect(settings.textScale).toBe(120)
       expect(settings.reducedMotion).toBe(false)
       expect(settings.screenReaderOptimized).toBe(false)
       expect(settings.voiceControlEnabled).toBe(false)
@@ -272,29 +274,30 @@ describe('useAccessibilityStore', () => {
       const { settings } = useAccessibilityStore.getState()
       expect(settings.highContrast).toBe(true)
       expect(settings.largeText).toBe(false)
+      expect(settings.textScale).toBe(120)
     })
 
     it('devrait mettre à jour plusieurs paramètres', () => {
       useAccessibilityStore.getState().updateSettings({
         highContrast: true,
-        largeText: true,
+        textScale: 120,
         reducedMotion: true,
       })
 
       const { settings } = useAccessibilityStore.getState()
       expect(settings.highContrast).toBe(true)
-      expect(settings.largeText).toBe(true)
+      expect(settings.textScale).toBe(120)
       expect(settings.reducedMotion).toBe(true)
       expect(settings.screenReaderOptimized).toBe(false)
     })
 
     it('devrait conserver les paramètres existants lors de la mise à jour', () => {
       useAccessibilityStore.getState().updateSettings({ highContrast: true })
-      useAccessibilityStore.getState().updateSettings({ largeText: true })
+      useAccessibilityStore.getState().updateSettings({ textScale: 115 })
 
       const { settings } = useAccessibilityStore.getState()
       expect(settings.highContrast).toBe(true)
-      expect(settings.largeText).toBe(true)
+      expect(settings.textScale).toBe(115)
     })
   })
 
@@ -303,6 +306,7 @@ describe('useAccessibilityStore', () => {
       useAccessibilityStore.getState().updateSettings({
         highContrast: true,
         largeText: true,
+        textScale: 125,
         reducedMotion: true,
         screenReaderOptimized: true,
         voiceControlEnabled: true,
@@ -313,6 +317,7 @@ describe('useAccessibilityStore', () => {
       const { settings } = useAccessibilityStore.getState()
       expect(settings.highContrast).toBe(false)
       expect(settings.largeText).toBe(false)
+      expect(settings.textScale).toBe(120)
       expect(settings.reducedMotion).toBe(false)
       expect(settings.screenReaderOptimized).toBe(false)
       expect(settings.voiceControlEnabled).toBe(false)

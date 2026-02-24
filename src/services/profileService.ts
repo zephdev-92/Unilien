@@ -2,10 +2,64 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Profile, Employer, Employee } from '@/types'
+import type { ProfileDbRow } from '@/types/database'
+import { mapProfileFromDb } from '@/lib/mappers'
 
 // ============================================
 // PROFILE (informations personnelles)
 // ============================================
+
+/**
+ * Récupère un profil par son ID utilisateur.
+ * emailOverride permet de forcer l'email depuis le token auth (source de vérité).
+ */
+export async function getProfileById(
+  userId: string,
+  emailOverride?: string
+): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Erreur récupération profil:', error)
+    return null
+  }
+
+  return data ? mapProfileFromDb(data as ProfileDbRow, emailOverride) : null
+}
+
+/**
+ * Crée un profil minimal (fallback si le trigger Supabase ne l'a pas créé).
+ * Retourne true si la création a réussi.
+ */
+export async function createFallbackProfile(profile: {
+  id: string
+  role: string
+  firstName: string
+  lastName: string
+  email: string | null
+}): Promise<boolean> {
+  const { error } = await supabase.from('profiles').insert({
+    id: profile.id,
+    role: profile.role,
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    email: profile.email,
+    phone: null,
+    avatar_url: null,
+    accessibility_settings: {},
+  })
+
+  if (error) {
+    logger.error('Erreur création profil fallback:', error)
+    return false
+  }
+
+  return true
+}
 
 export async function updateProfile(
   profileId: string,
@@ -16,7 +70,7 @@ export async function updateProfile(
     .update({
       first_name: data.firstName ? sanitizeText(data.firstName) : undefined,
       last_name: data.lastName ? sanitizeText(data.lastName) : undefined,
-      phone: data.phone || null,
+      phone: data.phone ? sanitizeText(data.phone) : null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', profileId)
@@ -194,13 +248,20 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
 }
 
 export async function upsertEmployer(profileId: string, data: Partial<Employer>) {
+  const sanitizedAddress = data.address ? {
+    street: data.address.street ? sanitizeText(data.address.street) : '',
+    city: data.address.city ? sanitizeText(data.address.city) : '',
+    postalCode: data.address.postalCode ? sanitizeText(data.address.postalCode) : '',
+    country: data.address.country || 'France',
+  } : {}
+
   const payload = {
     profile_id: profileId,
-    address: data.address || {},
+    address: sanitizedAddress,
     handicap_type: data.handicapType || null,
     handicap_name: data.handicapName ? sanitizeText(data.handicapName) : null,
     specific_needs: data.specificNeeds ? sanitizeText(data.specificNeeds) : null,
-    cesu_number: data.cesuNumber || null,
+    cesu_number: data.cesuNumber ? sanitizeText(data.cesuNumber) : null,
     pch_beneficiary: data.pchBeneficiary ?? false,
     pch_monthly_amount: data.pchMonthlyAmount || null,
     emergency_contacts: data.emergencyContacts || [],
@@ -279,7 +340,7 @@ export async function upsertEmployee(profileId: string, data: Partial<Employee>)
     ? {
         street: data.address.street ? sanitizeText(data.address.street) : null,
         city: data.address.city ? sanitizeText(data.address.city) : null,
-        postalCode: data.address.postalCode || null,
+        postalCode: data.address.postalCode ? sanitizeText(data.address.postalCode) : null,
       }
     : null
 

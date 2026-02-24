@@ -289,7 +289,7 @@ export function AuxiliaryDetailModal({
                                 onChange={(e) => setWeeklyHours(Number(e.target.value))}
                               />
                               <AccessibleInput
-                                label="Taux horaire (€)"
+                                label="Taux horaire brut (€)"
                                 type="number"
                                 step="0.01"
                                 value={hourlyRate}
@@ -330,7 +330,7 @@ export function AuxiliaryDetailModal({
                                 value={`${details.contract.weeklyHours}h`}
                               />
                               <InfoRow
-                                label="Taux horaire"
+                                label="Taux horaire brut"
                                 value={`${details.contract.hourlyRate}€`}
                               />
                               <InfoRow

@@ -10,8 +10,24 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      include: ['src/lib/compliance/**/*.ts'],
+      reporter: ['text', 'json', 'json-summary', 'lcov', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/**/*.spec.{ts,tsx}',
+        'src/test/**',
+        'src/types/**',
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+      ],
+      thresholds: {
+        // Baseline réel au 19/02/2026 (~42% global, 91% services, 89% hooks)
+        // Augmenter progressivement — Cible Q2: 60% | Cible finale: 70%
+        statements: 38,
+        branches: 26,
+        functions: 28,
+        lines: 38,
+      },
     },
   },
   resolve: {

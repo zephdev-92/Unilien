@@ -21,6 +21,12 @@ export { getMonthlyDeclarationData } from './declarationService'
 export { generateCesuCsv, generateCesuSummary } from './cesuGenerator'
 export { generateCesuPdf } from './cesuPdfGenerator'
 
+// ─── Bulletin de paie ────────────────────────────────────────────────────────
+export type { PayslipData, CotisationsResult, CotisationLine } from './types'
+export { calculateCotisations, PASS_MONTHLY_2025, SMIC_MONTHLY_2025 } from './cotisationsCalculator'
+export { getPayslipData } from './payslipService'
+export { generatePayslipPdf } from './payslipPdfGenerator'
+
 // Fonction utilitaire pour télécharger un fichier
 export function downloadExport(result: { filename: string; content: string; mimeType: string }): void {
   // Pour les PDF (data URI), ouvrir directement

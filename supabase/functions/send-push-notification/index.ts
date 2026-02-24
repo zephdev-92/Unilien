@@ -18,9 +18,24 @@ const ALLOWED_ORIGINS = [
 function getCorsOrigin(req: Request): string {
   const origin = req.headers.get('origin') || ''
   if (ALLOWED_ORIGINS.includes(origin)) return origin
-  // En développement local, autoriser localhost
   if (origin.startsWith('http://localhost:')) return origin
   return ALLOWED_ORIGINS[0]
+}
+
+// Rate limiting en mémoire par userId (reset au redéploiement)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_MAX = 30      // max 30 appels
+const RATE_LIMIT_WINDOW = 60000 // par minute
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(userId)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
+    return false
+  }
+  entry.count++
+  return entry.count > RATE_LIMIT_MAX
 }
 
 serve(async (req) => {
@@ -58,6 +73,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await authClient.auth.getUser(token)
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized - invalid token' }), { status: 401, headers: corsHeaders })
+    }
+
+    // Rate limiting par utilisateur authentifié
+    if (isRateLimited(user.id)) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: corsHeaders })
     }
 
     if (!vapidPublicKey || !vapidPrivateKey) {

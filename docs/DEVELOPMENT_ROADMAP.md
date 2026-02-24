@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 10 février 2026 (post-audit qualité de code : ErrorBoundary, sanitization, code splitting, type safety)
-**Version**: 1.2.0
+**Dernière mise à jour**: 24 février 2026 (Semaine 10 — useEmployerResolution hook, sanitizeText notificationService, 578 tests)
+**Version**: 1.4.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -14,13 +14,13 @@
 |-----------|------------|--------|
 | **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
 | **Dashboards** | 95% | ✅ Excellent (3 dashboards rôle-spécifiques) |
-| **Planning** | 90% | ✅ Bon (semaine/mois, shifts, absences) |
+| **Planning** | 95% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits) |
 | **Cahier de liaison** | 80% | 🟡 Bon (realtime, typing indicators) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | 20% | 🔴 Critique (16 fichiers, couverture limitée) |
+| **Tests** | ~42% | 🟡 En progression (578 tests, 8/8 hooks testés ✅) |
 | **Sécurité** | 92% | ✅ Excellent (routes protégées, sanitisation 6/9 services, fail-fast, FK fix, RLS audit) |
 | **Qualité code** | 90% | ✅ Bon (ErrorBoundary, code splitting, 0 `as any`, 0 `eslint-disable` type) |
 
@@ -28,16 +28,195 @@
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
-- **Tests**: 16 fichiers (~20% coverage)
+- **Tests**: 1154 tests / 52 fichiers (~53%+ coverage)
 - **Migrations DB**: 24 migrations
 - **Composants UI**: ~65 composants
 - **Services**: 13 services
-- **Hooks**: 8 hooks
+- **Hooks**: 9 hooks (8/8 testés)
 - **Routes**: 16 routes (dont 10 protégées)
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-7 - Février 2026)
+## ✅ Réalisations Récentes (Semaines 6-8 - Février 2026)
+
+### Sprint Tests Hooks Restants + Feature Présence Responsable (17/02/2026)
+
+#### Sprint Tests — 835 tests, 42% coverage, 7/7 hooks (PR #71)
+
+Complétion de la Phase 2 hooks : les 3 hooks restants sont maintenant couverts. Passage de 786 tests/37% à **835 tests / 35 fichiers / 42% coverage**.
+
+| Fichier | Tests | Fonctions couvertes |
+|---------|-------|---------------------|
+| `useComplianceMonitor.test.ts` | ~15 | Monitoring continu, polling, alertes, cleanup |
+| `usePushNotifications.test.ts` | ~17 | Souscription, permission, envoi, désabonnement |
+| `useSpeechRecognition.test.ts` | ~17 | Démarrage, arrêt, résultats, gestion erreurs |
+
+**Couverture hooks** : **7/7** ✅ (useAuth, useNotifications, useComplianceCheck, useShiftReminders, useComplianceMonitor, usePushNotifications, useSpeechRecognition)
+
+#### Feature Présence Responsable Jour/Nuit — IDCC 3239 (PR #72)
+
+Implémentation complète du concept de présence responsable conforme à la Convention Collective IDCC 3239 dans la gestion des shifts.
+
+| Élément | Détails |
+|---------|---------|
+| **Nouveau type shift** | `shift_type` : `effective` / `presence_day` / `presence_night` |
+| **Présence responsable jour** | Conversion 2/3 h de travail effectif (Art. 137.1) |
+| **Présence responsable nuit** | Indemnité forfaitaire ≥ 1/4 salaire horaire (Art. 148) |
+| **Seuil requalification** | ≥ 4 interventions pendant présence nuit → requalifiée 100% travail effectif |
+| **Nouvelles validations compliance** | Limite 12h consécutives nuit, max 5 nuits consécutives |
+| **Récapitulatif temps réel** | Heures converties + calcul paie enrichi dans la modale |
+| **Modèle de données** | Champs `night_interventions_count`, `is_requalified`, `effective_hours` |
+| **Documentation** | `docs/presence_responsable.md`, `docs/Garde_de_24_heures.md` |
+
+#### Logo SVG Unilien dans Header (PR #73)
+
+Intégration du logo SVG Unilien dans la navigation principale.
+
+#### Feature Reprise Historique Congés à la Création de Contrat Antérieur
+
+Résolution du problème de solde de congés incorrect lors de la saisie d'un contrat avec date de début antérieure à aujourd'hui.
+
+| Élément | Détails |
+|---------|---------|
+| **Problème corrigé** | Contrat antérieur → `taken_days` initialisé à 0 et acquis surestimés |
+| **Section optionnelle** | Apparaît dans `NewContractModal` si date début < aujourd'hui |
+| **Saisie historique** | Mois effectivement travaillés + jours de congés déjà pris |
+| **Calcul automatique** | Solde réel = jours acquis (prorata mois saisis) − jours déjà pris |
+| **Documentation** | `docs/feature_reprise_conges_contrat.md` |
+
+---
+
+### Semaine 10 — Hook useEmployerResolution + Sanitisation + 030 garde 24h (23-24/02/2026)
+
+#### Hook `useEmployerResolution` (23/02/2026) — 9e hook
+
+Nouveau hook centralisant la résolution de l'`employerId` selon le rôle (employer / employee / caregiver), utilisé par `LiaisonPage` et `LogbookPage`. Supprime les imports Supabase directs dans ces deux pages.
+
+| Élément | Détails |
+|---------|---------|
+| **Fichier** | `src/hooks/useEmployerResolution.ts` |
+| **Rôles gérés** | `employer` (profil direct), `employee` (via contrat actif), `caregiver` (via profil aidant) |
+| **Param optionnel** | `requiredCaregiverPermission?: keyof CaregiverPermissions` |
+| **Pages mises à jour** | `LiaisonPage.tsx`, `LogbookPage.tsx` |
+| **Bénéfice** | Suppression imports Supabase directs dans les composants (architecture propre) |
+
+#### Sanitisation `notificationService` (23/02/2026)
+
+Ajout de `sanitizeText()` sur les champs `title` et `message` avant écriture DB.
+Dette technique partiellement résorbée : 7/13 services maintenant sanitisés.
+
+#### Migration 030 — Guard segments v2 (23/02/2026)
+
+| Élément | Détails |
+|---------|---------|
+| **Migration** | `030_guard_segments_v2.sql` |
+| **Colonne** | `guard_segments` JSONB (N-segments libres) |
+| **Interface** | `GuardSegment { startTime, type: 'effective'|'astreinte'|'break', breakMinutes? }` |
+| **UI** | Liste éditable + barre visuelle + ajout/division/suppression par segment |
+| **Validations** | Total effectif ≤ 12h (bloquant), présence nuit > 12h (avertissement) |
+| **Paie** | Majorations nuit auto sur segments effectifs entre 21h–6h |
+
+#### Métriques session (24/02/2026)
+
+- **578 tests** (+5 grâce au nouveau hook `useEmployerResolution`)
+- **8/8 hooks** testés ✅
+
+---
+
+### Sprint Tests Massif — Couverture ×2.5 (12/02/2026)
+
+Sprint intensif de tests unitaires couvrant l'ensemble des services et hooks critiques. Résultat : passage de ~298 tests / ~20 fichiers (~20% coverage) à **786 tests / 32 fichiers (~37% coverage)**.
+
+| Métrique | Avant (11/02) | Après (12/02) | Objectif Q1 |
+|----------|---------------|---------------|-------------|
+| **Statements** | ~14% | **36.92%** | 30% ✅ |
+| **Branches** | ~10% | **31.68%** | — |
+| **Functions** | ~12% | **33.06%** | — |
+| **Lines** | ~14% | **37.16%** | 30% ✅ |
+| **Tests** | 298 | **786** | — |
+| **Fichiers test** | ~20 | **32** | — |
+
+#### Couverture par couche
+
+| Couche | Coverage (Stmts) | Détails |
+|--------|-----------------|---------|
+| **src/services/** | **91.42%** | 13/13 services testés (était 3/13) |
+| **src/lib/compliance/** | **91.73%** | Règles et calculs bien couverts |
+| **src/lib/compliance/rules/** | **88.17%** | Tous les validateurs |
+| **src/stores/** | **100%** | authStore entièrement couvert |
+| **src/hooks/** | **44.19%** | 4/8 hooks testés |
+| **src/lib/export/** | **29.39%** | declarationService couvert |
+| **src/components/auth/** | **37.5%** | 3 formulaires testés |
+
+#### Fichiers de tests créés (12/02/2026)
+
+**Services (Phase 1 — tous les services restants)** :
+
+| Fichier | Tests | Fonctions couvertes |
+|---------|-------|---------------------|
+| `notificationService.test.ts` | 68 | CRUD, realtime, subscriptions, preferences, rappels |
+| `caregiverService.test.ts` | 53 | CRUD aidants, permissions, recherche, profil |
+| `absenceService.test.ts` | 49 | Demandes, approbation, soldes, conflits |
+| `contractService.test.ts` | 48 | Création, FK 23503, terminaison, recherche email |
+| `pushService.test.ts` | 44 | Souscription, envoi, permissions, Edge Function |
+| `profileService.test.ts` | 31 | Get/upsert employer/employee, profil, avatar |
+| `liaisonService.test.ts` | 29 | Messages, conversations, typing indicators |
+| `logbookService.test.ts` | 28 | Entrées, filtres, pagination |
+| `leaveBalanceService.test.ts` | 24 | Solde congés, calcul acquis, prorata |
+| `auxiliaryService.test.ts` | 19 | Liste auxiliaires, détails, stats |
+| `statsService.test.ts` | 17 | Statistiques dashboard, calculs |
+| `documentService.test.ts` | 17 | Gestion documents, upload, filtres |
+| `complianceService.test.ts` | 11 | Conformité hebdo, historique, alertes |
+| `shiftService.test.ts` | — | Complété (existant) |
+| `declarationService.test.ts` | 34 | Export CESU, calculs majorations |
+
+**Hooks (Phase 2)** :
+
+| Fichier | Tests | Fonctions couvertes |
+|---------|-------|---------------------|
+| `useNotifications.test.ts` | 20 | Chargement, mark as read, dismiss, realtime, filtres |
+| `useComplianceCheck.test.ts` | 16 | Validation shift, debounce, paie, absences |
+| `useShiftReminders.test.ts` | 12 | Rappels 24h, notifications, dedup |
+
+### Refonte Système d'Absences — Conformité IDCC 3239 (11/02/2026) — PR #67
+
+Réécriture complète du module d'absences avec validation métier conforme à la Convention Collective IDCC 3239 :
+
+| Composant | Détails |
+|-----------|---------|
+| **Architecture** | Module `src/lib/absence/` : 5 validators individuels + checker central (`absenceChecker.ts`) |
+| **Validations** | Chevauchement (bloquant, court-circuit), solde congés payés, arrêt maladie (justificatif obligatoire), événements familiaux (durées IDCC 3239), période de congé principal (avertissement) |
+| **Formulaire** | `AbsenceRequestModal.tsx` : 6 types d'absence, upload justificatif, calcul jours ouvrables, affichage solde, checkbox jour unique |
+| **Solde congés** | `leaveBalanceService.ts` : init/get/update solde, calcul jours acquis, mapping DB→domaine |
+| **Calculs** | `balanceCalculator.ts` + `utils.ts` : jours ouvrables, année de congés, jours acquis prorata |
+
+### Interventions 24h + Affichage Multi-Jours + Conflits Absence (11/02/2026) — PR #69
+
+Support complet des interventions longues durée et protection contre les conflits :
+
+| Changement | Fichiers | Détails |
+|------------|----------|---------|
+| **Fix calcul 24h** | `compliance/utils.ts` | `08:00→08:00` = 1440 min (24h) au lieu de 0 |
+| **>10h = warning** | `validateDailyHours.ts`, `complianceChecker.ts` | Bloquant → Avertissement avec articles IDCC 3239 (repos 11h, pause 20min, repos hebdo 35h) |
+| **Calendrier multi-jours** | `MonthView.tsx`, `WeekView.tsx` | Intervention 20h→08h visible sur les 2 jours, badge "Suite" + bordure pointillée |
+| **Conflit absence** | `validateAbsenceConflict.ts` (nouveau), `complianceChecker.ts`, `useComplianceCheck.ts` | Bloque la création de shift si l'auxiliaire a une absence approuvée |
+| **Erreur PostgreSQL** | `absenceService.ts` | Exclusion constraint `23P01` → message français clair |
+| **Tests** | 3 fichiers test mis à jour | 298/298 tests passent |
+
+### Fix Label "Brut" Taux Horaire (11/02/2026) — PR #68
+
+Ajout de la mention "(brut)" sur les labels de taux horaire dans l'interface pour éviter toute confusion.
+
+### Fix Validation Formulaire Absence (11/02/2026) — PR #70
+
+Correction de bugs UX dans le formulaire de demande d'absence :
+
+| Bug | Cause | Correction |
+|-----|-------|-----------|
+| Double message d'erreur date | `.refine()` dupliqué dans schéma Zod | Suppression du doublon |
+| Faux positif "date début > fin" | `setValue('endDate')` sans revalidation | Ajout `shouldValidate: true` |
+| Erreurs non pertinentes (solde affiché avec chevauchement) | Pas de court-circuit dans `absenceChecker.ts` | Return immédiat après overlap |
+| Message solde cryptique | Texte trop vague | Message amélioré et actionnable |
 
 ### Audit Complet (09/02/2026)
 
@@ -102,14 +281,14 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 | **Dashboards Complets** | 3 dashboards rôle-spécifiques (Employer, Employee, Caregiver) avec widgets |
 | **Profil Complet** | Sections PersonalInfo, Employee, Employer, Caregiver, Accessibility + avatar upload |
 | **Équipe & Contrats** | Gestion auxiliaires, aidants, contrats CDI/CDD, permissions granulaires |
-| **Planning Complet** | Vues semaine/mois, shifts CRUD, absences avec justificatifs, approbation |
+| **Planning Complet** | Vues semaine/mois, shifts CRUD (dont 24h), absences IDCC 3239 avec justificatifs, approbation, affichage multi-jours, conflit absence/shift |
 | **Documents** | Gestion absences/justificatifs, filtres, statistiques, approbation |
 | **Notifications In-App** | Bell icon, badge, panel, mark as read, dismiss, Realtime Supabase |
 | **Push Notifications** | Code implémenté, service worker, Edge Function (config VAPID restante) |
 | **Messaging Realtime** | Cahier de liaison temps réel avec indicateurs de frappe |
 | **Navigation Responsive** | Sidebar rôle-based, mobile overlay, accessibility (skip link) |
 | **24 Migrations DB** | Tables, RLS policies, fonctions, storage buckets, realtime |
-| **16 Fichiers Tests** | Compliance (7), Auth (4), Services (3), Store (1), Hook (1) |
+| **786 Tests (32 fichiers)** | Services (13/13), Compliance (7), Auth (4), Hooks (4), Store (1), Export (1) |
 | **13 Services** | CRUD complet pour toutes les entités métier |
 | **Composants Accessibles** | AccessibleInput, AccessibleButton, AccessibleSelect, VoiceInput |
 
@@ -206,36 +385,37 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème résolu**: Quand les variables d'environnement étaient absentes, le client Supabase se rabattait silencieusement sur des placeholders. Remplacé par un `throw Error` explicite.
+**Problème résolu**: Le client Supabase se rabattait silencieusement sur des placeholders fictifs quand les variables d'environnement étaient absentes, masquant les erreurs de configuration.
 
 **Corrections appliquées**:
 ```
 [x] Remplacer le fallback par un throw Error explicite si VITE_SUPABASE_URL manque
 [x] Idem pour VITE_SUPABASE_ANON_KEY
-[x] Message clair en français pour aider au debug
-[x] Import logger supprimé (plus nécessaire)
+[x] Message clair avec instructions ("Copiez .env.example vers .env...")
+[x] Suppression des placeholders fictifs — le client reçoit les vraies valeurs
+[x] Suppression de l'import logger inutilisé
 ```
 
 ---
 
 ### 0e. ✅ CORRIGÉ : Sanitisation Manquante dans les Services
 
-**Fichier**: `src/services/shiftService.ts` et 5 autres services
+**Fichiers**: 6 services modifiés
 **Impact**: Initial 🔴 HAUTE → Résolu ✅
 **Effort**: 1h
 **Statut**: ✅ CORRIGÉ (10/02/2026)
 **Découvert**: Audit 09/02/2026
 
-**Problème résolu**: Les champs texte utilisateur étaient envoyés à Supabase sans sanitisation DOMPurify. Corrigé dans 6 services (25 champs).
+**Problème résolu**: Le module `sanitize.ts` (DOMPurify) existait mais n'était utilisé par aucun service. 25 champs texte libre étaient envoyés à Supabase sans sanitisation.
 
 **Corrections appliquées**:
 ```
-[x] shiftService.ts : notes, tasks[] (createShift + updateShift)
-[x] liaisonService.ts : content (createLiaisonMessage + updateLiaisonMessage)
-[x] absenceService.ts : reason
-[x] logbookService.ts : content (createLogEntry + updateLogEntry)
-[x] profileService.ts : firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, adresses
-[x] caregiverService.ts : relationshipDetails, emergencyPhone, availabilityHours, adresses
+[x] shiftService.ts : sanitizeText() sur notes + tasks[].map(sanitizeText) (create + update)
+[x] liaisonService.ts : sanitizeText() sur content (create + update)
+[x] absenceService.ts : sanitizeText() sur reason (create)
+[x] logbookService.ts : sanitizeText() sur content (create + update)
+[x] profileService.ts : sanitizeText() sur firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, address.* (updateProfile + upsertEmployer + upsertEmployee)
+[x] caregiverService.ts : sanitizeText() sur relationship, relationshipDetails, emergencyPhone, availabilityHours, address.* (upsert + updateProfile)
 [ ] Ajouter tests unitaires vérifiant la sanitisation
 ```
 
@@ -284,7 +464,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] Utiliser MAJORATION_RATES + calculateOvertimeHours() pour chaque shift
 [x] Implémenter calcul réel des heures sup (cumul progressif par shift)
 [x] Gestion has_night_action (acte vs présence seule)
-[ ] Créer tests unitaires (declarationService.test.ts)
+[x] Créer tests unitaires (declarationService.test.ts)
 [ ] Tests d'intégration export CESU
 [ ] Validation expert paie
 ```
@@ -293,60 +473,72 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 
 ---
 
-### 2. 🧪 Couverture de Tests Insuffisante
+### 2. 🧪 Couverture de Tests — En Progression
 
-**Impact**: 🔴 CRITIQUE - Risque de régression
-**Effort**: 6-8 semaines
+**Impact**: 🟡 IMPORTANT - Risque de régression (en cours de réduction)
+**Effort**: 6-8 semaines (Phase 1+2 terminées en 1 jour)
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: ~20% coverage (cible: 70%)
+**État actuel**: ~42% coverage — 835 tests / 35 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
 
-**Tests existants (16 fichiers)**:
+**Services testés (13/13)** ✅ Phase 1 terminée (12/02/2026):
+```
+[x] src/services/notificationService.test.ts (68 tests)
+[x] src/services/caregiverService.test.ts (53 tests)
+[x] src/services/absenceService.test.ts (49 tests)
+[x] src/services/contractService.test.ts (48 tests)
+[x] src/services/pushService.test.ts (44 tests)
+[x] src/lib/export/declarationService.test.ts (34 tests)
+[x] src/services/profileService.test.ts (31 tests)
+[x] src/services/liaisonService.test.ts (29 tests)
+[x] src/services/logbookService.test.ts (28 tests)
+[x] src/services/leaveBalanceService.test.ts (24 tests)
+[x] src/services/auxiliaryService.test.ts (19 tests)
+[x] src/services/statsService.test.ts (17 tests)
+[x] src/services/documentService.test.ts (17 tests)
+[x] src/services/complianceService.test.ts (11 tests)
+[x] src/services/shiftService.test.ts (existant, complété)
+```
+
+**Hooks testés (7/7)** ✅ — Phase 2 terminée (17/02/2026):
+```
+[x] useAuth.test.ts (existant)
+[x] useNotifications.test.ts (20 tests)
+[x] useComplianceCheck.test.ts (16 tests)
+[x] useShiftReminders.test.ts (12 tests)
+[x] useComplianceMonitor.test.ts (~15 tests) — ✅ 17/02/2026
+[x] usePushNotifications.test.ts (~17 tests) — ✅ 17/02/2026
+[x] useSpeechRecognition.test.ts (~17 tests) — ✅ 17/02/2026
+```
+
+**Autres tests existants**:
 ```
 [x] src/lib/compliance/**/*.test.ts (7 fichiers - conformité)
-[x] src/hooks/useAuth.test.ts
-[x] src/stores/authStore.test.ts
-[x] src/services/contractService.test.ts
-[x] src/services/shiftService.test.ts
-[x] src/services/profileService.test.ts
-[x] src/components/auth/*.test.tsx (3 fichiers - LoginForm, SignupForm, etc.)
+[x] src/stores/authStore.test.ts (26 tests)
+[x] src/components/auth/*.test.tsx (3 fichiers - LoginForm, SignupForm, ForgotPasswordForm)
 ```
 
-**Services non testés (10/13)** - P0:
-```
-[ ] notificationService.ts (943 lignes!) - 2 jours
-[ ] absenceService.ts - 1 jour
-[ ] caregiverService.ts - 1 jour
-[ ] documentService.ts - 1 jour
-[ ] liaisonService.ts - 1 jour
-[ ] auxiliaryService.ts - 1 jour
-[ ] logbookService.ts - 1 jour
-[ ] complianceService.ts - 1 jour
-[ ] pushService.ts - 1 jour
-[ ] statsService.ts - 1 jour
-```
-
-**Hooks non testés (7/8)** - P1:
-```
-[ ] useNotifications.ts
-[ ] useComplianceMonitor.ts
-[ ] usePushNotifications.ts
-[ ] useShiftReminders.ts
-[ ] useSpeechRecognition.ts
-[ ] useComplianceCheck.ts
-```
-
-**Quick Wins**:
+**Quick Wins restants**:
 ```
 [x] Corriger vitest.config.ts (coverage global) - 15 min
-[ ] Créer premiers tests services restants - 1 semaine
+[x] Tester tous les services restants - ✅ terminé 12/02/2026
 [ ] Setup GitHub Actions coverage - 30 min
 ```
 
+**Prochaines étapes tests (pour atteindre 60%+)**:
+```
+[ ] useComplianceMonitor.test.ts — hook complexe (monitoring continu)
+[ ] usePushNotifications.test.ts — hook push notifications
+[ ] Composants UI critiques (dashboard widgets, planning views)
+[ ] Export PDF/CESU (cesuGenerator, pdfGenerator)
+[ ] Tests E2E (Playwright — Phase 4)
+```
+
 **Timeline**:
-- Phase 1 (Services critiques): Semaines 6-8/2026
-- Phase 2 (Hooks): Semaine 9/2026
-- Phase 3 (UI): Semaines 10-14/2026
+- ~~Phase 1 (Services critiques): Semaines 6-8/2026~~ ✅ Terminé 12/02/2026
+- ~~Phase 2 (Hooks): Semaine 9/2026~~ ✅ Terminé 17/02/2026 (7/7)
+- Phase 3 (UI + exports): Semaines 10-14/2026
+- Phase 4 (E2E): Q2 2026
 
 ---
 
@@ -433,8 +625,10 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 
 **Impact**: 🟡 IMPORTANT - Mission critique du projet
 **Effort**: 1 jour
-**Statut**: ❌ À CORRIGER
+**Statut**: 🟡 EN COURS (toggles settings implémentés ✅, ARIA live regions partielles)
 **Découvert**: Audit 09/02/2026
+
+> ✅ **19/02/2026** — Toggles d'accessibilité fonctionnels : contraste élevé, mouvement réduit, optimisation lecteur d'écran, taille du texte ajustable (slider 80–150%).
 
 #### Emojis dans les Boutons (LoginForm, SignupForm)
 
@@ -444,9 +638,8 @@ Les boutons d'affichage/masquage du mot de passe utilisent des emojis (`🙈` / 
 
 **Actions**:
 ```
-[ ] Remplacer les emojis par des icônes SVG (Chakra UI icons ou lucide-react)
-[ ] Exemple : <EyeIcon /> et <EyeOffIcon />
-[ ] Garder les aria-label existants
+[x] Remplacer les emojis par des icônes SVG (PasswordToggleButton, SVG inline) (19/02/2026)
+[x] aria-hidden="true" sur les SVG, aria-label sur le bouton
 ```
 
 **Effort**: 30 min
@@ -501,16 +694,16 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 - ❌ Notifications Email (non implémenté)
 - ❌ Notifications SMS (non implémenté)
 
-#### 4.1 Web Push (Finalisation)
+#### 4.1 Web Push (Finalisation) ✅ (19/02/2026)
 
-**Actions restantes**:
+**Actions complétées**:
 ```
-[ ] Générer clés VAPID
-[ ] Configurer variables env (VITE_VAPID_PUBLIC_KEY)
-[ ] Configurer secrets Supabase
-[ ] Déployer Edge Function send-push-notification
-[ ] Tests navigateurs (Chrome, Firefox, Safari)
-[ ] Documentation utilisateur
+[x] Générer clés VAPID
+[x] Configurer variables env (VITE_VAPID_PUBLIC_KEY)
+[x] Configurer secrets Supabase (VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT)
+[x] Déployer Edge Function send-push-notification (v12)
+[x] Tests navigateurs (Chrome, Firefox, Safari)
+[x] Documentation utilisateur
 ```
 
 **Effort**: 2-3 heures
@@ -604,19 +797,100 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 **Manquants**:
 
-#### 6.1 Export Bulletins de Paie
+#### 6.1 Export Bulletins de Paie ✅ (19/02/2026)
 
-**Format**: PDF
-**Contenu**: Salaire brut, cotisations, net à payer
-**Effort**: 3 jours
+**Format**: PDF — jsPDF · **Taux** : IDCC 3239 / 2025 — indicatif
 
 ```
-[ ] Design template bulletin
-[ ] Calculs cotisations sociales
-[ ] Génération PDF (jsPDF)
-[ ] Stockage documents (Supabase Storage)
-[ ] Historique bulletins (table DB)
+[x] Design template bulletin (5 sections : header, parties, brut, cotisations, nets)
+[x] Calculs cotisations sociales salariales (CSG/CRDS/vieillesse/AGIRC-ARRCO T1)
+[x] Calculs cotisations patronales (maladie/vieillesse/alloc. fam./chômage/FNAL/CSA/AT-MP)
+[x] Exonération cotisations patronales SS (Art. L241-10 CSS — employeurs PCH/invalide/MTP/PCTP)
+[x] Génération PDF (jsPDF) — téléchargement direct
+[x] Onglet "Bulletins de paie" dans DocumentManagementSection
+[ ] Stockage documents (Supabase Storage) — v2
+[ ] Historique bulletins (table DB) — v2
+[ ] Taux PAS configurable par employé (contrats) — v2
 ```
+
+---
+
+### 6b. 🏥 PCH — Prestation de Compensation du Handicap
+
+**Impact** : 🔴 CRITIQUE MÉTIER — La PCH finance les auxiliaires de vie des employeurs Unilien
+**Documentation** : `docs/PCH_PRESTATION_COMPENSATION_HANDICAP.md`
+**Référence tarifaire** : Tarifs au 01/01/2026 (indexés IDCC 3239 + SMIC)
+
+> Tarif PCH emploi direct 2026 : **19,34 €/h** (150% × salaire horaire brut AV-C IDCC 3239)
+
+#### 6b.1 Données employeur PCH (Niveau 1 — sprint court)
+
+**Effort** : 2 jours · **Timeline** : Semaine 10/2026
+
+```
+[ ] Enrichir type Employer : pchType ('emploiDirect'|'mandataire'|'prestataire'|'aidantFamilial')
+[ ] Enrichir type Employer : pchMonthlyHours (heures allouées par le plan de compensation)
+[ ] Enrichir type Employer : pchElement1Rate (tarif horaire PCH auto-calculé via pchType)
+[ ] Migration DB : pch_type, pch_monthly_hours, pch_element1_rate
+[ ] Mettre à jour EmployerSection.tsx (nouveaux champs + sélecteur pchType)
+[ ] Créer src/lib/pch/pchTariffs.ts avec constantes 2026
+[ ] Auto-suggestion exonération SS si pchBeneficiary === true (bulletin de paie)
+```
+
+**Constantes PCH 2026 à intégrer** :
+```ts
+emploiDirectGeneral : 19,34 €/h
+emploiDirectSoins   : 20,10 €/h
+mandataireGeneral   : 21,27 €/h
+mandataireSoins     : 22,11 €/h
+prestataire         : 25,00 €/h
+aidantFamilial      : 4,78 €/h
+aidantFamilialCessation : 7,16 €/h
+```
+
+#### 6b.2 Widget Enveloppe PCH — Dashboard (Niveau 2)
+
+**Effort** : 2 jours · **Timeline** : Semaine 11/2026
+
+```
+[ ] Composant PchEnvelopeWidget dans EmployerDashboard
+[ ] Calcul mensuel : consommé (coût total employeur) vs alloué (pchMonthlyHours × tarif)
+[ ] Barre de progression avec reste à charge
+[ ] Alerte si dépassement prévu en fin de mois
+[ ] Comparaison avec / sans exonération patronale SS
+```
+
+**Formule reste à charge** :
+```
+Coût total employeur = brut + cotisations patronales
+Enveloppe PCH = pchMonthlyHours × pchElement1Rate
+Reste à charge = max(0, coût total - enveloppe PCH)
+```
+
+#### 6b.3 Bulletin de paie — Section PCH (Niveau 3)
+
+**Effort** : 1 jour · **Timeline** : Semaine 12/2026
+
+```
+[ ] Section "Récapitulatif PCH" dans le PDF généré
+    → Enveloppe allouée / coût réel / reste à charge
+[ ] Mention exonération auto si pchBeneficiary === true
+[ ] Note légale : "PCH versée par le Conseil Départemental"
+```
+
+#### 6b.4 Module PCH complet (Niveau 4 — long terme)
+
+**Effort** : 1 semaine · **Timeline** : Q2 2026
+
+```
+[ ] Suivi du plan de compensation (dates d'attribution, révisions)
+[ ] Alertes échéance plan PCH (renouvelable tous les 3 ou 5 ans)
+[ ] Multi-éléments PCH (aides techniques, aménagement logement, charges spécifiques)
+[ ] Historique décisions Conseil Départemental (upload PDF notification)
+[ ] Export "attestation employeur" pour justification PCH
+```
+
+---
 
 #### 6.2 Export Planning (PDF/Excel)
 
@@ -892,7 +1166,28 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 ## 📋 BACKLOG - À PRIORISER
 
-### 14. Fonctionnalités Avancées
+### 14. Reconnaissance Vocale — Fallback Firefox (Whisper)
+
+**Impact** : 🟡 IMPORTANT — Firefox (~30% des utilisateurs desktop) sans reconnaissance vocale
+**Effort** : 1 jour
+**Document** : `docs/SPEECH_RECOGNITION_FIREFOX.md`
+
+**Solution retenue** : Option A — MediaRecorder + OpenAI Whisper via Edge Function
+
+```
+[ ] Créer supabase/functions/speech-to-text/index.ts (Whisper API)
+[ ] Ajouter OPENAI_API_KEY dans les secrets Supabase
+[ ] Modifier useSpeechRecognition : fallback MediaRecorder si !isSupported
+[ ] Exposer isUsingFallback: boolean dans le return du hook
+[ ] Mettre à jour VoiceInput + NewLogEntryModal (indicateur "mode différé")
+[ ] Tests mock Edge Function + MediaRecorder
+```
+
+**Timeline** : Semaines 11-12/2026
+
+---
+
+### 15. Fonctionnalités Avancées
 
 #### 14.1 Messagerie Temps Réel Améliorée
 
@@ -931,7 +1226,34 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 **Effort**: 2 semaines
 
-#### 14.5 IA & Automation
+#### 14.5 Refactoring — Gros Composants et Services
+
+Fichiers identifiés le 24/02/2026 comme candidats prioritaires au découpage (seuil > 500 lignes) :
+
+| Fichier | Lignes | Type |
+|---------|--------|------|
+| `components/planning/NewShiftModal.tsx` | 972 | Composant |
+| `services/notificationService.ts` | 938 | Service |
+| `components/clock-in/ClockInPage.tsx` | 882 | Page |
+| `components/planning/ShiftDetailModal.tsx` | 873 | Composant |
+| `services/absenceService.ts` | 592 | Service |
+| `services/caregiverService.ts` | 582 | Service |
+| `components/team/NewContractModal.tsx` | 546 | Composant |
+| `components/team/TeamPage.tsx` | 504 | Page |
+| `components/profile/sections/EmployeeSection.tsx` | 504 | Composant |
+
+**Actions suggérées** :
+```
+[ ] NewShiftModal → extraire sous-formulaires (ShiftTypeForm, PresenceForm, TasksForm)
+[ ] ShiftDetailModal → extraire sections lecture/édition
+[ ] ClockInPage → Sprint 3 en attente (10 problèmes architecture & perf avancée)
+[ ] notificationService → séparer CRUD / realtime / préférences / rappels
+```
+
+**Effort estimé** : 1 semaine par composant majeur
+**Timeline** : Q2-Q3 2026 (après stabilisation tests E2E)
+
+#### 14.6 IA & Automation
 
 - [ ] Suggestions planning optimal (ML)
 - [ ] Prédiction absences (pattern recognition)
@@ -1027,7 +1349,7 @@ npx playwright install
 - ✅ Fix majorations hardcodées (MAJORATION_RATES + calculateOvertimeHours)
 - 🟡 Finaliser Web Push (config VAPID restante)
 
-**Semaine 7** (Actuelle - 10-14 février):
+**Semaine 7** (10-14 février):
 - ✅ Corrections sécurité post-audit (clé VAPID, git init, fallback Supabase, sanitisation, FK fix)
 - ✅ Créer ProtectedRoute + sanitisation 6 services + fail-fast Supabase
 - ✅ Migration 024 : auto-création employees/employers à l'inscription + backfill
@@ -1035,16 +1357,38 @@ npx playwright install
 - ✅ Ajouter Error Boundary global (`ErrorBoundary.tsx` dans `main.tsx`)
 - ✅ Code splitting : 11 pages en `React.lazy()` + `Suspense`
 - ✅ Type safety : 5 interfaces DB ajoutées, 9 mappers typés, 0 `as any` / 0 `eslint-disable` type
+- ✅ Refonte système d'absences — conformité IDCC 3239 (PR #67)
+- ✅ Label "brut" taux horaire (PR #68)
+- ✅ Interventions 24h + affichage multi-jours calendrier + conflit absence/shift (PR #69)
+- ✅ Fix bugs validation formulaire absence (PR #70)
+- ✅ Analyse modernité code mise à jour (`CODE_MODERNITY_ANALYSIS.md`)
+- ✅ **Sprint tests massif** : 13/13 services testés + 4 hooks + declarationService (786 tests, 37% coverage)
 - 🟡 Finaliser Web Push (avec nouvelles clés VAPID régénérées)
-- 🔴 Début tests services critiques
 
-**Semaines 8-10**:
-- 🔴 Tests services critiques (Phase 1)
-- 🟡 Notifications Email
-- 🟡 Vérification téléphone SMS
+**Semaine 8** (17-21 février) :
+- ✅ Sprint tests hooks restants : useComplianceMonitor, usePushNotifications, useSpeechRecognition (835 tests, 42% coverage, 7/7 hooks) — PR #71
+- ✅ Feature Présence Responsable Jour/Nuit — IDCC 3239 (PR #72)
+- ✅ Logo SVG Unilien dans header (PR #73)
+- ✅ Feature Reprise historique congés à la création de contrat antérieur
+
+**Semaine 9-10** (18-24 février) :
+- ✅ Setup CI/CD tests (GitHub Actions — pr-checks.yml)
+- ✅ Export Bulletins de Paie PDF (jsPDF, cotisations salariales + patronales, exonération SS)
+- ✅ Documentation PCH (tarifs 2026 + plan implémentation 4 niveaux)
+- ✅ Toggles accessibilité fonctionnels (contraste, mouvement réduit, lecteur d'écran, taille texte)
+- ✅ Tests composants UI — 6 widgets + 2 vues planning + 3 dashboards + cotisations + conformité
+- ✅ Hook `useEmployerResolution` (9e hook — 23/02/2026) — LiaisonPage + LogbookPage sans imports Supabase
+- ✅ Sanitisation `notificationService` (`title` + `message`) — 23/02/2026
+- ✅ Migration `030_guard_segments_v2.sql` — garde 24h N-segments libres
+- ✅ **578 tests** (+5 grâce aux nouveaux hooks), 8/8 hooks testés
 
 **Semaines 11-13**:
-- 🔴 Tests hooks (Phase 2)
+- 🟡 Notifications Email
+- 🟡 Vérification téléphone SMS
+- 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%+)
+
+**Semaines 11-13**:
+- 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%)
 - 🟡 Export documents amélioré
 - 🟢 Headers sécurité
 
@@ -1088,7 +1432,8 @@ npx playwright install
 
 ### Objectifs Q1 2026
 
-- [ ] Coverage tests ≥ 60% (actuellement ~20%)
+- [x] Coverage tests ≥ 30% (atteint 37% le 12/02/2026) ✅
+- [ ] Coverage tests ≥ 60% (cible Q2 — nécessite tests composants UI)
 - [ ] 0 bugs critiques en production
 - [x] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git) ✅
 - [x] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute) ✅ 10/02/2026
@@ -1186,9 +1531,10 @@ npx playwright install
 - `docs/TODO_NOTIFICATIONS.md` - Détails notifications
 - `docs/PHONE_VERIFICATION.md` - Vérification SMS
 - `docs/compliance/README.md` - Règles métier conformité
+- `CODE_MODERNITY_ANALYSIS.md` - Analyse modernité du code (mise à jour 11/02/2026)
 - `README.md` - Setup & installation
 
-> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0f), 2b (✅ corrigé 10/02/2026), 2c, et 16 (16.1 code splitting ✅).
+> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0f), 2b (✅ corrigé 10/02/2026), 2c, et 16 (16.1 code splitting ✅). Semaine 7 : 4 PRs mergées (absences IDCC 3239, interventions 24h, label brut, fix validation) + sprint tests massif le 12/02 (786 tests, couverture 37%, objectif Q1 atteint). Semaine 8 : sprint hooks terminé (835 tests, 42%, 7/7 hooks), feature présence responsable IDCC 3239 (#72), logo SVG (#73), reprise historique congés.
 
 ---
 
@@ -1230,7 +1576,7 @@ npx playwright install
 
 **2. Sanitisation des entrées** ✅ (10/02/2026):
    - [x] Appliquer `sanitizeText()` sur `notes`/`tasks` dans `shiftService.ts`
-   - [x] Auditer et corriger les autres services (caregiver, absence, liaison, logbook, profile)
+   - [x] Auditer et corriger les autres services (liaison, absence, logbook, profile, caregiver)
 
 **2b. Fix FK constraint** ✅ (10/02/2026):
    - [x] Migration 024 : handle_new_user crée employees/employers automatiquement
@@ -1247,21 +1593,89 @@ npx playwright install
 
 ### Cette Semaine (Semaine 7 - 10-14 février)
 
-3. **Tests declarationService** (suite fix majorations)
-   - [ ] Créer declarationService.test.ts
+3. **Tests declarationService** ✅ (12/02/2026)
+   - [x] Créé declarationService.test.ts (34 tests)
    - [ ] Tests d'intégration export CESU
    - [ ] Code review + Merge
 
-4. **Web Push finalization**
-   - [ ] ~~Générer clés VAPID~~ → Inclus dans actions urgentes ci-dessus
-   - [ ] Config variables env (VITE_VAPID_PUBLIC_KEY)
-   - [ ] Déployer Edge Function send-push-notification
-   - [ ] Tests navigateurs
+4. **Web Push finalization** ✅ (19/02/2026)
+   - [x] ~~Générer clés VAPID~~ → Inclus dans actions urgentes ci-dessus
+   - [x] Config variables env (VITE_VAPID_PUBLIC_KEY)
+   - [x] Déployer Edge Function send-push-notification (v12)
+   - [x] Tests navigateurs
 
-5. **Début tests services**
-   - [ ] notificationService.test.ts (2 jours)
-   - [ ] absenceService.test.ts (1 jour)
-   - [ ] Setup GitHub Actions coverage (30 min)
+5. **Sprint tests services + hooks** ✅ (12/02/2026)
+   - [x] 13/13 services testés (488 tests services au total)
+   - [x] 4/8 hooks testés (useNotifications, useComplianceCheck, useShiftReminders)
+   - [x] Couverture services : 91.42% statements
+   - [x] Setup GitHub Actions coverage (30 min)
+
+### Semaine 8 - Bilan (17 février) ✅
+
+6. **Tests hooks restants** (Phase 2b) ✅ (17/02/2026)
+   - [x] useComplianceMonitor.test.ts
+   - [x] usePushNotifications.test.ts
+   - [x] useSpeechRecognition.test.ts
+   - [x] 835 tests / 35 fichiers / 42% coverage
+
+7. **Feature Présence Responsable** ✅ PR #72 (17/02/2026)
+   - [x] Nouveau type shift (effective, presence_day, presence_night)
+   - [x] Conversion 2/3 jour, indemnité forfaitaire nuit
+   - [x] Seuil requalification ≥4 interventions
+   - [x] Validations compliance supplémentaires
+
+8. **Logo SVG + Reprise congés** ✅ (17/02/2026)
+   - [x] Logo SVG dans header (PR #73)
+   - [x] Reprise historique congés pour contrats antérieurs
+
+### Semaine 9 (18-24 février 2026)
+
+9. **Setup CI/CD tests** ✅ (19/02/2026)
+   - [x] GitHub Actions : vitest coverage sur chaque PR (pr-checks.yml)
+   - [x] Job `Code Quality` + job `Accessibility Check` (noms requis branch protection)
+   - [x] Commentaire automatique coverage + taille build sur chaque PR
+
+10. **Export Bulletins de Paie PDF** ✅ (19/02/2026)
+    - [x] Générateur PDF complet (jsPDF) — cotisations salariales + patronales + net à payer
+    - [x] Exonération cotisations patronales SS (Art. L241-10 CSS — PCH/invalide/MTP/PCTP)
+    - [x] Onglet "Bulletins de paie" dans page Documents
+    - [x] Tarifs IDCC 3239 2025 (`cotisationsCalculator.ts`)
+
+11. **Documentation PCH** ✅ (19/02/2026)
+    - [x] `docs/PCH_PRESTATION_COMPENSATION_HANDICAP.md` — tarifs 2026, connexion IDCC 3239
+    - [x] Plan d'implémentation 4 niveaux intégré dans la roadmap
+
+12. **Toggles d'accessibilité fonctionnels** ✅ (19/02/2026)
+    - [x] `AccessibilityApplier` dans `App.tsx` — data-attributes sur `<html>` réactifs au store Zustand
+    - [x] Contraste élevé : fond noir / texte blanc (`[data-high-contrast]`)
+    - [x] Mouvement réduit : animations/transitions à 0ms (`[data-reduced-motion]`)
+    - [x] Lecteur d'écran : focus ring 3px bleu sur tous les éléments (`[data-screen-reader]`)
+    - [x] Taille du texte : toggle on/off + slider 80–150% (pas 5%, défaut 120%) — scale tous les `rem` Chakra UI
+
+13. **Tests composants UI — Dashboard widgets** ✅ (20/02/2026)
+    - [x] UpcomingShiftsWidget.test.tsx (18 tests)
+    - [x] QuickActionsWidget.test.tsx (10 tests)
+    - [x] StatsWidget.test.tsx (18 tests)
+    - [x] ComplianceWidget.test.tsx (11 tests)
+    - [x] TeamWidget.test.tsx (12 tests)
+    - [x] RecentLogsWidget.test.tsx (15 tests)
+    - [x] **Total** : 84 nouveaux tests — **1010 tests / 45 fichiers**
+
+14. **Tests composants UI — Vues planning** ✅ (20/02/2026)
+    - [x] WeekView.test.tsx (25 tests) — grille 7 jours, shifts, absences, multi-jours, callbacks, clavier
+    - [x] MonthView.test.tsx (20 tests) — calendrier complet, overflow, multi-jours, callbacks
+    - [x] **Total** : 45 nouveaux tests — **1055 tests / 47 fichiers**
+
+15. **Tests composants UI — Dashboards** ✅ (20/02/2026)
+    - [x] EmployerDashboard.test.tsx (15 tests) — composition, shifts filtrés/limités, compliance monitor
+    - [x] EmployeeDashboard.test.tsx (10 tests) — composition, shifts filtrés/limités, pas de team/compliance
+    - [x] CaregiverDashboard.test.tsx (18 tests) — loading, null caregiver, permissions, erreurs
+    - [x] **Total** : 43 nouveaux tests — **1098 tests / 50 fichiers**
+
+16. **Tests export + conformité** ✅ (20/02/2026)
+    - [x] cotisationsCalculator.test.ts (34 tests) — pure function, barèmes IDCC 3239 2025, exonération SS, PAS, cas limites
+    - [x] ComplianceDashboard.test.tsx (22 tests) — loading, stat cards, tableau, navigation semaine, aide, actualiser
+    - [x] **Total** : 56 nouveaux tests — **1154 tests / 52 fichiers**
 
 ---
 
@@ -1271,10 +1685,10 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 10 février 2026 - Audit qualité 2b complet : ErrorBoundary, sanitization 6 services, code splitting 11 pages, type safety (0 `as any`, 0 `eslint-disable` type), mappers centralisés
+> **Dernière review**: 24 février 2026 — Hook `useEmployerResolution` (9e hook, 8/8 testés), sanitisation `notificationService`, migration 030 garde 24h v2, 578 tests (+5). Gros fichiers identifiés pour refactoring futur (14.5).
 
 ---
 
 **Maintenu par**: Tech Lead
-**Prochaine revue**: 16 février 2026
+**Prochaine revue**: 3 mars 2026
 **Feedback**: [Ouvrir une issue](https://github.com/zephdev-92/Unilien/issues)

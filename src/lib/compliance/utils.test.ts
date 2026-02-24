@@ -45,10 +45,10 @@ describe('calculateShiftDuration', () => {
     expect(calculateShiftDuration('23:30', '00:30')).toBe(60) // 1h
   })
 
-  it('retourne 0 quand startTime === endTime', () => {
-    expect(calculateShiftDuration('16:26', '16:26')).toBe(0)
-    expect(calculateShiftDuration('08:00', '08:00')).toBe(0)
-    expect(calculateShiftDuration('00:00', '00:00')).toBe(0)
+  it('retourne 24h (1440 min) quand startTime === endTime', () => {
+    expect(calculateShiftDuration('16:26', '16:26')).toBe(1440)
+    expect(calculateShiftDuration('08:00', '08:00')).toBe(1440)
+    expect(calculateShiftDuration('00:00', '00:00')).toBe(1440)
   })
 })
 

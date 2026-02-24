@@ -64,7 +64,7 @@ describe('validateDailyHours', () => {
       expect(result.valid).toBe(false)
       expect(result.code).toBe(COMPLIANCE_RULES.DAILY_MAX_HOURS)
       expect(result.message).toContain('11')
-      expect(result.details?.isBlocking).toBe(true)
+      expect(result.details?.isWarning).toBe(true)
     })
 
     it('devrait rejeter 10h01 (juste au-dessus du maximum)', () => {
@@ -145,6 +145,128 @@ describe('validateDailyHours', () => {
 
       expect(result.valid).toBe(false)
       expect(result.details?.totalHours).toBe(12) // 4 + 8
+    })
+  })
+
+  describe('Présence responsable : heures effectives réduites', () => {
+    it('devrait ne pas compter les heures de présence nuit', () => {
+      const newShift: ShiftForValidation = {
+        contractId: 'contract-1',
+        employeeId: 'employee-1',
+        date: new Date('2025-01-15'),
+        startTime: '22:00',
+        endTime: '07:00', // 9h présence nuit
+        breakDuration: 0,
+        shiftType: 'presence_night',
+      }
+
+      const result = validateDailyHours(newShift, [])
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.totalHours).toBe(0) // pas de travail effectif
+    })
+
+    it('devrait compter les heures de présence jour à 2/3', () => {
+      const newShift: ShiftForValidation = {
+        contractId: 'contract-1',
+        employeeId: 'employee-1',
+        date: new Date('2025-01-15'),
+        startTime: '09:00',
+        endTime: '18:00', // 9h
+        breakDuration: 0,
+        shiftType: 'presence_day',
+      }
+
+      const result = validateDailyHours(newShift, [])
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.totalHours).toBe(6) // 9 × 2/3 = 6
+    })
+
+    it('devrait valider effectif 3h + présence nuit 9h (garde)', () => {
+      const existingShifts: ShiftForValidation[] = [
+        {
+          id: 'shift-1',
+          contractId: 'contract-1',
+          employeeId: 'employee-1',
+          date: new Date('2025-01-15'),
+          startTime: '19:00',
+          endTime: '22:00', // 3h effectif
+          breakDuration: 0,
+          shiftType: 'effective',
+        },
+      ]
+      const newShift: ShiftForValidation = {
+        contractId: 'contract-1',
+        employeeId: 'employee-1',
+        date: new Date('2025-01-15'),
+        startTime: '22:00',
+        endTime: '07:00', // 9h présence nuit
+        breakDuration: 0,
+        shiftType: 'presence_night',
+      }
+
+      const result = validateDailyHours(newShift, existingShifts)
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.totalHours).toBe(3) // seul l'effectif compte
+    })
+
+    it('devrait valider effectif 8h + présence jour 3h (cumul < 10h)', () => {
+      const existingShifts: ShiftForValidation[] = [
+        {
+          id: 'shift-1',
+          contractId: 'contract-1',
+          employeeId: 'employee-1',
+          date: new Date('2025-01-15'),
+          startTime: '08:00',
+          endTime: '16:00', // 8h effectif
+          breakDuration: 0,
+          shiftType: 'effective',
+        },
+      ]
+      const newShift: ShiftForValidation = {
+        contractId: 'contract-1',
+        employeeId: 'employee-1',
+        date: new Date('2025-01-15'),
+        startTime: '17:00',
+        endTime: '20:00', // 3h présence jour = 2h effectives
+        breakDuration: 0,
+        shiftType: 'presence_day',
+      }
+
+      const result = validateDailyHours(newShift, existingShifts)
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.totalHours).toBe(10) // 8 + 3×2/3 = 10
+    })
+
+    it('devrait ignorer le type presence_night dans existingShifts', () => {
+      const existingShifts: ShiftForValidation[] = [
+        {
+          id: 'shift-1',
+          contractId: 'contract-1',
+          employeeId: 'employee-1',
+          date: new Date('2025-01-15'),
+          startTime: '22:00',
+          endTime: '07:00', // 9h présence nuit
+          breakDuration: 0,
+          shiftType: 'presence_night',
+        },
+      ]
+      const newShift: ShiftForValidation = {
+        contractId: 'contract-1',
+        employeeId: 'employee-1',
+        date: new Date('2025-01-15'),
+        startTime: '08:00',
+        endTime: '16:00', // 8h effectif
+        breakDuration: 0,
+      }
+
+      const result = validateDailyHours(newShift, existingShifts)
+
+      expect(result.valid).toBe(true)
+      expect(result.details?.totalHours).toBe(8) // seul l'effectif
     })
   })
 

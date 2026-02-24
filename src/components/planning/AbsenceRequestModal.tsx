@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Dialog,
   Portal,
@@ -16,25 +16,19 @@ import { format } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
 import { logger } from '@/lib/logger'
 import { createAbsence, uploadJustification, validateJustificationFile } from '@/services/absenceService'
-import type { Absence } from '@/types'
+import { getLeaveBalance } from '@/services/leaveBalanceService'
+import { countBusinessDays, getLeaveYear, FAMILY_EVENT_LABELS, FAMILY_EVENT_DAYS } from '@/lib/absence'
+import type { Absence, FamilyEventType, LeaveBalance } from '@/types'
 
 const absenceSchema = z.object({
-  absenceType: z.enum(['sick', 'vacation', 'training', 'unavailable', 'emergency'], {
+  absenceType: z.enum(['sick', 'vacation', 'family_event', 'training', 'unavailable', 'emergency'], {
     required_error: 'Veuillez sélectionner un type d\'absence',
   }),
   startDate: z.string().min(1, 'La date de début est requise'),
   endDate: z.string().min(1, 'La date de fin est requise'),
   reason: z.string().optional(),
+  familyEventType: z.string().optional(),
 }).refine(
-  (data) => {
-    if (!data.startDate || !data.endDate) return true
-    return new Date(data.endDate) >= new Date(data.startDate)
-  },
-  {
-    message: 'La date de début ne peut pas être postérieure à la date de fin',
-    path: ['startDate'],
-  }
-).refine(
   (data) => {
     if (!data.startDate || !data.endDate) return true
     return new Date(data.endDate) >= new Date(data.startDate)
@@ -43,22 +37,38 @@ const absenceSchema = z.object({
     message: 'La date de fin ne peut pas être antérieure à la date de début',
     path: ['endDate'],
   }
+).refine(
+  (data) => {
+    if (data.absenceType !== 'family_event') return true
+    return !!data.familyEventType
+  },
+  {
+    message: 'Veuillez sélectionner le type d\'événement familial',
+    path: ['familyEventType'],
+  }
 )
 
 type AbsenceFormData = z.infer<typeof absenceSchema>
 
 const absenceTypeOptions: { value: Absence['absenceType']; label: string }[] = [
   { value: 'sick', label: 'Maladie' },
-  { value: 'vacation', label: 'Congé' },
+  { value: 'vacation', label: 'Congé payé' },
+  { value: 'family_event', label: 'Événement familial' },
   { value: 'training', label: 'Formation' },
   { value: 'unavailable', label: 'Indisponibilité' },
   { value: 'emergency', label: 'Urgence personnelle' },
 ]
 
+const familyEventOptions = Object.entries(FAMILY_EVENT_LABELS).map(([value, label]) => ({
+  value,
+  label: `${label} (${FAMILY_EVENT_DAYS[value as FamilyEventType]}j)`,
+}))
+
 interface AbsenceRequestModalProps {
   isOpen: boolean
   onClose: () => void
   employeeId: string
+  contractId?: string
   defaultDate?: Date
   onSuccess: () => void
 }
@@ -67,6 +77,7 @@ export function AbsenceRequestModal({
   isOpen,
   onClose,
   employeeId,
+  contractId,
   defaultDate,
   onSuccess,
 }: AbsenceRequestModalProps) {
@@ -75,6 +86,7 @@ export function AbsenceRequestModal({
   const [justificationFile, setJustificationFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [isSingleDay, setIsSingleDay] = useState(true)
+  const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
@@ -92,17 +104,43 @@ export function AbsenceRequestModal({
       startDate: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       endDate: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       reason: '',
+      familyEventType: '',
     },
   })
 
   const selectedAbsenceType = useWatch({ control, name: 'absenceType' })
   const isSickLeave = selectedAbsenceType === 'sick'
+  const isFamilyEvent = selectedAbsenceType === 'family_event'
+  const isVacation = selectedAbsenceType === 'vacation'
   const startDateValue = watch('startDate')
+  const endDateValue = watch('endDate')
+
+  // Calculer les jours ouvrables
+  const businessDays = useMemo(() => {
+    if (!startDateValue || !endDateValue) return 0
+    const start = new Date(startDateValue)
+    const end = new Date(endDateValue)
+    if (end < start) return 0
+    return countBusinessDays(start, end)
+  }, [startDateValue, endDateValue])
+
+  // Charger le solde de congés
+  useEffect(() => {
+    if (!isOpen || !contractId || !isVacation || !startDateValue) {
+      setLeaveBalance(null)
+      return
+    }
+
+    const leaveYear = getLeaveYear(new Date(startDateValue))
+    getLeaveBalance(contractId, leaveYear)
+      .then(setLeaveBalance)
+      .catch(() => setLeaveBalance(null))
+  }, [isOpen, contractId, isVacation, startDateValue])
 
   // Synchroniser la date de fin avec la date de début quand "Toute la journée" est coché
   useEffect(() => {
     if (isSingleDay && startDateValue) {
-      setValue('endDate', startDateValue)
+      setValue('endDate', startDateValue, { shouldValidate: true })
     }
   }, [isSingleDay, startDateValue, setValue])
 
@@ -142,11 +180,13 @@ export function AbsenceRequestModal({
         startDate: format(date, 'yyyy-MM-dd'),
         endDate: format(date, 'yyyy-MM-dd'),
         reason: '',
+        familyEventType: '',
       })
       setSubmitError(null)
       setJustificationFile(null)
       setFileError(null)
       setIsSingleDay(true)
+      setLeaveBalance(null)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
@@ -181,6 +221,9 @@ export function AbsenceRequestModal({
         endDate: new Date(data.endDate),
         reason: data.reason || undefined,
         justificationUrl,
+        familyEventType: data.absenceType === 'family_event'
+          ? (data.familyEventType as FamilyEventType)
+          : undefined,
       })
 
       onSuccess()
@@ -240,6 +283,30 @@ export function AbsenceRequestModal({
                     {...register('absenceType')}
                   />
 
+                  {isFamilyEvent && (
+                    <AccessibleSelect
+                      label="Type d'événement"
+                      options={familyEventOptions}
+                      placeholder="Sélectionnez l'événement"
+                      error={errors.familyEventType?.message}
+                      required
+                      {...register('familyEventType')}
+                    />
+                  )}
+
+                  {isVacation && leaveBalance && (
+                    <Box p={3} bg="blue.50" borderRadius="md">
+                      <Text fontSize="sm" fontWeight="medium" color="blue.800">
+                        Solde de congés : {leaveBalance.remainingDays.toFixed(1)} jour(s) disponible(s)
+                      </Text>
+                      <Text fontSize="xs" color="blue.600">
+                        Acquis : {leaveBalance.acquiredDays.toFixed(1)}j |
+                        Pris : {leaveBalance.takenDays.toFixed(1)}j |
+                        Ajustement : {leaveBalance.adjustmentDays.toFixed(1)}j
+                      </Text>
+                    </Box>
+                  )}
+
                   <Box>
                     <Flex gap={4} mb={3}>
                       <Box flex={1}>
@@ -277,6 +344,12 @@ export function AbsenceRequestModal({
                       </Checkbox.Label>
                     </Checkbox.Root>
                   </Box>
+
+                  {businessDays > 0 && (
+                    <Text fontSize="sm" color="gray.600">
+                      {businessDays} jour(s) ouvrable(s) demandé(s)
+                    </Text>
+                  )}
 
                   <Box>
                     <Text fontWeight="medium" fontSize="md" mb={2}>
@@ -365,6 +438,7 @@ export function AbsenceRequestModal({
                       {!fileError && (
                         <Text fontSize="xs" color="gray.500" mt={2}>
                           Un justificatif (arrêt de travail) est obligatoire pour les absences maladie.
+                          Vous avez 48h pour le transmettre.
                         </Text>
                       )}
                     </Box>
@@ -379,7 +453,7 @@ export function AbsenceRequestModal({
 
                   {submitError && (
                     <Box p={4} bg="red.50" borderRadius="md">
-                      <Text color="red.700">{submitError}</Text>
+                      <Text color="red.700" whiteSpace="pre-line">{submitError}</Text>
                     </Box>
                   )}
                 </Stack>

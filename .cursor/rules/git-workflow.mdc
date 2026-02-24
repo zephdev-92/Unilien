@@ -1,0 +1,65 @@
+---
+description: Git workflow rules - branch per commit, lint/test before push, PR format
+alwaysApply: true
+---
+
+# Git Workflow Rules
+
+## Règles Obligatoires
+
+1. **Nouvelle branche par commit** : Chaque commit doit être sur une branche dédiée (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/`)
+2. **Lint + Tests avant push** : Exécuter `npm run lint` et `npm run test:run` avant tout push. Les deux doivent passer sans erreur.
+3. **Demander l'autorisation** : Toujours demander le feu vert de l'utilisateur avant de push.
+4. **PR formatée** : Fournir l'URL de création et le texte complet prêt à copier/coller.
+
+## Format de PR
+
+```
+URL PR : https://github.com/zephdev-92/Unilien/pull/new/<branch-name>
+
+---
+Texte PR
+
+Titre: <type>(<scope>): <description>
+
+## Summary
+
+<Résumé concis des changements>
+
+### <Section 1>
+- Détail 1
+- Détail 2
+
+### <Section 2>
+- Détail 1
+- Détail 2
+
+## Test plan
+
+- [ ] Test 1
+- [ ] Test 2
+```
+
+## Workflow Complet
+
+```bash
+# 1. Créer la branche
+git checkout -b <type>/<description>
+
+# 2. Stage + Commit
+git add <files>
+git commit -F <message-file>
+
+# 3. Lint
+npm run lint
+
+# 4. Tests
+npm run test:run
+
+# 5. DEMANDER AUTORISATION à l'utilisateur
+
+# 6. Push (après accord)
+git push -u origin <branch>
+
+# 7. Fournir URL PR + texte formaté
+```

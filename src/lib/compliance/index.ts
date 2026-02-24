@@ -71,6 +71,11 @@ export {
 } from './rules/validateOverlap'
 
 export {
+  validateAbsenceConflict,
+  type AbsenceForValidation,
+} from './rules/validateAbsenceConflict'
+
+export {
   validateWeeklyRest,
   getWeeklyRestStatus,
 } from './rules/validateWeeklyRest'

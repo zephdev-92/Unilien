@@ -11,6 +11,8 @@ import {
   createContractCreatedNotification,
   createContractTerminatedNotification,
 } from '@/services/notificationService'
+import { calculateAcquiredFromMonths, getLeaveYear } from '@/lib/absence'
+import { initializeLeaveBalanceWithOverride } from '@/services/leaveBalanceService'
 
 export interface ContractWithEmployee extends Contract {
   employee?: {
@@ -25,6 +27,9 @@ interface ContractCreateData {
   endDate?: Date
   weeklyHours: number
   hourlyRate: number
+  // Reprise historique congés (contrat antérieur)
+  initialMonthsWorked?: number
+  initialTakenDays?: number
 }
 
 interface ContractUpdateData {
@@ -170,6 +175,25 @@ export async function createContract(
     throw new Error('Erreur lors de la création du contrat')
   }
 
+  // Initialiser le solde de congés si reprise historique fournie
+  if (contractData.initialMonthsWorked !== undefined && contractData.initialMonthsWorked > 0) {
+    try {
+      const leaveYear = getLeaveYear(new Date())
+      const acquiredDays = calculateAcquiredFromMonths(contractData.initialMonthsWorked)
+      await initializeLeaveBalanceWithOverride(
+        data.id,
+        employeeId,
+        employerId,
+        leaveYear,
+        acquiredDays,
+        contractData.initialTakenDays || 0
+      )
+    } catch (err) {
+      logger.error('Erreur initialisation reprise congés:', err)
+      // Non-bloquant : le contrat est créé même si la reprise échoue
+    }
+  }
+
   // Notifier l'auxiliaire du nouveau contrat
   try {
     const employerName = await getProfileName(employerId)
@@ -309,7 +333,7 @@ export async function resumeContract(contractId: string): Promise<void> {
  */
 export async function searchEmployeeByEmail(
   email: string
-): Promise<{ id: string; firstName: string; lastName: string; profileComplete: boolean } | null> {
+): Promise<{ id: string; firstName: string; lastName: string } | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, role')
@@ -321,25 +345,41 @@ export async function searchEmployeeByEmail(
     return null
   }
 
-  // Vérifier que l'auxiliaire a bien une ligne dans la table employees
-  // (créée quand il complète son profil)
-  const { data: employeeRow } = await supabase
-    .from('employees')
-    .select('profile_id')
-    .eq('profile_id', data.id)
-    .maybeSingle()
-
   return {
     id: data.id,
     firstName: data.first_name,
     lastName: data.last_name,
-    profileComplete: !!employeeRow,
   }
 }
 
 /**
  * Vérifie si un contrat actif existe entre un employeur et un employé
  */
+/**
+ * Retourne l'id de l'employeur associé à un employé via son contrat actif.
+ * Utilisé par `useEmployerResolution` pour les utilisateurs de rôle `employee`.
+ *
+ * @returns L'`employer_id` du contrat actif, ou `null` si aucun contrat trouvé.
+ */
+export async function getActiveEmployerIdForEmployee(
+  employeeId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('employer_id')
+    .eq('employee_id', employeeId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Erreur résolution employeur (contrat actif):', error)
+    return null
+  }
+
+  return data?.employer_id ?? null
+}
+
 export async function hasActiveContract(
   employerId: string,
   employeeId: string

@@ -3,6 +3,16 @@
  * Convention Collective IDCC 3239 - Particuliers Employeurs
  */
 
+// Type d'intervention
+export type ShiftType = 'effective' | 'presence_day' | 'presence_night' | 'guard_24h'
+
+// Segment d'une Garde 24h libre
+export interface GuardSegment {
+  startTime: string   // "HH:mm"
+  type: 'effective' | 'presence_day' | 'presence_night'
+  breakMinutes?: number
+}
+
 // Intervention simplifiée pour validation
 export interface ShiftForValidation {
   id?: string
@@ -13,6 +23,9 @@ export interface ShiftForValidation {
   endTime: string // "HH:mm"
   breakDuration: number // minutes
   hasNightAction?: boolean // true = acte de nuit (majoration 20%), false/undefined = présence seule (pas de majoration)
+  shiftType?: ShiftType // Type d'intervention (défaut: 'effective')
+  nightInterventionsCount?: number // Nombre d'interventions pendant présence nuit (pour seuil requalification)
+  guardSegments?: GuardSegment[] // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
 }
 
 // Contrat simplifié pour calculs
@@ -39,6 +52,11 @@ export const COMPLIANCE_RULES = {
   WEEKLY_MAX_HOURS: 'WEEKLY_MAX_HOURS',
   DAILY_MAX_HOURS: 'DAILY_MAX_HOURS',
   SHIFT_OVERLAP: 'SHIFT_OVERLAP',
+  ABSENCE_CONFLICT: 'ABSENCE_CONFLICT',
+  NIGHT_PRESENCE_MAX_DURATION: 'NIGHT_PRESENCE_MAX_DURATION',
+  CONSECUTIVE_NIGHTS_MAX: 'CONSECUTIVE_NIGHTS_MAX',
+  GUARD_MAX_AMPLITUDE: 'GUARD_MAX_AMPLITUDE',
+  GUARD_24H_EFFECTIVE_MAX: 'GUARD_24H_EFFECTIVE_MAX',
 } as const
 
 export type ComplianceRuleCode = (typeof COMPLIANCE_RULES)[keyof typeof COMPLIANCE_RULES]
@@ -78,6 +96,34 @@ export const COMPLIANCE_MESSAGES = {
     error: (existingShift: string) =>
       `Chevauchement avec une intervention existante : ${existingShift}`,
     rule: 'Une seule intervention à la fois par auxiliaire',
+  },
+  ABSENCE_CONFLICT: {
+    error: (absenceType: string, dateInfo: string) =>
+      `L'auxiliaire est en ${absenceType} ${dateInfo}. Impossible de planifier une intervention pendant une absence approuvée.`,
+    rule: 'Pas d\'intervention pendant une absence approuvée',
+  },
+  NIGHT_PRESENCE_MAX_DURATION: {
+    error: (hours: number) =>
+      `Présence de nuit trop longue : ${hours.toFixed(1)}h au lieu de 12h maximum consécutives.`,
+    rule: 'Présence responsable de nuit limitée à 12h consécutives (Art. 148 IDCC 3239)',
+  },
+  CONSECUTIVE_NIGHTS_MAX: {
+    error: (nights: number) =>
+      `Trop de nuits consécutives : ${nights} au lieu de 5 maximum.`,
+    rule: 'Maximum 5 nuits consécutives de présence responsable (Art. 148 IDCC 3239)',
+  },
+  GUARD_MAX_AMPLITUDE: {
+    error: (hours: number) =>
+      `Amplitude de garde trop longue : ${hours.toFixed(1)}h au lieu de 24h maximum. Le cumul travail effectif + présence responsable ne peut pas dépasser 24h.`,
+    rule: 'Amplitude maximale de garde de 24h (IDCC 3239)',
+  },
+  GUARD_24H_EFFECTIVE_MAX: {
+    error: (hours: number) =>
+      `Total travail effectif trop long : ${hours.toFixed(1)}h (maximum 12h par jour, Art. L3121-18). Réduisez les segments effectifs.`,
+    warningNight: (hours: number) =>
+      `Présence de nuit longue : ${hours.toFixed(1)}h. Vérifiez que cela est conforme à votre accord avec l'employé.`,
+    missingSegments: 'Aucun segment défini pour cette garde 24h. Ajoutez au moins 2 segments.',
+    rule: 'Garde 24h : total travail effectif ≤ 12h (Art. L3121-18 Code du travail)',
   },
 } as const
 

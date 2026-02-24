@@ -12,6 +12,11 @@ import { validateWeeklyHours, getRemainingWeeklyHours } from './rules/validateWe
 import { validateDailyHours, getRemainingDailyHours } from './rules/validateDailyHours'
 import { validateOverlap, findOverlappingShifts } from './rules/validateOverlap'
 import { validateWeeklyRest, getWeeklyRestStatus } from './rules/validateWeeklyRest'
+import { validateAbsenceConflict, type AbsenceForValidation } from './rules/validateAbsenceConflict'
+import { validateNightPresenceDuration } from './rules/validateNightPresenceDuration'
+import { validateConsecutiveNights } from './rules/validateConsecutiveNights'
+import { validateGuardAmplitude } from './rules/validateGuardAmplitude'
+import { validateGuard24h } from './rules/validateGuard24h'
 import { calculateShiftDuration } from './utils'
 
 /**
@@ -20,10 +25,17 @@ import { calculateShiftDuration } from './utils'
  */
 export function validateShift(
   newShift: ShiftForValidation,
-  existingShifts: ShiftForValidation[]
+  existingShifts: ShiftForValidation[],
+  approvedAbsences: AbsenceForValidation[] = []
 ): ComplianceResult {
   const errors: ComplianceError[] = []
   const warnings: ComplianceWarning[] = []
+
+  // 0. Validation conflit absence approuvée (BLOQUANT)
+  if (approvedAbsences.length > 0) {
+    const absenceResult = validateAbsenceConflict(newShift, approvedAbsences)
+    processResult(absenceResult, errors, warnings, true)
+  }
 
   // 1. Validation chevauchement (BLOQUANT)
   const overlapResult = validateOverlap(newShift, existingShifts)
@@ -35,9 +47,19 @@ export function validateShift(
     processResult(result, errors, warnings, true)
   }
 
-  // 3. Validation durée quotidienne max (BLOQUANT)
-  const dailyHoursResult = validateDailyHours(newShift, existingShifts)
-  processResult(dailyHoursResult, errors, warnings, true)
+  // 3. Validation durée quotidienne max (AVERTISSEMENT avec infos repos IDCC 3239)
+  // Pour guard_24h : règle spécifique (partie effective ≤ 12h, partie nuit ≤ 12h)
+  if ((newShift.shiftType || 'effective') === 'guard_24h') {
+    const guard24hResult = validateGuard24h(newShift)
+    processResult(guard24hResult, errors, warnings, true)
+  } else {
+    const dailyHoursResult = validateDailyHours(newShift, existingShifts)
+    if (!dailyHoursResult.valid && dailyHoursResult.details?.isWarning) {
+      processResult(dailyHoursResult, errors, warnings, false)
+    } else {
+      processResult(dailyHoursResult, errors, warnings, true)
+    }
+  }
 
   // 4. Validation durée hebdomadaire max (BLOQUANT si > 48h, AVERTISSEMENT si > 44h)
   const weeklyHoursResult = validateWeeklyHours(newShift, existingShifts)
@@ -54,6 +76,21 @@ export function validateShift(
   // 6. Validation pause obligatoire (AVERTISSEMENT)
   const breakResult = validateBreak(newShift)
   processResult(breakResult, errors, warnings, false)
+
+  // 7. Validation durée max présence de nuit — 12h (BLOQUANT)
+  // guard_24h : déjà géré par validateGuard24h (étape 3)
+  if ((newShift.shiftType || 'effective') !== 'guard_24h') {
+    const nightPresenceDurationResult = validateNightPresenceDuration(newShift)
+    processResult(nightPresenceDurationResult, errors, warnings, true)
+  }
+
+  // 8. Validation nuits consécutives — max 5 (BLOQUANT)
+  const consecutiveNightsResult = validateConsecutiveNights(newShift, existingShifts)
+  processResult(consecutiveNightsResult, errors, warnings, true)
+
+  // 9. Validation amplitude maximale de garde — 24h (BLOQUANT)
+  const guardAmplitudeResult = validateGuardAmplitude(newShift, existingShifts)
+  processResult(guardAmplitudeResult, errors, warnings, true)
 
   return {
     valid: errors.length === 0,
@@ -121,16 +158,43 @@ export function quickValidate(
     blockingErrors.push(dailyRestResult.message)
   }
 
-  // Durée max quotidienne
-  const dailyHoursResult = validateDailyHours(newShift, existingShifts)
-  if (!dailyHoursResult.valid && dailyHoursResult.message) {
-    blockingErrors.push(dailyHoursResult.message)
+  // Durée max quotidienne (ou règle spécifique garde 24h)
+  if ((newShift.shiftType || 'effective') === 'guard_24h') {
+    const guard24hResult = validateGuard24h(newShift)
+    if (!guard24hResult.valid && guard24hResult.message) {
+      blockingErrors.push(guard24hResult.message)
+    }
+  } else {
+    const dailyHoursResult = validateDailyHours(newShift, existingShifts)
+    if (!dailyHoursResult.valid && dailyHoursResult.message) {
+      blockingErrors.push(dailyHoursResult.message)
+    }
   }
 
   // Durée max hebdomadaire
   const weeklyHoursResult = validateWeeklyHours(newShift, existingShifts)
   if (!weeklyHoursResult.valid && weeklyHoursResult.message) {
     blockingErrors.push(weeklyHoursResult.message)
+  }
+
+  // Durée max présence de nuit (12h) — guard_24h géré par validateGuard24h ci-dessus
+  if ((newShift.shiftType || 'effective') !== 'guard_24h') {
+    const nightPresenceDurationResult = validateNightPresenceDuration(newShift)
+    if (!nightPresenceDurationResult.valid && nightPresenceDurationResult.message) {
+      blockingErrors.push(nightPresenceDurationResult.message)
+    }
+  }
+
+  // Nuits consécutives max (5)
+  const consecutiveNightsResult = validateConsecutiveNights(newShift, existingShifts)
+  if (!consecutiveNightsResult.valid && consecutiveNightsResult.message) {
+    blockingErrors.push(consecutiveNightsResult.message)
+  }
+
+  // Amplitude max garde (24h)
+  const guardAmplitudeResult = validateGuardAmplitude(newShift, existingShifts)
+  if (!guardAmplitudeResult.valid && guardAmplitudeResult.message) {
+    blockingErrors.push(guardAmplitudeResult.message)
   }
 
   return {
@@ -277,8 +341,15 @@ export {
   validateDailyHours,
   validateOverlap,
   validateWeeklyRest,
+  validateAbsenceConflict,
+  validateNightPresenceDuration,
+  validateConsecutiveNights,
+  validateGuardAmplitude,
+  validateGuard24h,
   getRecommendedBreak,
   getRemainingWeeklyHours,
   getRemainingDailyHours,
   getWeeklyRestStatus,
 }
+
+export type { AbsenceForValidation }

@@ -159,7 +159,7 @@ export async function upsertCaregiver(
     profile_id: profileId,
     employer_id: data.employerId,
     permissions: data.permissions,
-    relationship: data.relationship || null,
+    relationship: data.relationship ? sanitizeText(data.relationship) : null,
   }
 
   const { error } = await supabase
@@ -187,12 +187,19 @@ export async function updateCaregiverProfile(
     canReplaceEmployer?: boolean
   }
 ): Promise<void> {
+  const sanitizedAddress = data.address ? {
+    street: data.address.street ? sanitizeText(data.address.street) : '',
+    city: data.address.city ? sanitizeText(data.address.city) : '',
+    postalCode: data.address.postalCode ? sanitizeText(data.address.postalCode) : '',
+    country: data.address.country || 'France',
+  } : null
+
   const updateData = {
     relationship: data.relationship || null,
     relationship_details: data.relationshipDetails ? sanitizeText(data.relationshipDetails) : null,
     legal_status: data.legalStatus || null,
-    address: data.address || null,
-    emergency_phone: data.emergencyPhone || null,
+    address: sanitizedAddress,
+    emergency_phone: data.emergencyPhone ? sanitizeText(data.emergencyPhone) : null,
     availability_hours: data.availabilityHours ? sanitizeText(data.availabilityHours) : null,
     can_replace_employer: data.canReplaceEmployer ?? false,
   }
@@ -553,12 +560,18 @@ function mapShiftFromDb(data: ShiftDbRow): Shift {
     tasks: data.tasks || [],
     notes: data.notes || undefined,
     status: data.status,
+    shiftType: data.shift_type || 'effective',
+    nightInterventionsCount: data.night_interventions_count ?? undefined,
+    isRequalified: data.is_requalified ?? false,
+    effectiveHours: data.effective_hours ?? undefined,
     computedPay: data.computed_pay || {
       basePay: 0,
       sundayMajoration: 0,
       holidayMajoration: 0,
       nightMajoration: 0,
       overtimeMajoration: 0,
+      presenceResponsiblePay: 0,
+      nightPresenceAllowance: 0,
       totalPay: 0,
     },
     validatedByEmployer: data.validated_by_employer,

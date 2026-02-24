@@ -72,13 +72,14 @@ describe('validateShift', () => {
       expect(result.errors.some(e => e.code === COMPLIANCE_RULES.DAILY_REST)).toBe(true)
     })
 
-    it('devrait détecter dépassement heures quotidiennes', () => {
+    it('devrait avertir (pas bloquer) pour dépassement heures quotidiennes', () => {
       const newShift = createShift('2025-01-15', '06:00', '18:00') // 12h
 
       const result = validateShift(newShift, [])
 
-      expect(result.valid).toBe(false)
-      expect(result.errors.some(e => e.code === COMPLIANCE_RULES.DAILY_MAX_HOURS)).toBe(true)
+      // >10h est maintenant un avertissement, pas une erreur bloquante
+      expect(result.valid).toBe(true)
+      expect(result.warnings.some(w => w.code === COMPLIANCE_RULES.DAILY_MAX_HOURS)).toBe(true)
     })
 
     it('devrait détecter dépassement heures hebdomadaires', () => {
@@ -126,17 +127,18 @@ describe('validateShift', () => {
   })
 
   describe('Cumul des erreurs', () => {
-    it('devrait retourner plusieurs erreurs si multiples violations', () => {
+    it('devrait retourner erreur + avertissement si multiples violations', () => {
       const existingShifts = [
         createShift('2025-01-15', '08:00', '16:00', 'employee-1', 'shift-1'),
       ]
-      // Nouvelle intervention qui chevauche ET dépasse 10h quotidiennes
+      // Nouvelle intervention qui chevauche (erreur) ET dépasse 10h quotidiennes (warning)
       const newShift = createShift('2025-01-15', '10:00', '22:00') // 12h + chevauchement
 
       const result = validateShift(newShift, existingShifts)
 
       expect(result.valid).toBe(false)
-      expect(result.errors.length).toBeGreaterThanOrEqual(2)
+      expect(result.errors.some(e => e.code === COMPLIANCE_RULES.SHIFT_OVERLAP)).toBe(true)
+      expect(result.warnings.some(w => w.code === COMPLIANCE_RULES.DAILY_MAX_HOURS)).toBe(true)
     })
   })
 })
