@@ -2,10 +2,64 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Profile, Employer, Employee } from '@/types'
+import type { ProfileDbRow } from '@/types/database'
+import { mapProfileFromDb } from '@/lib/mappers'
 
 // ============================================
 // PROFILE (informations personnelles)
 // ============================================
+
+/**
+ * Récupère un profil par son ID utilisateur.
+ * emailOverride permet de forcer l'email depuis le token auth (source de vérité).
+ */
+export async function getProfileById(
+  userId: string,
+  emailOverride?: string
+): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Erreur récupération profil:', error)
+    return null
+  }
+
+  return data ? mapProfileFromDb(data as ProfileDbRow, emailOverride) : null
+}
+
+/**
+ * Crée un profil minimal (fallback si le trigger Supabase ne l'a pas créé).
+ * Retourne true si la création a réussi.
+ */
+export async function createFallbackProfile(profile: {
+  id: string
+  role: string
+  firstName: string
+  lastName: string
+  email: string | null
+}): Promise<boolean> {
+  const { error } = await supabase.from('profiles').insert({
+    id: profile.id,
+    role: profile.role,
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    email: profile.email,
+    phone: null,
+    avatar_url: null,
+    accessibility_settings: {},
+  })
+
+  if (error) {
+    logger.error('Erreur création profil fallback:', error)
+    return false
+  }
+
+  return true
+}
 
 export async function updateProfile(
   profileId: string,

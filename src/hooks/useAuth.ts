@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
-import type { ProfileDbRow } from '@/types/database'
 import { logger } from '@/lib/logger'
-import { mapProfileFromDb, createDefaultProfile } from '@/lib/mappers'
+import { createDefaultProfile } from '@/lib/mappers'
+import { getProfileById, createFallbackProfile } from '@/services/profileService'
 
 interface SignUpData {
   email: string
@@ -104,18 +104,13 @@ export function useAuth() {
         setUser(currentSession.user)
 
         // Récupérer le profil
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentSession.user.id)
-          .maybeSingle()
+        const profile = await getProfileById(
+          currentSession.user.id,
+          currentSession.user.email || ''
+        )
 
-        if (profileError) {
-          logger.error('Erreur récupération profil:', profileError)
-        }
-
-        if (profileData) {
-          setProfile(mapProfileFromDb(profileData as ProfileDbRow, currentSession.user.email || ''))
+        if (profile) {
+          setProfile(profile)
         } else {
           // Profil manquant - créer automatiquement à partir des métadonnées auth
           const defaultProfile = createDefaultProfile(
@@ -124,20 +119,15 @@ export function useAuth() {
             currentSession.user.user_metadata
           )
 
-          const { error: createError } = await supabase.from('profiles').insert({
+          const created = await createFallbackProfile({
             id: defaultProfile.id,
             role: defaultProfile.role,
-            first_name: defaultProfile.firstName,
-            last_name: defaultProfile.lastName,
+            firstName: defaultProfile.firstName,
+            lastName: defaultProfile.lastName,
             email: currentSession.user.email || null,
-            phone: null,
-            avatar_url: null,
-            accessibility_settings: {},
           })
 
-          if (createError) {
-            logger.error('Erreur création profil fallback:', createError)
-          } else {
+          if (created) {
             setProfile(defaultProfile)
           }
         }
@@ -247,14 +237,13 @@ export function useAuth() {
         }
 
         // Récupérer le profil
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .maybeSingle()
+        const profile = await getProfileById(
+          authData.user.id,
+          authData.user.email || ''
+        )
 
-        if (profileData) {
-          setProfile(mapProfileFromDb(profileData as ProfileDbRow, authData.user.email || ''))
+        if (profile) {
+          setProfile(profile)
         } else {
           // Profil manquant - créer automatiquement à partir des métadonnées auth
           const defaultProfile = createDefaultProfile(
@@ -263,18 +252,15 @@ export function useAuth() {
             authData.user.user_metadata
           )
 
-          const { error: createError } = await supabase.from('profiles').insert({
+          const created = await createFallbackProfile({
             id: defaultProfile.id,
             role: defaultProfile.role,
-            first_name: defaultProfile.firstName,
-            last_name: defaultProfile.lastName,
+            firstName: defaultProfile.firstName,
+            lastName: defaultProfile.lastName,
             email: authData.user.email || null,
-            phone: null,
-            avatar_url: null,
-            accessibility_settings: {},
           })
 
-          if (!createError) {
+          if (created) {
             setProfile(defaultProfile)
           }
         }

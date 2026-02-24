@@ -8,6 +8,8 @@ import {
   upsertEmployer,
   getEmployee,
   upsertEmployee,
+  getProfileById,
+  createFallbackProfile,
 } from './profileService'
 
 // Mock du client Supabase
@@ -18,6 +20,7 @@ const mockList = vi.fn()
 const mockGetPublicUrl = vi.fn()
 const mockSelect = vi.fn()
 const mockUpsert = vi.fn()
+const mockInsert = vi.fn()
 const mockEq = vi.fn()
 const mockMaybeSingle = vi.fn()
 
@@ -27,6 +30,7 @@ vi.mock('@/lib/supabase/client', () => ({
       update: mockUpdate,
       select: mockSelect,
       upsert: mockUpsert,
+      insert: mockInsert,
     })),
     storage: {
       from: vi.fn(() => ({
@@ -37,6 +41,22 @@ vi.mock('@/lib/supabase/client', () => ({
       })),
     },
   },
+}))
+
+vi.mock('@/lib/mappers', () => ({
+  mapProfileFromDb: vi.fn((data: Record<string, unknown>, email?: string) => ({
+    id: data.id,
+    role: data.role,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    email: email ?? data.email ?? '',
+    phone: data.phone ?? undefined,
+    avatarUrl: data.avatar_url ?? undefined,
+    accessibilitySettings: data.accessibility_settings ?? {},
+    createdAt: new Date(data.created_at as string),
+    updatedAt: new Date(data.updated_at as string),
+  })),
+  createDefaultProfile: vi.fn(),
 }))
 
 describe('profileService', () => {
@@ -423,6 +443,97 @@ describe('profileService', () => {
       await expect(
         upsertEmployee('profile-123', { qualifications: ['Test'] })
       ).rejects.toThrow('Upsert failed')
+    })
+  })
+
+  // ─── getProfileById ────────────────────────────────────────────────────────
+  describe('getProfileById', () => {
+    const mockProfileRow = {
+      id: 'user-1',
+      role: 'employee',
+      first_name: 'Jean',
+      last_name: 'Dupont',
+      email: 'jean@example.com',
+      phone: null,
+      avatar_url: null,
+      accessibility_settings: {},
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    }
+
+    it('retourne le profil mappé si trouvé', async () => {
+      mockSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: mockProfileRow, error: null }),
+        }),
+      })
+
+      const result = await getProfileById('user-1', 'override@example.com')
+
+      expect(result).not.toBeNull()
+      expect(result?.id).toBe('user-1')
+      expect(result?.email).toBe('override@example.com')
+    })
+
+    it('retourne null si le profil n\'existe pas', async () => {
+      mockSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      })
+
+      const result = await getProfileById('user-inconnu')
+
+      expect(result).toBeNull()
+    })
+
+    it('retourne null et log en cas d\'erreur DB', async () => {
+      mockSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'DB error' },
+          }),
+        }),
+      })
+
+      const result = await getProfileById('user-1')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  // ─── createFallbackProfile ─────────────────────────────────────────────────
+  describe('createFallbackProfile', () => {
+    it('retourne true si l\'insertion réussit', async () => {
+      mockInsert.mockResolvedValue({ error: null })
+
+      const result = await createFallbackProfile({
+        id: 'user-1',
+        role: 'employee',
+        firstName: 'Jean',
+        lastName: 'Dupont',
+        email: 'jean@example.com',
+      })
+
+      expect(result).toBe(true)
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'user-1', role: 'employee' })
+      )
+    })
+
+    it('retourne false si l\'insertion échoue', async () => {
+      mockInsert.mockResolvedValue({ error: { message: 'Insert failed' } })
+
+      const result = await createFallbackProfile({
+        id: 'user-1',
+        role: 'employee',
+        firstName: 'Jean',
+        lastName: 'Dupont',
+        email: null,
+      })
+
+      expect(result).toBe(false)
     })
   })
 })
