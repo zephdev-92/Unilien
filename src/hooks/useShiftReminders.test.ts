@@ -1,170 +1,123 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-// Mock Supabase client
-const mockFrom = vi.fn()
+// ─── Mocks services ───────────────────────────────────────────────────────────
 
-/**
- * Crée une chaine fluide de requête Supabase mockée.
- * Chaque méthode retourne la chaine elle-même ET l'objet
- * est "thenable" pour que `await` resolve le résultat final.
- */
-function createChain(finalResult: unknown) {
-  const chain: Record<string, unknown> = {}
-  const methods = ['select', 'eq', 'gte', 'lte', 'in', 'order', 'limit']
-  for (const m of methods) {
-    chain[m] = vi.fn().mockReturnValue(chain)
-  }
-  // Rendre la chaine awaitable (thenable)
-  chain.then = (resolve: (v: unknown) => void) => resolve(finalResult)
-  return chain
-}
+const mockGetUpcomingShiftsForEmployee = vi.fn()
 
-vi.mock('@/lib/supabase/client', () => ({
-  supabase: {
-    from: (...args: unknown[]) => mockFrom(...args),
-  },
+vi.mock('@/services/shiftService', () => ({
+  getUpcomingShiftsForEmployee: (...args: unknown[]) =>
+    mockGetUpcomingShiftsForEmployee(...args),
 }))
 
-// Mock notificationService
+const mockGetAlreadyNotifiedShiftIds = vi.fn()
 const mockGetProfileName = vi.fn()
 const mockCreateShiftReminderNotification = vi.fn()
 
 vi.mock('@/services/notificationService', () => ({
+  getAlreadyNotifiedShiftIds: (...args: unknown[]) =>
+    mockGetAlreadyNotifiedShiftIds(...args),
   getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
   createShiftReminderNotification: (...args: unknown[]) =>
     mockCreateShiftReminderNotification(...args),
 }))
 
-// Mock logger
 vi.mock('@/lib/logger', () => ({
-  logger: {
-    error: vi.fn(),
-    warn: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-  },
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
 import { useShiftReminders } from './useShiftReminders'
 import { logger } from '@/lib/logger'
 
+// ─── Données mock ─────────────────────────────────────────────────────────────
+
+const MOCK_SHIFTS = [
+  {
+    id: 'shift-1',
+    date: '2025-06-15',
+    start_time: '09:00',
+    contract_id: 'contract-1',
+    contract: { employer_id: 'employer-1', employee_id: 'user-123' },
+  },
+  {
+    id: 'shift-2',
+    date: '2025-06-15',
+    start_time: '14:00',
+    contract_id: 'contract-1',
+    contract: { employer_id: 'employer-1', employee_id: 'user-123' },
+  },
+]
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
 describe('useShiftReminders', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockGetUpcomingShiftsForEmployee.mockResolvedValue([])
+    mockGetAlreadyNotifiedShiftIds.mockResolvedValue(new Set())
   })
 
   it('ne devrait rien faire si userId est undefined', () => {
     renderHook(() => useShiftReminders(undefined, 'employee'))
 
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockGetUpcomingShiftsForEmployee).not.toHaveBeenCalled()
   })
 
   it('ne devrait rien faire si role est undefined', () => {
     renderHook(() => useShiftReminders('user-123', undefined))
 
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockGetUpcomingShiftsForEmployee).not.toHaveBeenCalled()
   })
 
-  it('ne devrait rien faire si le role n\'est pas employee', () => {
+  it("ne devrait rien faire si le role n'est pas employee", () => {
     renderHook(() => useShiftReminders('user-123', 'employer'))
 
-    expect(mockFrom).not.toHaveBeenCalled()
+    expect(mockGetUpcomingShiftsForEmployee).not.toHaveBeenCalled()
   })
 
-  it('devrait s\'exécuter une seule fois grâce à hasRun', async () => {
-    const shiftsChain = createChain({ data: [], error: null })
-    mockFrom.mockReturnValue(shiftsChain)
-
+  it("devrait s'exécuter une seule fois grâce à hasRun", async () => {
     const { rerender } = renderHook(
       ({ userId, role }) => useShiftReminders(userId, role),
       { initialProps: { userId: 'user-123', role: 'employee' } }
     )
 
-    // Attendre que l'effet asynchrone s'exécute
     await vi.waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledTimes(1)
+      expect(mockGetUpcomingShiftsForEmployee).toHaveBeenCalledTimes(1)
     })
 
-    // Re-render avec les memes props
+    // Re-render — ne devrait pas re-exécuter
     rerender({ userId: 'user-123', role: 'employee' })
-
-    // Ne devrait pas re-exécuter
-    expect(mockFrom).toHaveBeenCalledTimes(1)
+    expect(mockGetUpcomingShiftsForEmployee).toHaveBeenCalledTimes(1)
   })
 
-  it('devrait récupérer les shifts des prochaines 24h', async () => {
-    const shiftsChain = createChain({ data: [], error: null })
-    mockFrom.mockReturnValue(shiftsChain)
-
+  it('devrait appeler getUpcomingShiftsForEmployee avec les dates correctes', async () => {
     renderHook(() => useShiftReminders('user-123', 'employee'))
 
     await vi.waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledWith('shifts')
+      expect(mockGetUpcomingShiftsForEmployee).toHaveBeenCalledWith(
+        'user-123',
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      )
     })
-
-    expect(shiftsChain.select).toHaveBeenCalled()
-    expect(shiftsChain.eq).toHaveBeenCalledWith('contract.employee_id', 'user-123')
-    expect(shiftsChain.eq).toHaveBeenCalledWith('status', 'planned')
   })
 
-  it('devrait ne rien faire si la requête shifts retourne une erreur', async () => {
-    const shiftsChain = createChain({ data: null, error: new Error('DB error') })
-    mockFrom.mockReturnValue(shiftsChain)
+  it("devrait ne rien faire si aucun shift n'est trouvé", async () => {
+    mockGetUpcomingShiftsForEmployee.mockResolvedValue([])
 
     renderHook(() => useShiftReminders('user-123', 'employee'))
 
     await vi.waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledTimes(1)
-    })
-
-    // Ne devrait pas tenter de créer des rappels
-    expect(mockGetProfileName).not.toHaveBeenCalled()
-    expect(mockCreateShiftReminderNotification).not.toHaveBeenCalled()
-  })
-
-  it('devrait ne rien faire si aucun shift n\'est trouvé', async () => {
-    const shiftsChain = createChain({ data: [], error: null })
-    mockFrom.mockReturnValue(shiftsChain)
-
-    renderHook(() => useShiftReminders('user-123', 'employee'))
-
-    await vi.waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledTimes(1)
+      expect(mockGetUpcomingShiftsForEmployee).toHaveBeenCalledTimes(1)
     })
 
     expect(mockGetProfileName).not.toHaveBeenCalled()
+    expect(mockGetAlreadyNotifiedShiftIds).not.toHaveBeenCalled()
   })
 
   it('devrait créer des rappels pour les shifts sans notification existante', async () => {
-    const mockShifts = [
-      {
-        id: 'shift-1',
-        date: '2025-06-15',
-        start_time: '09:00',
-        contract_id: 'contract-1',
-        contract: { employer_id: 'employer-1', employee_id: 'user-123' },
-      },
-      {
-        id: 'shift-2',
-        date: '2025-06-15',
-        start_time: '14:00',
-        contract_id: 'contract-1',
-        contract: { employer_id: 'employer-1', employee_id: 'user-123' },
-      },
-    ]
-
-    // Premier appel : from('shifts') retourne les shifts
-    const shiftsChain = createChain({ data: mockShifts, error: null })
-    // Deuxième appel : from('notifications') retourne les notifs existantes
-    const notifsChain = createChain({ data: [], error: null })
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'shifts') return shiftsChain
-      if (table === 'notifications') return notifsChain
-      return shiftsChain
-    })
-
+    mockGetUpcomingShiftsForEmployee.mockResolvedValue(MOCK_SHIFTS)
+    mockGetAlreadyNotifiedShiftIds.mockResolvedValue(new Set())
     mockGetProfileName.mockResolvedValue('M. Martin')
     mockCreateShiftReminderNotification.mockResolvedValue(undefined)
 
@@ -176,50 +129,16 @@ describe('useShiftReminders', () => {
 
     expect(mockGetProfileName).toHaveBeenCalledWith('employer-1')
     expect(mockCreateShiftReminderNotification).toHaveBeenCalledWith(
-      'user-123',
-      'M. Martin',
-      expect.any(Date),
-      '09:00',
-      'shift-1'
+      'user-123', 'M. Martin', expect.any(Date), '09:00', 'shift-1'
     )
     expect(mockCreateShiftReminderNotification).toHaveBeenCalledWith(
-      'user-123',
-      'M. Martin',
-      expect.any(Date),
-      '14:00',
-      'shift-2'
+      'user-123', 'M. Martin', expect.any(Date), '14:00', 'shift-2'
     )
   })
 
   it('devrait ignorer les shifts déjà notifiés', async () => {
-    const mockShifts = [
-      {
-        id: 'shift-1',
-        date: '2025-06-15',
-        start_time: '09:00',
-        contract_id: 'contract-1',
-        contract: { employer_id: 'employer-1', employee_id: 'user-123' },
-      },
-      {
-        id: 'shift-2',
-        date: '2025-06-15',
-        start_time: '14:00',
-        contract_id: 'contract-1',
-        contract: { employer_id: 'employer-1', employee_id: 'user-123' },
-      },
-    ]
-
-    const existingNotifs = [{ data: { shiftId: 'shift-1' } }]
-
-    const shiftsChain = createChain({ data: mockShifts, error: null })
-    const notifsChain = createChain({ data: existingNotifs, error: null })
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'shifts') return shiftsChain
-      if (table === 'notifications') return notifsChain
-      return shiftsChain
-    })
-
+    mockGetUpcomingShiftsForEmployee.mockResolvedValue(MOCK_SHIFTS)
+    mockGetAlreadyNotifiedShiftIds.mockResolvedValue(new Set(['shift-1']))
     mockGetProfileName.mockResolvedValue('M. Martin')
     mockCreateShiftReminderNotification.mockResolvedValue(undefined)
 
@@ -229,44 +148,15 @@ describe('useShiftReminders', () => {
       expect(mockCreateShiftReminderNotification).toHaveBeenCalledTimes(1)
     })
 
-    // Seul shift-2 devrait recevoir un rappel
+    // Seul shift-2 reçoit un rappel
     expect(mockCreateShiftReminderNotification).toHaveBeenCalledWith(
-      'user-123',
-      'M. Martin',
-      expect.any(Date),
-      '14:00',
-      'shift-2'
+      'user-123', 'M. Martin', expect.any(Date), '14:00', 'shift-2'
     )
   })
 
   it('devrait ignorer silencieusement les erreurs individuelles de création', async () => {
-    const mockShifts = [
-      {
-        id: 'shift-1',
-        date: '2025-06-15',
-        start_time: '09:00',
-        contract_id: 'contract-1',
-        contract: { employer_id: 'employer-1', employee_id: 'user-123' },
-      },
-      {
-        id: 'shift-2',
-        date: '2025-06-15',
-        start_time: '14:00',
-        contract_id: 'contract-1',
-        contract: { employer_id: 'employer-1', employee_id: 'user-123' },
-      },
-    ]
-
-    const shiftsChain = createChain({ data: mockShifts, error: null })
-    const notifsChain = createChain({ data: [], error: null })
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'shifts') return shiftsChain
-      if (table === 'notifications') return notifsChain
-      return shiftsChain
-    })
-
-    // Première création échoue, deuxième réussit
+    mockGetUpcomingShiftsForEmployee.mockResolvedValue(MOCK_SHIFTS)
+    mockGetAlreadyNotifiedShiftIds.mockResolvedValue(new Set())
     mockGetProfileName
       .mockRejectedValueOnce(new Error('Profil introuvable'))
       .mockResolvedValueOnce('M. Martin')
@@ -275,19 +165,15 @@ describe('useShiftReminders', () => {
     renderHook(() => useShiftReminders('user-123', 'employee'))
 
     await vi.waitFor(() => {
-      // Le deuxième shift devrait quand même être traité
       expect(mockCreateShiftReminderNotification).toHaveBeenCalledTimes(1)
     })
 
-    // Pas d'erreur logguée car c'est un catch silencieux
+    // Erreur silencieuse — pas de logger.error
     expect(logger.error).not.toHaveBeenCalled()
   })
 
   it('devrait logger les erreurs globales de la fonction', async () => {
-    // Simuler une erreur au niveau global (pas dans la boucle)
-    mockFrom.mockImplementation(() => {
-      throw new Error('Erreur globale')
-    })
+    mockGetUpcomingShiftsForEmployee.mockRejectedValue(new Error('Erreur globale'))
 
     renderHook(() => useShiftReminders('user-123', 'employee'))
 
@@ -300,29 +186,22 @@ describe('useShiftReminders', () => {
   })
 
   it('devrait ignorer les shifts sans contrat', async () => {
-    const mockShifts = [
+    const shiftsWithNoContract = [
       {
         id: 'shift-1',
         date: '2025-06-15',
         start_time: '09:00',
         contract_id: 'contract-1',
-        contract: undefined, // Pas de contrat
+        contract: null,
       },
     ]
-
-    const shiftsChain = createChain({ data: mockShifts, error: null })
-    const notifsChain = createChain({ data: [], error: null })
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'shifts') return shiftsChain
-      if (table === 'notifications') return notifsChain
-      return shiftsChain
-    })
+    mockGetUpcomingShiftsForEmployee.mockResolvedValue(shiftsWithNoContract)
+    mockGetAlreadyNotifiedShiftIds.mockResolvedValue(new Set())
 
     renderHook(() => useShiftReminders('user-123', 'employee'))
 
     await vi.waitFor(() => {
-      expect(mockFrom).toHaveBeenCalledWith('notifications')
+      expect(mockGetAlreadyNotifiedShiftIds).toHaveBeenCalledTimes(1)
     })
 
     expect(mockGetProfileName).not.toHaveBeenCalled()

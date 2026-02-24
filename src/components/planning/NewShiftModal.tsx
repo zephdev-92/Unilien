@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Dialog,
   Portal,
@@ -15,17 +15,15 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
 import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compliance'
-import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
-import { createShift, getShifts } from '@/services/shiftService'
-import { getAbsencesForEmployer } from '@/services/absenceService'
+import { createShift } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
-import { calculateShiftDuration } from '@/lib/compliance'
 import { logger } from '@/lib/logger'
-import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
-import type { ShiftType, GuardSegment } from '@/types'
+import type { ShiftType } from '@/types'
 import { useShiftNightHours } from '@/hooks/useShiftNightHours'
 import { useShiftRequalification, REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import { useShiftEffectiveHours } from '@/hooks/useShiftEffectiveHours'
+import { useGuardSegments } from '@/hooks/useGuardSegments'
+import { useShiftValidationData } from '@/hooks/useShiftValidationData'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
@@ -59,40 +57,6 @@ const SHIFT_TYPE_OPTIONS = [
   { value: 'guard_24h', label: 'Garde 24h' },
 ]
 
-/**
- * Pause minimale légale pour un segment effectif d'une garde 24h.
- *
- * Art. L3121-16 : pause de 20 min dès que le travail effectif CONTINU atteint 6h.
- * Dans une garde 24h, les segments de présence responsable (jour/nuit) séparent
- * les plages effectives et constituent eux-mêmes des temps de repos bien supérieurs
- * à 20 min — la règle du cumul journalier ne s'applique donc pas.
- * Seul un segment individuel > 6h continus déclenche l'obligation.
- */
-function getMinBreakForSegment(index: number, segments: GuardSegment[]): number {
-  const seg = segments[index]
-  if (seg.type !== 'effective') return 0
-
-  const segEnd = segments[index + 1]?.startTime ?? segments[0].startTime
-  const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
-
-  // Segment effectif continu > 6h → 20 min minimum (Art. L3121-16)
-  if (durMins > 360) return 20
-
-  return 0
-}
-
-/**
- * Recalcule la pause minimale légale pour chaque segment effectif.
- * Remet toujours à jour la pause (à la hausse ET à la baisse) en fonction
- * de la durée réelle du segment — ex. segment raccourci sous 6h → pause à 0.
- */
-function applyMinBreaks(segments: GuardSegment[]): GuardSegment[] {
-  return segments.map((seg, i) => {
-    if (seg.type !== 'effective') return seg
-    const minBreak = getMinBreakForSegment(i, segments)
-    return { ...seg, breakMinutes: minBreak }
-  })
-}
 
 interface NewShiftModalProps {
   isOpen: boolean
@@ -109,22 +73,27 @@ export function NewShiftModal({
   defaultDate,
   onSuccess,
 }: NewShiftModalProps) {
-  const [contracts, setContracts] = useState<ContractWithEmployee[]>([])
-  const [existingShifts, setExistingShifts] = useState<ShiftForValidation[]>([])
-  const [approvedAbsences, setApprovedAbsences] = useState<AbsenceForValidation[]>([])
-  const [isLoadingContracts, setIsLoadingContracts] = useState(true)
+  const { contracts, existingShifts, approvedAbsences, isLoadingContracts } = useShiftValidationData({
+    isOpen,
+    employerId,
+    defaultDate,
+  })
+  const {
+    guardSegments,
+    setGuardSegments,
+    resetToDefaults: resetGuardSegments,
+    addGuardSegment,
+    removeGuardSegment,
+    updateGuardSegmentEnd,
+    updateGuardSegmentType,
+    updateGuardSegmentBreak,
+  } = useGuardSegments()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
   const [hasNightAction, setHasNightAction] = useState(false)
   const [shiftType, setShiftType] = useState<ShiftType>('effective')
   const [nightInterventionsCount, setNightInterventionsCount] = useState(0)
-  const [guardSegments, setGuardSegments] = useState<GuardSegment[]>(() =>
-    applyMinBreaks([
-      { startTime: '09:00', type: 'effective', breakMinutes: 0 },
-      { startTime: '21:00', type: 'presence_night' },
-    ])
-  )
 
   const {
     register,
@@ -164,7 +133,7 @@ export function NewShiftModal({
         return [{ ...prev[0], startTime: watchedValues.startTime }, ...prev.slice(1)]
       })
     }
-  }, [shiftType, watchedValues.startTime, setValue])
+  }, [shiftType, watchedValues.startTime, setValue, setGuardSegments])
 
   // Pour guard_24h : synchroniser breakDuration avec la somme des pausees des segments effectifs
   useEffect(() => {
@@ -194,59 +163,6 @@ export function NewShiftModal({
     isRequalified,
     guardSegments,
   })
-
-  // Pour guard_24h : helpers segments
-  const addGuardSegment = useCallback((afterIndex: number) => {
-    setGuardSegments(prev => {
-      const next = [...prev]
-      const segStart = next[afterIndex].startTime
-      const segEnd = next[afterIndex + 1]?.startTime ?? next[0].startTime
-      // Calculer le milieu du segment en minutes
-      const [sh, sm] = segStart.split(':').map(Number)
-      const [eh, em] = segEnd.split(':').map(Number)
-      let endTotal = eh * 60 + em
-      const startTotal = sh * 60 + sm
-      if (endTotal <= startTotal) endTotal += 1440
-      const midTotal = Math.floor((startTotal + endTotal) / 2) % 1440
-      const midTime = `${Math.floor(midTotal / 60).toString().padStart(2, '0')}:${(midTotal % 60).toString().padStart(2, '0')}`
-      next.splice(afterIndex + 1, 0, { startTime: midTime, type: 'effective', breakMinutes: 0 })
-      return applyMinBreaks(next)
-    })
-  }, [])
-
-  const removeGuardSegment = useCallback((index: number) => {
-    setGuardSegments(prev => {
-      if (prev.length <= 2) return prev
-      return applyMinBreaks(prev.filter((_, i) => i !== index))
-    })
-  }, [])
-
-  const updateGuardSegmentEnd = useCallback((index: number, newEndTime: string) => {
-    setGuardSegments(prev => {
-      const next = [...prev]
-      if (index + 1 < next.length) {
-        next[index + 1] = { ...next[index + 1], startTime: newEndTime }
-      }
-      return applyMinBreaks(next)
-    })
-  }, [])
-
-  const updateGuardSegmentType = useCallback((index: number, type: GuardSegment['type']) => {
-    setGuardSegments(prev => {
-      const next = [...prev]
-      next[index] = { ...next[index], type, breakMinutes: type === 'effective' ? (next[index].breakMinutes ?? 0) : undefined }
-      return applyMinBreaks(next)
-    })
-  }, [])
-
-  const updateGuardSegmentBreak = useCallback((index: number, breakMinutes: number) => {
-    setGuardSegments(prev => {
-      const next = [...prev]
-      const minBreak = getMinBreakForSegment(index, next)
-      next[index] = { ...next[index], breakMinutes: Math.max(minBreak, breakMinutes) }
-      return next
-    })
-  }, [])
 
   // Construire l'objet shift pour validation
   const shiftForCompliance = useMemo(() => {
@@ -289,60 +205,6 @@ export function NewShiftModal({
     approvedAbsences,
   })
 
-  // Charger les contrats et les interventions existantes
-  useEffect(() => {
-    if (isOpen && employerId) {
-      setIsLoadingContracts(true)
-      setAcknowledgeWarnings(false)
-
-      // Charger les contrats
-      getContractsForEmployer(employerId)
-        .then(setContracts)
-        .finally(() => setIsLoadingContracts(false))
-
-      // Charger les interventions existantes (3 mois autour de la date)
-      const centerDate = defaultDate || new Date()
-      const startDate = new Date(centerDate)
-      startDate.setMonth(startDate.getMonth() - 1)
-      const endDate = new Date(centerDate)
-      endDate.setMonth(endDate.getMonth() + 2)
-
-      getShifts(employerId, 'employer', startDate, endDate)
-        .then((shifts) => {
-          // Convertir en format pour compliance
-          const shiftsForValidation: ShiftForValidation[] = shifts.map((s) => ({
-            id: s.id,
-            contractId: s.contractId,
-            employeeId: '', // Sera rempli via le contrat si nécessaire
-            date: new Date(s.date),
-            startTime: s.startTime,
-            endTime: s.endTime,
-            breakDuration: s.breakDuration,
-            shiftType: s.shiftType,
-          }))
-          setExistingShifts(shiftsForValidation)
-        })
-        .catch((err) => logger.error('Erreur chargement shifts pour validation:', err))
-
-      // Charger les absences approuvées
-      getAbsencesForEmployer(employerId)
-        .then((absences) => {
-          const approved: AbsenceForValidation[] = absences
-            .filter((a) => a.status === 'approved')
-            .map((a) => ({
-              id: a.id,
-              employeeId: a.employeeId,
-              absenceType: a.absenceType,
-              startDate: new Date(a.startDate),
-              endDate: new Date(a.endDate),
-              status: a.status,
-            }))
-          setApprovedAbsences(approved)
-        })
-        .catch((err) => logger.error('Erreur chargement absences:', err))
-    }
-  }, [isOpen, employerId, defaultDate])
-
   // Reset du formulaire à l'ouverture
   useEffect(() => {
     if (isOpen) {
@@ -359,12 +221,9 @@ export function NewShiftModal({
       setHasNightAction(false)
       setShiftType('effective')
       setNightInterventionsCount(0)
-      setGuardSegments(applyMinBreaks([
-        { startTime: '09:00', type: 'effective', breakMinutes: 0 },
-        { startTime: '21:00', type: 'presence_night' },
-      ]))
+      resetGuardSegments()
     }
-  }, [isOpen, defaultDate, reset])
+  }, [isOpen, defaultDate, reset, resetGuardSegments])
 
   // Soumission du formulaire
   const onSubmit = async (data: ShiftFormData) => {
