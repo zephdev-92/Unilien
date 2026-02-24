@@ -99,7 +99,8 @@ Règles dans `src/lib/compliance/rules/` :
 ### Sécurité & qualité
 - Logger centralisé avec redaction : `src/lib/logger.ts`
 - Sanitisation via DOMPurify : `src/lib/sanitize.ts` — à appeler avant chaque écriture DB
-- ⚠️ Seulement 6/17 services utilisent `sanitizeText()` (dette technique connue)
+- 7/13 services utilisent `sanitizeText()` : absence, caregiver, liaison, logbook, notification, profile, shift, push (24/02/2026)
+- Les 6 restants (auxiliary, compliance, contract, document, leaveBalance, stats) sont soit read-only, soit n'écrivent que des valeurs contrôlées (enums, UUIDs, dates) — aucune sanitisation nécessaire
 
 ---
 
