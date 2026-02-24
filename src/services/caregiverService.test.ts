@@ -44,10 +44,13 @@ const mockCreateTeamMemberRemovedNotification = vi.fn()
 const mockCreatePermissionsUpdatedNotification = vi.fn()
 
 vi.mock('@/services/notificationService', () => ({
-  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
   createTeamMemberAddedNotification: (...args: unknown[]) => mockCreateTeamMemberAddedNotification(...args),
   createTeamMemberRemovedNotification: (...args: unknown[]) => mockCreateTeamMemberRemovedNotification(...args),
   createPermissionsUpdatedNotification: (...args: unknown[]) => mockCreatePermissionsUpdatedNotification(...args),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
 }))
 
 // ─── Helpers ────────────────────────────────────────────────────────

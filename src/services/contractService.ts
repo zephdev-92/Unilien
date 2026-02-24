@@ -7,10 +7,10 @@ import type {
   ContractWithEmployerDbRow,
 } from '@/types/database'
 import {
-  getProfileName,
   createContractCreatedNotification,
   createContractTerminatedNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 import { calculateAcquiredFromMonths, getLeaveYear } from '@/lib/absence'
 import { initializeLeaveBalanceWithOverride } from '@/services/leaveBalanceService'
 

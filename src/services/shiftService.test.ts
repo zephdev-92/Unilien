@@ -39,10 +39,13 @@ const mockCreateShiftCancelledNotification = vi.fn().mockResolvedValue(undefined
 const mockCreateShiftModifiedNotification = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@/services/notificationService', () => ({
-  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
   createShiftCreatedNotification: (...args: unknown[]) => mockCreateShiftCreatedNotification(...args),
   createShiftCancelledNotification: (...args: unknown[]) => mockCreateShiftCancelledNotification(...args),
   createShiftModifiedNotification: (...args: unknown[]) => mockCreateShiftModifiedNotification(...args),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
 }))
 
 // ─── Helpers ────────────────────────────────────────────────────────

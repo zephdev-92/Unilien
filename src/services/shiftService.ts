@@ -4,11 +4,11 @@ import { sanitizeText } from '@/lib/sanitize'
 import type { Shift, ShiftType, GuardSegment, UserRole } from '@/types'
 import type { ShiftDbRow } from '@/types/database'
 import {
-  getProfileName,
   createShiftCreatedNotification,
   createShiftCancelledNotification,
   createShiftModifiedNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 
 export async function getShifts(
   profileId: string,

@@ -4,10 +4,10 @@ import { sanitizeText } from '@/lib/sanitize'
 import type { Absence, FamilyEventType } from '@/types'
 import type { AbsenceDbRow } from '@/types/database'
 import {
-  getProfileName,
   createAbsenceRequestedNotification,
   createAbsenceResolvedNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 import {
   validateAbsenceRequest,
   countBusinessDays,
