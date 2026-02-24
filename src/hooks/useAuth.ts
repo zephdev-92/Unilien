@@ -66,6 +66,29 @@ interface SignInData {
   password: string
 }
 
+/**
+ * Récupère le profil existant ou crée un profil par défaut si absent.
+ * Factorise la logique commune à initialize() et signIn().
+ */
+async function loadProfile(
+  userId: string,
+  email: string,
+  userMetadata: Record<string, unknown>
+): Promise<import('@/types').Profile | null> {
+  const existing = await getProfileById(userId, email)
+  if (existing) return existing
+
+  const defaultProfile = createDefaultProfile(userId, email, userMetadata)
+  const created = await createFallbackProfile({
+    id: defaultProfile.id,
+    role: defaultProfile.role,
+    firstName: defaultProfile.firstName,
+    lastName: defaultProfile.lastName,
+    email: email || null,
+  })
+  return created ? defaultProfile : null
+}
+
 export function useAuth() {
   const navigate = useNavigate()
   const {
@@ -103,34 +126,13 @@ export function useAuth() {
         setSession(currentSession)
         setUser(currentSession.user)
 
-        // Récupérer le profil
-        const profile = await getProfileById(
+        // Récupérer ou créer le profil
+        const profile = await loadProfile(
           currentSession.user.id,
-          currentSession.user.email || ''
+          currentSession.user.email || '',
+          currentSession.user.user_metadata
         )
-
-        if (profile) {
-          setProfile(profile)
-        } else {
-          // Profil manquant - créer automatiquement à partir des métadonnées auth
-          const defaultProfile = createDefaultProfile(
-            currentSession.user.id,
-            currentSession.user.email || '',
-            currentSession.user.user_metadata
-          )
-
-          const created = await createFallbackProfile({
-            id: defaultProfile.id,
-            role: defaultProfile.role,
-            firstName: defaultProfile.firstName,
-            lastName: defaultProfile.lastName,
-            email: currentSession.user.email || null,
-          })
-
-          if (created) {
-            setProfile(defaultProfile)
-          }
-        }
+        if (profile) setProfile(profile)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur d\'initialisation')
@@ -236,34 +238,13 @@ export function useAuth() {
           throw new Error('Erreur de connexion')
         }
 
-        // Récupérer le profil
-        const profile = await getProfileById(
+        // Récupérer ou créer le profil
+        const profile = await loadProfile(
           authData.user.id,
-          authData.user.email || ''
+          authData.user.email || '',
+          authData.user.user_metadata
         )
-
-        if (profile) {
-          setProfile(profile)
-        } else {
-          // Profil manquant - créer automatiquement à partir des métadonnées auth
-          const defaultProfile = createDefaultProfile(
-            authData.user.id,
-            authData.user.email || '',
-            authData.user.user_metadata
-          )
-
-          const created = await createFallbackProfile({
-            id: defaultProfile.id,
-            role: defaultProfile.role,
-            firstName: defaultProfile.firstName,
-            lastName: defaultProfile.lastName,
-            email: authData.user.email || null,
-          })
-
-          if (created) {
-            setProfile(defaultProfile)
-          }
-        }
+        if (profile) setProfile(profile)
 
         navigate('/dashboard')
         return { success: true }
