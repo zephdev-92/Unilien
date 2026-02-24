@@ -18,7 +18,7 @@ import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compl
 import { createShift } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { logger } from '@/lib/logger'
-import type { ShiftType } from '@/types'
+import type { ShiftType, GuardSegment } from '@/types'
 import { useShiftNightHours } from '@/hooks/useShiftNightHours'
 import { useShiftRequalification, REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import { useShiftEffectiveHours } from '@/hooks/useShiftEffectiveHours'
