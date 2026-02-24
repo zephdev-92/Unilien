@@ -11,7 +11,7 @@ import type { GuardSegment } from '@/types'
  * à 20 min — la règle du cumul journalier ne s'applique donc pas.
  * Seul un segment individuel > 6h continus déclenche l'obligation.
  */
-function getMinBreakForSegment(index: number, segments: GuardSegment[]): number {
+export function getMinBreakForSegment(index: number, segments: GuardSegment[]): number {
   const seg = segments[index]
   if (seg.type !== 'effective') return 0
 
