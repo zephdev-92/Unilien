@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useReducer, useEffect, useMemo } from 'react'
 import {
   Dialog,
   Portal,
@@ -79,6 +79,129 @@ const statusOptions = [
   { value: 'absent', label: 'Absent' },
 ]
 
+// ============================================================
+// State machine pour ShiftDetailModal
+// ============================================================
+
+type ModalState = {
+  isEditing: boolean
+  showDeleteConfirm: boolean
+  acknowledgeWarnings: boolean
+  isLoadingContract: boolean
+  isSubmitting: boolean
+  isDeleting: boolean
+  isValidating: boolean
+  submitError: string | null
+  contract: Contract | null
+  existingShifts: ShiftForValidation[]
+  hasNightAction: boolean
+  shiftType: ShiftType
+  nightInterventionsCount: number
+}
+
+type ModalAction =
+  | { type: 'MODAL_OPEN'; shift: Shift }
+  | { type: 'CONTRACT_LOADED'; contract: Contract | null }
+  | { type: 'SHIFTS_LOADED'; shifts: ShiftForValidation[] }
+  | { type: 'START_EDITING' }
+  | { type: 'CANCEL_EDITING'; shift: Shift }
+  | { type: 'SET_SHIFT_TYPE'; shiftType: ShiftType }
+  | { type: 'SET_HAS_NIGHT_ACTION'; value: boolean }
+  | { type: 'SET_NIGHT_INTERVENTIONS'; count: number }
+  | { type: 'SHOW_DELETE_CONFIRM' }
+  | { type: 'HIDE_DELETE_CONFIRM' }
+  | { type: 'ACKNOWLEDGE_WARNINGS' }
+  | { type: 'SUBMIT_START' }
+  | { type: 'SUBMIT_SUCCESS' }
+  | { type: 'SUBMIT_ERROR'; error: string }
+  | { type: 'DELETE_START' }
+  | { type: 'DELETE_SUCCESS' }
+  | { type: 'DELETE_ERROR'; error: string }
+  | { type: 'VALIDATE_START' }
+  | { type: 'VALIDATE_SUCCESS' }
+  | { type: 'VALIDATE_ERROR'; error: string }
+
+const initialState: ModalState = {
+  isEditing: false,
+  showDeleteConfirm: false,
+  acknowledgeWarnings: false,
+  isLoadingContract: true,
+  isSubmitting: false,
+  isDeleting: false,
+  isValidating: false,
+  submitError: null,
+  contract: null,
+  existingShifts: [],
+  hasNightAction: false,
+  shiftType: 'effective',
+  nightInterventionsCount: 0,
+}
+
+function reducer(state: ModalState, action: ModalAction): ModalState {
+  switch (action.type) {
+    case 'MODAL_OPEN':
+      return {
+        ...initialState,
+        hasNightAction: action.shift.hasNightAction ?? false,
+        shiftType: action.shift.shiftType || 'effective',
+        nightInterventionsCount: action.shift.nightInterventionsCount ?? 0,
+      }
+    case 'CONTRACT_LOADED':
+      return { ...state, contract: action.contract, isLoadingContract: false }
+    case 'SHIFTS_LOADED':
+      return { ...state, existingShifts: action.shifts }
+    case 'START_EDITING':
+      return { ...state, isEditing: true }
+    case 'CANCEL_EDITING':
+      return {
+        ...state,
+        isEditing: false,
+        submitError: null,
+        acknowledgeWarnings: false,
+        hasNightAction: action.shift.hasNightAction ?? false,
+        shiftType: action.shift.shiftType || 'effective',
+        nightInterventionsCount: action.shift.nightInterventionsCount ?? 0,
+      }
+    case 'SET_SHIFT_TYPE':
+      return {
+        ...state,
+        shiftType: action.shiftType,
+        nightInterventionsCount: action.shiftType !== 'presence_night' ? 0 : state.nightInterventionsCount,
+        hasNightAction: action.shiftType !== 'effective' ? false : state.hasNightAction,
+      }
+    case 'SET_HAS_NIGHT_ACTION':
+      return { ...state, hasNightAction: action.value }
+    case 'SET_NIGHT_INTERVENTIONS':
+      return { ...state, nightInterventionsCount: action.count }
+    case 'SHOW_DELETE_CONFIRM':
+      return { ...state, showDeleteConfirm: true }
+    case 'HIDE_DELETE_CONFIRM':
+      return { ...state, showDeleteConfirm: false }
+    case 'ACKNOWLEDGE_WARNINGS':
+      return { ...state, acknowledgeWarnings: true }
+    case 'SUBMIT_START':
+      return { ...state, isSubmitting: true, submitError: null }
+    case 'SUBMIT_SUCCESS':
+      return { ...state, isSubmitting: false, isEditing: false }
+    case 'SUBMIT_ERROR':
+      return { ...state, isSubmitting: false, submitError: action.error }
+    case 'DELETE_START':
+      return { ...state, isDeleting: true, submitError: null }
+    case 'DELETE_SUCCESS':
+      return { ...state, isDeleting: false, showDeleteConfirm: false }
+    case 'DELETE_ERROR':
+      return { ...state, isDeleting: false, showDeleteConfirm: false, submitError: action.error }
+    case 'VALIDATE_START':
+      return { ...state, isValidating: true, submitError: null }
+    case 'VALIDATE_SUCCESS':
+      return { ...state, isValidating: false }
+    case 'VALIDATE_ERROR':
+      return { ...state, isValidating: false, submitError: action.error }
+  }
+}
+
+// ============================================================
+
 interface ShiftDetailModalProps {
   isOpen: boolean
   onClose: () => void
@@ -98,19 +221,22 @@ export function ShiftDetailModal({
   onSuccess,
   caregiverCanEdit = false,
 }: ShiftDetailModalProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [contract, setContract] = useState<Contract | null>(null)
-  const [existingShifts, setExistingShifts] = useState<ShiftForValidation[]>([])
-  const [isLoadingContract, setIsLoadingContract] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isValidating, setIsValidating] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
-  const [hasNightAction, setHasNightAction] = useState(false)
-  const [shiftType, setShiftType] = useState<ShiftType>('effective')
-  const [nightInterventionsCount, setNightInterventionsCount] = useState(0)
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const {
+    isEditing,
+    showDeleteConfirm,
+    acknowledgeWarnings,
+    isLoadingContract,
+    isSubmitting,
+    isDeleting,
+    isValidating,
+    submitError,
+    contract,
+    existingShifts,
+    hasNightAction,
+    shiftType,
+    nightInterventionsCount,
+  } = state
 
   const canEdit = userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)
   const canDelete = (userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)) && shift?.status === 'planned'
@@ -207,22 +333,18 @@ export function ShiftDetailModal({
   // Charger le contrat et les shifts existants
   useEffect(() => {
     if (isOpen && shift) {
-      setIsLoadingContract(true)
-      setIsEditing(false)
-      setShowDeleteConfirm(false)
-      setSubmitError(null)
-      setAcknowledgeWarnings(false)
+      dispatch({ type: 'MODAL_OPEN', shift })
 
       // Charger le contrat
       getContractById(shift.contractId)
-        .then(setContract)
-        .finally(() => setIsLoadingContract(false))
+        .then((c) => dispatch({ type: 'CONTRACT_LOADED', contract: c }))
+        .catch(() => dispatch({ type: 'CONTRACT_LOADED', contract: null }))
 
-      // Charger les interventions existantes pour la validation
+      // ±4 semaines : suffisant pour toutes les règles IDCC 3239
       const startDate = new Date(shift.date)
-      startDate.setMonth(startDate.getMonth() - 1)
+      startDate.setDate(startDate.getDate() - 28)
       const endDate = new Date(shift.date)
-      endDate.setMonth(endDate.getMonth() + 2)
+      endDate.setDate(endDate.getDate() + 28)
 
       getShifts(profileId, userRole, startDate, endDate)
         .then((shifts) => {
@@ -236,7 +358,7 @@ export function ShiftDetailModal({
             breakDuration: s.breakDuration,
             shiftType: s.shiftType,
           }))
-          setExistingShifts(shiftsForValidation)
+          dispatch({ type: 'SHIFTS_LOADED', shifts: shiftsForValidation })
         })
         .catch((err) => logger.error('Erreur chargement shifts pour validation:', err))
 
@@ -250,9 +372,6 @@ export function ShiftDetailModal({
         notes: shift.notes || '',
         status: shift.status,
       })
-      setHasNightAction(shift.hasNightAction ?? false)
-      setShiftType(shift.shiftType || 'effective')
-      setNightInterventionsCount(shift.nightInterventionsCount ?? 0)
     }
   }, [isOpen, shift, profileId, userRole, reset])
 
@@ -272,18 +391,17 @@ export function ShiftDetailModal({
 
     // Bloquer si erreurs de conformité
     if (hasErrors) {
-      setSubmitError('Veuillez corriger les erreurs de conformité avant de continuer.')
+      dispatch({ type: 'SUBMIT_ERROR', error: 'Veuillez corriger les erreurs de conformité avant de continuer.' })
       return
     }
 
     // Demander confirmation si avertissements non acquittés
     if (hasWarnings && !acknowledgeWarnings) {
-      setSubmitError('Veuillez prendre connaissance des avertissements ou cliquez sur "Continuer quand même".')
+      dispatch({ type: 'SUBMIT_ERROR', error: 'Veuillez prendre connaissance des avertissements ou cliquez sur "Continuer quand même".' })
       return
     }
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+    dispatch({ type: 'SUBMIT_START' })
 
     try {
       await updateShift(shift.id, {
@@ -302,14 +420,13 @@ export function ShiftDetailModal({
       })
 
       onSuccess()
-      setIsEditing(false)
+      dispatch({ type: 'SUBMIT_SUCCESS' })
     } catch (error) {
       logger.error('Erreur mise à jour intervention:', error)
-      setSubmitError(
-        error instanceof Error ? error.message : 'Une erreur est survenue'
-      )
-    } finally {
-      setIsSubmitting(false)
+      dispatch({
+        type: 'SUBMIT_ERROR',
+        error: error instanceof Error ? error.message : 'Une erreur est survenue',
+      })
     }
   }
 
@@ -317,21 +434,19 @@ export function ShiftDetailModal({
   const handleDelete = async () => {
     if (!shift) return
 
-    setIsDeleting(true)
-    setSubmitError(null)
+    dispatch({ type: 'DELETE_START' })
 
     try {
       await deleteShift(shift.id)
+      dispatch({ type: 'DELETE_SUCCESS' })
       onSuccess()
       onClose()
     } catch (error) {
       logger.error('Erreur suppression intervention:', error)
-      setSubmitError(
-        error instanceof Error ? error.message : 'Erreur lors de la suppression'
-      )
-    } finally {
-      setIsDeleting(false)
-      setShowDeleteConfirm(false)
+      dispatch({
+        type: 'DELETE_ERROR',
+        error: error instanceof Error ? error.message : 'Erreur lors de la suppression',
+      })
     }
   }
 
@@ -339,19 +454,18 @@ export function ShiftDetailModal({
   const handleValidate = async () => {
     if (!shift || userRole === 'caregiver') return
 
-    setIsValidating(true)
-    setSubmitError(null)
+    dispatch({ type: 'VALIDATE_START' })
 
     try {
       await validateShift(shift.id, userRole)
+      dispatch({ type: 'VALIDATE_SUCCESS' })
       onSuccess()
     } catch (error) {
       logger.error('Erreur validation intervention:', error)
-      setSubmitError(
-        error instanceof Error ? error.message : 'Erreur lors de la validation'
-      )
-    } finally {
-      setIsValidating(false)
+      dispatch({
+        type: 'VALIDATE_ERROR',
+        error: error instanceof Error ? error.message : 'Erreur lors de la validation',
+      })
     }
   }
 
@@ -367,14 +481,7 @@ export function ShiftDetailModal({
         notes: shift.notes || '',
         status: shift.status,
       })
-    }
-    setIsEditing(false)
-    setSubmitError(null)
-    setAcknowledgeWarnings(false)
-    if (shift) {
-      setHasNightAction(shift.hasNightAction ?? false)
-      setShiftType(shift.shiftType || 'effective')
-      setNightInterventionsCount(shift.nightInterventionsCount ?? 0)
+      dispatch({ type: 'CANCEL_EDITING', shift })
     }
   }
 
@@ -500,10 +607,7 @@ export function ShiftDetailModal({
                       options={SHIFT_TYPE_OPTIONS}
                       value={shiftType}
                       onChange={(e) => {
-                        const newType = e.target.value as ShiftType
-                        setShiftType(newType)
-                        if (newType !== 'presence_night') setNightInterventionsCount(0)
-                        if (newType !== 'effective') setHasNightAction(false)
+                        dispatch({ type: 'SET_SHIFT_TYPE', shiftType: e.target.value as ShiftType })
                       }}
                     />
 
@@ -522,7 +626,9 @@ export function ShiftDetailModal({
                         durationHours={durationHours}
                         nightInterventionsCount={nightInterventionsCount}
                         isRequalified={isRequalified}
-                        onInterventionCountChange={setNightInterventionsCount}
+                        onInterventionCountChange={(count) =>
+                          dispatch({ type: 'SET_NIGHT_INTERVENTIONS', count })
+                        }
                       />
                     )}
 
@@ -532,7 +638,7 @@ export function ShiftDetailModal({
                         mode="edit"
                         nightHoursCount={nightHoursCount}
                         hasNightAction={hasNightAction}
-                        onToggle={setHasNightAction}
+                        onToggle={(value) => dispatch({ type: 'SET_HAS_NIGHT_ACTION', value })}
                       />
                     )}
 
@@ -542,7 +648,7 @@ export function ShiftDetailModal({
                     {complianceResult && (hasErrors || hasWarnings) && (
                       <ComplianceAlert
                         result={complianceResult}
-                        onDismiss={hasWarnings && !hasErrors ? () => setAcknowledgeWarnings(true) : undefined}
+                        onDismiss={hasWarnings && !hasErrors ? () => dispatch({ type: 'ACKNOWLEDGE_WARNINGS' }) : undefined}
                       />
                     )}
 
@@ -773,7 +879,7 @@ export function ShiftDetailModal({
                         <AccessibleButton
                           size="sm"
                           variant="outline"
-                          onClick={() => setShowDeleteConfirm(false)}
+                          onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}
                           disabled={isDeleting}
                         >
                           Annuler
@@ -827,7 +933,7 @@ export function ShiftDetailModal({
                         variant="outline"
                         colorPalette="red"
                         size="sm"
-                        onClick={() => setShowDeleteConfirm(true)}
+                        onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}
                       >
                         Supprimer
                       </AccessibleButton>
@@ -851,7 +957,7 @@ export function ShiftDetailModal({
                     {canEdit && (
                       <AccessibleButton
                         colorPalette="blue"
-                        onClick={() => setIsEditing(true)}
+                        onClick={() => dispatch({ type: 'START_EDITING' })}
                       >
                         Modifier
                       </AccessibleButton>
