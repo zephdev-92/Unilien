@@ -1166,7 +1166,28 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 ## 📋 BACKLOG - À PRIORISER
 
-### 14. Fonctionnalités Avancées
+### 14. Reconnaissance Vocale — Fallback Firefox (Whisper)
+
+**Impact** : 🟡 IMPORTANT — Firefox (~30% des utilisateurs desktop) sans reconnaissance vocale
+**Effort** : 1 jour
+**Document** : `docs/SPEECH_RECOGNITION_FIREFOX.md`
+
+**Solution retenue** : Option A — MediaRecorder + OpenAI Whisper via Edge Function
+
+```
+[ ] Créer supabase/functions/speech-to-text/index.ts (Whisper API)
+[ ] Ajouter OPENAI_API_KEY dans les secrets Supabase
+[ ] Modifier useSpeechRecognition : fallback MediaRecorder si !isSupported
+[ ] Exposer isUsingFallback: boolean dans le return du hook
+[ ] Mettre à jour VoiceInput + NewLogEntryModal (indicateur "mode différé")
+[ ] Tests mock Edge Function + MediaRecorder
+```
+
+**Timeline** : Semaines 11-12/2026
+
+---
+
+### 15. Fonctionnalités Avancées
 
 #### 14.1 Messagerie Temps Réel Améliorée
 
