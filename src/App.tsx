@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box, Container, Spinner, Center, Text } from '@chakra-ui/react'
 import { LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm } from '@/components/auth'
+import { ErrorBoundary } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
@@ -144,17 +145,17 @@ function App() {
           />
 
           {/* Routes protégées - authentification requise */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="/planning" element={<ProtectedRoute><PlanningPage /></ProtectedRoute>} />
-          <Route path="/logbook" element={<ProtectedRoute><LogbookPage /></ProtectedRoute>} />
-          <Route path="/liaison" element={<ProtectedRoute><LiaisonPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/planning" element={<ProtectedRoute><ErrorBoundary><PlanningPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/logbook" element={<ProtectedRoute><ErrorBoundary><LogbookPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/liaison" element={<ProtectedRoute><ErrorBoundary><LiaisonPage /></ErrorBoundary></ProtectedRoute>} />
 
           {/* Routes protégées avec restriction de rôle */}
-          <Route path="/clock-in" element={<ProtectedRoute allowedRoles={['employee']}><ClockInPage /></ProtectedRoute>} />
-          <Route path="/team" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><TeamPage /></ProtectedRoute>} />
-          <Route path="/compliance" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><CompliancePage /></ProtectedRoute>} />
-          <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><DocumentsPage /></ProtectedRoute>} />
+          <Route path="/clock-in" element={<ProtectedRoute allowedRoles={['employee']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/team" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><TeamPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/compliance" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><CompliancePage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />
 
           {/* Redirection par défaut pour les routes inconnues */}
           <Route path="*" element={<Navigate to="/" replace />} />
