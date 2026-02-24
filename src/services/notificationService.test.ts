@@ -29,6 +29,7 @@ import {
   createAbsenceResolvedNotification,
   createLogEntryDirectedNotification,
   getProfileName,
+  getAlreadyNotifiedShiftIds,
   COMPLIANCE_THRESHOLDS,
 } from './notificationService'
 
@@ -1324,5 +1325,58 @@ describe('getProfileName', () => {
     const name = await getProfileName('profile-1')
 
     expect(name).toBe('Utilisateur')
+  })
+})
+
+// ─── getAlreadyNotifiedShiftIds ──────────────────────────────────────────────
+
+describe('getAlreadyNotifiedShiftIds', () => {
+  function mockShiftReminderQuery(data: unknown) {
+    const chain: Record<string, unknown> = {}
+    chain.select = vi.fn().mockReturnValue(chain)
+    chain.eq = vi.fn().mockReturnValue(chain)
+    chain.gte = vi.fn().mockReturnValue(chain)
+    chain.then = vi.fn().mockImplementation((resolve: (v: unknown) => unknown) =>
+      Promise.resolve(resolve({ data, error: null }))
+    )
+    mockFrom.mockReturnValue(chain)
+    return chain
+  }
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it('retourne un Set des shiftIds déjà notifiés', async () => {
+    mockShiftReminderQuery([
+      { data: { shiftId: 'shift-1' } },
+      { data: { shiftId: 'shift-2' } },
+    ])
+
+    const result = await getAlreadyNotifiedShiftIds('user-1', new Date())
+
+    expect(result).toBeInstanceOf(Set)
+    expect(result.has('shift-1')).toBe(true)
+    expect(result.has('shift-2')).toBe(true)
+    expect(result.size).toBe(2)
+  })
+
+  it('retourne un Set vide si aucune notification', async () => {
+    mockShiftReminderQuery([])
+
+    const result = await getAlreadyNotifiedShiftIds('user-1', new Date())
+
+    expect(result.size).toBe(0)
+  })
+
+  it('ignore les entrées sans shiftId dans data', async () => {
+    mockShiftReminderQuery([
+      { data: { shiftId: 'shift-1' } },
+      { data: {} },
+      { data: null },
+    ])
+
+    const result = await getAlreadyNotifiedShiftIds('user-1', new Date())
+
+    expect(result.size).toBe(1)
+    expect(result.has('shift-1')).toBe(true)
   })
 })

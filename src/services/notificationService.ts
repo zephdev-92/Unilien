@@ -910,6 +910,32 @@ export async function createLogEntryDirectedNotification(
 }
 
 // ============================================
+// SHIFT REMINDERS DEDUP
+// ============================================
+
+/**
+ * Retourne les shiftIds déjà notifiés en rappel depuis une date donnée.
+ * Utilisé par useShiftReminders pour éviter les doublons sans import Supabase direct.
+ */
+export async function getAlreadyNotifiedShiftIds(
+  userId: string,
+  since: Date
+): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('notifications')
+    .select('data')
+    .eq('user_id', userId)
+    .eq('type', 'shift_reminder')
+    .gte('created_at', since.toISOString())
+
+  return new Set(
+    (data || [])
+      .map((n) => (n.data as Record<string, unknown>)?.shiftId as string)
+      .filter(Boolean)
+  )
+}
+
+// ============================================
 // EXPORTED HELPER
 // ============================================
 

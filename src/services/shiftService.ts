@@ -278,6 +278,52 @@ export async function validateShift(
   }
 }
 
+// ============================================
+// SHIFT REMINDERS QUERY
+// ============================================
+
+type UpcomingShiftRow = {
+  id: string
+  date: string
+  start_time: string
+  contract_id: string
+  contract: { employer_id: string; employee_id: string } | null
+}
+
+/**
+ * Récupère les shifts planifiés d'un employé dans une plage de dates.
+ * Utilisé par useShiftReminders pour éviter les imports directs Supabase.
+ */
+export async function getUpcomingShiftsForEmployee(
+  employeeId: string,
+  fromDate: string,
+  toDate: string
+): Promise<UpcomingShiftRow[]> {
+  const { data, error } = await supabase
+    .from('shifts')
+    .select(`
+      id,
+      date,
+      start_time,
+      contract_id,
+      contract:contracts!inner(
+        employer_id,
+        employee_id
+      )
+    `)
+    .eq('contract.employee_id', employeeId)
+    .eq('status', 'planned')
+    .gte('date', fromDate)
+    .lte('date', toDate)
+
+  if (error) {
+    logger.error('Erreur récupération shifts à venir:', error)
+    return []
+  }
+
+  return (data || []) as UpcomingShiftRow[]
+}
+
 // Mapper les données DB vers le type Shift
 function mapShiftFromDb(data: ShiftDbRow): Shift {
   return {

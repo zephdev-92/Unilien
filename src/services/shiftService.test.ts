@@ -6,6 +6,7 @@ import {
   updateShift,
   deleteShift,
   validateShift,
+  getUpcomingShiftsForEmployee,
 } from './shiftService'
 
 // ─── Mocks ──────────────────────────────────────────────────────────
@@ -736,6 +737,44 @@ describe('shiftService', () => {
 
       expect(mockCreateShiftModifiedNotification).not.toHaveBeenCalled()
       expect(mockCreateShiftCancelledNotification).not.toHaveBeenCalled()
+    })
+  })
+
+  // ─── getUpcomingShiftsForEmployee ────────────────────────────────────
+  describe('getUpcomingShiftsForEmployee', () => {
+    it('retourne les shifts planifiés dans la plage de dates', async () => {
+      const mockShifts = [
+        {
+          id: 'shift-1',
+          date: '2026-02-25',
+          start_time: '08:00',
+          contract_id: 'contract-1',
+          contract: { employer_id: 'employer-1', employee_id: 'employee-1' },
+        },
+      ]
+      mockSupabaseQuery({ data: mockShifts, error: null })
+
+      const result = await getUpcomingShiftsForEmployee('employee-1', '2026-02-25', '2026-02-26')
+
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('shift-1')
+      expect(result[0].contract?.employer_id).toBe('employer-1')
+    })
+
+    it('retourne un tableau vide en cas d\'erreur', async () => {
+      mockSupabaseQuery({ data: null, error: { message: 'DB error' } })
+
+      const result = await getUpcomingShiftsForEmployee('employee-1', '2026-02-25', '2026-02-26')
+
+      expect(result).toEqual([])
+    })
+
+    it('retourne un tableau vide si aucun shift trouvé', async () => {
+      mockSupabaseQuery({ data: [], error: null })
+
+      const result = await getUpcomingShiftsForEmployee('employee-1', '2026-02-25', '2026-02-26')
+
+      expect(result).toEqual([])
     })
   })
 })
