@@ -9,6 +9,7 @@ import type {
   NotificationPreferences,
 } from '@/types'
 import type { NotificationDbRow } from '@/types/database'
+import { getProfileName as getProfileNameFromService } from '@/services/profileService'
 
 // ============================================
 // TYPES
@@ -159,16 +160,7 @@ export function mapNotificationFromDb(data: NotificationDbRow): Notification {
 // PROFILE HELPER
 // ============================================
 
-export async function getProfileName(profileId: string): Promise<string> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('first_name, last_name')
-    .eq('id', profileId)
-    .single()
-
-  if (!data) return 'Utilisateur'
-  return `${data.first_name} ${data.last_name}`.trim() || 'Utilisateur'
-}
+export { getProfileNameFromService as getProfileName }
 
 // ============================================
 // CREATE NOTIFICATION

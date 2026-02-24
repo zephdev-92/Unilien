@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react'
 import { getUpcomingShiftsForEmployee } from '@/services/shiftService'
 import {
   getAlreadyNotifiedShiftIds,
-  getProfileName,
   createShiftReminderNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 import { logger } from '@/lib/logger'
 
 /**

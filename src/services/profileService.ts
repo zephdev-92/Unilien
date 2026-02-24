@@ -13,6 +13,21 @@ import { mapProfileFromDb } from '@/lib/mappers'
  * Récupère un profil par son ID utilisateur.
  * emailOverride permet de forcer l'email depuis le token auth (source de vérité).
  */
+/**
+ * Retourne le nom complet d'un profil (prénom + nom).
+ * Fallback : 'Utilisateur' si le profil n'existe pas.
+ */
+export async function getProfileName(profileId: string): Promise<string> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('first_name, last_name')
+    .eq('id', profileId)
+    .single()
+
+  if (!data) return 'Utilisateur'
+  return `${data.first_name} ${data.last_name}`.trim() || 'Utilisateur'
+}
+
 export async function getProfileById(
   userId: string,
   emailOverride?: string

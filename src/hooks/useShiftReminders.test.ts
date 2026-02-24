@@ -17,9 +17,12 @@ const mockCreateShiftReminderNotification = vi.fn()
 vi.mock('@/services/notificationService', () => ({
   getAlreadyNotifiedShiftIds: (...args: unknown[]) =>
     mockGetAlreadyNotifiedShiftIds(...args),
-  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
   createShiftReminderNotification: (...args: unknown[]) =>
     mockCreateShiftReminderNotification(...args),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
 }))
 
 vi.mock('@/lib/logger', () => ({

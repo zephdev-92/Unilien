@@ -11,11 +11,11 @@ import type {
 } from '@/types'
 import type { CaregiverDbRow, ShiftDbRow } from '@/types/database'
 import {
-  getProfileName,
   createTeamMemberAddedNotification,
   createTeamMemberRemovedNotification,
   createPermissionsUpdatedNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 
 // ============================================
 // CAREGIVER (profil aidant)
