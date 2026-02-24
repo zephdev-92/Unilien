@@ -94,33 +94,56 @@ export function getWeekEnd(date: Date): Date {
 }
 
 /**
- * Calcule le nombre d'heures de nuit (21h-6h)
+ * Calcule le nombre d'heures de nuit (plage 21h–6h) d'une intervention.
+ *
+ * **Algorithme O(1) par intersection géométrique.**
+ * Les fenêtres nuit sont modélisées comme des intervalles fixes sur une
+ * timeline linéaire de 48h (2 cycles de 24h). L'intersection de chaque
+ * fenêtre avec [start, end] donne directement les minutes de nuit, sans
+ * itérer minute par minute.
+ *
+ * Fenêtres nuit couvertes :
+ * - [0h, 6h)   jour J   → [0, 360)
+ * - [21h, 24h) jour J   → [1260, 1440)
+ * - [0h, 6h)   jour J+1 → [1440, 1800)   (shifts passant minuit)
+ * - [21h, 24h) jour J+1 → [2700, 2880)   (shifts > 21h le lendemain)
+ *
+ * @param _date    Non utilisé (conservé pour compatibilité de signature)
+ * @param startTime Heure de début au format "HH:mm"
+ * @param endTime   Heure de fin au format "HH:mm" (peut être < startTime si passage minuit)
+ * @returns Nombre d'heures de nuit (ex : 2.5 pour 2h30 de nuit)
+ *
+ * @example
+ * calculateNightHours(date, '20:00', '23:00') // → 2  (21h–23h)
+ * calculateNightHours(date, '22:00', '06:00') // → 8  (22h–6h, passage minuit)
+ * calculateNightHours(date, '08:00', '17:00') // → 0  (plage de jour)
  */
 export function calculateNightHours(
   _date: Date,
   startTime: string,
   endTime: string
 ): number {
-  const NIGHT_START = 21 * 60 // 21h en minutes
-  const NIGHT_END = 6 * 60 // 6h en minutes
+  const NIGHT_START = 21 * 60 // 1260 min
+  const NIGHT_END = 6 * 60   // 360 min
+  const DAY = 24 * 60        // 1440 min
 
-  const startMinutes = timeToMinutes(startTime)
-  let endMinutes = timeToMinutes(endTime)
+  const start = timeToMinutes(startTime)
+  let end = timeToMinutes(endTime)
 
-  // Gestion du passage à minuit
-  if (endMinutes < startMinutes) {
-    endMinutes += 24 * 60
+  if (end < start) {
+    end += DAY
   }
 
-  let nightMinutes = 0
+  // Longueur de l'intersection de [a, b) avec [c, d)
+  const intersect = (a: number, b: number, c: number, d: number): number =>
+    Math.max(0, Math.min(b, d) - Math.max(a, c))
 
-  // Parcourir chaque minute de l'intervention
-  for (let m = startMinutes; m < endMinutes; m++) {
-    const normalizedMinute = m % (24 * 60)
-    if (normalizedMinute >= NIGHT_START || normalizedMinute < NIGHT_END) {
-      nightMinutes++
-    }
-  }
+  // Fenêtres nuit sur 2 cycles de 24h (couvre les shifts qui passent minuit)
+  const nightMinutes =
+    intersect(start, end, 0, NIGHT_END) +                  // [0h,  6h) — jour J
+    intersect(start, end, NIGHT_START, DAY) +               // [21h, 24h) — jour J
+    intersect(start, end, DAY, DAY + NIGHT_END) +           // [0h,  6h) — jour J+1
+    intersect(start, end, DAY + NIGHT_START, 2 * DAY)       // [21h, 24h) — jour J+1
 
   return nightMinutes / 60
 }

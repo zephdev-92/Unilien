@@ -8,7 +8,6 @@ import {
   Text,
   Textarea,
   Separator,
-  Switch,
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,10 +19,16 @@ import { getContractsForEmployer, type ContractWithEmployee } from '@/services/c
 import { createShift, getShifts } from '@/services/shiftService'
 import { getAbsencesForEmployer } from '@/services/absenceService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
-import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
+import { calculateShiftDuration } from '@/lib/compliance'
 import { logger } from '@/lib/logger'
 import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
 import type { ShiftType, GuardSegment } from '@/types'
+import { useShiftNightHours } from '@/hooks/useShiftNightHours'
+import { useShiftRequalification, REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
+import { useShiftEffectiveHours } from '@/hooks/useShiftEffectiveHours'
+import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
+import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
+import { NightActionToggle } from './NightActionToggle'
 
 const SHIFT_TYPE_VALUES = ['effective', 'presence_day', 'presence_night', 'guard_24h'] as const
 
@@ -53,8 +58,6 @@ const SHIFT_TYPE_OPTIONS = [
   { value: 'presence_night', label: 'Présence responsable (nuit)' },
   { value: 'guard_24h', label: 'Garde 24h' },
 ]
-
-const REQUALIFICATION_THRESHOLD = 4
 
 /**
  * Pause minimale légale pour un segment effectif d'une garde 24h.
@@ -172,59 +175,25 @@ export function NewShiftModal({
     }
   }, [shiftType, guardSegments, setValue])
 
-  // Détecter les heures de nuit (21h-6h)
-  const nightHoursCount = useMemo(() => {
-    if (!watchedValues.startTime || !watchedValues.endTime || !watchedValues.date) return 0
-    try {
-      return calculateNightHours(
-        new Date(watchedValues.date),
-        watchedValues.startTime,
-        watchedValues.endTime
-      )
-    } catch {
-      return 0
-    }
-  }, [watchedValues.startTime, watchedValues.endTime, watchedValues.date])
+  // Heures de nuit (21h–6h)
+  const { nightHoursCount, hasNightHours } = useShiftNightHours({
+    startTime: watchedValues.startTime,
+    endTime: watchedValues.endTime,
+    date: watchedValues.date,
+  })
 
-  const hasNightHours = nightHoursCount > 0
+  // Requalification présence de nuit (>= 4 interventions)
+  const { isRequalified } = useShiftRequalification({ shiftType, nightInterventionsCount })
 
-  // Calcul de la requalification (>= 4 interventions nuit)
-  const isRequalified = shiftType === 'presence_night' && nightInterventionsCount >= REQUALIFICATION_THRESHOLD
-
-  // Calcul des heures effectives selon le type
-  const effectiveHoursComputed = useMemo(() => {
-    if (!watchedValues.startTime || !watchedValues.endTime) return null
-
-    try {
-      const durationMinutes = calculateShiftDuration(
-        watchedValues.startTime,
-        watchedValues.endTime,
-        watchedValues.breakDuration || 0
-      )
-      const durationHours = durationMinutes / 60
-
-      if (shiftType === 'presence_day') {
-        return Math.round(durationHours * (2 / 3) * 100) / 100
-      }
-      if (shiftType === 'presence_night' && isRequalified) {
-        return durationHours // Requalifié = 100% travail effectif
-      }
-      if (shiftType === 'guard_24h' && guardSegments.length > 0) {
-        // Total des heures de travail effectif sur tous les segments 'effective'
-        const total = guardSegments.reduce((sum, seg, i) => {
-          const end = guardSegments[i + 1]?.startTime ?? (watchedValues.startTime || '09:00')
-          const mins = calculateShiftDuration(seg.startTime, end, 0)
-          return seg.type === 'effective'
-            ? sum + Math.max(0, mins - (seg.breakMinutes ?? 0)) / 60
-            : sum
-        }, 0)
-        return Math.round(total * 100) / 100
-      }
-      return null // Travail effectif standard ou nuit non requalifiée
-    } catch {
-      return null
-    }
-  }, [watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, shiftType, isRequalified, guardSegments])
+  // Heures effectives pondérées selon le type
+  const { effectiveHoursComputed } = useShiftEffectiveHours({
+    startTime: watchedValues.startTime,
+    endTime: watchedValues.endTime,
+    breakDuration: watchedValues.breakDuration || 0,
+    shiftType,
+    isRequalified,
+    guardSegments,
+  })
 
   // Pour guard_24h : helpers segments
   const addGuardSegment = useCallback((afterIndex: number) => {
@@ -611,108 +580,22 @@ export function NewShiftModal({
                   )}
 
                   {/* ── Section présence responsable JOUR ── */}
-                  {shiftType === 'presence_day' && durationHours > 0 && (
-                    <Box
-                      p={4}
-                      bg="blue.50"
-                      borderRadius="lg"
-                      borderWidth="1px"
-                      borderColor="blue.200"
-                    >
-                      <Text fontWeight="medium" color="blue.800" mb={2}>
-                        Présence responsable de jour
-                      </Text>
-                      <Text fontSize="sm" color="blue.700" mb={3}>
-                        L'auxiliaire reste vigilant mais peut vaquer à des occupations personnelles.
-                        Les heures sont converties en travail effectif au coefficient 2/3 (Art. 137.1 IDCC 3239).
-                      </Text>
-                      <Box p={3} bg="white" borderRadius="md">
-                        <Flex justify="space-between" align="center">
-                          <Text fontSize="sm" color="gray.600">Présence responsable</Text>
-                          <Text fontSize="sm" fontWeight="medium">{durationHours.toFixed(1)}h</Text>
-                        </Flex>
-                        <Flex justify="space-between" align="center" mt={1}>
-                          <Text fontSize="sm" color="gray.600">Équivalent travail effectif (×2/3)</Text>
-                          <Text fontSize="sm" fontWeight="bold" color="blue.700">
-                            {effectiveHoursComputed?.toFixed(1) ?? '—'}h
-                          </Text>
-                        </Flex>
-                      </Box>
-                    </Box>
+                  {shiftType === 'presence_day' && (
+                    <PresenceResponsibleDaySection
+                      durationHours={durationHours}
+                      effectiveHoursComputed={effectiveHoursComputed}
+                    />
                   )}
 
                   {/* ── Section présence responsable NUIT ── */}
                   {shiftType === 'presence_night' && (
-                    <Box
-                      p={4}
-                      bg="purple.50"
-                      borderRadius="lg"
-                      borderWidth="1px"
-                      borderColor="purple.200"
-                    >
-                      <Text fontWeight="medium" color="purple.800" mb={2}>
-                        Présence responsable de nuit
-                      </Text>
-                      <Text fontSize="sm" color="purple.700" mb={3}>
-                        L'auxiliaire dort sur place et intervient si besoin.
-                        Indemnité forfaitaire d'au moins 1/4 du salaire horaire (Art. 148 IDCC 3239).
-                      </Text>
-
-                      {/* Nombre d'interventions */}
-                      <Box mb={3}>
-                        <AccessibleInput
-                          label="Nombre d'interventions pendant la nuit"
-                          type="number"
-                          helperText="Chaque intervention (change, aide, urgence...) doit être comptée"
-                          value={nightInterventionsCount}
-                          onChange={(e) => setNightInterventionsCount(Math.max(0, parseInt(e.target.value) || 0))}
-                        />
-                      </Box>
-
-                      {/* Alerte requalification */}
-                      {isRequalified && (
-                        <Box
-                          p={3}
-                          bg="orange.100"
-                          borderRadius="md"
-                          borderWidth="1px"
-                          borderColor="orange.300"
-                          mb={3}
-                        >
-                          <Text fontWeight="bold" color="orange.800" fontSize="sm">
-                            Requalification en travail effectif
-                          </Text>
-                          <Text fontSize="xs" color="orange.700" mt={1}>
-                            {nightInterventionsCount} interventions (seuil : {REQUALIFICATION_THRESHOLD}).
-                            Toute la plage est requalifiée en travail effectif et rémunérée à 100%
-                            au lieu du forfaitaire 1/4 (Art. 148 IDCC 3239).
-                          </Text>
-                        </Box>
-                      )}
-
-                      {/* Résumé indemnité */}
-                      {durationHours > 0 && (
-                        <Box p={3} bg="white" borderRadius="md">
-                          <Flex justify="space-between" align="center">
-                            <Text fontSize="sm" color="gray.600">Durée de présence</Text>
-                            <Text fontSize="sm" fontWeight="medium">{durationHours.toFixed(1)}h</Text>
-                          </Flex>
-                          <Flex justify="space-between" align="center" mt={1}>
-                            <Text fontSize="sm" color="gray.600">
-                              {isRequalified ? 'Rémunération (100% — requalifié)' : 'Indemnité forfaitaire (×1/4)'}
-                            </Text>
-                            <Text fontSize="sm" fontWeight="bold" color={isRequalified ? 'orange.700' : 'purple.700'}>
-                              {isRequalified ? `${durationHours.toFixed(1)}h effectives` : `${(durationHours * 0.25).toFixed(1)}h équiv.`}
-                            </Text>
-                          </Flex>
-                          {nightInterventionsCount > 0 && !isRequalified && (
-                            <Text fontSize="xs" color="gray.500" mt={2}>
-                              {nightInterventionsCount} intervention{nightInterventionsCount > 1 ? 's' : ''} — les interventions sont rémunérées en travail effectif avec majoration nuit (+20%)
-                            </Text>
-                          )}
-                        </Box>
-                      )}
-                    </Box>
+                    <PresenceResponsibleNightSection
+                      mode="edit"
+                      durationHours={durationHours}
+                      nightInterventionsCount={nightInterventionsCount}
+                      isRequalified={isRequalified}
+                      onInterventionCountChange={setNightInterventionsCount}
+                    />
                   )}
 
                   {/* ── Section Garde 24h ── */}
@@ -912,57 +795,12 @@ export function NewShiftModal({
 
                   {/* Toggle action de nuit — uniquement pour travail effectif avec heures de nuit */}
                   {shiftType === 'effective' && hasNightHours && (
-                    <Box
-                      p={4}
-                      bg="purple.50"
-                      borderRadius="lg"
-                      borderWidth="1px"
-                      borderColor="purple.200"
-                    >
-                      <Flex justify="space-between" align="center" mb={2}>
-                        <Box flex={1}>
-                          <Text fontWeight="medium" color="purple.800">
-                            Heures de nuit détectées ({nightHoursCount.toFixed(1)}h)
-                          </Text>
-                          <Text fontSize="sm" color="purple.600" mt={1}>
-                            La majoration de nuit (+20%) ne s'applique que si l'auxiliaire
-                            effectue un acte (soin, aide...) pendant les heures de nuit.
-                            La simple présence ne donne pas droit à la majoration.
-                          </Text>
-                        </Box>
-                      </Flex>
-                      <Flex
-                        justify="space-between"
-                        align="center"
-                        mt={3}
-                        p={3}
-                        bg="white"
-                        borderRadius="md"
-                      >
-                        <Text fontSize="sm" fontWeight="medium" color="gray.700">
-                          Acte effectué pendant la nuit
-                        </Text>
-                        <Switch.Root
-                          checked={hasNightAction}
-                          onCheckedChange={(e) => setHasNightAction(e.checked)}
-                        >
-                          <Switch.HiddenInput aria-label="Acte effectué pendant les heures de nuit" />
-                          <Switch.Control>
-                            <Switch.Thumb />
-                          </Switch.Control>
-                        </Switch.Root>
-                      </Flex>
-                      {hasNightAction && (
-                        <Text fontSize="xs" color="green.600" mt={2}>
-                          Majoration de nuit appliquée : +20% sur {nightHoursCount.toFixed(1)}h
-                        </Text>
-                      )}
-                      {!hasNightAction && (
-                        <Text fontSize="xs" color="gray.500" mt={2}>
-                          Pas de majoration — présence de nuit uniquement
-                        </Text>
-                      )}
-                    </Box>
+                    <NightActionToggle
+                      mode="edit"
+                      nightHoursCount={nightHoursCount}
+                      hasNightAction={hasNightAction}
+                      onToggle={setHasNightAction}
+                    />
                   )}
 
                   {/* ── Récapitulatif heures (Idée C) ── */}

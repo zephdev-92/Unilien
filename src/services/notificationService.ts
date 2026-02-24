@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 import type {
   Notification,
   NotificationType,
@@ -178,8 +179,8 @@ export async function createNotification(
   const { data, error } = await supabase.rpc('create_notification', {
     p_user_id: params.userId,
     p_type: params.type,
-    p_title: params.title,
-    p_message: params.message,
+    p_title: sanitizeText(params.title),
+    p_message: sanitizeText(params.message),
     p_priority: params.priority || 'normal',
     p_data: params.data || {},
     p_action_url: params.actionUrl || null,

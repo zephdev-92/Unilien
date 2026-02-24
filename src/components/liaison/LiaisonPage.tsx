@@ -8,8 +8,8 @@ import {
   Badge,
   VisuallyHidden,
 } from '@chakra-ui/react'
-import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { useEmployerResolution } from '@/hooks/useEmployerResolution'
 import { DashboardLayout } from '@/components/dashboard'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
@@ -23,12 +23,8 @@ import {
   subscribeTypingIndicator,
   type TypingUser,
 } from '@/services/liaisonService'
-import {
-  getCaregiver,
-  getCaregiverEmployerId,
-} from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
-import type { LiaisonMessageWithSender, CaregiverPermissions } from '@/types'
+import type { LiaisonMessageWithSender } from '@/types'
 
 // ============================================
 // TYPING INDICATOR COMPONENT
@@ -122,89 +118,17 @@ export function LiaisonPage() {
   const [hasMore, setHasMore] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
 
-  // Caregiver-specific state
-  const [resolvedEmployerId, setResolvedEmployerId] = useState<string | null>(null)
-  const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
-  const [isResolvingEmployer, setIsResolvingEmployer] = useState(false)
-  const [accessDenied, setAccessDenied] = useState(false)
+  const {
+    resolvedEmployerId,
+    caregiverPermissions,
+    isResolving: isResolvingEmployer,
+    accessDenied,
+  } = useEmployerResolution({ requiredCaregiverPermission: 'canViewLiaison' })
 
   // Refs
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const typingControlRef = useRef<{ setTyping: (v: boolean) => void; unsubscribe: () => void } | null>(null)
   const isInitialLoad = useRef(true)
-
-  // Resolve employerId based on role
-  useEffect(() => {
-    async function resolveEmployer() {
-      if (!profile) {
-        setResolvedEmployerId(null)
-        return
-      }
-
-      // Employer: use own id
-      if (profile.role === 'employer') {
-        setResolvedEmployerId(profile.id)
-        return
-      }
-
-      // Employee: resolve employer from active contract
-      if (profile.role === 'employee') {
-        setIsResolvingEmployer(true)
-        try {
-          const { data } = await supabase
-            .from('contracts')
-            .select('employer_id')
-            .eq('employee_id', profile.id)
-            .eq('status', 'active')
-            .limit(1)
-            .maybeSingle()
-
-          if (data) {
-            setResolvedEmployerId(data.employer_id)
-          } else {
-            setAccessDenied(true)
-          }
-        } catch {
-          setAccessDenied(true)
-        } finally {
-          setIsResolvingEmployer(false)
-        }
-        return
-      }
-
-      // Caregiver: resolve employer from caregiver record
-      if (profile.role !== 'caregiver') return
-
-      setIsResolvingEmployer(true)
-      try {
-        const caregiver = await getCaregiver(profile.id)
-
-        if (!caregiver) {
-          setAccessDenied(true)
-          return
-        }
-
-        setCaregiverPermissions(caregiver.permissions)
-
-        if (!caregiver.permissions.canViewLiaison) {
-          setAccessDenied(true)
-          return
-        }
-
-        const empId = await getCaregiverEmployerId(profile.id)
-        setResolvedEmployerId(empId)
-      } catch (error) {
-        logger.error('Erreur résolution employeur pour aidant:', error)
-        setAccessDenied(true)
-      } finally {
-        setIsResolvingEmployer(false)
-      }
-    }
-
-    if (profile && isInitialized) {
-      resolveEmployer()
-    }
-  }, [profile, isInitialized])
 
   // Load initial messages
   useEffect(() => {
