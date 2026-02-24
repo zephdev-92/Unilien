@@ -285,9 +285,27 @@ describe('calculateShiftPay', () => {
 
       // presenceResponsiblePay = 12h × 2/3 × 12€ = 96€
       expect(pay.presenceResponsiblePay).toBe(96)
-      // sundayMajoration basé sur basePay = 12h × 12€ × 0.30 = 43.2€
-      expect(pay.sundayMajoration).toBe(43.2)
-      expect(pay.totalPay).toBe(139.2) // 96 + 43.2
+      // sundayMajoration sur presenceResponsiblePay (base réelle payée) = 96 × 0.30 = 28.8€
+      // (Art. 137.1 IDCC 3239 : la majoration s'applique sur la rémunération effective, pas les heures brutes)
+      expect(pay.sundayMajoration).toBe(28.8)
+      expect(pay.totalPay).toBe(124.8) // 96 + 28.8
+    })
+
+    it('devrait appliquer majoration jour férié sur présence_day (base presenceResponsiblePay)', () => {
+      // 1er janvier 2025 (mercredi), 12h de présence jour
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-01', '08:00', '20:00'),
+        shiftType: 'presence_day',
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract, [], false) // Pas habituel → +100%
+
+      // presenceResponsiblePay = 12h × 2/3 × 12€ = 96€
+      expect(pay.presenceResponsiblePay).toBe(96)
+      // holidayMajoration sur presenceResponsiblePay = 96 × 1.00 = 96€
+      expect(pay.holidayMajoration).toBe(96)
+      expect(pay.totalPay).toBe(192) // 96 + 96
     })
   })
 
