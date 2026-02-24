@@ -246,6 +246,12 @@ export function useSpeechRecognition(
   }, [isSupported, lang, continuous, interimResults])
 
   const startListening = useCallback(() => {
+    if (!isSupported) {
+      setError("La reconnaissance vocale n'est pas supportée par ce navigateur.")
+      logger.warn('Speech recognition is not supported in this browser')
+      return
+    }
+
     if (!recognitionRef.current || isListeningRef.current) return
 
     // Reset before starting
@@ -262,7 +268,7 @@ export function useSpeechRecognition(
       // Recognition might already be started
       logger.warn('Speech recognition start error:', err)
     }
-  }, [continuous])
+  }, [isSupported, continuous])
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current || !isListeningRef.current) return
