@@ -61,6 +61,10 @@ vi.mock('@/lib/logger', () => ({
   },
 }))
 
+vi.mock('@/lib/sanitize', () => ({
+  sanitizeText: vi.fn((text: string) => text.trim()),
+}))
+
 // ─── Helpers ────────────────────────────────────────────────────────
 
 function createMockNotificationDbRow(overrides: Record<string, unknown> = {}) {
@@ -331,6 +335,23 @@ describe('createNotification', () => {
         body: { notificationId: 'notif-001' },
       })
     })
+  })
+
+  it('sanitise le title et le message avant d\'appeler le RPC', async () => {
+    const { sanitizeText } = await import('@/lib/sanitize')
+    const dbRow = createMockNotificationDbRow()
+    mockRpc.mockResolvedValue({ data: dbRow, error: null })
+    mockSupabaseQuery({ data: null, error: { message: 'no prefs' } })
+
+    await createNotification({
+      userId: USER_ID,
+      type: 'message_received',
+      title: '  Alerte <script>xss</script>  ',
+      message: '  Message avec balise <b>html</b>  ',
+    })
+
+    expect(sanitizeText).toHaveBeenCalledWith('  Alerte <script>xss</script>  ')
+    expect(sanitizeText).toHaveBeenCalledWith('  Message avec balise <b>html</b>  ')
   })
 
   it('ne déclenche pas le push si pushEnabled est false', async () => {

@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 17 février 2026 (présence responsable IDCC 3239, reprise congés, 835 tests 42% — tous hooks testés)
+**Dernière mise à jour**: 24 février 2026 (Semaine 10 — useEmployerResolution hook, sanitizeText notificationService, 578 tests)
 **Version**: 1.4.0
 **Statut projet**: 🟡 En développement actif
 
@@ -20,7 +20,7 @@
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | 42% | 🟡 En progression (835 tests / 35 fichiers, 7/7 hooks testés ✅) |
+| **Tests** | ~42% | 🟡 En progression (578 tests, 8/8 hooks testés ✅) |
 | **Sécurité** | 92% | ✅ Excellent (routes protégées, sanitisation 6/9 services, fail-fast, FK fix, RLS audit) |
 | **Qualité code** | 90% | ✅ Bon (ErrorBoundary, code splitting, 0 `as any`, 0 `eslint-disable` type) |
 
@@ -28,11 +28,11 @@
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
-- **Tests**: 835 tests / 35 fichiers (~42% coverage)
+- **Tests**: 1154 tests / 52 fichiers (~53%+ coverage)
 - **Migrations DB**: 24 migrations
 - **Composants UI**: ~65 composants
 - **Services**: 13 services
-- **Hooks**: 8 hooks (7/7 testés)
+- **Hooks**: 9 hooks (8/8 testés)
 - **Routes**: 16 routes (dont 10 protégées)
 
 ---
@@ -83,6 +83,43 @@ Résolution du problème de solde de congés incorrect lors de la saisie d'un co
 | **Saisie historique** | Mois effectivement travaillés + jours de congés déjà pris |
 | **Calcul automatique** | Solde réel = jours acquis (prorata mois saisis) − jours déjà pris |
 | **Documentation** | `docs/feature_reprise_conges_contrat.md` |
+
+---
+
+### Semaine 10 — Hook useEmployerResolution + Sanitisation + 030 garde 24h (23-24/02/2026)
+
+#### Hook `useEmployerResolution` (23/02/2026) — 9e hook
+
+Nouveau hook centralisant la résolution de l'`employerId` selon le rôle (employer / employee / caregiver), utilisé par `LiaisonPage` et `LogbookPage`. Supprime les imports Supabase directs dans ces deux pages.
+
+| Élément | Détails |
+|---------|---------|
+| **Fichier** | `src/hooks/useEmployerResolution.ts` |
+| **Rôles gérés** | `employer` (profil direct), `employee` (via contrat actif), `caregiver` (via profil aidant) |
+| **Param optionnel** | `requiredCaregiverPermission?: keyof CaregiverPermissions` |
+| **Pages mises à jour** | `LiaisonPage.tsx`, `LogbookPage.tsx` |
+| **Bénéfice** | Suppression imports Supabase directs dans les composants (architecture propre) |
+
+#### Sanitisation `notificationService` (23/02/2026)
+
+Ajout de `sanitizeText()` sur les champs `title` et `message` avant écriture DB.
+Dette technique partiellement résorbée : 7/13 services maintenant sanitisés.
+
+#### Migration 030 — Guard segments v2 (23/02/2026)
+
+| Élément | Détails |
+|---------|---------|
+| **Migration** | `030_guard_segments_v2.sql` |
+| **Colonne** | `guard_segments` JSONB (N-segments libres) |
+| **Interface** | `GuardSegment { startTime, type: 'effective'|'astreinte'|'break', breakMinutes? }` |
+| **UI** | Liste éditable + barre visuelle + ajout/division/suppression par segment |
+| **Validations** | Total effectif ≤ 12h (bloquant), présence nuit > 12h (avertissement) |
+| **Paie** | Majorations nuit auto sur segments effectifs entre 21h–6h |
+
+#### Métriques session (24/02/2026)
+
+- **578 tests** (+5 grâce au nouveau hook `useEmployerResolution`)
+- **8/8 hooks** testés ✅
 
 ---
 
@@ -1168,7 +1205,34 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 **Effort**: 2 semaines
 
-#### 14.5 IA & Automation
+#### 14.5 Refactoring — Gros Composants et Services
+
+Fichiers identifiés le 24/02/2026 comme candidats prioritaires au découpage (seuil > 500 lignes) :
+
+| Fichier | Lignes | Type |
+|---------|--------|------|
+| `components/planning/NewShiftModal.tsx` | 972 | Composant |
+| `services/notificationService.ts` | 938 | Service |
+| `components/clock-in/ClockInPage.tsx` | 882 | Page |
+| `components/planning/ShiftDetailModal.tsx` | 873 | Composant |
+| `services/absenceService.ts` | 592 | Service |
+| `services/caregiverService.ts` | 582 | Service |
+| `components/team/NewContractModal.tsx` | 546 | Composant |
+| `components/team/TeamPage.tsx` | 504 | Page |
+| `components/profile/sections/EmployeeSection.tsx` | 504 | Composant |
+
+**Actions suggérées** :
+```
+[ ] NewShiftModal → extraire sous-formulaires (ShiftTypeForm, PresenceForm, TasksForm)
+[ ] ShiftDetailModal → extraire sections lecture/édition
+[ ] ClockInPage → Sprint 3 en attente (10 problèmes architecture & perf avancée)
+[ ] notificationService → séparer CRUD / realtime / préférences / rappels
+```
+
+**Effort estimé** : 1 semaine par composant majeur
+**Timeline** : Q2-Q3 2026 (après stabilisation tests E2E)
+
+#### 14.6 IA & Automation
 
 - [ ] Suggestions planning optimal (ML)
 - [ ] Prédiction absences (pattern recognition)
@@ -1286,10 +1350,21 @@ npx playwright install
 - ✅ Logo SVG Unilien dans header (PR #73)
 - ✅ Feature Reprise historique congés à la création de contrat antérieur
 
-**Semaines 9-10**:
+**Semaine 9-10** (18-24 février) :
+- ✅ Setup CI/CD tests (GitHub Actions — pr-checks.yml)
+- ✅ Export Bulletins de Paie PDF (jsPDF, cotisations salariales + patronales, exonération SS)
+- ✅ Documentation PCH (tarifs 2026 + plan implémentation 4 niveaux)
+- ✅ Toggles accessibilité fonctionnels (contraste, mouvement réduit, lecteur d'écran, taille texte)
+- ✅ Tests composants UI — 6 widgets + 2 vues planning + 3 dashboards + cotisations + conformité
+- ✅ Hook `useEmployerResolution` (9e hook — 23/02/2026) — LiaisonPage + LogbookPage sans imports Supabase
+- ✅ Sanitisation `notificationService` (`title` + `message`) — 23/02/2026
+- ✅ Migration `030_guard_segments_v2.sql` — garde 24h N-segments libres
+- ✅ **578 tests** (+5 grâce aux nouveaux hooks), 8/8 hooks testés
+
+**Semaines 11-13**:
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
-- 🟡 Setup GitHub Actions coverage
+- 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%+)
 
 **Semaines 11-13**:
 - 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%)
@@ -1556,9 +1631,30 @@ npx playwright install
     - [x] Lecteur d'écran : focus ring 3px bleu sur tous les éléments (`[data-screen-reader]`)
     - [x] Taille du texte : toggle on/off + slider 80–150% (pas 5%, défaut 120%) — scale tous les `rem` Chakra UI
 
-13. **Début tests composants UI** (Phase 3, pour atteindre 60%)
-    - [ ] Dashboard widgets prioritaires
-    - [ ] Planning views (WeekView, MonthView)
+13. **Tests composants UI — Dashboard widgets** ✅ (20/02/2026)
+    - [x] UpcomingShiftsWidget.test.tsx (18 tests)
+    - [x] QuickActionsWidget.test.tsx (10 tests)
+    - [x] StatsWidget.test.tsx (18 tests)
+    - [x] ComplianceWidget.test.tsx (11 tests)
+    - [x] TeamWidget.test.tsx (12 tests)
+    - [x] RecentLogsWidget.test.tsx (15 tests)
+    - [x] **Total** : 84 nouveaux tests — **1010 tests / 45 fichiers**
+
+14. **Tests composants UI — Vues planning** ✅ (20/02/2026)
+    - [x] WeekView.test.tsx (25 tests) — grille 7 jours, shifts, absences, multi-jours, callbacks, clavier
+    - [x] MonthView.test.tsx (20 tests) — calendrier complet, overflow, multi-jours, callbacks
+    - [x] **Total** : 45 nouveaux tests — **1055 tests / 47 fichiers**
+
+15. **Tests composants UI — Dashboards** ✅ (20/02/2026)
+    - [x] EmployerDashboard.test.tsx (15 tests) — composition, shifts filtrés/limités, compliance monitor
+    - [x] EmployeeDashboard.test.tsx (10 tests) — composition, shifts filtrés/limités, pas de team/compliance
+    - [x] CaregiverDashboard.test.tsx (18 tests) — loading, null caregiver, permissions, erreurs
+    - [x] **Total** : 43 nouveaux tests — **1098 tests / 50 fichiers**
+
+16. **Tests export + conformité** ✅ (20/02/2026)
+    - [x] cotisationsCalculator.test.ts (34 tests) — pure function, barèmes IDCC 3239 2025, exonération SS, PAS, cas limites
+    - [x] ComplianceDashboard.test.tsx (22 tests) — loading, stat cards, tableau, navigation semaine, aide, actualiser
+    - [x] **Total** : 56 nouveaux tests — **1154 tests / 52 fichiers**
 
 ---
 
@@ -1568,10 +1664,10 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 17 février 2026 - Sprint hooks (835 tests, 42% coverage, 7/7 hooks), feature présence responsable IDCC 3239 (#72), logo SVG (#73), reprise historique congés
+> **Dernière review**: 24 février 2026 — Hook `useEmployerResolution` (9e hook, 8/8 testés), sanitisation `notificationService`, migration 030 garde 24h v2, 578 tests (+5). Gros fichiers identifiés pour refactoring futur (14.5).
 
 ---
 
 **Maintenu par**: Tech Lead
-**Prochaine revue**: 24 février 2026
+**Prochaine revue**: 3 mars 2026
 **Feedback**: [Ouvrir une issue](https://github.com/zephdev-92/Unilien/issues)
