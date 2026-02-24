@@ -4,10 +4,10 @@ import { sanitizeText } from '@/lib/sanitize'
 import type { LogEntry, UserRole, Attachment } from '@/types'
 import type { LogEntryDbRow } from '@/types/database'
 import {
-  getProfileName,
   createUrgentLogEntryNotification,
   createLogEntryDirectedNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 
 // ============================================
 // TYPES
