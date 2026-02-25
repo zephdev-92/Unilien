@@ -293,6 +293,8 @@ describe('profileService', () => {
         cesu_number: '12345',
         pch_beneficiary: true,
         pch_monthly_amount: 1500,
+        pch_type: null,
+        pch_monthly_hours: null,
         emergency_contacts: [{ name: 'Contact 1', phone: '0612345678', relationship: 'Famille' }],
       }
       mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
@@ -304,6 +306,50 @@ describe('profileService', () => {
       expect(result?.handicapType).toBe('moteur')
       expect(result?.pchBeneficiary).toBe(true)
       expect(result?.emergencyContacts).toHaveLength(1)
+    })
+
+    it('devrait mapper pch_type et pch_monthly_hours', async () => {
+      const mockEmployerData = {
+        profile_id: 'profile-123',
+        address: {},
+        handicap_type: null,
+        handicap_name: null,
+        specific_needs: null,
+        cesu_number: null,
+        pch_beneficiary: true,
+        pch_monthly_amount: 1500,
+        pch_type: 'emploiDirect',
+        pch_monthly_hours: 60,
+        emergency_contacts: [],
+      }
+      mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
+
+      const result = await getEmployer('profile-123')
+
+      expect(result?.pchType).toBe('emploiDirect')
+      expect(result?.pchMonthlyHours).toBe(60)
+    })
+
+    it('devrait retourner pchType et pchMonthlyHours undefined si absents', async () => {
+      const mockEmployerData = {
+        profile_id: 'profile-123',
+        address: {},
+        handicap_type: null,
+        handicap_name: null,
+        specific_needs: null,
+        cesu_number: null,
+        pch_beneficiary: false,
+        pch_monthly_amount: null,
+        pch_type: null,
+        pch_monthly_hours: null,
+        emergency_contacts: null,
+      }
+      mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
+
+      const result = await getEmployer('profile-123')
+
+      expect(result?.pchType).toBeUndefined()
+      expect(result?.pchMonthlyHours).toBeUndefined()
     })
 
     it('devrait retourner null si l\'employeur n\'existe pas', async () => {
@@ -335,6 +381,8 @@ describe('profileService', () => {
         cesu_number: null,
         pch_beneficiary: false,
         pch_monthly_amount: null,
+        pch_type: null,
+        pch_monthly_hours: null,
         emergency_contacts: null,
       }
       mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
@@ -359,6 +407,38 @@ describe('profileService', () => {
           pchBeneficiary: true,
         })
       ).resolves.not.toThrow()
+    })
+
+    it('devrait inclure pch_type et pch_monthly_hours dans le payload', async () => {
+      mockUpsert.mockResolvedValue({ error: null })
+
+      await upsertEmployer('profile-123', {
+        pchBeneficiary: true,
+        pchType: 'emploiDirect',
+        pchMonthlyHours: 60,
+      })
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pch_type: 'emploiDirect',
+          pch_monthly_hours: 60,
+        }),
+        expect.anything()
+      )
+    })
+
+    it('devrait envoyer pch_type=null si pchType absent', async () => {
+      mockUpsert.mockResolvedValue({ error: null })
+
+      await upsertEmployer('profile-123', { pchBeneficiary: false })
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pch_type: null,
+          pch_monthly_hours: null,
+        }),
+        expect.anything()
+      )
     })
 
     it('devrait lancer une erreur si l\'upsert échoue', async () => {
