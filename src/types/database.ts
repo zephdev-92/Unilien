@@ -49,6 +49,10 @@ export interface EmployerDbRow {
   profile_id: string
   address: AddressDb | null
   cesu_number: string | null
+  pch_beneficiary: boolean | null
+  pch_monthly_amount: number | null
+  pch_type: string | null
+  pch_monthly_hours: number | null
 }
 
 export interface AddressDb {

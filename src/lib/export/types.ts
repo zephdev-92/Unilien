@@ -124,6 +124,16 @@ export interface CotisationsResult {
   isExemptPatronalSS: boolean
 }
 
+/** Données PCH pour le bulletin de paie */
+export interface PayslipPchData {
+  pchType: string
+  pchMonthlyHours: number
+  pchElement1Rate: number      // tarif horaire (€/h)
+  pchEnvelopePch: number       // pchMonthlyHours × pchElement1Rate
+  pchTotalCost: number         // grossPay + totalEmployerContributions
+  pchResteACharge: number      // max(0, pchTotalCost - pchEnvelopePch)
+}
+
 /** Données complètes pour générer un bulletin de paie individuel */
 export interface PayslipData {
   year: number
@@ -162,4 +172,7 @@ export interface PayslipData {
   cotisations: CotisationsResult
   generatedAt: Date
   isExemptPatronalSS: boolean
+  // PCH (optionnel — présent si l'employeur est bénéficiaire PCH configuré)
+  isPchBeneficiary: boolean
+  pch?: PayslipPchData
 }

@@ -1,5 +1,8 @@
 // Types de base pour Unilien
 
+import type { PchType } from '@/lib/pch/pchTariffs'
+export type { PchType }
+
 // Rôles utilisateur
 export type UserRole = 'employer' | 'employee' | 'caregiver'
 
@@ -37,6 +40,8 @@ export interface Employer {
   cesuNumber?: string
   pchBeneficiary: boolean
   pchMonthlyAmount?: number
+  pchType?: PchType         // Type de dispositif PCH
+  pchMonthlyHours?: number  // Heures allouées par le plan de compensation (h/mois)
   emergencyContacts: EmergencyContact[]
 }
 
