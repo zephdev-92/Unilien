@@ -14,6 +14,8 @@ import {
   EmptyState,
   Tabs,
   Alert,
+  Dialog,
+  Portal,
 } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
@@ -56,6 +58,8 @@ export function TeamPage() {
   const [auxiliariesError, setAuxiliariesError] = useState<string | null>(null)
   const [caregiversError, setCaregiversError] = useState<string | null>(null)
   const [removeError, setRemoveError] = useState<string | null>(null)
+  const [caregiverToRemove, setCaregiverToRemove] = useState<CaregiverWithProfile | null>(null)
+  const [isRemoving, setIsRemoving] = useState(false)
 
   // Tab state
   const [activeTab, setActiveTab] = useState<string>('auxiliaries')
@@ -164,18 +168,24 @@ export function TeamPage() {
     }
   }
 
-  const handleRemoveCaregiver = async (caregiver: CaregiverWithProfile) => {
-    if (!confirm(`Êtes-vous sûr de vouloir retirer ${caregiver.profile.firstName} ${caregiver.profile.lastName} de votre équipe ?`)) {
-      return
-    }
+  const handleRemoveCaregiver = (caregiver: CaregiverWithProfile) => {
+    setCaregiverToRemove(caregiver)
+  }
 
+  const confirmRemoveCaregiver = async () => {
+    if (!caregiverToRemove) return
+    setIsRemoving(true)
     setRemoveError(null)
     try {
-      await removeCaregiverFromEmployer(caregiver.profileId, caregiver.employerId)
+      await removeCaregiverFromEmployer(caregiverToRemove.profileId, caregiverToRemove.employerId)
+      setCaregiverToRemove(null)
       refreshCaregivers()
     } catch (err) {
       logger.error('Erreur suppression aidant:', err)
       setRemoveError(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+      setCaregiverToRemove(null)
+    } finally {
+      setIsRemoving(false)
     }
   }
 
@@ -425,6 +435,50 @@ export function TeamPage() {
         caregiver={selectedCaregiver}
         onSuccess={refreshCaregivers}
       />
+
+      {/* Dialog confirmation suppression aidant */}
+      <Dialog.Root
+        open={!!caregiverToRemove}
+        onOpenChange={(e) => { if (!e.open) setCaregiverToRemove(null) }}
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content maxW="420px">
+              <Dialog.Header>
+                <Dialog.Title>Retirer un aidant</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                <Text>
+                  Êtes-vous sûr de vouloir retirer{' '}
+                  <Text as="span" fontWeight="semibold">
+                    {caregiverToRemove?.profile.firstName} {caregiverToRemove?.profile.lastName}
+                  </Text>{' '}
+                  de votre équipe ?
+                </Text>
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Flex gap={3} justify="flex-end">
+                  <AccessibleButton
+                    variant="outline"
+                    onClick={() => setCaregiverToRemove(null)}
+                    disabled={isRemoving}
+                  >
+                    Annuler
+                  </AccessibleButton>
+                  <AccessibleButton
+                    colorPalette="red"
+                    onClick={confirmRemoveCaregiver}
+                    loading={isRemoving}
+                  >
+                    Retirer
+                  </AccessibleButton>
+                </Flex>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </DashboardLayout>
   )
 }
