@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { shiftDetailSchema as shiftSchema, type ShiftDetailFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
@@ -43,20 +43,6 @@ const SHIFT_TYPE_LABELS: Record<ShiftType, string> = {
   presence_night: 'Présence responsable (nuit)',
 }
 
-const shiftSchema = z.object({
-  date: z.string().min(1, 'La date est requise'),
-  startTime: z.string().min(1, "L'heure de début est requise"),
-  endTime: z.string().min(1, "L'heure de fin est requise"),
-  breakDuration: z.coerce.number().min(0, 'La pause ne peut pas être négative').default(0),
-  tasks: z.string().optional(),
-  notes: z.string().optional(),
-  status: z.enum(['planned', 'completed', 'cancelled', 'absent']),
-}).refine((data) => data.startTime !== data.endTime, {
-  message: "L'heure de fin doit être différente de l'heure de début",
-  path: ['endTime'],
-})
-
-type ShiftFormData = z.infer<typeof shiftSchema>
 
 const statusColors: Record<Shift['status'], string> = {
   planned: 'blue',
