@@ -22,7 +22,8 @@ import { getContractById } from '@/services/contractService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { sanitizeText } from '@/lib/sanitize'
 import { logger } from '@/lib/logger'
-import type { Shift, ShiftType, UserRole, Contract } from '@/types'
+import type { Shift, UserRole, Contract } from '@/types'
+import { SHIFT_STATUS_COLORS as statusColors, SHIFT_STATUS_LABELS as statusLabels, SHIFT_TYPE_LABELS } from '@/lib/constants/statusMaps'
 import type { ShiftForValidation } from '@/lib/compliance'
 import { useShiftNightHours } from '@/hooks/useShiftNightHours'
 import { useShiftRequalification } from '@/hooks/useShiftRequalification'
@@ -37,26 +38,6 @@ const SHIFT_TYPE_OPTIONS = [
   { value: 'presence_night', label: 'Présence responsable (nuit)' },
 ]
 
-const SHIFT_TYPE_LABELS: Record<ShiftType, string> = {
-  effective: 'Travail effectif',
-  presence_day: 'Présence responsable (jour)',
-  presence_night: 'Présence responsable (nuit)',
-}
-
-
-const statusColors: Record<Shift['status'], string> = {
-  planned: 'blue',
-  completed: 'green',
-  cancelled: 'gray',
-  absent: 'red',
-}
-
-const statusLabels: Record<Shift['status'], string> = {
-  planned: 'Planifié',
-  completed: 'Terminé',
-  cancelled: 'Annulé',
-  absent: 'Absent',
-}
 
 const statusOptions = [
   { value: 'planned', label: 'Planifié' },

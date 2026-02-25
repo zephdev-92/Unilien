@@ -2,25 +2,12 @@ import { Box, Stack, Flex, Text, Badge, Spinner, Center } from '@chakra-ui/react
 import { Link as RouterLink } from 'react-router-dom'
 import { AccessibleButton } from '@/components/ui'
 import type { Shift } from '@/types'
+import { SHIFT_STATUS_COLORS as statusColors, SHIFT_STATUS_LABELS as statusLabels } from '@/lib/constants/statusMaps'
 
 interface UpcomingShiftsWidgetProps {
   shifts: Shift[]
   loading?: boolean
   userRole: 'employer' | 'employee' | 'caregiver'
-}
-
-const statusColors: Record<Shift['status'], string> = {
-  planned: 'blue',
-  completed: 'green',
-  cancelled: 'gray',
-  absent: 'red',
-}
-
-const statusLabels: Record<Shift['status'], string> = {
-  planned: 'Planifié',
-  completed: 'Terminé',
-  cancelled: 'Annulé',
-  absent: 'Absent',
 }
 
 function formatDate(date: Date): string {
