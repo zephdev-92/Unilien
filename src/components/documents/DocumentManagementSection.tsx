@@ -84,6 +84,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false)
   const [employeesForPayslip, setEmployeesForPayslip] = useState<PayslipEmployee[]>([])
+  const [payslipEmployeesError, setPayslipEmployeesError] = useState<string | null>(null)
 
   // Charger les documents
   const loadDocuments = useCallback(async () => {
@@ -108,20 +109,24 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
     let cancelled = false
 
     loadDocuments()
+    setPayslipEmployeesError(null)
     // Charger les employés actifs pour le générateur de bulletins
-    getContractsForEmployer(employerId).then((contracts) => {
-      if (cancelled) return
-      setEmployeesForPayslip(
-        contracts
-          .filter((c) => c.employee)
-          .map((c) => ({
-            id: c.employeeId,
-            firstName: c.employee!.firstName,
-            lastName: c.employee!.lastName,
-            pasRate: 0,
-          }))
-      )
-    }).catch((err) => logger.error('Erreur chargement employés bulletins:', err))
+    getContractsForEmployer(employerId)
+      .then((contracts) => {
+        if (cancelled) return
+        setEmployeesForPayslip(
+          contracts.flatMap((c) =>
+            c.employee
+              ? [{ id: c.employeeId, firstName: c.employee.firstName, lastName: c.employee.lastName, pasRate: 0 }]
+              : []
+          )
+        )
+      })
+      .catch((err) => {
+        if (cancelled) return
+        logger.error('Erreur chargement employés bulletins:', err)
+        setPayslipEmployeesError('Impossible de charger la liste des employés')
+      })
 
     return () => { cancelled = true }
   }, [employerId, loadDocuments])
@@ -235,19 +240,28 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
               Générez un bulletin de paie individuel (PDF) pour un employé et un mois donné.
               Le document est calculé selon la Convention Collective IDCC 3239 (barèmes 2025, à titre indicatif).
             </Text>
-            <Button
-              onClick={() => setIsPayslipModalOpen(true)}
-              disabled={employeesForPayslip.length === 0}
-              alignSelf="flex-start"
-              style={{ backgroundColor: '#4E6478', color: 'white' }}
-            >
-              Générer un bulletin de paie
-            </Button>
-            {employeesForPayslip.length === 0 && (
-              <Alert.Root status="info">
+            {payslipEmployeesError ? (
+              <Alert.Root status="error">
                 <Alert.Indicator />
-                <Alert.Title>Aucun employé actif trouvé.</Alert.Title>
+                <Alert.Title>{payslipEmployeesError}</Alert.Title>
               </Alert.Root>
+            ) : (
+              <>
+                <Button
+                  onClick={() => setIsPayslipModalOpen(true)}
+                  disabled={employeesForPayslip.length === 0}
+                  alignSelf="flex-start"
+                  style={{ backgroundColor: '#4E6478', color: 'white' }}
+                >
+                  Générer un bulletin de paie
+                </Button>
+                {employeesForPayslip.length === 0 && (
+                  <Alert.Root status="info">
+                    <Alert.Indicator />
+                    <Alert.Title>Aucun employé actif trouvé.</Alert.Title>
+                  </Alert.Root>
+                )}
+              </>
             )}
           </VStack>
           <PayslipGeneratorModal
