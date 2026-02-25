@@ -29,7 +29,12 @@ import { updateAbsenceStatus } from '@/services/absenceService'
 import { getContractsForEmployer } from '@/services/contractService'
 import { PayslipGeneratorModal, type PayslipEmployee } from '@/components/documents/PayslipGeneratorModal'
 import { logger } from '@/lib/logger'
-import type { Absence } from '@/types'
+import {
+  ABSENCE_TYPE_LABELS,
+  ABSENCE_TYPE_COLORS,
+  ABSENCE_STATUS_LABELS as STATUS_LABELS,
+  ABSENCE_STATUS_COLORS as STATUS_COLORS,
+} from '@/lib/constants/statusMaps'
 
 // ============================================
 // TYPES
@@ -43,33 +48,6 @@ interface DocumentManagementSectionProps {
 // CONSTANTS
 // ============================================
 
-const ABSENCE_TYPE_LABELS: Record<Absence['absenceType'], string> = {
-  sick: 'Maladie',
-  vacation: 'Congé',
-  training: 'Formation',
-  unavailable: 'Indisponibilité',
-  emergency: 'Urgence',
-}
-
-const ABSENCE_TYPE_COLORS: Record<Absence['absenceType'], string> = {
-  sick: 'red',
-  vacation: 'blue',
-  training: 'purple',
-  unavailable: 'gray',
-  emergency: 'orange',
-}
-
-const STATUS_LABELS: Record<Absence['status'], string> = {
-  pending: 'En attente',
-  approved: 'Approuvée',
-  rejected: 'Refusée',
-}
-
-const STATUS_COLORS: Record<Absence['status'], string> = {
-  pending: 'yellow',
-  approved: 'green',
-  rejected: 'red',
-}
 
 // ============================================
 // COMPONENT

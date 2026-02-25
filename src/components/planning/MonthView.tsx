@@ -12,6 +12,11 @@ import {
   isWithinInterval,
 } from 'date-fns'
 import type { Shift, UserRole, Absence } from '@/types'
+import {
+  SHIFT_STATUS_COLORS as statusColors,
+  ABSENCE_STATUS_COLORS as absenceStatusColors,
+  ABSENCE_TYPE_LABELS as absenceTypeLabels,
+} from '@/lib/constants/statusMaps'
 
 interface MonthViewProps {
   currentDate: Date
@@ -22,26 +27,6 @@ interface MonthViewProps {
   onAbsenceClick?: (absence: Absence) => void
 }
 
-const statusColors: Record<Shift['status'], string> = {
-  planned: 'blue',
-  completed: 'green',
-  cancelled: 'gray',
-  absent: 'red',
-}
-
-const absenceStatusColors: Record<Absence['status'], string> = {
-  pending: 'orange',
-  approved: 'green',
-  rejected: 'gray',
-}
-
-const absenceTypeLabels: Record<Absence['absenceType'], string> = {
-  sick: 'Maladie',
-  vacation: 'Congé',
-  training: 'Formation',
-  unavailable: 'Indispo.',
-  emergency: 'Urgence',
-}
 
 export function MonthView({
   currentDate,
