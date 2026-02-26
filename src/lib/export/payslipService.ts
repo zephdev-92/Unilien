@@ -16,13 +16,15 @@ import { logger } from '@/lib/logger'
 /**
  * Récupère et calcule toutes les données nécessaires au bulletin de paie
  * d'un employé pour un mois donné.
+ *
+ * Si pasRate n'est pas fourni (undefined), le taux est lu depuis le contrat actif.
  */
 export async function getPayslipData(
   employerId: string,
   employeeId: string,
   year: number,
   month: number,
-  pasRate: number = 0,
+  pasRate?: number,
   isExemptPatronalSS: boolean = false
 ): Promise<PayslipData | null> {
   const options: ExportOptions = {
@@ -41,12 +43,15 @@ export async function getPayslipData(
 
   const empData = monthlyData.employees[0]
 
-  const [weeklyHours, employer] = await Promise.all([
+  const [weeklyHours, employer, contractPasRate] = await Promise.all([
     getContractWeeklyHours(empData.contractId),
     getEmployer(employerId),
+    pasRate === undefined ? getContractPasRate(empData.contractId) : Promise.resolve(null),
   ])
 
-  const cotisations = calculateCotisations(empData.totalGrossPay, { pasRate, isExemptPatronalSS })
+  const effectivePasRate = pasRate ?? contractPasRate ?? 0
+
+  const cotisations = calculateCotisations(empData.totalGrossPay, { pasRate: effectivePasRate, isExemptPatronalSS })
 
   // Calcul PCH si l'employeur est configuré
   let pch: PayslipPchData | undefined
@@ -80,6 +85,7 @@ export async function getPayslipData(
     employerLastName: monthlyData.employerLastName,
     employerAddress: monthlyData.employerAddress,
     employeeId,
+    contractId: empData.contractId,
     employeeFirstName: empData.firstName,
     employeeLastName: empData.lastName,
     contractType: empData.contractType,
@@ -117,4 +123,15 @@ async function getContractWeeklyHours(contractId: string): Promise<number | null
 
   if (error || !data) return null
   return (data as { weekly_hours: number }).weekly_hours
+}
+
+async function getContractPasRate(contractId: string): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('pas_rate')
+    .eq('id', contractId)
+    .single()
+
+  if (error || !data) return null
+  return (data as { pas_rate: number }).pas_rate
 }

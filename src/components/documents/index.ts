@@ -3,3 +3,4 @@
  */
 
 export { DocumentManagementSection } from './DocumentManagementSection'
+export { PayslipSection } from './PayslipSection'

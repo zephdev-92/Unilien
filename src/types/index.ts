@@ -156,6 +156,7 @@ export interface Contract {
   endDate?: Date
   weeklyHours: number
   hourlyRate: number
+  pasRate: number  // Taux PAS (Prélèvement à la Source) — 0 par défaut
   status: 'active' | 'terminated' | 'suspended'
   createdAt: Date
   updatedAt: Date
@@ -390,6 +391,27 @@ export interface LiaisonMessageWithSender extends LiaisonMessage {
     lastName: string
     avatarUrl?: string
   }
+}
+
+// ── Bulletin de paie (historique) ────────────────────────────────────────────
+
+export interface Payslip {
+  id: string
+  employerId: string
+  employeeId: string
+  contractId: string
+  year: number
+  month: number
+  periodLabel: string
+  grossPay: number
+  netPay: number
+  totalHours: number
+  pasRate: number
+  isExemptPatronalSS: boolean
+  storagePath: string | null
+  storageUrl: string | null
+  generatedAt: Date
+  createdAt: Date
 }
 
 // État authentification

@@ -149,6 +149,7 @@ export interface PayslipData {
   employeeFirstName: string
   employeeLastName: string
   // Contrat
+  contractId: string
   contractType: 'CDI' | 'CDD'
   hourlyRate: number
   weeklyHours: number
