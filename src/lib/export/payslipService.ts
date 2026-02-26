@@ -7,7 +7,10 @@ import { supabase } from '@/lib/supabase/client'
 import { getMonthlyDeclarationData } from './declarationService'
 import { calculateCotisations } from './cotisationsCalculator'
 import { getMonthLabel } from './types'
-import type { PayslipData, ExportOptions } from './types'
+import type { PayslipData, PayslipPchData, ExportOptions } from './types'
+import { getEmployer } from '@/services/profileService'
+import { getPchElementRate, calcEnveloppePch } from '@/lib/pch/pchTariffs'
+import type { PchType } from '@/lib/pch/pchTariffs'
 import { logger } from '@/lib/logger'
 
 /**
@@ -38,9 +41,35 @@ export async function getPayslipData(
 
   const empData = monthlyData.employees[0]
 
-  const weeklyHours = await getContractWeeklyHours(empData.contractId)
+  const [weeklyHours, employer] = await Promise.all([
+    getContractWeeklyHours(empData.contractId),
+    getEmployer(employerId),
+  ])
 
   const cotisations = calculateCotisations(empData.totalGrossPay, { pasRate, isExemptPatronalSS })
+
+  // Calcul PCH si l'employeur est configuré
+  let pch: PayslipPchData | undefined
+  const isPchBeneficiary = !!(
+    employer?.pchBeneficiary &&
+    employer.pchType &&
+    employer.pchMonthlyHours
+  )
+
+  if (isPchBeneficiary && employer?.pchType && employer.pchMonthlyHours) {
+    const pchType = employer.pchType as PchType
+    const pchElement1Rate = getPchElementRate(pchType)
+    const pchEnvelopePch = calcEnveloppePch(employer.pchMonthlyHours, pchType)
+    const pchTotalCost = cotisations.grossPay + cotisations.totalEmployerContributions
+    pch = {
+      pchType,
+      pchMonthlyHours: employer.pchMonthlyHours,
+      pchElement1Rate,
+      pchEnvelopePch,
+      pchTotalCost,
+      pchResteACharge: Math.max(0, pchTotalCost - pchEnvelopePch),
+    }
+  }
 
   return {
     year,
@@ -74,6 +103,8 @@ export async function getPayslipData(
     cotisations,
     generatedAt: new Date(),
     isExemptPatronalSS,
+    isPchBeneficiary,
+    pch,
   }
 }
 

@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { newShiftSchema as shiftSchema, type NewShiftFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
 import { format } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
 import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compliance'
@@ -29,27 +29,6 @@ import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
 
-const SHIFT_TYPE_VALUES = ['effective', 'presence_day', 'presence_night', 'guard_24h'] as const
-
-const shiftSchema = z.object({
-  contractId: z.string().min(1, 'Veuillez sélectionner un auxiliaire'),
-  shiftType: z.enum(SHIFT_TYPE_VALUES).default('effective'),
-  date: z.string().min(1, 'La date est requise'),
-  startTime: z.string().min(1, "L'heure de début est requise"),
-  endTime: z.string().min(1, "L'heure de fin est requise"),
-  breakDuration: z.coerce.number().min(0, 'La pause ne peut pas être négative').default(0),
-  tasks: z.string().optional(),
-  notes: z.string().optional(),
-}).refine((data) => {
-  // Pour guard_24h : endTime = startTime = 24h, c'est intentionnel
-  if (data.shiftType === 'guard_24h') return true
-  return data.startTime !== data.endTime
-}, {
-  message: "L'heure de fin doit être différente de l'heure de début",
-  path: ['endTime'],
-})
-
-type ShiftFormData = z.infer<typeof shiftSchema>
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },

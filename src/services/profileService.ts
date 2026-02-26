@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { Profile, Employer, Employee } from '@/types'
+import type { Profile, Employer, Employee, PchType } from '@/types'
 import type { ProfileDbRow } from '@/types/database'
 import { mapProfileFromDb } from '@/lib/mappers'
 
@@ -256,8 +256,10 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
     handicapName: data.handicap_name || undefined,
     specificNeeds: data.specific_needs || undefined,
     cesuNumber: data.cesu_number || undefined,
-    pchBeneficiary: data.pch_beneficiary,
+    pchBeneficiary: data.pch_beneficiary ?? false,
     pchMonthlyAmount: data.pch_monthly_amount || undefined,
+    pchType: (data.pch_type as PchType) || undefined,
+    pchMonthlyHours: data.pch_monthly_hours || undefined,
     emergencyContacts: (data.emergency_contacts || []) as Employer['emergencyContacts'],
   }
 }
@@ -279,6 +281,8 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     cesu_number: data.cesuNumber ? sanitizeText(data.cesuNumber) : null,
     pch_beneficiary: data.pchBeneficiary ?? false,
     pch_monthly_amount: data.pchMonthlyAmount || null,
+    pch_type: data.pchType || null,
+    pch_monthly_hours: data.pchMonthlyHours || null,
     emergency_contacts: data.emergencyContacts || [],
   }
 

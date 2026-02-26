@@ -88,6 +88,7 @@ function makeData(overrides: Partial<PayslipData> = {}): PayslipData {
     cotisations: makeCotisations({ grossPay: 1788.76 }),
     generatedAt: new Date('2026-01-31T12:00:00'),
     isExemptPatronalSS: false,
+    isPchBeneficiary: false,
     ...overrides,
   }
 }
@@ -197,6 +198,55 @@ describe('generatePayslipPdf', () => {
             { label: 'SS patronale', base: 1788.76, rate: 0.128, amount: 0, isEmployer: true, exempted: true },
           ],
         }),
+      }))
+      expect(result.success).toBe(true)
+    })
+  })
+
+  describe('Section PCH', () => {
+    const pchData = {
+      pchType: 'emploiDirect' as const,
+      pchMonthlyHours: 60,
+      pchElement1Rate: 19.34,
+      pchEnvelopePch: 1160.40,
+      pchTotalCost: 1788.76 + 420,
+      pchResteACharge: Math.max(0, 2208.76 - 1160.40),
+    }
+
+    it('génère sans erreur avec isPchBeneficiary=true et données PCH', () => {
+      const result = generatePayslipPdf(makeData({
+        isPchBeneficiary: true,
+        pch: pchData,
+      }))
+      expect(result.success).toBe(true)
+    })
+
+    it('n\'affiche pas la section PCH si isPchBeneficiary=false', () => {
+      generatePayslipPdf(makeData({ isPchBeneficiary: false }))
+      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
+      const allText = textCalls.join(' ')
+      expect(allText).not.toContain('PCH')
+    })
+
+    it('affiche la mention RÉCAPITULATIF PCH si isPchBeneficiary=true', () => {
+      generatePayslipPdf(makeData({
+        isPchBeneficiary: true,
+        pch: pchData,
+      }))
+      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
+      const allText = textCalls.join(' ')
+      expect(allText).toContain('PCH')
+    })
+
+    it('n\'affiche pas la section PCH si isPchBeneficiary=true mais pch absent', () => {
+      const result = generatePayslipPdf(makeData({ isPchBeneficiary: true, pch: undefined }))
+      expect(result.success).toBe(true)
+    })
+
+    it('génère sans erreur avec reste à charge nul (enveloppe couvre le coût)', () => {
+      const result = generatePayslipPdf(makeData({
+        isPchBeneficiary: true,
+        pch: { ...pchData, pchEnvelopePch: 9999, pchResteACharge: 0 },
       }))
       expect(result.success).toBe(true)
     })

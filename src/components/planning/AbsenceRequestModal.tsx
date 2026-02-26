@@ -100,7 +100,7 @@ export function AbsenceRequestModal({
   } = useForm<AbsenceFormData>({
     resolver: zodResolver(absenceSchema),
     defaultValues: {
-      absenceType: '' as unknown as AbsenceFormData['absenceType'],
+      absenceType: undefined,
       startDate: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       endDate: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       reason: '',
@@ -176,7 +176,7 @@ export function AbsenceRequestModal({
     if (isOpen) {
       const date = defaultDate || new Date()
       reset({
-        absenceType: '' as unknown as AbsenceFormData['absenceType'],
+        absenceType: undefined,
         startDate: format(date, 'yyyy-MM-dd'),
         endDate: format(date, 'yyyy-MM-dd'),
         reason: '',

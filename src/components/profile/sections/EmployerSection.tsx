@@ -5,7 +5,8 @@ import { z } from 'zod'
 import { Box, Stack, Flex, Text, Switch } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton, AccessibleSelect } from '@/components/ui'
 import { logger } from '@/lib/logger'
-import type { Employer, EmergencyContact } from '@/types'
+import type { Employer, EmergencyContact, PchType } from '@/types'
+import { PCH_TYPE_LABELS, PCH_TARIFFS_2026, calcEnveloppePch } from '@/lib/pch/pchTariffs'
 
 const addressSchema = z.object({
   street: z.string().min(1, 'La rue est obligatoire'),
@@ -26,6 +27,11 @@ const handicapCategories = [
   { value: 'autre', label: 'Autre' },
 ]
 
+const pchTypeOptions = [
+  { value: '', label: 'Sélectionnez un type' },
+  ...Object.entries(PCH_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+]
+
 const employerSchema = z.object({
   address: addressSchema,
   handicapType: z.string().optional(),
@@ -34,6 +40,8 @@ const employerSchema = z.object({
   cesuNumber: z.string().optional(),
   pchBeneficiary: z.boolean(),
   pchMonthlyAmount: z.number().optional(),
+  pchType: z.string().optional(),
+  pchMonthlyHours: z.number().min(0).max(744).optional(),
 })
 
 type EmployerFormData = z.infer<typeof employerSchema>
@@ -57,6 +65,8 @@ const defaultEmployer: Partial<Employer> = {
   cesuNumber: '',
   pchBeneficiary: false,
   pchMonthlyAmount: undefined,
+  pchType: undefined,
+  pchMonthlyHours: undefined,
   emergencyContacts: [],
 }
 
@@ -83,10 +93,20 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
       cesuNumber: employer.cesuNumber || '',
       pchBeneficiary: employer.pchBeneficiary || false,
       pchMonthlyAmount: employer.pchMonthlyAmount,
+      pchType: employer.pchType || '',
+      pchMonthlyHours: employer.pchMonthlyHours,
     },
   })
 
   const pchBeneficiary = watch('pchBeneficiary')
+  const pchType = watch('pchType') as PchType | ''
+  const pchMonthlyHours = watch('pchMonthlyHours')
+
+  const pchRate = pchType && pchType in PCH_TARIFFS_2026 ? PCH_TARIFFS_2026[pchType as PchType] : null
+  const pchEnveloppe =
+    pchRate && pchMonthlyHours
+      ? calcEnveloppePch(pchMonthlyHours, pchType as PchType)
+      : null
 
   const onSubmit = async (data: EmployerFormData) => {
     try {
@@ -94,6 +114,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
       setSuccessMessage(null)
       await onSave({
         ...data,
+        pchType: (data.pchType as PchType) || undefined,
         emergencyContacts,
       })
       setSuccessMessage('Informations mises à jour avec succès')
@@ -246,13 +267,52 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           </Flex>
 
           {pchBeneficiary && (
-            <AccessibleInput
-              label="Montant PCH mensuel"
-              type="number"
-              placeholder="Ex: 1200"
-              helperText="En euros"
-              {...register('pchMonthlyAmount', { valueAsNumber: true })}
-            />
+            <>
+              <AccessibleInput
+                label="Montant PCH mensuel (€)"
+                type="number"
+                placeholder="Ex: 1200"
+                helperText="Montant total alloué par le Conseil Départemental"
+                {...register('pchMonthlyAmount', { valueAsNumber: true })}
+              />
+
+              <AccessibleSelect
+                label="Type de dispositif PCH"
+                options={pchTypeOptions}
+                helperText="Détermine le tarif horaire de référence"
+                {...register('pchType')}
+              />
+
+              <AccessibleInput
+                label="Heures allouées par mois"
+                type="number"
+                placeholder="Ex: 60"
+                helperText="Nombre d'heures accordées par votre plan de compensation"
+                {...register('pchMonthlyHours', { valueAsNumber: true })}
+              />
+
+              {pchRate !== null && (
+                <Box
+                  p={3}
+                  bg="blue.50"
+                  borderRadius="md"
+                  borderWidth="1px"
+                  borderColor="blue.200"
+                >
+                  <Text fontSize="sm" color="blue.800">
+                    <Text as="span" fontWeight="medium">Tarif appliqué :</Text>{' '}
+                    {pchRate.toFixed(2).replace('.', ',')} €/h
+                    {pchEnveloppe !== null && (
+                      <>
+                        {' — '}
+                        <Text as="span" fontWeight="medium">Enveloppe estimée :</Text>{' '}
+                        {Math.round(pchEnveloppe).toLocaleString('fr-FR')} €/mois
+                      </>
+                    )}
+                  </Text>
+                </Box>
+              )}
+            </>
           )}
         </Stack>
       </Box>

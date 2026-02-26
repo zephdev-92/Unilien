@@ -13,6 +13,9 @@ import {
   Tag,
   EmptyState,
   Tabs,
+  Alert,
+  Dialog,
+  Portal,
 } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
@@ -50,6 +53,13 @@ export function TeamPage() {
   const [isLoadingCaregivers, setIsLoadingCaregivers] = useState(true)
   const [isAddCaregiverOpen, setIsAddCaregiverOpen] = useState(false)
   const [selectedCaregiver, setSelectedCaregiver] = useState<CaregiverWithProfile | null>(null)
+
+  // Error state
+  const [auxiliariesError, setAuxiliariesError] = useState<string | null>(null)
+  const [caregiversError, setCaregiversError] = useState<string | null>(null)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  const [caregiverToRemove, setCaregiverToRemove] = useState<CaregiverWithProfile | null>(null)
+  const [isRemoving, setIsRemoving] = useState(false)
 
   // Tab state
   const [activeTab, setActiveTab] = useState<string>('auxiliaries')
@@ -94,27 +104,38 @@ export function TeamPage() {
     let cancelled = false
 
     const loadData = async () => {
-      try {
-        // Les auxiliaires sont chargés pour les employeurs et les aidants avec canManageTeam
-        const canViewAuxiliaries = isEmployer || currentCaregiver?.permissions?.canManageTeam
-        const auxPromise = canViewAuxiliaries
-          ? getAuxiliariesForEmployer(effectiveEmployerId)
-          : Promise.resolve([])
+      setAuxiliariesError(null)
+      setCaregiversError(null)
 
-        const [auxData, caregiverData] = await Promise.all([
-          auxPromise,
-          getCaregiversForEmployer(effectiveEmployerId),
-        ])
-        if (!cancelled) {
-          setAuxiliaries(auxData)
-          setCaregivers(caregiverData)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingAuxiliaries(false)
-          setIsLoadingCaregivers(false)
-        }
+      // Les auxiliaires sont chargés pour les employeurs et les aidants avec canManageTeam
+      const canViewAuxiliaries = isEmployer || currentCaregiver?.permissions?.canManageTeam
+      const auxPromise = canViewAuxiliaries
+        ? getAuxiliariesForEmployer(effectiveEmployerId)
+        : Promise.resolve([])
+
+      const [auxResult, caregiverResult] = await Promise.allSettled([
+        auxPromise,
+        getCaregiversForEmployer(effectiveEmployerId),
+      ])
+
+      if (cancelled) return
+
+      if (auxResult.status === 'fulfilled') {
+        setAuxiliaries(auxResult.value)
+      } else {
+        logger.error('Erreur chargement auxiliaires:', auxResult.reason)
+        setAuxiliariesError('Impossible de charger les auxiliaires')
       }
+
+      if (caregiverResult.status === 'fulfilled') {
+        setCaregivers(caregiverResult.value)
+      } else {
+        logger.error('Erreur chargement aidants:', caregiverResult.reason)
+        setCaregiversError('Impossible de charger les aidants familiaux')
+      }
+
+      setIsLoadingAuxiliaries(false)
+      setIsLoadingCaregivers(false)
     }
 
     loadData()
@@ -127,26 +148,44 @@ export function TeamPage() {
   const refreshAuxiliaries = () => {
     const canViewAuxiliaries = isEmployer || currentCaregiver?.permissions?.canManageTeam
     if (effectiveEmployerId && canViewAuxiliaries) {
-      getAuxiliariesForEmployer(effectiveEmployerId).then(setAuxiliaries)
+      getAuxiliariesForEmployer(effectiveEmployerId)
+        .then((data) => { setAuxiliariesError(null); setAuxiliaries(data) })
+        .catch((err) => {
+          logger.error('Erreur rafraîchissement auxiliaires:', err)
+          setAuxiliariesError('Impossible de rafraîchir les auxiliaires')
+        })
     }
   }
 
   const refreshCaregivers = () => {
     if (effectiveEmployerId) {
-      getCaregiversForEmployer(effectiveEmployerId).then(setCaregivers)
+      getCaregiversForEmployer(effectiveEmployerId)
+        .then((data) => { setCaregiversError(null); setCaregivers(data) })
+        .catch((err) => {
+          logger.error('Erreur rafraîchissement aidants:', err)
+          setCaregiversError('Impossible de rafraîchir les aidants')
+        })
     }
   }
 
-  const handleRemoveCaregiver = async (caregiver: CaregiverWithProfile) => {
-    if (!confirm(`Êtes-vous sûr de vouloir retirer ${caregiver.profile.firstName} ${caregiver.profile.lastName} de votre équipe ?`)) {
-      return
-    }
+  const handleRemoveCaregiver = (caregiver: CaregiverWithProfile) => {
+    setCaregiverToRemove(caregiver)
+  }
 
+  const confirmRemoveCaregiver = async () => {
+    if (!caregiverToRemove) return
+    setIsRemoving(true)
+    setRemoveError(null)
     try {
-      await removeCaregiverFromEmployer(caregiver.profileId, caregiver.employerId)
+      await removeCaregiverFromEmployer(caregiverToRemove.profileId, caregiverToRemove.employerId)
+      setCaregiverToRemove(null)
       refreshCaregivers()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+      logger.error('Erreur suppression aidant:', err)
+      setRemoveError(err instanceof Error ? err.message : 'Erreur lors de la suppression')
+      setCaregiverToRemove(null)
+    } finally {
+      setIsRemoving(false)
     }
   }
 
@@ -252,6 +291,11 @@ export function TeamPage() {
                 <Center py={12}>
                   <Spinner size="xl" color="brand.500" />
                 </Center>
+              ) : auxiliariesError ? (
+                <Alert.Root status="error">
+                  <Alert.Indicator />
+                  <Alert.Title>{auxiliariesError}</Alert.Title>
+                </Alert.Root>
               ) : filteredAuxiliaries.length === 0 ? (
                 <EmptyState.Root>
                   <EmptyState.Content>
@@ -308,11 +352,24 @@ export function TeamPage() {
                 </AccessibleButton>
               </Flex>
 
+              {/* Erreur suppression aidant */}
+              {removeError && (
+                <Alert.Root status="error">
+                  <Alert.Indicator />
+                  <Alert.Title>{removeError}</Alert.Title>
+                </Alert.Root>
+              )}
+
               {/* Liste des aidants */}
               {isLoadingCaregivers ? (
                 <Center py={12}>
                   <Spinner size="xl" color="brand.500" />
                 </Center>
+              ) : caregiversError ? (
+                <Alert.Root status="error">
+                  <Alert.Indicator />
+                  <Alert.Title>{caregiversError}</Alert.Title>
+                </Alert.Root>
               ) : caregivers.length === 0 ? (
                 <EmptyState.Root>
                   <EmptyState.Content>
@@ -378,6 +435,50 @@ export function TeamPage() {
         caregiver={selectedCaregiver}
         onSuccess={refreshCaregivers}
       />
+
+      {/* Dialog confirmation suppression aidant */}
+      <Dialog.Root
+        open={!!caregiverToRemove}
+        onOpenChange={(e) => { if (!e.open) setCaregiverToRemove(null) }}
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content maxW="420px">
+              <Dialog.Header>
+                <Dialog.Title>Retirer un aidant</Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                <Text>
+                  Êtes-vous sûr de vouloir retirer{' '}
+                  <Text as="span" fontWeight="semibold">
+                    {caregiverToRemove?.profile.firstName} {caregiverToRemove?.profile.lastName}
+                  </Text>{' '}
+                  de votre équipe ?
+                </Text>
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Flex gap={3} justify="flex-end">
+                  <AccessibleButton
+                    variant="outline"
+                    onClick={() => setCaregiverToRemove(null)}
+                    disabled={isRemoving}
+                  >
+                    Annuler
+                  </AccessibleButton>
+                  <AccessibleButton
+                    colorPalette="red"
+                    onClick={confirmRemoveCaregiver}
+                    loading={isRemoving}
+                  >
+                    Retirer
+                  </AccessibleButton>
+                </Flex>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </DashboardLayout>
   )
 }
