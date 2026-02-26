@@ -202,6 +202,28 @@ describe('LogEntryCard', () => {
       await user.click(screen.getByRole('button', { name: /modifier/i }))
       expect(onEdit).toHaveBeenCalledWith(authorEntry)
     })
+
+    it('appelle onDelete si l\'utilisateur confirme la suppression', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      const user = userEvent.setup()
+      const onDelete = vi.fn()
+      renderWithProviders(
+        <LogEntryCard entry={authorEntry} currentUserId="current-user" onDelete={onDelete} />
+      )
+      await user.click(screen.getByRole('button', { name: /supprimer/i }))
+      expect(onDelete).toHaveBeenCalledWith(authorEntry.id)
+    })
+
+    it('ne call pas onDelete si l\'utilisateur annule la confirmation', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false)
+      const user = userEvent.setup()
+      const onDelete = vi.fn()
+      renderWithProviders(
+        <LogEntryCard entry={authorEntry} currentUserId="current-user" onDelete={onDelete} />
+      )
+      await user.click(screen.getByRole('button', { name: /supprimer/i }))
+      expect(onDelete).not.toHaveBeenCalled()
+    })
   })
 
   describe('Marquage comme lu', () => {

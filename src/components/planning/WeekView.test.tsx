@@ -242,6 +242,28 @@ describe('WeekView', () => {
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
 
+    it('appelle onAbsenceClick avec Enter sur une absence', () => {
+      const onAbsenceClick = vi.fn()
+      const absence = makeAbsence(3)
+      renderWithProviders(
+        <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
+      )
+      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      fireEvent.keyDown(card, { key: 'Enter' })
+      expect(onAbsenceClick).toHaveBeenCalledWith(absence)
+    })
+
+    it('appelle onAbsenceClick avec Espace sur une absence', () => {
+      const onAbsenceClick = vi.fn()
+      const absence = makeAbsence(4)
+      renderWithProviders(
+        <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
+      )
+      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      fireEvent.keyDown(card, { key: ' ' })
+      expect(onAbsenceClick).toHaveBeenCalledWith(absence)
+    })
+
     it("ne lève pas d'erreur si onShiftClick est absent", () => {
       const shift = makeShiftOnDay(0)
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)

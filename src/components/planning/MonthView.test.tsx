@@ -221,6 +221,30 @@ describe('MonthView', () => {
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
 
+    it('appelle onAbsenceClick avec Enter sur une absence', () => {
+      const onAbsenceClick = vi.fn()
+      const date = new Date('2026-02-12T12:00:00')
+      const absence = makeAbsence(date, date)
+      renderWithProviders(
+        <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
+      )
+      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      fireEvent.keyDown(card, { key: 'Enter' })
+      expect(onAbsenceClick).toHaveBeenCalledWith(absence)
+    })
+
+    it('appelle onAbsenceClick avec Espace sur une absence', () => {
+      const onAbsenceClick = vi.fn()
+      const date = new Date('2026-02-14T12:00:00')
+      const absence = makeAbsence(date, date)
+      renderWithProviders(
+        <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
+      )
+      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      fireEvent.keyDown(card, { key: ' ' })
+      expect(onAbsenceClick).toHaveBeenCalledWith(absence)
+    })
+
     it("ne lève pas d'erreur si onShiftClick est absent", () => {
       const date = new Date('2026-02-10T12:00:00')
       const shift = makeShiftOnDate(date)
