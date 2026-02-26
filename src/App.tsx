@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box, Container, Spinner, Center, Text } from '@chakra-ui/react'
 import { LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm } from '@/components/auth'
+import { RouteAnnouncer } from '@/components/accessibility/RouteAnnouncer'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
@@ -86,6 +87,7 @@ function App() {
   return (
     <>
       <AccessibilityApplier />
+      <RouteAnnouncer />
       <Suspense fallback={<LoadingPage />}>
         <Routes>
           {/* Page d'accueil publique */}
