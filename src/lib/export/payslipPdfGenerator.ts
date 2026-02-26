@@ -281,6 +281,9 @@ function drawEmployerSection(doc: jsPDF, data: PayslipData, y: number): number {
 
   // Afficher toutes les lignes ; les lignes exonérées en texte gris + "(Exo.)"
   for (let i = 0; i < cotisations.employerCotisations.length; i++) {
+    // Saut de page si besoin : 6mm pour la ligne + 27mm pour le total+coût après
+    y = checkPageBreak(doc, y, 6 + 27)
+
     const c = cotisations.employerCotisations[i]
     if (i % 2 === 0) {
       if (c.exempted) {
@@ -449,6 +452,9 @@ function tableRows(
 ): number {
   doc.setFontSize(8)
   for (let i = 0; i < rows.length; i++) {
+    // 6mm pour la ligne + 15mm de marge pour le total qui suit
+    y = checkPageBreak(doc, y, 6 + 15)
+
     const row = rows[i]
     // Fond alterné
     if (i % 2 === 0) {
