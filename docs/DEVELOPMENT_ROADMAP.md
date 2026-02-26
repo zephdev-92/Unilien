@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 24 février 2026 (Sprint /wd:analyze — 9 PRs, bug critique calculatePay dimanche, useReducer ShiftDetailModal, 1605 tests)
-**Version**: 1.5.0
+**Dernière mise à jour**: 26 février 2026 (Sprint refactoring architectural — 6 composants décomposés, database.ts typé, fix absence_type constraint, 1651 tests)
+**Version**: 1.6.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -20,24 +20,60 @@
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~60% | ✅ Bon (1605 tests / 79 fichiers, 8/8 hooks testés ✅) |
+| **Tests** | ~60% | ✅ Bon (1651 tests / 81 fichiers, 8/8 hooks testés ✅) |
 | **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
-| **Qualité code** | 93% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns) |
+| **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
 
 ### Métriques Clés
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
-- **Tests**: 1605 tests / 79 fichiers (~60% coverage)
-- **Migrations DB**: 30 migrations
-- **Composants UI**: ~70 composants
-- **Services**: 13 services (notificationService.core.ts + notificationCreators.ts extraits)
-- **Hooks**: 9 hooks (8/8 testés) + useShiftValidationData, useShiftNightHours, useShiftRequalification, useShiftEffectiveHours, useGuardSegments
+- **Tests**: 1651 tests / 81 fichiers (~60% coverage)
+- **Migrations DB**: 32 migrations
+- **Composants UI**: ~75 composants
+- **Services**: 15 services (+ absenceJustificationService + caregiverTeamService)
+- **Hooks**: 12 hooks custom (useClockIn, useNewShiftForm, useNewContractForm ajoutés) + useShiftValidationData, useShiftNightHours, useShiftRequalification, useShiftEffectiveHours, useGuardSegments
 - **Routes**: 16 routes (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
 
 ## ✅ Réalisations Récentes (Semaines 6-10 - Février 2026)
+
+### Sprint Refactoring Architectural — 8 PRs (25-26/02/2026)
+
+Décomposition des fichiers monolithiques (> 500 lignes) en modules ciblés, typage précis des types DB, et correction d'un bug de contrainte DB sur les absences.
+
+#### Décompositions (PRs #107–#113)
+
+| PR | Fichier | Avant | Après | Modules extraits |
+|----|---------|-------|-------|-----------------|
+| #107 ✅ | `ShiftDetailModal.tsx` | 979 lignes | 260 lignes | `useShiftDetailData`, `useShiftEditLogic`, `ShiftEditForm`, `ShiftDetailView` |
+| #109 ✅ | `NewShiftModal.tsx` | 811 lignes | 378 lignes | `useNewShiftForm`, `Guard24hSection`, `ShiftHoursSummary` |
+| #110 ✅ | `absenceService.ts` | 592 lignes | 469 lignes | `absenceJustificationService.ts` |
+| #111 ✅ | `caregiverService.ts` | 582 lignes | 331 lignes | `caregiverTeamService.ts` |
+| #112 ✅ | `NewContractModal.tsx` | 547 lignes | 279 lignes | `useNewContractForm`, `ContractLeaveHistorySection`, `contractSchemas.ts` |
+| #113 ✅ | `ClockInPage.tsx` | 557 lignes | 150 lignes | `useClockIn`, `ClockInProgressSection`, `ClockInTodaySection` |
+
+#### Typage database.ts (PR #114 ✅)
+
+Remplacement des 4 types imprécis dans `src/types/database.ts` :
+- `LiaisonMessageDbRow.attachments` + `LogEntryDbRow.attachments` : `unknown[]` → `Attachment[]`
+- `CaregiverDbRow.permissions` : `Record<string,boolean>` → `CaregiverPermissions`
+- `CaregiverDbRow.address` : `Record<string,unknown>` → `AddressDb`
+- `NotificationDbRow.data` : `Record<string,unknown>` → `NotificationData` (nouvelle interface)
+- Suppression des casts `as X[]` dans liaisonService, logbookService, notificationService
+
+#### Fix bug absence événement familial (PR #115 + migration 032 ✅)
+
+La contrainte `absences_absence_type_check` créée à l'init de la table ne couvrait pas `family_event` et `emergency`. Migration 032 corrige le CHECK et est appliquée sur Supabase distant. Le registre des migrations est maintenant synchronisé (025→032 tous alignés).
+
+#### Métriques session (26/02/2026)
+
+- **1651 tests** / 81 fichiers (était 1605 / 79)
+- 32 migrations DB synchronisées (était 30)
+- Aucun composant > 500 lignes dans les modules refactorisés
+
+---
 
 ### Sprint /wd:analyze Remediation — 9 PRs (24/02/2026)
 
@@ -515,7 +551,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Effort**: 6-8 semaines (Phase 1+2 terminées en 1 jour)
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: ~42% coverage — 835 tests / 35 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
+**État actuel**: ~60% coverage — 1651 tests / 81 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
 
 **Services testés (13/13)** ✅ Phase 1 terminée (12/02/2026):
 ```
@@ -651,7 +687,10 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 ```
 [ ] Aligner accessibility_settings → AccessibilitySettings dans database.ts
 [ ] Aligner computed_pay → ComputedPay dans ShiftDbRow
-[ ] Aligner permissions → CaregiverPermissions dans CaregiverDbRow
+[x] Aligner permissions → CaregiverPermissions dans CaregiverDbRow (PR #114, 26/02/2026)
+[x] Aligner address → AddressDb dans CaregiverDbRow (PR #114, 26/02/2026)
+[x] Typer attachments → Attachment[] dans LiaisonMessageDbRow + LogEntryDbRow (PR #114, 26/02/2026)
+[x] Typer data → NotificationData dans NotificationDbRow (PR #114, 26/02/2026)
 [ ] Regenerer les types complets si besoin (npx supabase gen types)
 ```
 
