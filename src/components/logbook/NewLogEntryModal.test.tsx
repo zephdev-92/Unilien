@@ -46,7 +46,7 @@ beforeEach(() => {
 
 describe('NewLogEntryModal', () => {
   describe('Visibilité', () => {
-    it('affiche le titre \"Nouvelle entrée\" si isOpen=true', async () => {
+    it('affiche le titre "Nouvelle entrée" si isOpen=true', async () => {
       renderWithProviders(<NewLogEntryModal {...defaultProps} />)
 
       await waitFor(() => {
@@ -63,7 +63,7 @@ describe('NewLogEntryModal', () => {
   })
 
   describe('Champs du formulaire', () => {
-    it('affiche le select \"Type d\'entrée\" avec les options attendues', async () => {
+    it('affiche le select "Type d\'entrée" avec les options attendues', async () => {
       renderWithProviders(<NewLogEntryModal {...defaultProps} />)
 
       await waitFor(() => {
@@ -76,7 +76,7 @@ describe('NewLogEntryModal', () => {
       expect(typeSelect).toContainHTML('Incident - Événement important')
     })
 
-    it('affiche le select \"Importance\" avec les options Normal/Urgent', async () => {
+    it('affiche le select "Importance" avec les options Normal/Urgent', async () => {
       renderWithProviders(<NewLogEntryModal {...defaultProps} />)
 
       await waitFor(() => {

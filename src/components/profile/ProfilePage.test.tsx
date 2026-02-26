@@ -63,7 +63,7 @@ describe('ProfilePage', () => {
   })
 
   describe('Profil null', () => {
-    it('affiche \"Profil incomplet\" si profile est null', () => {
+    it('affiche "Profil incomplet" si profile est null', () => {
       mockUseAuth.mockReturnValue({
         profile: null,
         userRole: null,
@@ -81,7 +81,7 @@ describe('ProfilePage', () => {
       expect(screen.getByText('Profil incomplet')).toBeInTheDocument()
     })
 
-    it('affiche le DashboardLayout avec le titre \"Paramètres\"', () => {
+    it('affiche le DashboardLayout avec le titre "Paramètres"', () => {
       mockUseAuth.mockReturnValue({
         profile: null,
         userRole: null,
@@ -127,7 +127,7 @@ describe('ProfilePage', () => {
       })
     })
 
-    it('n\'affiche pas l\'onglet \"Mon profil auxiliaire\" pour un employeur', async () => {
+    it('n\'affiche pas l\'onglet "Mon profil auxiliaire" pour un employeur', async () => {
       const profile = createMockProfile({ role: 'employer' })
       mockUseAuth.mockReturnValue({
         profile,
@@ -237,7 +237,7 @@ describe('ProfilePage', () => {
   })
 
   describe('Profil caregiver', () => {
-    it('affiche l\'onglet \"Mon profil aidant\" pour un caregiver', async () => {
+    it('affiche l\'onglet "Mon profil aidant" pour un caregiver', async () => {
       const profile = createMockProfile({ role: 'caregiver' })
       mockUseAuth.mockReturnValue({
         profile,

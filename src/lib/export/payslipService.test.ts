@@ -33,7 +33,7 @@ vi.mock('./types', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./types')>()
   return {
     ...actual,
-    getMonthLabel: vi.fn((_year: number, _month: number) => 'Janvier 2025'),
+    getMonthLabel: vi.fn(() => 'Janvier 2025'),
   }
 })
 

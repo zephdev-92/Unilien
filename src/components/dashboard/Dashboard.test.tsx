@@ -78,7 +78,7 @@ describe('Dashboard', () => {
       expect(spinner).not.toBeNull()
     })
 
-    it('rend le DashboardLayout avec le titre \"Tableau de bord\" même sans profil', () => {
+    it('rend le DashboardLayout avec le titre "Tableau de bord" même sans profil', () => {
       mockUseAuth.mockReturnValue({
         profile: null,
         userRole: null,

@@ -56,7 +56,7 @@ describe('AbsenceDetailModal', () => {
       expect(screen.queryByText('Demande d\'absence')).not.toBeInTheDocument()
     })
 
-    it('affiche le titre \"Demande d\'absence\" si isOpen=true et absence non nulle', async () => {
+    it('affiche le titre "Demande d\'absence" si isOpen=true et absence non nulle', async () => {
       renderWithProviders(<AbsenceDetailModal {...defaultProps} />)
 
       await waitFor(() => {

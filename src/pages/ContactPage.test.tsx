@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/helpers'
 import { ContactPage } from './ContactPage'
@@ -21,7 +21,7 @@ describe('ContactPage', () => {
   })
 
   describe('Section hero', () => {
-    it('affiche le titre \"Contactez-nous\"', () => {
+    it('affiche le titre "Contactez-nous"', () => {
       renderWithProviders(<ContactPage />)
       expect(screen.getByText('Contactez-nous')).toBeInTheDocument()
     })
@@ -43,12 +43,12 @@ describe('ContactPage', () => {
       expect(screen.getByPlaceholderText(/décrivez votre demande/i)).toBeInTheDocument()
     })
 
-    it('affiche le titre du formulaire \"Envoyez-nous un message\"', () => {
+    it('affiche le titre du formulaire "Envoyez-nous un message"', () => {
       renderWithProviders(<ContactPage />)
       expect(screen.getByText(/envoyez-nous un message/i)).toBeInTheDocument()
     })
 
-    it('affiche le bouton \"Envoyer le message\"', () => {
+    it('affiche le bouton "Envoyer le message"', () => {
       renderWithProviders(<ContactPage />)
       expect(
         screen.getByRole('button', { name: /envoyer le message/i })
@@ -83,7 +83,7 @@ describe('ContactPage', () => {
   })
 
   describe('Informations de contact', () => {
-    it('affiche \"Autres moyens de nous contacter\"', () => {
+    it('affiche "Autres moyens de nous contacter"', () => {
       renderWithProviders(<ContactPage />)
       expect(screen.getByText(/autres moyens de nous contacter/i)).toBeInTheDocument()
     })
