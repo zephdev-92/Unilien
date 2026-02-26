@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { LiaisonMessage, LiaisonMessageWithSender, UserRole, Attachment } from '@/types'
+import type { LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
 import type { LiaisonMessageDbRow } from '@/types/database'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
@@ -393,7 +393,7 @@ function mapMessageFromDb(data: LiaisonMessageDbRow): LiaisonMessageWithSender {
     senderRole: data.sender_role,
     content: data.content,
     audioUrl: data.audio_url || undefined,
-    attachments: (data.attachments || []) as Attachment[],
+    attachments: data.attachments || [],
     isEdited: data.is_edited || false,
     readBy: data.read_by || [],
     createdAt: new Date(data.created_at),

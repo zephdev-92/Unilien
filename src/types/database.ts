@@ -3,6 +3,8 @@
  * Ces types représentent la structure des données telles qu'elles arrivent de la DB
  */
 
+import type { Attachment, CaregiverPermissions } from '@/types'
+
 // ============================================================
 // PROFILE
 // ============================================================
@@ -183,7 +185,7 @@ export interface LiaisonMessageDbRow {
   sender_role: 'employer' | 'employee' | 'caregiver'
   content: string
   audio_url: string | null
-  attachments: unknown[] | null
+  attachments: Attachment[] | null
   is_edited: boolean
   read_by: string[] | null
   created_at: string
@@ -208,7 +210,7 @@ export interface LogEntryDbRow {
   importance: string
   content: string
   audio_url: string | null
-  attachments: unknown[] | null
+  attachments: Attachment[] | null
   recipient_id: string | null
   read_by: string[] | null
   created_at: string
@@ -223,6 +225,24 @@ export interface LogEntryDbRow {
 // NOTIFICATION
 // ============================================================
 
+/** Champs possibles dans le payload JSON `data` d'une notification */
+export interface NotificationData {
+  shiftId?: string
+  shiftDate?: string
+  startTime?: string
+  employerName?: string
+  employeeName?: string
+  contractType?: string
+  senderName?: string
+  messagePreview?: string
+  authorName?: string
+  contentPreview?: string
+  absenceType?: string
+  startDate?: string
+  endDate?: string
+  status?: string
+}
+
 export interface NotificationDbRow {
   id: string
   user_id: string
@@ -230,7 +250,7 @@ export interface NotificationDbRow {
   priority: string | null
   title: string
   message: string
-  data: Record<string, unknown> | null
+  data: NotificationData | null
   action_url: string | null
   is_read: boolean
   is_dismissed: boolean
@@ -246,12 +266,12 @@ export interface NotificationDbRow {
 export interface CaregiverDbRow {
   profile_id: string
   employer_id: string
-  permissions: Record<string, boolean> | null
+  permissions: CaregiverPermissions | null
   permissions_locked: boolean
   relationship: string | null
   relationship_details: string | null
   legal_status: string | null
-  address: Record<string, unknown> | null
+  address: AddressDb | null
   emergency_phone: string | null
   availability_hours: string | null
   can_replace_employer: boolean

@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { LogEntry, UserRole, Attachment } from '@/types'
+import type { LogEntry, UserRole } from '@/types'
 import type { LogEntryDbRow } from '@/types/database'
 import {
   createUrgentLogEntryNotification,
@@ -379,7 +379,7 @@ function mapLogEntryFromDb(data: LogEntryDbRow): LogEntryWithAuthor {
     importance: data.importance,
     content: data.content,
     audioUrl: data.audio_url || undefined,
-    attachments: (data.attachments || []) as Attachment[],
+    attachments: data.attachments || [],
     recipientId: data.recipient_id || undefined,
     readBy: data.read_by || [],
     createdAt: new Date(data.created_at),
