@@ -125,22 +125,16 @@ export function useNotifications(
         // Trigger callback
         onNewNotificationRef.current?.(notification)
       } else if (eventType === 'UPDATE') {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notification.id ? notification : n))
-        )
-        // Recalculate unread count on update
         setNotifications((prev) => {
-          const unread = prev.filter((n) => !n.isRead && !n.isDismissed).length
-          setUnreadCount(unread)
-          return prev
+          const updated = prev.map((n) => (n.id === notification.id ? notification : n))
+          setUnreadCount(updated.filter((n) => !n.isRead && !n.isDismissed).length)
+          return updated
         })
       } else if (eventType === 'DELETE') {
-        setNotifications((prev) => prev.filter((n) => n.id !== notification.id))
-        // Recalculate unread count
         setNotifications((prev) => {
-          const unread = prev.filter((n) => !n.isRead && !n.isDismissed).length
-          setUnreadCount(unread)
-          return prev
+          const filtered = prev.filter((n) => n.id !== notification.id)
+          setUnreadCount(filtered.filter((n) => !n.isRead && !n.isDismissed).length)
+          return filtered
         })
       }
     })
@@ -178,12 +172,10 @@ export function useNotifications(
   const dismiss = useCallback(
     async (notificationId: string) => {
       await dismissNotification(notificationId)
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
-      // Update unread count if the dismissed notification was unread
       setNotifications((prev) => {
-        const unread = prev.filter((n) => !n.isRead && !n.isDismissed).length
-        setUnreadCount(unread)
-        return prev
+        const filtered = prev.filter((n) => n.id !== notificationId)
+        setUnreadCount(filtered.filter((n) => !n.isRead && !n.isDismissed).length)
+        return filtered
       })
     },
     []

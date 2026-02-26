@@ -34,9 +34,12 @@ vi.mock('@/lib/supabase/client', () => ({
 
 // Mock du service de notification
 vi.mock('@/services/notificationService', () => ({
-  getProfileName: vi.fn().mockResolvedValue('Jean Dupont'),
   createContractCreatedNotification: vi.fn().mockResolvedValue(undefined),
   createContractTerminatedNotification: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  getProfileName: vi.fn().mockResolvedValue('Jean Dupont'),
 }))
 
 // Mock du service de solde de congés
@@ -402,9 +405,8 @@ describe('contractService', () => {
     })
 
     it('devrait envoyer une notification après création réussie', async () => {
-      const { getProfileName, createContractCreatedNotification } = await import(
-        '@/services/notificationService'
-      )
+      const { createContractCreatedNotification } = await import('@/services/notificationService')
+      const { getProfileName } = await import('@/services/profileService')
       const mockCreatedContract = createMockContractDbData()
       mockSingle.mockResolvedValue({ data: mockCreatedContract, error: null })
 
@@ -592,9 +594,8 @@ describe('contractService', () => {
     })
 
     it('devrait envoyer une notification de fin de contrat', async () => {
-      const { createContractTerminatedNotification, getProfileName } = await import(
-        '@/services/notificationService'
-      )
+      const { createContractTerminatedNotification } = await import('@/services/notificationService')
+      const { getProfileName } = await import('@/services/profileService')
       mockSingle.mockResolvedValueOnce({
         data: { employee_id: 'emp-123', employer_id: 'employer-456' },
         error: null,

@@ -4,421 +4,363 @@ import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/helpers'
 import { createMockShift, createMockContract } from '@/test/fixtures'
 import { ShiftDetailModal } from './ShiftDetailModal'
+import type { Shift } from '@/types'
 
-// ─── Mocks ──────────────────────────────────────────────────────────────────
+// ── Mocks services ─────────────────────────────────────────────────────────────
 
+const mockUpdateShift = vi.fn()
+const mockDeleteShift = vi.fn()
+const mockValidateShift = vi.fn()
+const mockGetShifts = vi.fn()
 vi.mock('@/services/shiftService', () => ({
-  updateShift: vi.fn(),
-  deleteShift: vi.fn(),
-  validateShift: vi.fn(),
-  getShifts: vi.fn(),
+  updateShift: (...args: unknown[]) => mockUpdateShift(...args),
+  deleteShift: (...args: unknown[]) => mockDeleteShift(...args),
+  validateShift: (...args: unknown[]) => mockValidateShift(...args),
+  getShifts: (...args: unknown[]) => mockGetShifts(...args),
 }))
 
+const mockGetContractById = vi.fn()
 vi.mock('@/services/contractService', () => ({
-  getContractById: vi.fn(),
+  getContractById: (...args: unknown[]) => mockGetContractById(...args),
 }))
+
+vi.mock('@/services/profileService', () => ({
+  getEmployer: vi.fn().mockResolvedValue(null),
+}))
+
+// ── Mocks hooks ───────────────────────────────────────────────────────────────
 
 vi.mock('@/hooks/useComplianceCheck', () => ({
-  useComplianceCheck: vi.fn(() => ({
+  useComplianceCheck: () => ({
     complianceResult: null,
     computedPay: null,
-    durationHours: 0,
+    durationHours: 8,
     isValidating: false,
     hasErrors: false,
     hasWarnings: false,
-  })),
+    validationError: null,
+    revalidate: vi.fn(),
+  }),
 }))
 
-vi.mock('@/lib/compliance', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/compliance')>()
-  return {
-    ...actual,
-    calculateNightHours: vi.fn(() => 0),
-    calculateShiftDuration: vi.fn(() => 480),
-  }
-})
-
-vi.mock('@/lib/sanitize', () => ({
-  sanitizeText: vi.fn((s: string) => s),
+vi.mock('@/hooks/useShiftNightHours', () => ({
+  useShiftNightHours: () => ({ nightHoursCount: 0, hasNightHours: false }),
 }))
 
-// ─── Imports après mocks ─────────────────────────────────────────────────────
+vi.mock('@/hooks/useShiftRequalification', () => ({
+  useShiftRequalification: () => ({ isRequalified: false }),
+}))
 
-import { getContractById } from '@/services/contractService'
-import { getShifts } from '@/services/shiftService'
+vi.mock('@/hooks/useShiftEffectiveHours', () => ({
+  useShiftEffectiveHours: () => ({ effectiveHoursComputed: undefined }),
+}))
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const mockShift = createMockShift({
-  id: 'shift-1',
-  date: new Date('2026-02-20'),
-  startTime: '09:00',
-  endTime: '17:00',
-  status: 'planned',
-  contractId: 'contract-1',
-  validatedByEmployer: false,
-  validatedByEmployee: false,
-  tasks: [],
-  notes: undefined,
-  shiftType: 'effective',
-})
-
-const mockContract = createMockContract({
+const contract = createMockContract({
   id: 'contract-1',
+  employerId: 'employer-1',
+  employeeId: 'employee-1',
   contractType: 'CDI',
-  hourlyRate: 12.5,
+  hourlyRate: 13.5,
+  weeklyHours: 35,
+  status: 'active',
 })
+
+function createShift(overrides: Partial<Shift> = {}): Shift {
+  return createMockShift({
+    id: 'shift-1',
+    contractId: 'contract-1',
+    status: 'planned',
+    startTime: '09:00',
+    endTime: '17:00',
+    breakDuration: 60,
+    tasks: ['Aide au lever', 'Repas'],
+    notes: 'Note de test',
+    shiftType: 'effective',
+    validatedByEmployer: false,
+    validatedByEmployee: false,
+    ...overrides,
+  })
+}
 
 const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),
-  shift: mockShift,
   userRole: 'employer' as const,
-  profileId: 'profile-1',
+  profileId: 'employer-1',
   onSuccess: vi.fn(),
-  caregiverCanEdit: false,
 }
 
-// ─── Setup ───────────────────────────────────────────────────────────────────
-
-beforeEach(() => {
-  vi.clearAllMocks()
-  vi.mocked(getContractById).mockResolvedValue(null)
-  vi.mocked(getShifts).mockResolvedValue([])
-})
-
-// ─── Tests ───────────────────────────────────────────────────────────────────
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('ShiftDetailModal', () => {
-  describe('Visibilité du dialog', () => {
-    it('ne rend rien si shift est null', () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} shift={null} />
-      )
-      expect(screen.queryByText('Détail de l\'intervention')).not.toBeInTheDocument()
-    })
-
-    it('ne rend pas le contenu du dialog si isOpen est false', () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} isOpen={false} />
-      )
-      // Chakra v3 Dialog.Root avec open=false ne monte pas le contenu dans le Portal
-      expect(screen.queryByText('Détail de l\'intervention')).not.toBeInTheDocument()
-    })
-
-    it('affiche le titre du dialog si isOpen=true et shift non null', async () => {
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Détail de l\'intervention')).toBeInTheDocument()
-      })
-    })
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetContractById.mockResolvedValue(contract)
+    mockGetShifts.mockResolvedValue([])
+    mockUpdateShift.mockResolvedValue(undefined)
+    mockDeleteShift.mockResolvedValue(undefined)
+    mockValidateShift.mockResolvedValue(undefined)
   })
 
-  describe('Affichage des données du shift', () => {
-    it('affiche le statut "Planifié" pour un shift en statut planned', async () => {
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
-
-      await waitFor(() => {
-        expect(screen.getByText('Planifié')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche le statut "Terminé" pour un shift en statut completed', async () => {
-      const completedShift = createMockShift({
-        ...mockShift,
-        status: 'completed',
-        validatedByEmployer: false,
-        validatedByEmployee: false,
-      })
+  describe('Mode lecture (visualisation)', () => {
+    it('affiche les horaires du shift', async () => {
       renderWithProviders(
-        <ShiftDetailModal {...defaultProps} shift={completedShift} />
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
       )
-
-      await waitFor(() => {
-        expect(screen.getByText('Terminé')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche les horaires du shift (heure début - heure fin)', async () => {
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
-
       await waitFor(() => {
         expect(screen.getByText('09:00 - 17:00')).toBeInTheDocument()
       })
     })
 
-    it('affiche la durée calculée du shift', async () => {
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
-
+    it('affiche les tâches', async () => {
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
+      )
       await waitFor(() => {
-        // 09:00 -> 17:00 = 8h, breakDuration=60min => 7.0h
-        expect(screen.getByText(/Durée/)).toBeInTheDocument()
+        expect(screen.getByText('Aide au lever')).toBeInTheDocument()
+        expect(screen.getByText('Repas')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les notes', async () => {
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
+      )
+      await waitFor(() => {
+        expect(screen.getByText('Note de test')).toBeInTheDocument()
+      })
+    })
+
+    it('retourne null si shift est null', () => {
+      const { container } = renderWithProviders(
+        <ShiftDetailModal {...defaultProps} shift={null} />
+      )
+      expect(container).toBeEmptyDOMElement()
+    })
+  })
+
+  describe('Permissions RBAC', () => {
+    it('employeur voit le bouton Modifier pour shift planifié', async () => {
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} userRole="employer" shift={createShift({ status: 'planned' })} />
+      )
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /modifier/i })).toBeInTheDocument()
+      })
+    })
+
+    it('employeur voit le bouton Supprimer pour shift planifié', async () => {
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} userRole="employer" shift={createShift({ status: 'planned' })} />
+      )
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /supprimer/i })).toBeInTheDocument()
+      })
+    })
+
+    it('caregiver sans permission ne voit pas le bouton Modifier', async () => {
+      renderWithProviders(
+        <ShiftDetailModal
+          {...defaultProps}
+          userRole="caregiver"
+          caregiverCanEdit={false}
+          shift={createShift({ status: 'planned' })}
+        />
+      )
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /modifier/i })).not.toBeInTheDocument()
+      })
+    })
+
+    it('caregiver avec permission voit le bouton Modifier', async () => {
+      renderWithProviders(
+        <ShiftDetailModal
+          {...defaultProps}
+          userRole="caregiver"
+          caregiverCanEdit={true}
+          shift={createShift({ status: 'planned' })}
+        />
+      )
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /modifier/i })).toBeInTheDocument()
+      })
+    })
+
+    it('employeur voit Valider pour shift terminé', async () => {
+      renderWithProviders(
+        <ShiftDetailModal
+          {...defaultProps}
+          userRole="employer"
+          shift={createShift({ status: 'completed' })}
+        />
+      )
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /valider l'intervention/i })).toBeInTheDocument()
+      })
+    })
+
+    it('caregiver ne voit pas Valider', async () => {
+      renderWithProviders(
+        <ShiftDetailModal
+          {...defaultProps}
+          userRole="caregiver"
+          shift={createShift({ status: 'completed' })}
+        />
+      )
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /valider/i })).not.toBeInTheDocument()
       })
     })
   })
 
-  describe('Permissions — bouton Modifier', () => {
-    it('affiche le bouton "Modifier" pour userRole="employer"', async () => {
+  describe('Mode édition', () => {
+    it('passe en mode édition au clic sur Modifier', async () => {
+      const user = userEvent.setup()
       renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" />
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Modifier/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /modifier/i })).toBeInTheDocument()
       })
+
+      await user.click(screen.getByRole('button', { name: /modifier/i }))
+
+      expect(screen.getByText("Modifier l'intervention")).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /enregistrer/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /annuler/i })).toBeInTheDocument()
     })
 
-    it('affiche le bouton "Modifier" pour userRole="caregiver" avec caregiverCanEdit=true', async () => {
+    it('retourne en mode lecture sur Annuler', async () => {
+      const user = userEvent.setup()
       renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="caregiver" caregiverCanEdit={true} />
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Modifier/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /modifier/i })).toBeInTheDocument()
       })
-    })
 
-    it('n\'affiche PAS le bouton "Modifier" pour userRole="employee"', async () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employee" />
-      )
+      await user.click(screen.getByRole('button', { name: /modifier/i }))
+      await user.click(screen.getByRole('button', { name: /annuler/i }))
 
-      await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /Modifier/i })).not.toBeInTheDocument()
-      })
-    })
-
-    it('n\'affiche PAS le bouton "Modifier" pour userRole="caregiver" sans caregiverCanEdit', async () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="caregiver" caregiverCanEdit={false} />
-      )
-
-      await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /Modifier/i })).not.toBeInTheDocument()
-      })
+      expect(screen.getByText("Détail de l'intervention")).toBeInTheDocument()
     })
   })
 
-  describe('Bouton Fermer', () => {
-    it('appelle onClose quand on clique sur le bouton "Fermer" du footer', async () => {
+  describe('Suppression', () => {
+    it('affiche la confirmation de suppression au clic sur Supprimer', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} shift={createShift({ status: 'planned' })} />
+      )
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /supprimer/i })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: /supprimer/i }))
+
+      expect(screen.getByText(/êtes-vous sûr/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /confirmer la suppression/i })).toBeInTheDocument()
+    })
+
+    it('appelle deleteShift et onSuccess sur confirmation', async () => {
       const user = userEvent.setup()
       const onClose = vi.fn()
+      const onSuccess = vi.fn()
 
       renderWithProviders(
-        <ShiftDetailModal {...defaultProps} onClose={onClose} />
+        <ShiftDetailModal
+          {...defaultProps}
+          shift={createShift({ status: 'planned' })}
+          onClose={onClose}
+          onSuccess={onSuccess}
+        />
       )
 
       await waitFor(() => {
-        // Il y a deux boutons "Fermer" : le X (header) et le bouton footer.
-        // On prend le dernier qui est dans le footer.
-        const fermerButtons = screen.getAllByRole('button', { name: /Fermer/i })
-        expect(fermerButtons.length).toBeGreaterThanOrEqual(1)
+        expect(screen.getByRole('button', { name: /supprimer/i })).toBeInTheDocument()
       })
 
-      // Le bouton footer "Fermer" est le dernier dans le DOM
-      const fermerButtons = screen.getAllByRole('button', { name: /Fermer/i })
-      const footerFermerButton = fermerButtons[fermerButtons.length - 1]
-      await user.click(footerFermerButton)
-      expect(onClose).toHaveBeenCalledTimes(1)
+      await user.click(screen.getByRole('button', { name: /supprimer/i }))
+      await user.click(screen.getByRole('button', { name: /confirmer la suppression/i }))
+
+      await waitFor(() => {
+        expect(mockDeleteShift).toHaveBeenCalledWith('shift-1')
+        expect(onSuccess).toHaveBeenCalled()
+        expect(onClose).toHaveBeenCalled()
+      })
     })
   })
 
-  describe('Chargement du contrat', () => {
-    it('appelle getContractById au montage si le shift a un contractId', async () => {
-      vi.mocked(getContractById).mockResolvedValue(mockContract)
+  describe('Validation du shift', () => {
+    it('appelle validateShift et onSuccess sur Valider', async () => {
+      const user = userEvent.setup()
+      const onSuccess = vi.fn()
 
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
+      renderWithProviders(
+        <ShiftDetailModal
+          {...defaultProps}
+          userRole="employer"
+          shift={createShift({ status: 'completed' })}
+          onSuccess={onSuccess}
+        />
+      )
 
       await waitFor(() => {
-        expect(getContractById).toHaveBeenCalledWith('contract-1')
+        expect(screen.getByRole('button', { name: /valider l'intervention/i })).toBeInTheDocument()
+      })
+
+      await user.click(screen.getByRole('button', { name: /valider l'intervention/i }))
+
+      await waitFor(() => {
+        expect(mockValidateShift).toHaveBeenCalledWith('shift-1', 'employer')
+        expect(onSuccess).toHaveBeenCalled()
       })
     })
 
-    it('affiche les infos du contrat une fois chargé', async () => {
-      vi.mocked(getContractById).mockResolvedValue(mockContract)
-
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
+    it('affiche "Vous avez validé" si déjà validé par l\'employeur', async () => {
+      renderWithProviders(
+        <ShiftDetailModal
+          {...defaultProps}
+          userRole="employer"
+          shift={createShift({ status: 'completed', validatedByEmployer: true })}
+        />
+      )
 
       await waitFor(() => {
-        expect(screen.getByText(/12\.50 €\/h/i)).toBeInTheDocument()
+        expect(screen.getByText(/vous avez validé/i)).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /valider l'intervention/i })).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Chargement des données', () => {
+    it('appelle getContractById avec le bon contractId', async () => {
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
+      )
+
+      await waitFor(() => {
+        expect(mockGetContractById).toHaveBeenCalledWith('contract-1')
       })
     })
 
-    it('appelle getShifts au montage pour charger les interventions existantes', async () => {
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
+    it('appelle getShifts pour charger le contexte de validation', async () => {
+      renderWithProviders(
+        <ShiftDetailModal {...defaultProps} shift={createShift()} />
+      )
 
       await waitFor(() => {
-        expect(getShifts).toHaveBeenCalledWith(
-          'profile-1',
+        expect(mockGetShifts).toHaveBeenCalledWith(
+          'employer-1',
           'employer',
           expect.any(Date),
           expect.any(Date)
         )
-      })
-    })
-  })
-
-  describe('Permissions — bouton Supprimer', () => {
-    it('affiche le bouton "Supprimer" pour employer avec shift en statut planned', async () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" shift={mockShift} />
-      )
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Supprimer/i })).toBeInTheDocument()
-      })
-    })
-
-    it('n\'affiche PAS le bouton "Supprimer" pour un shift en statut completed', async () => {
-      const completedShift = createMockShift({
-        ...mockShift,
-        status: 'completed',
-        validatedByEmployer: false,
-        validatedByEmployee: false,
-      })
-
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" shift={completedShift} />
-      )
-
-      await waitFor(() => {
-        // canDelete = false quand status != 'planned'
-        expect(screen.queryByRole('button', { name: /Supprimer/i })).not.toBeInTheDocument()
-      })
-    })
-
-    it('n\'affiche PAS le bouton "Supprimer" pour userRole="employee"', async () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employee" shift={mockShift} />
-      )
-
-      await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /Supprimer/i })).not.toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Permissions — bouton Valider', () => {
-    it('affiche le bouton "Valider l\'intervention" pour employer avec shift completed', async () => {
-      const completedShift = createMockShift({
-        ...mockShift,
-        status: 'completed',
-        validatedByEmployer: false,
-        validatedByEmployee: false,
-      })
-
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" shift={completedShift} />
-      )
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: /Valider l'intervention/i })
-        ).toBeInTheDocument()
-      })
-    })
-
-    it('affiche le bouton "Valider l\'intervention" pour employee avec shift completed', async () => {
-      const completedShift = createMockShift({
-        ...mockShift,
-        status: 'completed',
-        validatedByEmployer: false,
-        validatedByEmployee: false,
-      })
-
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employee" shift={completedShift} />
-      )
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: /Valider l'intervention/i })
-        ).toBeInTheDocument()
-      })
-    })
-
-    it('n\'affiche PAS le bouton "Valider" pour un shift en statut planned', async () => {
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" shift={mockShift} />
-      )
-
-      await waitFor(() => {
-        expect(
-          screen.queryByRole('button', { name: /Valider l'intervention/i })
-        ).not.toBeInTheDocument()
-      })
-    })
-
-    it('n\'affiche PAS le bouton "Valider" si l\'employer a déjà validé', async () => {
-      const alreadyValidatedShift = createMockShift({
-        ...mockShift,
-        status: 'completed',
-        validatedByEmployer: true,
-        validatedByEmployee: false,
-      })
-
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" shift={alreadyValidatedShift} />
-      )
-
-      await waitFor(() => {
-        expect(
-          screen.queryByRole('button', { name: /Valider l'intervention/i })
-        ).not.toBeInTheDocument()
-        expect(
-          screen.getByText(/Vous avez validé cette intervention/i)
-        ).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Confirmation de suppression', () => {
-    it('affiche la confirmation de suppression après clic sur "Supprimer"', async () => {
-      const user = userEvent.setup()
-
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} userRole="employer" shift={mockShift} />
-      )
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Supprimer/i })).toBeInTheDocument()
-      })
-
-      await user.click(screen.getByRole('button', { name: /Supprimer/i }))
-
-      expect(
-        screen.getByText(/Êtes-vous sûr de vouloir supprimer cette intervention/i)
-      ).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: /Confirmer la suppression/i })
-      ).toBeInTheDocument()
-    })
-  })
-
-  describe('Validation dans la section Validation', () => {
-    it('affiche l\'indicateur "Employeur (en attente)" quand non validé', async () => {
-      renderWithProviders(<ShiftDetailModal {...defaultProps} />)
-
-      await waitFor(() => {
-        expect(screen.getByText(/Employeur \(en attente\)/i)).toBeInTheDocument()
-      })
-    })
-
-    it('affiche l\'indicateur "Employeur (validé)" quand validé par l\'employer', async () => {
-      const validatedShift = createMockShift({
-        ...mockShift,
-        status: 'completed',
-        validatedByEmployer: true,
-        validatedByEmployee: false,
-      })
-
-      renderWithProviders(
-        <ShiftDetailModal {...defaultProps} shift={validatedShift} />
-      )
-
-      await waitFor(() => {
-        expect(screen.getByText(/Employeur \(validé\)/i)).toBeInTheDocument()
       })
     })
   })

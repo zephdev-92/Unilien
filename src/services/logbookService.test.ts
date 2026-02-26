@@ -25,9 +25,12 @@ const mockCreateUrgentLogEntryNotification = vi.fn()
 const mockCreateLogEntryDirectedNotification = vi.fn()
 
 vi.mock('@/services/notificationService', () => ({
-  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
   createUrgentLogEntryNotification: (...args: unknown[]) => mockCreateUrgentLogEntryNotification(...args),
   createLogEntryDirectedNotification: (...args: unknown[]) => mockCreateLogEntryDirectedNotification(...args),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
 }))
 
 // ============================================

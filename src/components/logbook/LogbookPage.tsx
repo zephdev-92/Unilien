@@ -14,13 +14,8 @@ import {
   type LogEntryFilters,
   type LogEntryWithAuthor,
 } from '@/services/logbookService'
-import { supabase } from '@/lib/supabase/client'
-import {
-  getCaregiver,
-  getCaregiverEmployerId,
-} from '@/services/caregiverService'
+import { useEmployerResolution } from '@/hooks/useEmployerResolution'
 import { logger } from '@/lib/logger'
-import type { CaregiverPermissions } from '@/types'
 
 const PAGE_SIZE = 20
 
@@ -36,82 +31,12 @@ export function LogbookPage() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [isNewEntryModalOpen, setIsNewEntryModalOpen] = useState(false)
 
-  // Caregiver-specific state
-  const [resolvedEmployerId, setResolvedEmployerId] = useState<string | null>(null)
-  const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
-  const [isResolvingEmployer, setIsResolvingEmployer] = useState(false)
-  const [accessDenied, setAccessDenied] = useState(false)
-
-  // Resolve employerId based on role
-  useEffect(() => {
-    async function resolveEmployer() {
-      if (!profile) {
-        setResolvedEmployerId(null)
-        return
-      }
-
-      // Employer: use own id
-      if (profile.role === 'employer') {
-        setResolvedEmployerId(profile.id)
-        return
-      }
-
-      // Employee: resolve employer from active contract
-      if (profile.role === 'employee') {
-        setIsResolvingEmployer(true)
-        try {
-          const { data } = await supabase
-            .from('contracts')
-            .select('employer_id')
-            .eq('employee_id', profile.id)
-            .eq('status', 'active')
-            .limit(1)
-            .maybeSingle()
-
-          if (data) {
-            setResolvedEmployerId(data.employer_id)
-          } else {
-            setAccessDenied(true)
-          }
-        } catch {
-          setAccessDenied(true)
-        } finally {
-          setIsResolvingEmployer(false)
-        }
-        return
-      }
-
-      // Caregiver: resolve employer from caregiver record
-      setIsResolvingEmployer(true)
-      try {
-        const caregiver = await getCaregiver(profile.id)
-
-        if (!caregiver) {
-          setAccessDenied(true)
-          return
-        }
-
-        setCaregiverPermissions(caregiver.permissions)
-
-        if (!caregiver.permissions.canViewLiaison) {
-          setAccessDenied(true)
-          return
-        }
-
-        const empId = await getCaregiverEmployerId(profile.id)
-        setResolvedEmployerId(empId)
-      } catch (error) {
-        logger.error('Erreur résolution employeur pour aidant:', error)
-        setAccessDenied(true)
-      } finally {
-        setIsResolvingEmployer(false)
-      }
-    }
-
-    if (profile && isInitialized) {
-      resolveEmployer()
-    }
-  }, [profile, isInitialized])
+  const {
+    resolvedEmployerId,
+    caregiverPermissions,
+    isResolving: isResolvingEmployer,
+    accessDenied,
+  } = useEmployerResolution({ requiredCaregiverPermission: 'canViewLiaison' })
 
   // Determine the actual employerId to use
   const employerId = resolvedEmployerId || ''

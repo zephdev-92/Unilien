@@ -7,10 +7,10 @@ import type {
   ContractWithEmployerDbRow,
 } from '@/types/database'
 import {
-  getProfileName,
   createContractCreatedNotification,
   createContractTerminatedNotification,
 } from '@/services/notificationService'
+import { getProfileName } from '@/services/profileService'
 import { calculateAcquiredFromMonths, getLeaveYear } from '@/lib/absence'
 import { initializeLeaveBalanceWithOverride } from '@/services/leaveBalanceService'
 
@@ -355,6 +355,31 @@ export async function searchEmployeeByEmail(
 /**
  * Vérifie si un contrat actif existe entre un employeur et un employé
  */
+/**
+ * Retourne l'id de l'employeur associé à un employé via son contrat actif.
+ * Utilisé par `useEmployerResolution` pour les utilisateurs de rôle `employee`.
+ *
+ * @returns L'`employer_id` du contrat actif, ou `null` si aucun contrat trouvé.
+ */
+export async function getActiveEmployerIdForEmployee(
+  employeeId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('employer_id')
+    .eq('employee_id', employeeId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Erreur résolution employeur (contrat actif):', error)
+    return null
+  }
+
+  return data?.employer_id ?? null
+}
+
 export async function hasActiveContract(
   employerId: string,
   employeeId: string
@@ -388,6 +413,7 @@ function mapContractFromDb(data: ContractDbRow): Contract {
     endDate: data.end_date ? new Date(data.end_date) : undefined,
     weeklyHours: data.weekly_hours,
     hourlyRate: data.hourly_rate,
+    pasRate: data.pas_rate ?? 0,
     status: data.status,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),

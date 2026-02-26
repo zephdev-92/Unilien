@@ -33,6 +33,7 @@ vi.mock('@/components/documents', () => ({
   DocumentManagementSection: ({ employerId }: { employerId: string }) => (
     <div data-testid="doc-section" data-employer-id={employerId} />
   ),
+  PayslipSection: () => <div data-testid="payslip-section" />,
 }))
 
 // ── Imports après mocks ────────────────────────────────────────────────────────

@@ -23,6 +23,10 @@ vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
+vi.mock('@/lib/sanitize', () => ({
+  sanitizeText: vi.fn((text: string) => text.trim()),
+}))
+
 // ============================================
 // HELPERS
 // ============================================
@@ -99,6 +103,7 @@ import {
   getUserPushSubscriptions,
   showLocalNotification,
 } from '@/services/pushService'
+import { sanitizeText } from '@/lib/sanitize'
 
 // ============================================
 // TESTS
@@ -634,6 +639,50 @@ describe('pushService', () => {
       const result = await subscribeToPush('user-123')
       // savePushSubscription throws, caught by try/catch => return null
       expect(result).toBeNull()
+
+      window.atob = originalAtob
+    })
+
+    it('sanitise navigator.userAgent avant de sauvegarder en base', async () => {
+      ;(window.Notification as unknown as Record<string, unknown>).permission = 'granted'
+
+      const mockSubscription = {
+        endpoint: 'https://push.example.com/sub-sanitize',
+        options: { applicationServerKey: null },
+        toJSON: vi.fn().mockReturnValue({
+          endpoint: 'https://push.example.com/sub-sanitize',
+          keys: { p256dh: 'p256dh-val', auth: 'auth-val' },
+        }),
+        unsubscribe: vi.fn().mockResolvedValue(true),
+      }
+
+      Object.defineProperty(navigator, 'serviceWorker', {
+        value: {
+          ready: Promise.resolve({
+            pushManager: {
+              getSubscription: vi.fn().mockResolvedValue(null),
+              subscribe: vi.fn().mockResolvedValue(mockSubscription),
+            },
+          }),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      Object.defineProperty(navigator, 'userAgent', {
+        value: '  Mozilla/5.0 (Test Browser)  ',
+        writable: true,
+        configurable: true,
+      })
+
+      const originalAtob = window.atob
+      window.atob = vi.fn().mockReturnValue('fake-binary-data')
+
+      mockSupabaseQuery({ data: [{ id: '1' }], error: null })
+
+      await subscribeToPush('user-123')
+
+      expect(sanitizeText).toHaveBeenCalledWith('  Mozilla/5.0 (Test Browser)  ')
 
       window.atob = originalAtob
     })

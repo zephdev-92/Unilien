@@ -14,26 +14,11 @@ import { fr } from 'date-fns/locale'
 import { AccessibleButton } from '@/components/ui'
 import { updateAbsenceStatus, cancelAbsence } from '@/services/absenceService'
 import type { Absence, UserRole } from '@/types'
-
-const absenceTypeLabels: Record<Absence['absenceType'], string> = {
-  sick: 'Maladie',
-  vacation: 'Congé',
-  training: 'Formation',
-  unavailable: 'Indisponibilité',
-  emergency: 'Urgence personnelle',
-}
-
-const statusColors: Record<Absence['status'], string> = {
-  pending: 'orange',
-  approved: 'green',
-  rejected: 'red',
-}
-
-const statusLabels: Record<Absence['status'], string> = {
-  pending: 'En attente',
-  approved: 'Approuvée',
-  rejected: 'Refusée',
-}
+import {
+  ABSENCE_TYPE_LABELS as absenceTypeLabels,
+  ABSENCE_STATUS_COLORS as statusColors,
+  ABSENCE_STATUS_LABELS as statusLabels,
+} from '@/lib/constants/statusMaps'
 
 interface AbsenceDetailModalProps {
   isOpen: boolean

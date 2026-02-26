@@ -41,6 +41,9 @@ vi.mock('./widgets', () => ({
   RecentLogsWidget: ({ employerId }: { employerId: string }) => (
     <div data-testid="recent-logs-widget" data-employer-id={employerId} />
   ),
+  PchEnvelopeWidget: ({ employerId }: { employerId: string }) => (
+    <div data-testid="pch-envelope-widget" data-employer-id={employerId} />
+  ),
 }))
 
 // ── Mocks services / hooks ────────────────────────────────────────────────────
@@ -48,6 +51,11 @@ vi.mock('./widgets', () => ({
 const mockGetShifts = vi.fn()
 vi.mock('@/services/shiftService', () => ({
   getShifts: (...args: unknown[]) => mockGetShifts(...args),
+}))
+
+const mockGetEmployer = vi.fn()
+vi.mock('@/services/profileService', () => ({
+  getEmployer: (...args: unknown[]) => mockGetEmployer(...args),
 }))
 
 const mockUseComplianceMonitor = vi.fn()
@@ -65,6 +73,7 @@ describe('EmployerDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetShifts.mockResolvedValue([])
+    mockGetEmployer.mockResolvedValue(null)
     mockUseComplianceMonitor.mockReturnValue(undefined)
   })
 

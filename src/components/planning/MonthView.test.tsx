@@ -131,7 +131,7 @@ describe('MonthView', () => {
       const date = new Date('2026-02-12T12:00:00')
       const absence = makeAbsence(date, date, { absenceType: 'vacation' })
       renderWithProviders(<MonthView {...defaultProps} absences={[absence]} />)
-      expect(screen.getByText('Congé')).toBeInTheDocument()
+      expect(screen.getByText('Congé payé')).toBeInTheDocument()
     })
 
     it('affiche une absence multi-jours sur chaque jour concerné', () => {
@@ -148,8 +148,8 @@ describe('MonthView', () => {
       for (const [type, label] of [
         ['sick', 'Maladie'],
         ['training', 'Formation'],
-        ['unavailable', 'Indispo.'],
-        ['emergency', 'Urgence'],
+        ['unavailable', 'Indisponibilité'],
+        ['emergency', 'Urgence personnelle'],
       ] as const) {
         const { unmount } = renderWithProviders(
           <MonthView {...defaultProps} absences={[makeAbsence(date, date, { absenceType: type })]} />

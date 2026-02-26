@@ -46,8 +46,18 @@ export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps
     // Génération automatique d'un ID unique
     const generatedId = useId()
     const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, '-')}-${generatedId}`
+    const errorId = `${inputId}-error`
+    const helperId = `${inputId}-helper`
 
     const isInvalid = !!error
+
+    // Lien explicite input → messages pour les lecteurs d'écran (WCAG 1.3.1, 3.3.1)
+    const ariaDescribedBy = [
+      isInvalid ? errorId : null,
+      helperText && !isInvalid ? helperId : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined
 
     return (
       <Field.Root invalid={isInvalid} required={required} disabled={disabled}>
@@ -70,6 +80,7 @@ export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps
             fontSize="md"
             borderWidth="2px"
             readOnly={readOnly}
+            aria-describedby={ariaDescribedBy}
             css={{
               '&:focus': {
                 borderColor: 'var(--chakra-colors-blue-500)',
@@ -86,13 +97,13 @@ export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps
         </Group>
 
         {helperText && !isInvalid && (
-          <Field.HelperText fontSize="sm" color="gray.600">
+          <Field.HelperText id={helperId} fontSize="sm" color="gray.600">
             {helperText}
           </Field.HelperText>
         )}
 
         {isInvalid && (
-          <Field.ErrorText fontSize="sm">
+          <Field.ErrorText id={errorId} fontSize="sm">
             {error}
           </Field.ErrorText>
         )}

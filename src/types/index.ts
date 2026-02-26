@@ -1,5 +1,8 @@
 // Types de base pour Unilien
 
+import type { PchType } from '@/lib/pch/pchTariffs'
+export type { PchType }
+
 // Rôles utilisateur
 export type UserRole = 'employer' | 'employee' | 'caregiver'
 
@@ -37,6 +40,8 @@ export interface Employer {
   cesuNumber?: string
   pchBeneficiary: boolean
   pchMonthlyAmount?: number
+  pchType?: PchType         // Type de dispositif PCH
+  pchMonthlyHours?: number  // Heures allouées par le plan de compensation (h/mois)
   emergencyContacts: EmergencyContact[]
 }
 
@@ -151,6 +156,7 @@ export interface Contract {
   endDate?: Date
   weeklyHours: number
   hourlyRate: number
+  pasRate: number  // Taux PAS (Prélèvement à la Source) — 0 par défaut
   status: 'active' | 'terminated' | 'suspended'
   createdAt: Date
   updatedAt: Date
@@ -385,6 +391,27 @@ export interface LiaisonMessageWithSender extends LiaisonMessage {
     lastName: string
     avatarUrl?: string
   }
+}
+
+// ── Bulletin de paie (historique) ────────────────────────────────────────────
+
+export interface Payslip {
+  id: string
+  employerId: string
+  employeeId: string
+  contractId: string
+  year: number
+  month: number
+  periodLabel: string
+  grossPay: number
+  netPay: number
+  totalHours: number
+  pasRate: number
+  isExemptPatronalSS: boolean
+  storagePath: string | null
+  storageUrl: string | null
+  generatedAt: Date
+  createdAt: Date
 }
 
 // État authentification

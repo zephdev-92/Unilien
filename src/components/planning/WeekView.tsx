@@ -2,6 +2,13 @@ import { Box, Grid, GridItem, Text, Stack, Badge, Flex } from '@chakra-ui/react'
 import { addDays, format, isSameDay, isToday, isWithinInterval } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Shift, UserRole, Absence } from '@/types'
+import {
+  SHIFT_STATUS_COLORS as statusColors,
+  SHIFT_STATUS_LABELS as statusLabels,
+  ABSENCE_STATUS_COLORS as absenceStatusColors,
+  ABSENCE_STATUS_LABELS as absenceStatusLabels,
+  ABSENCE_TYPE_LABELS as absenceTypeLabels,
+} from '@/lib/constants/statusMaps'
 
 interface WeekViewProps {
   weekStart: Date
@@ -12,39 +19,6 @@ interface WeekViewProps {
   onAbsenceClick?: (absence: Absence) => void
 }
 
-const statusColors: Record<Shift['status'], string> = {
-  planned: 'blue',
-  completed: 'green',
-  cancelled: 'gray',
-  absent: 'red',
-}
-
-const statusLabels: Record<Shift['status'], string> = {
-  planned: 'Planifié',
-  completed: 'Terminé',
-  cancelled: 'Annulé',
-  absent: 'Absent',
-}
-
-const absenceStatusColors: Record<Absence['status'], string> = {
-  pending: 'orange',
-  approved: 'green',
-  rejected: 'gray',
-}
-
-const absenceStatusLabels: Record<Absence['status'], string> = {
-  pending: 'En attente',
-  approved: 'Approuvée',
-  rejected: 'Refusée',
-}
-
-const absenceTypeLabels: Record<Absence['absenceType'], string> = {
-  sick: 'Maladie',
-  vacation: 'Congé',
-  training: 'Formation',
-  unavailable: 'Indispo.',
-  emergency: 'Urgence',
-}
 
 export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftClick, onAbsenceClick }: WeekViewProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))

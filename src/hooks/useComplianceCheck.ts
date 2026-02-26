@@ -65,6 +65,9 @@ interface UseComplianceCheckResult {
   hasErrors: boolean
   hasWarnings: boolean
 
+  // Erreur système (distincte des violations de conformité)
+  validationError: string | null
+
   // Actions
   revalidate: () => void
 }
@@ -80,6 +83,7 @@ export function useComplianceCheck({
   const [complianceResult, setComplianceResult] = useState<ComplianceResult | null>(null)
   const [computedPay, setComputedPay] = useState<ComputedPay | null>(null)
   const [isValidating, setIsValidating] = useState(false)
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   // Construire l'objet shift pour validation
   const shiftForValidation: ShiftForValidation | null = useMemo(() => {
@@ -123,45 +127,50 @@ export function useComplianceCheck({
     if (!shiftForValidation) {
       setComplianceResult(null)
       setComputedPay(null)
+      setValidationError(null)
       return
     }
 
     setIsValidating(true)
+    setValidationError(null)
 
     try {
       // Validation de conformité
-      const result = validateShift(shiftForValidation, existingShifts, approvedAbsences)
-      setComplianceResult(result)
-
-      // Calcul de la paie si contrat fourni
-      if (contract) {
-        const contractForCalc: ContractForCalculation = {
-          id: shiftForValidation.contractId,
-          weeklyHours: contract.weeklyHours,
-          hourlyRate: contract.hourlyRate,
-        }
-
-        const pay = calculateShiftPay(
-          shiftForValidation,
-          contractForCalc,
-          existingShifts
-        )
-        setComputedPay(pay)
+      try {
+        const result = validateShift(shiftForValidation, existingShifts, approvedAbsences)
+        setComplianceResult(result)
+      } catch (error) {
+        logger.error('Erreur validation conformité:', error)
+        setValidationError('La validation de conformité a échoué')
+        setComplianceResult({
+          valid: false,
+          errors: [
+            {
+              code: 'VALIDATION_ERROR',
+              message: 'Erreur lors de la validation',
+              rule: 'Validation système',
+              blocking: false,
+            },
+          ],
+          warnings: [],
+        })
       }
-    } catch (error) {
-      logger.error('Erreur validation conformité:', error)
-      setComplianceResult({
-        valid: false,
-        errors: [
-          {
-            code: 'VALIDATION_ERROR',
-            message: 'Erreur lors de la validation',
-            rule: 'Validation système',
-            blocking: false,
-          },
-        ],
-        warnings: [],
-      })
+
+      // Calcul de la paie si contrat fourni (indépendant de la validation)
+      if (contract) {
+        try {
+          const contractForCalc: ContractForCalculation = {
+            id: shiftForValidation.contractId,
+            weeklyHours: contract.weeklyHours,
+            hourlyRate: contract.hourlyRate,
+          }
+          const pay = calculateShiftPay(shiftForValidation, contractForCalc, existingShifts)
+          setComputedPay(pay)
+        } catch (error) {
+          logger.error('Erreur calcul paie:', error)
+          setComputedPay(null)
+        }
+      }
     } finally {
       setIsValidating(false)
     }
@@ -186,6 +195,7 @@ export function useComplianceCheck({
     isValid,
     hasErrors,
     hasWarnings,
+    validationError,
     revalidate: validate,
   }
 }

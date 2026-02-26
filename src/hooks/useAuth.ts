@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
-import type { ProfileDbRow } from '@/types/database'
 import { logger } from '@/lib/logger'
-import { mapProfileFromDb, createDefaultProfile } from '@/lib/mappers'
+import { createDefaultProfile } from '@/lib/mappers'
+import { getProfileById, createFallbackProfile } from '@/services/profileService'
 
 interface SignUpData {
   email: string
@@ -66,6 +66,29 @@ interface SignInData {
   password: string
 }
 
+/**
+ * Récupère le profil existant ou crée un profil par défaut si absent.
+ * Factorise la logique commune à initialize() et signIn().
+ */
+async function loadProfile(
+  userId: string,
+  email: string,
+  userMetadata: Record<string, unknown>
+): Promise<import('@/types').Profile | null> {
+  const existing = await getProfileById(userId, email)
+  if (existing) return existing
+
+  const defaultProfile = createDefaultProfile(userId, email, userMetadata)
+  const created = await createFallbackProfile({
+    id: defaultProfile.id,
+    role: defaultProfile.role,
+    firstName: defaultProfile.firstName,
+    lastName: defaultProfile.lastName,
+    email: email || null,
+  })
+  return created ? defaultProfile : null
+}
+
 export function useAuth() {
   const navigate = useNavigate()
   const {
@@ -103,44 +126,13 @@ export function useAuth() {
         setSession(currentSession)
         setUser(currentSession.user)
 
-        // Récupérer le profil
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentSession.user.id)
-          .maybeSingle()
-
-        if (profileError) {
-          logger.error('Erreur récupération profil:', profileError)
-        }
-
-        if (profileData) {
-          setProfile(mapProfileFromDb(profileData as ProfileDbRow, currentSession.user.email || ''))
-        } else {
-          // Profil manquant - créer automatiquement à partir des métadonnées auth
-          const defaultProfile = createDefaultProfile(
-            currentSession.user.id,
-            currentSession.user.email || '',
-            currentSession.user.user_metadata
-          )
-
-          const { error: createError } = await supabase.from('profiles').insert({
-            id: defaultProfile.id,
-            role: defaultProfile.role,
-            first_name: defaultProfile.firstName,
-            last_name: defaultProfile.lastName,
-            email: currentSession.user.email || null,
-            phone: null,
-            avatar_url: null,
-            accessibility_settings: {},
-          })
-
-          if (createError) {
-            logger.error('Erreur création profil fallback:', createError)
-          } else {
-            setProfile(defaultProfile)
-          }
-        }
+        // Récupérer ou créer le profil
+        const profile = await loadProfile(
+          currentSession.user.id,
+          currentSession.user.email || '',
+          currentSession.user.user_metadata
+        )
+        if (profile) setProfile(profile)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur d\'initialisation')
@@ -246,38 +238,13 @@ export function useAuth() {
           throw new Error('Erreur de connexion')
         }
 
-        // Récupérer le profil
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .maybeSingle()
-
-        if (profileData) {
-          setProfile(mapProfileFromDb(profileData as ProfileDbRow, authData.user.email || ''))
-        } else {
-          // Profil manquant - créer automatiquement à partir des métadonnées auth
-          const defaultProfile = createDefaultProfile(
-            authData.user.id,
-            authData.user.email || '',
-            authData.user.user_metadata
-          )
-
-          const { error: createError } = await supabase.from('profiles').insert({
-            id: defaultProfile.id,
-            role: defaultProfile.role,
-            first_name: defaultProfile.firstName,
-            last_name: defaultProfile.lastName,
-            email: authData.user.email || null,
-            phone: null,
-            avatar_url: null,
-            accessibility_settings: {},
-          })
-
-          if (!createError) {
-            setProfile(defaultProfile)
-          }
-        }
+        // Récupérer ou créer le profil
+        const profile = await loadProfile(
+          authData.user.id,
+          authData.user.email || '',
+          authData.user.user_metadata
+        )
+        if (profile) setProfile(profile)
 
         navigate('/dashboard')
         return { success: true }

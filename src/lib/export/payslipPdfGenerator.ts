@@ -7,7 +7,7 @@
 import { jsPDF } from 'jspdf'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import type { PayslipData, ExportResult } from './types'
+import type { PayslipData, PayslipPchData, ExportResult } from './types'
 
 // ─── Palette Unilien ─────────────────────────────────────────────────────────
 const C = {
@@ -50,7 +50,10 @@ export function generatePayslipPdf(data: PayslipData): ExportResult {
     y = drawGrossSection(doc, data, y)
     y = drawCotisationsSection(doc, data, y)
     y = drawNetsSection(doc, data, y)
-    drawEmployerSection(doc, data, y)
+    y = drawEmployerSection(doc, data, y)
+    if (data.isPchBeneficiary && data.pch) {
+      drawPchSection(doc, data.pch, y)
+    }
     addFooter(doc)
 
     const safeName = data.employeeLastName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
@@ -248,7 +251,7 @@ function drawNetsSection(doc: jsPDF, data: PayslipData, y: number): number {
   return y + boxH + 7
 }
 
-function drawEmployerSection(doc: jsPDF, data: PayslipData, y: number): void {
+function drawEmployerSection(doc: jsPDF, data: PayslipData, y: number): number {
   const { cotisations, isExemptPatronalSS } = data
   const neededH = isExemptPatronalSS ? 80 : 55
   y = checkPageBreak(doc, y, neededH)
@@ -278,6 +281,9 @@ function drawEmployerSection(doc: jsPDF, data: PayslipData, y: number): void {
 
   // Afficher toutes les lignes ; les lignes exonérées en texte gris + "(Exo.)"
   for (let i = 0; i < cotisations.employerCotisations.length; i++) {
+    // Saut de page si besoin : 6mm pour la ligne + 27mm pour le total+coût après
+    y = checkPageBreak(doc, y, 6 + 27)
+
     const c = cotisations.employerCotisations[i]
     if (i % 2 === 0) {
       if (c.exempted) {
@@ -330,7 +336,85 @@ function drawEmployerSection(doc: jsPDF, data: PayslipData, y: number): void {
       'Restent dues : retraite complémentaire, chômage, FNAL, CSA, AT/MP et l\'intégralité des cotisations salariales.',
       MG, y, { maxWidth: CW }
     )
+    y += 8
   }
+
+  return y
+}
+
+// ─── Section PCH ─────────────────────────────────────────────────────────────
+
+const PCH_TYPE_DISPLAY: Record<string, string> = {
+  emploiDirect:            'Emploi direct',
+  mandataire:              'Mandataire',
+  prestataire:             'Prestataire',
+  aidantFamilial:          'Aidant familial',
+  aidantFamilialCessation: 'Aidant familial — cessation activité',
+}
+
+function drawPchSection(doc: jsPDF, pch: PayslipPchData, y: number): void {
+  y = checkPageBreak(doc, y, 52)
+
+  // Titre de section
+  y = sectionTitle(doc, 'RÉCAPITULATIF PCH — PRESTATION DE COMPENSATION DU HANDICAP', y)
+
+  // Bandeau informatif
+  doc.setFillColor(240, 247, 255)
+  doc.setDrawColor(180, 210, 240)
+  doc.roundedRect(MG, y, CW, 10, 2, 2, 'FD')
+  doc.setTextColor(50, 100, 160)
+  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'normal')
+  const typeLabel = PCH_TYPE_DISPLAY[pch.pchType] ?? pch.pchType
+  doc.text(
+    `Dispositif : ${typeLabel} · Tarif Élément 1 : ${pch.pchElement1Rate.toFixed(2).replace('.', ',')} €/h · Heures allouées : ${pch.pchMonthlyHours}h/mois`,
+    MG + 4, y + 6.5
+  )
+  y += 14
+
+  // Lignes récapitulatif
+  const cols = [MG, MG + 130]
+
+  const rows: Array<[string, string, boolean]> = [
+    ['Enveloppe PCH allouée (Élément 1)', euro(pch.pchEnvelopePch), false],
+    ['Coût total employeur (brut + charges patronales)', euro(pch.pchTotalCost), false],
+    ['Reste à charge estimé', euro(pch.pchResteACharge), pch.pchResteACharge > 0],
+  ]
+
+  for (let i = 0; i < rows.length; i++) {
+    const [label, amount, isRed] = rows[i]
+    const isLast = i === rows.length - 1
+
+    if (isLast) {
+      doc.setFillColor(...C.primaryLight)
+    } else if (i % 2 === 0) {
+      doc.setFillColor(250, 251, 252)
+    } else {
+      doc.setFillColor(...C.white)
+    }
+    doc.rect(MG, y, CW, 7, 'F')
+    doc.setDrawColor(...C.border)
+    doc.line(MG, y + 7, MG + CW, y + 7)
+
+    doc.setFontSize(8)
+    doc.setFont('helvetica', isLast ? 'bold' : 'normal')
+    if (isRed) { doc.setTextColor(...C.red) } else { doc.setTextColor(...C.black) }
+    doc.text(label, cols[0] + 2, y + 5)
+    if (isRed) { doc.setTextColor(...C.red) } else if (isLast) { doc.setTextColor(...C.primary) } else { doc.setTextColor(...C.black) }
+    doc.text(amount, MG + CW - 2, y + 5, { align: 'right' })
+    y += 7
+  }
+
+  y += 4
+
+  // Note légale
+  doc.setTextColor(...C.gray)
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  doc.text(
+    'PCH versée par le Conseil Départemental. Les montants indiqués sont estimatifs — consulter votre référent PCH.',
+    MG, y, { maxWidth: CW }
+  )
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -368,6 +452,9 @@ function tableRows(
 ): number {
   doc.setFontSize(8)
   for (let i = 0; i < rows.length; i++) {
+    // 6mm pour la ligne + 15mm de marge pour le total qui suit
+    y = checkPageBreak(doc, y, 6 + 15)
+
     const row = rows[i]
     // Fond alterné
     if (i % 2 === 0) {

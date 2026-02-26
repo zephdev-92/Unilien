@@ -90,6 +90,17 @@ export function calculateShiftPay(
     // Présence responsable de jour : 1h = 2/3h de travail effectif (Art. 137.1 IDCC 3239)
     const effectiveHours = durationHours * (2 / 3)
     presenceResponsiblePay = effectiveHours * hourlyRate
+    // Les majorations s'appliquent sur presenceResponsiblePay (base réelle payée),
+    // et non sur basePay (heures brutes non réduites)
+    if (isSunday(shift.date)) {
+      sundayMajoration = presenceResponsiblePay * MAJORATION_RATES.SUNDAY
+    }
+    if (isPublicHoliday(shift.date)) {
+      const rate = isHabitualWorkOnHolidays
+        ? MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED
+        : MAJORATION_RATES.PUBLIC_HOLIDAY_EXCEPTIONAL
+      holidayMajoration = presenceResponsiblePay * rate
+    }
   } else if (shiftType === 'presence_night') {
     const isRequalified = (shift.nightInterventionsCount ?? 0) >= 4
     if (isRequalified) {

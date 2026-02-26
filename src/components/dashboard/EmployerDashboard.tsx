@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Stack, SimpleGrid } from '@chakra-ui/react'
-import type { Profile, Shift } from '@/types'
+import type { Profile, Shift, Employer } from '@/types'
 import {
   WelcomeCard,
   UpcomingShiftsWidget,
@@ -9,8 +9,10 @@ import {
   StatsWidget,
   TeamWidget,
   ComplianceWidget,
+  PchEnvelopeWidget,
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
+import { getEmployer } from '@/services/profileService'
 import { useComplianceMonitor } from '@/hooks/useComplianceMonitor'
 import { logger } from '@/lib/logger'
 
@@ -21,6 +23,7 @@ interface EmployerDashboardProps {
 export function EmployerDashboard({ profile }: EmployerDashboardProps) {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [isLoadingShifts, setIsLoadingShifts] = useState(true)
+  const [employer, setEmployer] = useState<Employer | null>(null)
 
   // Monitor compliance and create notifications for threshold violations
   useComplianceMonitor({
@@ -29,6 +32,12 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
     enabled: true,
     pollingInterval: 5 * 60 * 1000, // Check every 5 minutes
   })
+
+  useEffect(() => {
+    getEmployer(profile.id)
+      .then(setEmployer)
+      .catch((err) => logger.error('Erreur chargement profil employeur:', err))
+  }, [profile.id])
 
   useEffect(() => {
     async function loadUpcomingShifts() {
@@ -59,6 +68,9 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
       <WelcomeCard profile={profile} />
       <StatsWidget userRole="employer" profileId={profile.id} />
       <QuickActionsWidget userRole="employer" />
+      {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (
+        <PchEnvelopeWidget employerId={profile.id} />
+      )}
       <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
         <TeamWidget employerId={profile.id} />
         <ComplianceWidget employerId={profile.id} />

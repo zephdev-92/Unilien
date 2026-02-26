@@ -105,10 +105,12 @@ function mockSupabaseQuery(data: unknown, error: unknown = null) {
     select: vi.fn(),
     eq: vi.fn(),
     single: vi.fn(),
+    maybeSingle: vi.fn(),
   }
   chain.select.mockReturnValue(chain)
   chain.eq.mockReturnValue(chain)
   chain.single.mockResolvedValue({ data, error })
+  chain.maybeSingle.mockResolvedValue({ data, error })
   mockFrom.mockReturnValue(chain)
   return chain
 }

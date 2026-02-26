@@ -8,6 +8,8 @@ import {
   upsertEmployer,
   getEmployee,
   upsertEmployee,
+  getProfileById,
+  createFallbackProfile,
 } from './profileService'
 
 // Mock du client Supabase
@@ -18,6 +20,7 @@ const mockList = vi.fn()
 const mockGetPublicUrl = vi.fn()
 const mockSelect = vi.fn()
 const mockUpsert = vi.fn()
+const mockInsert = vi.fn()
 const mockEq = vi.fn()
 const mockMaybeSingle = vi.fn()
 
@@ -27,6 +30,7 @@ vi.mock('@/lib/supabase/client', () => ({
       update: mockUpdate,
       select: mockSelect,
       upsert: mockUpsert,
+      insert: mockInsert,
     })),
     storage: {
       from: vi.fn(() => ({
@@ -37,6 +41,22 @@ vi.mock('@/lib/supabase/client', () => ({
       })),
     },
   },
+}))
+
+vi.mock('@/lib/mappers', () => ({
+  mapProfileFromDb: vi.fn((data: Record<string, unknown>, email?: string) => ({
+    id: data.id,
+    role: data.role,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    email: email ?? data.email ?? '',
+    phone: data.phone ?? undefined,
+    avatarUrl: data.avatar_url ?? undefined,
+    accessibilitySettings: data.accessibility_settings ?? {},
+    createdAt: new Date(data.created_at as string),
+    updatedAt: new Date(data.updated_at as string),
+  })),
+  createDefaultProfile: vi.fn(),
 }))
 
 describe('profileService', () => {
@@ -273,6 +293,8 @@ describe('profileService', () => {
         cesu_number: '12345',
         pch_beneficiary: true,
         pch_monthly_amount: 1500,
+        pch_type: null,
+        pch_monthly_hours: null,
         emergency_contacts: [{ name: 'Contact 1', phone: '0612345678', relationship: 'Famille' }],
       }
       mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
@@ -284,6 +306,50 @@ describe('profileService', () => {
       expect(result?.handicapType).toBe('moteur')
       expect(result?.pchBeneficiary).toBe(true)
       expect(result?.emergencyContacts).toHaveLength(1)
+    })
+
+    it('devrait mapper pch_type et pch_monthly_hours', async () => {
+      const mockEmployerData = {
+        profile_id: 'profile-123',
+        address: {},
+        handicap_type: null,
+        handicap_name: null,
+        specific_needs: null,
+        cesu_number: null,
+        pch_beneficiary: true,
+        pch_monthly_amount: 1500,
+        pch_type: 'emploiDirect',
+        pch_monthly_hours: 60,
+        emergency_contacts: [],
+      }
+      mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
+
+      const result = await getEmployer('profile-123')
+
+      expect(result?.pchType).toBe('emploiDirect')
+      expect(result?.pchMonthlyHours).toBe(60)
+    })
+
+    it('devrait retourner pchType et pchMonthlyHours undefined si absents', async () => {
+      const mockEmployerData = {
+        profile_id: 'profile-123',
+        address: {},
+        handicap_type: null,
+        handicap_name: null,
+        specific_needs: null,
+        cesu_number: null,
+        pch_beneficiary: false,
+        pch_monthly_amount: null,
+        pch_type: null,
+        pch_monthly_hours: null,
+        emergency_contacts: null,
+      }
+      mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
+
+      const result = await getEmployer('profile-123')
+
+      expect(result?.pchType).toBeUndefined()
+      expect(result?.pchMonthlyHours).toBeUndefined()
     })
 
     it('devrait retourner null si l\'employeur n\'existe pas', async () => {
@@ -315,6 +381,8 @@ describe('profileService', () => {
         cesu_number: null,
         pch_beneficiary: false,
         pch_monthly_amount: null,
+        pch_type: null,
+        pch_monthly_hours: null,
         emergency_contacts: null,
       }
       mockMaybeSingle.mockResolvedValue({ data: mockEmployerData, error: null })
@@ -339,6 +407,38 @@ describe('profileService', () => {
           pchBeneficiary: true,
         })
       ).resolves.not.toThrow()
+    })
+
+    it('devrait inclure pch_type et pch_monthly_hours dans le payload', async () => {
+      mockUpsert.mockResolvedValue({ error: null })
+
+      await upsertEmployer('profile-123', {
+        pchBeneficiary: true,
+        pchType: 'emploiDirect',
+        pchMonthlyHours: 60,
+      })
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pch_type: 'emploiDirect',
+          pch_monthly_hours: 60,
+        }),
+        expect.anything()
+      )
+    })
+
+    it('devrait envoyer pch_type=null si pchType absent', async () => {
+      mockUpsert.mockResolvedValue({ error: null })
+
+      await upsertEmployer('profile-123', { pchBeneficiary: false })
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pch_type: null,
+          pch_monthly_hours: null,
+        }),
+        expect.anything()
+      )
     })
 
     it('devrait lancer une erreur si l\'upsert échoue', async () => {
@@ -423,6 +523,97 @@ describe('profileService', () => {
       await expect(
         upsertEmployee('profile-123', { qualifications: ['Test'] })
       ).rejects.toThrow('Upsert failed')
+    })
+  })
+
+  // ─── getProfileById ────────────────────────────────────────────────────────
+  describe('getProfileById', () => {
+    const mockProfileRow = {
+      id: 'user-1',
+      role: 'employee',
+      first_name: 'Jean',
+      last_name: 'Dupont',
+      email: 'jean@example.com',
+      phone: null,
+      avatar_url: null,
+      accessibility_settings: {},
+      created_at: '2026-01-01T00:00:00.000Z',
+      updated_at: '2026-01-01T00:00:00.000Z',
+    }
+
+    it('retourne le profil mappé si trouvé', async () => {
+      mockSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: mockProfileRow, error: null }),
+        }),
+      })
+
+      const result = await getProfileById('user-1', 'override@example.com')
+
+      expect(result).not.toBeNull()
+      expect(result?.id).toBe('user-1')
+      expect(result?.email).toBe('override@example.com')
+    })
+
+    it('retourne null si le profil n\'existe pas', async () => {
+      mockSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      })
+
+      const result = await getProfileById('user-inconnu')
+
+      expect(result).toBeNull()
+    })
+
+    it('retourne null et log en cas d\'erreur DB', async () => {
+      mockSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'DB error' },
+          }),
+        }),
+      })
+
+      const result = await getProfileById('user-1')
+
+      expect(result).toBeNull()
+    })
+  })
+
+  // ─── createFallbackProfile ─────────────────────────────────────────────────
+  describe('createFallbackProfile', () => {
+    it('retourne true si l\'insertion réussit', async () => {
+      mockInsert.mockResolvedValue({ error: null })
+
+      const result = await createFallbackProfile({
+        id: 'user-1',
+        role: 'employee',
+        firstName: 'Jean',
+        lastName: 'Dupont',
+        email: 'jean@example.com',
+      })
+
+      expect(result).toBe(true)
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'user-1', role: 'employee' })
+      )
+    })
+
+    it('retourne false si l\'insertion échoue', async () => {
+      mockInsert.mockResolvedValue({ error: { message: 'Insert failed' } })
+
+      const result = await createFallbackProfile({
+        id: 'user-1',
+        role: 'employee',
+        firstName: 'Jean',
+        lastName: 'Dupont',
+        email: null,
+      })
+
+      expect(result).toBe(false)
     })
   })
 })

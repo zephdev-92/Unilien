@@ -282,6 +282,46 @@ describe('useComplianceCheck', () => {
     })
     expect(result.current.isValid).toBe(false)
     expect(result.current.hasErrors).toBe(true)
+    expect(result.current.validationError).toBe('La validation de conformité a échoué')
+  })
+
+  it('devrait retourner validationError null en cas de succès', () => {
+    const { result } = renderHook(() =>
+      useComplianceCheck({
+        shift: createShiftInput(),
+        contract: createContractInput(),
+        existingShifts: [],
+      })
+    )
+
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(result.current.validationError).toBeNull()
+  })
+
+  it('devrait mettre computedPay à null sans affecter complianceResult si calculateShiftPay échoue', () => {
+    mockCalculateShiftPay.mockImplementation(() => {
+      throw new Error('Erreur calcul paie')
+    })
+
+    const { result } = renderHook(() =>
+      useComplianceCheck({
+        shift: createShiftInput(),
+        contract: createContractInput(),
+        existingShifts: [],
+      })
+    )
+
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(logger.error).toHaveBeenCalledWith('Erreur calcul paie:', expect.any(Error))
+    expect(result.current.computedPay).toBeNull()
+    expect(result.current.complianceResult).toEqual(createValidComplianceResult())
+    expect(result.current.validationError).toBeNull()
   })
 
   it('devrait ne pas calculer la paie si contract est null', () => {
