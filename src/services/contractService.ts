@@ -413,6 +413,7 @@ function mapContractFromDb(data: ContractDbRow): Contract {
     endDate: data.end_date ? new Date(data.end_date) : undefined,
     weeklyHours: data.weekly_hours,
     hourlyRate: data.hourly_rate,
+    pasRate: data.pas_rate ?? 0,
     status: data.status,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),

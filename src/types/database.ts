@@ -76,6 +76,7 @@ export interface ContractDbRow {
   end_date: string | null
   weekly_hours: number
   hourly_rate: number
+  pas_rate: number
   status: 'active' | 'terminated' | 'suspended'
   created_at: string
   updated_at: string
@@ -283,4 +284,27 @@ export interface CaregiverDbRow {
     phone: string | null
     avatar_url: string | null
   }
+}
+
+// ============================================================
+// PAYSLIP
+// ============================================================
+
+export interface PayslipDbRow {
+  id: string
+  employer_id: string
+  employee_id: string
+  contract_id: string
+  year: number
+  month: number
+  period_label: string
+  gross_pay: number
+  net_pay: number
+  total_hours: number
+  pas_rate: number
+  is_exempt_patronal_ss: boolean
+  storage_path: string | null
+  storage_url: string | null
+  generated_at: string
+  created_at: string
 }

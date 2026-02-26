@@ -35,7 +35,7 @@ import {
   type MonthlyDeclarationData,
 } from '@/lib/export'
 import { getCaregiver } from '@/services/caregiverService'
-import { DocumentManagementSection } from '@/components/documents'
+import { DocumentManagementSection, PayslipSection } from '@/components/documents'
 import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
@@ -170,6 +170,9 @@ export function DocumentsPage() {
             <Tabs.List>
               <Tabs.Trigger value="declarations">
                 Déclarations CESU
+              </Tabs.Trigger>
+              <Tabs.Trigger value="payslips">
+                Bulletins de paie
               </Tabs.Trigger>
               <Tabs.Trigger value="documents">
                 Gestion des documents
@@ -449,6 +452,28 @@ export function DocumentsPage() {
                   </Card.Root>
                 )}
               </VStack>
+            </Tabs.Content>
+
+            {/* Onglet Bulletins de paie */}
+            <Tabs.Content value="payslips" pt={6}>
+              <Card.Root>
+                <Card.Header>
+                  <Card.Title>Bulletins de paie</Card.Title>
+                  <Card.Description>
+                    Générez, sauvegardez et consultez l'historique des bulletins de paie
+                  </Card.Description>
+                </Card.Header>
+                <Card.Body>
+                  {effectiveEmployerId ? (
+                    <PayslipSection employerId={effectiveEmployerId} />
+                  ) : (
+                    <Alert.Root status="warning">
+                      <Alert.Indicator />
+                      <Alert.Title>Impossible de charger les bulletins</Alert.Title>
+                    </Alert.Root>
+                  )}
+                </Card.Body>
+              </Card.Root>
             </Tabs.Content>
 
             {/* Onglet Gestion des documents */}
