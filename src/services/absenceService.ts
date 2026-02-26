@@ -16,122 +16,9 @@ import {
 } from '@/lib/absence'
 import { addTakenDays, restoreTakenDays, getLeaveBalance, initializeLeaveBalance } from '@/services/leaveBalanceService'
 
-// ============================================
-// JUSTIFICATIF (arrêt de travail) UPLOAD
-// ============================================
-
-const JUSTIFICATIONS_BUCKET = 'justifications'
-const MAX_JUSTIFICATION_SIZE = 5 * 1024 * 1024 // 5MB
-const ALLOWED_JUSTIFICATION_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]
-
-export interface JustificationUploadResult {
-  url: string
-}
-
-export interface JustificationUploadOptions {
-  /** Type d'absence pour personnaliser le nom du fichier */
-  absenceType?: Absence['absenceType']
-  /** Date de début de l'absence (utilisée pour le nom du fichier) */
-  startDate?: Date
-}
-
-/**
- * Génère un nom de fichier significatif pour le justificatif
- * Pour les arrêts maladie : arret_YYYY_MM_DD.ext
- * Pour les autres types : justificatif_YYYY_MM_DD.ext
- */
-function generateJustificationFileName(
-  employeeId: string,
-  fileExt: string,
-  options?: JustificationUploadOptions
-): string {
-  const date = options?.startDate || new Date()
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const dateStr = `${year}_${month}_${day}`
-
-  // Nom du fichier selon le type d'absence
-  let baseName: string
-  if (options?.absenceType === 'sick') {
-    baseName = `arret_${dateStr}`
-  } else {
-    baseName = `justificatif_${dateStr}`
-  }
-
-  // Ajout d'un timestamp pour éviter les collisions
-  const timestamp = Date.now()
-
-  return `${employeeId}/${baseName}_${timestamp}.${fileExt}`
-}
-
-/**
- * Valide un fichier justificatif (arrêt de travail)
- */
-export function validateJustificationFile(file: File): { valid: boolean; error?: string } {
-  if (!ALLOWED_JUSTIFICATION_TYPES.includes(file.type)) {
-    return {
-      valid: false,
-      error: 'Format non supporté. Utilisez PDF, JPG, PNG ou WebP.',
-    }
-  }
-
-  if (file.size > MAX_JUSTIFICATION_SIZE) {
-    return {
-      valid: false,
-      error: 'Le fichier est trop volumineux. Taille maximum : 5 Mo.',
-    }
-  }
-
-  return { valid: true }
-}
-
-/**
- * Upload un justificatif et retourne l'URL publique
- * @param employeeId - ID de l'employé
- * @param file - Fichier à uploader
- * @param options - Options pour personnaliser le nom du fichier
- */
-export async function uploadJustification(
-  employeeId: string,
-  file: File,
-  options?: JustificationUploadOptions
-): Promise<JustificationUploadResult> {
-  // Valider le fichier
-  const validation = validateJustificationFile(file)
-  if (!validation.valid) {
-    throw new Error(validation.error)
-  }
-
-  // Générer un nom de fichier significatif
-  const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf'
-  const fileName = generateJustificationFileName(employeeId, fileExt, options)
-
-  // Upload le fichier
-  const { error: uploadError } = await supabase.storage
-    .from(JUSTIFICATIONS_BUCKET)
-    .upload(fileName, file, {
-      cacheControl: '3600',
-      upsert: false,
-    })
-
-  if (uploadError) {
-    logger.error('Erreur upload justificatif:', uploadError)
-    throw new Error('Erreur lors de l\'upload du justificatif.')
-  }
-
-  // Obtenir l'URL publique
-  const { data: urlData } = supabase.storage
-    .from(JUSTIFICATIONS_BUCKET)
-    .getPublicUrl(fileName)
-
-  return { url: urlData.publicUrl }
-}
+// Re-export du module justificatif pour compatibilité des imports existants
+export type { JustificationUploadResult, JustificationUploadOptions } from './absenceJustificationService'
+export { validateJustificationFile, uploadJustification } from './absenceJustificationService'
 
 // ============================================
 // GET ABSENCES FOR EMPLOYEE
@@ -161,7 +48,6 @@ export async function getAbsencesForEmployee(
 export async function getAbsencesForEmployer(
   employerId: string
 ): Promise<Absence[]> {
-  // Récupérer les employee_ids via les contrats actifs
   const { data: contracts, error: contractsError } = await supabase
     .from('contracts')
     .select('employee_id')
@@ -237,7 +123,6 @@ export async function createAbsence(
     familyEventType?: FamilyEventType
   }
 ): Promise<Absence | null> {
-  // Récupérer les absences existantes pour validation
   const { data: existingRaw } = await supabase
     .from('absences')
     .select('id, start_date, end_date, status')
@@ -266,7 +151,6 @@ export async function createAbsence(
       const leaveYear = getLeaveYear(absenceData.startDate)
       let balance = await getLeaveBalance(contract.id, leaveYear)
 
-      // Auto-initialiser le solde s'il n'existe pas encore
       if (!balance) {
         balance = await initializeLeaveBalance(
           contract.id,
@@ -287,7 +171,6 @@ export async function createAbsence(
     }
   }
 
-  // Valider la demande
   const validation = validateAbsenceRequest(
     {
       employeeId,
@@ -304,7 +187,6 @@ export async function createAbsence(
     throw new Error(validation.errors.join('\n'))
   }
 
-  // Calculs automatiques
   const businessDaysCount = countBusinessDays(absenceData.startDate, absenceData.endDate)
   const justificationDueDate = absenceData.absenceType === 'sick'
     ? calculateJustificationDueDate(absenceData.startDate)
@@ -335,14 +217,13 @@ export async function createAbsence(
 
   if (error) {
     logger.error('Erreur création absence:', error)
-    // Message plus clair si c'est la contrainte de chevauchement DB
     if (error.message.includes('absences_no_overlap')) {
       throw new Error('Une absence est déjà déclarée sur cette période.')
     }
     throw new Error(error.message)
   }
 
-  // Notifier l'employeur via le contrat actif
+  // Notifier l'employeur
   try {
     const { data: contractData, error: contractError } = await supabase
       .from('contracts')
@@ -379,7 +260,6 @@ export async function updateAbsenceStatus(
   absenceId: string,
   status: 'approved' | 'rejected'
 ): Promise<void> {
-  // Récupérer l'absence complète
   const { data: absence, error: fetchError } = await supabase
     .from('absences')
     .select('employee_id, start_date, end_date, absence_type, business_days_count, leave_year')
@@ -400,7 +280,6 @@ export async function updateAbsenceStatus(
     throw new Error(error.message)
   }
 
-  // Si approuvé : décompter les CP et annuler les shifts en conflit
   if (status === 'approved') {
     // Décompter les jours de congé du solde
     if (absence.absence_type === 'vacation' && absence.business_days_count && absence.leave_year) {
@@ -421,7 +300,7 @@ export async function updateAbsenceStatus(
       }
     }
 
-    // Annuler les shifts en conflit sur la période d'absence
+    // Annuler les shifts en conflit
     try {
       await cancelShiftsForAbsence(
         absence.employee_id,
@@ -454,7 +333,6 @@ export async function cancelAbsence(
   absenceId: string,
   employeeId: string
 ): Promise<void> {
-  // Vérifier que l'absence appartient à l'employé
   const { data: absence, error: fetchError } = await supabase
     .from('absences')
     .select('employee_id, status, absence_type, business_days_count, leave_year')
@@ -473,7 +351,7 @@ export async function cancelAbsence(
     throw new Error('Cette absence ne peut plus être annulée')
   }
 
-  // Si l'absence était approuvée et de type vacation : restaurer les jours
+  // Si approuvée et vacation : restaurer les jours
   if (absence.status === 'approved' && absence.absence_type === 'vacation'
     && absence.business_days_count && absence.leave_year) {
     try {
@@ -529,7 +407,6 @@ async function cancelShiftsForAbsence(
   startDate: Date,
   endDate: Date
 ): Promise<void> {
-  // Trouver les shifts plannifiés de l'employé sur la période
   const { data: contracts } = await supabase
     .from('contracts')
     .select('id')
