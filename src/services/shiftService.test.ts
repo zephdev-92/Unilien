@@ -376,6 +376,15 @@ describe('shiftService', () => {
       expect(result).toEqual([])
     })
 
+    it('devrait récupérer les shifts pour un aidant (caregiver) sans filtre d\'id', async () => {
+      const mockShifts = [createMockShiftDbData()]
+      mockSupabaseQuery({ data: mockShifts, error: null })
+
+      const result = await getShifts('profile-caregiver', 'caregiver', startDate, endDate)
+
+      expect(result).toHaveLength(1)
+    })
+
     it('devrait retourner un tableau vide si data est null', async () => {
       mockSupabaseQuery({ data: null, error: null })
 
@@ -530,6 +539,30 @@ describe('shiftService', () => {
 
       expect(chains[0].insert).toHaveBeenCalledWith(
         expect.objectContaining({ has_night_action: null })
+      )
+    })
+
+    it('calcule breakDuration depuis les guardSegments effectifs pour guard_24h', async () => {
+      const mockCreatedShift = createMockShiftDbData()
+      const chains = mockSupabaseQuerySequence([
+        { data: mockCreatedShift, error: null },
+        { data: null, error: null },
+      ])
+
+      await createShift('contract-456', {
+        date: new Date('2024-03-15'),
+        startTime: '09:00',
+        endTime: '09:00',
+        shiftType: 'guard_24h',
+        guardSegments: [
+          { startTime: '09:00', type: 'effective', breakMinutes: 30 },
+          { startTime: '13:00', type: 'presence_night', breakMinutes: 60 },
+          { startTime: '22:00', type: 'effective', breakMinutes: 15 },
+        ],
+      })
+
+      expect(chains[0].insert).toHaveBeenCalledWith(
+        expect.objectContaining({ break_duration: 45 })
       )
     })
   })
@@ -740,6 +773,42 @@ describe('shiftService', () => {
 
       expect(mockCreateShiftModifiedNotification).not.toHaveBeenCalled()
       expect(mockCreateShiftCancelledNotification).not.toHaveBeenCalled()
+    })
+
+    it('recalcule break_duration depuis les guardSegments effectifs', async () => {
+      const chain = mockSupabaseQuery({ data: null, error: null })
+
+      await updateShift('shift-123', {
+        guardSegments: [
+          { startTime: '09:00', type: 'effective', breakMinutes: 20 },
+          { startTime: '13:00', type: 'presence_night', breakMinutes: 60 },
+          { startTime: '22:00', type: 'effective', breakMinutes: 10 },
+        ],
+      })
+
+      expect(chain.update).toHaveBeenCalledWith(
+        expect.objectContaining({ guard_segments: expect.any(Array), break_duration: 30 })
+      )
+    })
+
+    it('devrait mettre à jour shiftType, nightInterventionsCount, isRequalified, effectiveHours', async () => {
+      const chain = mockSupabaseQuery({ data: null, error: null })
+
+      await updateShift('shift-123', {
+        shiftType: 'presence_night',
+        nightInterventionsCount: 3,
+        isRequalified: true,
+        effectiveHours: 6.5,
+      })
+
+      expect(chain.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          shift_type: 'presence_night',
+          night_interventions_count: 3,
+          is_requalified: true,
+          effective_hours: 6.5,
+        })
+      )
     })
   })
 

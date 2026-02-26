@@ -143,7 +143,7 @@ describe('MonthView', () => {
       expect(labels).toHaveLength(3) // 9, 10, 11 fév
     })
 
-    it('affiche les types : Maladie, Formation, Indisponibilité, Urgence personnelle', () => {
+    it('affiche les types : Maladie, Formation, Indispo., Urgence', () => {
       const date = new Date('2026-02-20T12:00:00')
       for (const [type, label] of [
         ['sick', 'Maladie'],
@@ -218,6 +218,30 @@ describe('MonthView', () => {
       )
       const card = screen.getByText('Maladie').closest('[role="button"]')!
       fireEvent.click(card)
+      expect(onAbsenceClick).toHaveBeenCalledWith(absence)
+    })
+
+    it('appelle onAbsenceClick avec Enter sur une absence', () => {
+      const onAbsenceClick = vi.fn()
+      const date = new Date('2026-02-12T12:00:00')
+      const absence = makeAbsence(date, date)
+      renderWithProviders(
+        <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
+      )
+      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      fireEvent.keyDown(card, { key: 'Enter' })
+      expect(onAbsenceClick).toHaveBeenCalledWith(absence)
+    })
+
+    it('appelle onAbsenceClick avec Espace sur une absence', () => {
+      const onAbsenceClick = vi.fn()
+      const date = new Date('2026-02-14T12:00:00')
+      const absence = makeAbsence(date, date)
+      renderWithProviders(
+        <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
+      )
+      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      fireEvent.keyDown(card, { key: ' ' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
 

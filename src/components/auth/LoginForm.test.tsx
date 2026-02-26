@@ -135,5 +135,21 @@ describe('LoginForm', () => {
       expect(emailInput).toHaveAttribute('autocomplete', 'email')
       expect(passwordInput).toHaveAttribute('autocomplete', 'current-password')
     })
+
+    it('bascule la visibilité du mot de passe via le bouton toggle', async () => {
+      const { userEvent: user } = await import('@testing-library/user-event')
+      const userEventInstance = user.setup()
+
+      renderWithProviders(<LoginForm />)
+
+      const passwordInput = screen.getByPlaceholderText(/votre mot de passe/i)
+      expect(passwordInput).toHaveAttribute('type', 'password')
+
+      // Trouver le bouton de toggle (aria-label contient "Afficher" ou "Masquer")
+      const toggleButton = screen.getByRole('button', { name: /afficher|masquer/i })
+      await userEventInstance.click(toggleButton)
+
+      expect(passwordInput).toHaveAttribute('type', 'text')
+    })
   })
 })
