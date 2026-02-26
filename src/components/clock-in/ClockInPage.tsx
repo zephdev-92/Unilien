@@ -3,281 +3,45 @@
  * Permet de démarrer et terminer une intervention rapidement
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import {
-  Box,
-  Stack,
-  Flex,
-  Text,
-  Badge,
-  Separator,
-  Switch,
-  Center,
-  Spinner,
-} from '@chakra-ui/react'
-import { format, subDays, startOfDay, endOfDay } from 'date-fns'
+import { useRef } from 'react'
+import { Box, Stack, Flex, Text, Center, Spinner } from '@chakra-ui/react'
+import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
-import { AccessibleButton } from '@/components/ui'
-import { getShifts, updateShift } from '@/services/shiftService'
-import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
-import { validateShift as checkCompliance } from '@/lib/compliance/complianceChecker'
-import type { ShiftForValidation } from '@/lib/compliance/types'
-import { sanitizeText } from '@/lib/sanitize'
-import { logger } from '@/lib/logger'
-import type { Shift } from '@/types'
-import { formatTime } from './clockInUtils'
-import { ShiftCard } from './ShiftCard'
+import { useClockIn } from '@/hooks/useClockIn'
+import { ClockInProgressSection } from './ClockInProgressSection'
+import { ClockInTodaySection } from './ClockInTodaySection'
 import { HistorySection } from './ClockInHistorySection'
 
-type ClockInStep = 'idle' | 'in-progress' | 'completing'
-
 export function ClockInPage() {
-  const { profile } = useAuth()
   const inProgressRef = useRef<HTMLDivElement>(null)
   const idleSectionRef = useRef<HTMLDivElement>(null)
-  const [todayShifts, setTodayShifts] = useState<Shift[]>([])
-  const [isLoadingShifts, setIsLoadingShifts] = useState(true)
-  const [activeShiftId, setActiveShiftId] = useState<string | null>(null)
-  const [clockInTime, setClockInTime] = useState<string | null>(null)
-  const [step, setStep] = useState<ClockInStep>('idle')
-  const [hasNightAction, setHasNightAction] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [historyShifts, setHistoryShifts] = useState<Shift[]>([])
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
-  const [historyDays, setHistoryDays] = useState(7)
 
-  // Charger les shifts du jour + historique
-  const loadAllShifts = useCallback(async () => {
-    if (!profile) return
+  const {
+    profile,
+    step,
+    isLoadingShifts,
+    isLoadingHistory,
+    isSubmitting,
+    error,
+    successMessage,
+    historyDays,
+    setHistoryDays,
+    plannedShifts,
+    completedShifts,
+    historyByDay,
+    historyStats,
+    activeShift,
+    clockInTime,
+    hasNightAction,
+    setHasNightAction,
+    hasNightHours,
+    nightHoursForActive,
+    handleClockIn,
+    handleClockOut,
+    handleCancel,
+  } = useClockIn(inProgressRef, idleSectionRef)
 
-    setIsLoadingShifts(true)
-    setIsLoadingHistory(true)
-    try {
-      const today = new Date()
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const historyStart = startOfDay(subDays(today, historyDays))
-
-      const shifts = await getShifts(profile.id, 'employee', historyStart, endOfDay(tomorrow))
-
-      // Shifts d'aujourd'hui
-      const todayStr = format(today, 'yyyy-MM-dd')
-      setTodayShifts(
-        shifts.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === todayStr)
-      )
-
-      // Historique = shifts terminés des jours précédents
-      setHistoryShifts(
-        shifts.filter(
-          (s) =>
-            format(new Date(s.date), 'yyyy-MM-dd') !== todayStr &&
-            s.status === 'completed'
-        )
-      )
-    } catch (err) {
-      logger.error('Erreur chargement shifts:', err)
-      setError('Impossible de charger les interventions')
-    } finally {
-      setIsLoadingShifts(false)
-      setIsLoadingHistory(false)
-    }
-  }, [profile, historyDays])
-
-  useEffect(() => {
-    loadAllShifts()
-  }, [loadAllShifts])
-
-  // Shifts planifiés et terminés
-  const plannedShifts = useMemo(
-    () => todayShifts.filter((s) => s.status === 'planned'),
-    [todayShifts]
-  )
-  const completedShifts = useMemo(
-    () => todayShifts.filter((s) => s.status === 'completed'),
-    [todayShifts]
-  )
-
-  // Historique groupé par jour (du plus récent au plus ancien)
-  const historyByDay = useMemo(() => {
-    const grouped = new Map<string, Shift[]>()
-    for (const shift of historyShifts) {
-      const dayKey = format(new Date(shift.date), 'yyyy-MM-dd')
-      if (!grouped.has(dayKey)) {
-        grouped.set(dayKey, [])
-      }
-      grouped.get(dayKey)!.push(shift)
-    }
-    // Trier les jours du plus récent au plus ancien
-    return Array.from(grouped.entries())
-      .sort(([a], [b]) => b.localeCompare(a))
-      .map(([dateStr, shifts]) => ({
-        date: new Date(dateStr),
-        dateStr,
-        shifts: shifts.sort((a, b) => a.startTime.localeCompare(b.startTime)),
-      }))
-  }, [historyShifts])
-
-  // Stats récapitulatives
-  const historyStats = useMemo(() => {
-    let totalMinutes = 0
-    let totalNightHours = 0
-    let totalNightActionHours = 0
-    let shiftCount = 0
-
-    for (const shift of historyShifts) {
-      const durationMin = calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
-      totalMinutes += durationMin
-      shiftCount++
-
-      const nightH = calculateNightHours(new Date(shift.date), shift.startTime, shift.endTime)
-      if (nightH > 0) {
-        totalNightHours += nightH
-        if (shift.hasNightAction) {
-          totalNightActionHours += nightH
-        }
-      }
-    }
-
-    return {
-      totalHours: totalMinutes / 60,
-      totalNightHours,
-      totalNightActionHours,
-      shiftCount,
-    }
-  }, [historyShifts])
-
-  // Shift actif (en cours de pointage)
-  const activeShift = useMemo(
-    () => todayShifts.find((s) => s.id === activeShiftId),
-    [todayShifts, activeShiftId]
-  )
-
-  // Heures de nuit pour le shift actif
-  const nightHoursForActive = useMemo(() => {
-    if (!activeShift) return 0
-    try {
-      return calculateNightHours(
-        new Date(activeShift.date),
-        activeShift.startTime,
-        activeShift.endTime
-      )
-    } catch {
-      return 0
-    }
-  }, [activeShift])
-
-  const hasNightHours = nightHoursForActive > 0
-
-  // Démarrer une intervention
-  const handleClockIn = (shift: Shift) => {
-    setActiveShiftId(shift.id)
-    setClockInTime(format(new Date(), 'HH:mm'))
-    setStep('in-progress')
-    setError(null)
-    setSuccessMessage(null)
-    setHasNightAction(shift.hasNightAction ?? false)
-    // Déplacer le focus vers la section en cours après le render
-    setTimeout(() => inProgressRef.current?.focus(), 100)
-  }
-
-  // Terminer une intervention
-  const handleClockOut = async () => {
-    if (!activeShift) return
-
-    if (!clockInTime) {
-      setError('Heure de début non enregistrée. Veuillez annuler et recommencer le pointage.')
-      return
-    }
-
-    setStep('completing')
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      const clockOutTime = format(new Date(), 'HH:mm')
-
-      await updateShift(activeShift.id, {
-        status: 'completed',
-        startTime: clockInTime,
-        endTime: clockOutTime,
-        hasNightAction: hasNightHours ? hasNightAction : false,
-      })
-
-      // C-01 : Validation conformité post clock-out
-      let complianceWarnings = ''
-      try {
-        const completedShift: ShiftForValidation = {
-          id: activeShift.id,
-          contractId: activeShift.contractId,
-          employeeId: profile.id,
-          date: new Date(activeShift.date),
-          startTime: clockInTime,
-          endTime: clockOutTime,
-          breakDuration: activeShift.breakDuration,
-          hasNightAction: hasNightHours ? hasNightAction : false,
-        }
-        const otherShifts: ShiftForValidation[] = [
-          ...todayShifts.filter((s) => s.id !== activeShift.id),
-          ...historyShifts,
-        ].map((s) => ({
-          id: s.id,
-          contractId: s.contractId,
-          employeeId: profile.id,
-          date: new Date(s.date),
-          startTime: s.startTime,
-          endTime: s.endTime,
-          breakDuration: s.breakDuration,
-          hasNightAction: s.hasNightAction,
-        }))
-
-        const result = checkCompliance(completedShift, otherShifts)
-        if (result.warnings.length > 0) {
-          complianceWarnings = ' ' + result.warnings.map((w) => w.message).join(' ')
-        }
-      } catch (err) {
-        logger.error('Erreur validation conformité post clock-out:', err)
-      }
-
-      setSuccessMessage(
-        `Intervention terminée à ${clockOutTime}. Durée effective enregistrée.${complianceWarnings}`
-      )
-
-      // Recharger tous les shifts
-      await loadAllShifts()
-
-      // Reset
-      setActiveShiftId(null)
-      setClockInTime(null)
-      setStep('idle')
-      setHasNightAction(false)
-      // Déplacer le focus vers la liste des interventions
-      setTimeout(() => idleSectionRef.current?.focus(), 100)
-    } catch (err) {
-      logger.error('Erreur clock-out:', err)
-      setError(
-        err instanceof Error ? err.message : 'Erreur lors de la fin de l\'intervention'
-      )
-      setStep('in-progress')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  // Annuler le pointage
-  const handleCancel = () => {
-    setActiveShiftId(null)
-    setClockInTime(null)
-    setStep('idle')
-    setHasNightAction(false)
-    setError(null)
-    setTimeout(() => idleSectionRef.current?.focus(), 100)
-  }
-
-  // Profile not loaded yet
   if (!profile) {
     return (
       <DashboardLayout title="Pointage">
@@ -317,7 +81,15 @@ export function ClockInPage() {
 
         {/* Message de succès */}
         {successMessage && (
-          <Box role="status" aria-live="polite" p={4} bg="green.50" borderRadius="lg" borderWidth="1px" borderColor="green.200">
+          <Box
+            role="status"
+            aria-live="polite"
+            p={4}
+            bg="green.50"
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="green.200"
+          >
             <Text color="green.700" fontWeight="medium">{successMessage}</Text>
           </Box>
         )}
@@ -338,209 +110,31 @@ export function ClockInPage() {
 
         {/* Intervention en cours */}
         {step === 'in-progress' && activeShift && (
-          <Box
-            ref={inProgressRef}
-            tabIndex={-1}
-            bg="white"
-            borderRadius="xl"
-            borderWidth="2px"
-            borderColor="blue.400"
-            p={6}
-            boxShadow="md"
-            _focus={{ outline: '2px solid', outlineColor: 'blue.400', outlineOffset: '2px' }}
-          >
-            <Flex role="status" aria-live="polite" align="center" gap={2} mb={4}>
-              <Box
-                aria-hidden="true"
-                w="12px"
-                h="12px"
-                borderRadius="full"
-                bg="green.500"
-                css={{
-                  animation: 'pulse 2s infinite',
-                  '@keyframes pulse': {
-                    '0%': { opacity: 1 },
-                    '50%': { opacity: 0.5 },
-                    '100%': { opacity: 1 },
-                  },
-                  '@media (prefers-reduced-motion: reduce)': {
-                    animation: 'none',
-                  },
-                }}
-              />
-              <Text fontWeight="bold" color="blue.700" fontSize="lg">
-                Intervention en cours
-              </Text>
-            </Flex>
-
-            <Stack gap={3}>
-              <Flex justify="space-between" align="center">
-                <Text color="gray.600">Début prévu</Text>
-                <Text fontWeight="semibold">{formatTime(activeShift.startTime)}</Text>
-              </Flex>
-              <Flex justify="space-between" align="center">
-                <Text color="gray.600">Fin prévue</Text>
-                <Text fontWeight="semibold">{formatTime(activeShift.endTime)}</Text>
-              </Flex>
-              <Flex justify="space-between" align="center">
-                <Text color="gray.600">Pointé à</Text>
-                <Badge colorPalette="green" size="lg">{clockInTime}</Badge>
-              </Flex>
-
-              {activeShift.tasks.length > 0 && (
-                <>
-                  <Separator />
-                  <Box>
-                    <Text fontSize="sm" color="gray.500" mb={2}>
-                      Tâches prévues
-                    </Text>
-                    <Stack gap={1}>
-                      {activeShift.tasks.map((task, i) => (
-                        <Flex key={i} align="center" gap={2}>
-                          <Box w="5px" h="5px" borderRadius="full" bg="blue.400" />
-                          <Text fontSize="sm">{sanitizeText(task)}</Text>
-                        </Flex>
-                      ))}
-                    </Stack>
-                  </Box>
-                </>
-              )}
-
-              {/* Toggle action de nuit */}
-              {hasNightHours && (
-                <>
-                  <Separator />
-                  <Box
-                    p={4}
-                    bg="purple.50"
-                    borderRadius="lg"
-                    borderWidth="1px"
-                    borderColor="purple.200"
-                  >
-                    <Text fontWeight="medium" color="purple.800" mb={1}>
-                      <span aria-hidden="true">🌙 </span>
-                      Heures de nuit : {nightHoursForActive.toFixed(1)}h
-                    </Text>
-                    <Text fontSize="sm" color="purple.600" mb={3}>
-                      La majoration +20% s'applique uniquement si vous effectuez un acte
-                      (soin, aide...) pendant la nuit.
-                    </Text>
-                    <Flex
-                      as="label"
-                      htmlFor="night-action-switch"
-                      justify="space-between"
-                      align="center"
-                      p={3}
-                      bg="white"
-                      borderRadius="md"
-                      cursor="pointer"
-                    >
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700">
-                        J'effectue un acte cette nuit
-                      </Text>
-                      <Switch.Root
-                        checked={hasNightAction}
-                        onCheckedChange={(e) => setHasNightAction(e.checked)}
-                      >
-                        <Switch.HiddenInput id="night-action-switch" />
-                        <Switch.Control>
-                          <Switch.Thumb />
-                        </Switch.Control>
-                      </Switch.Root>
-                    </Flex>
-                    <Text
-                      aria-live="polite"
-                      fontSize="xs"
-                      color={hasNightAction ? 'green.600' : 'gray.500'}
-                      mt={2}
-                    >
-                      {hasNightAction
-                        ? 'Majoration nuit appliquée : +20%'
-                        : 'Pas de majoration nuit'}
-                    </Text>
-                  </Box>
-                </>
-              )}
-
-              <Separator />
-
-              <Flex gap={3}>
-                <AccessibleButton
-                  colorPalette="red"
-                  flex={1}
-                  onClick={handleClockOut}
-                  loading={isSubmitting}
-                >
-                  Terminer l'intervention
-                </AccessibleButton>
-                <AccessibleButton
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
-                  accessibleLabel="Annuler le pointage en cours"
-                >
-                  Annuler
-                </AccessibleButton>
-              </Flex>
-            </Stack>
-          </Box>
+          <ClockInProgressSection
+            activeShift={activeShift}
+            clockInTime={clockInTime!}
+            hasNightHours={hasNightHours}
+            nightHoursForActive={nightHoursForActive}
+            hasNightAction={hasNightAction}
+            isSubmitting={isSubmitting}
+            onNightActionChange={setHasNightAction}
+            onClockOut={handleClockOut}
+            onCancel={handleCancel}
+            containerRef={inProgressRef}
+          />
         )}
 
-        {/* Interventions planifiées */}
+        {/* Interventions du jour */}
         {step === 'idle' && !isLoadingShifts && (
-          <Box
-            ref={idleSectionRef}
-            tabIndex={-1}
-            bg="white"
-            borderRadius="xl"
-            borderWidth="1px"
-            borderColor="gray.200"
-            p={6}
-            boxShadow="sm"
-            _focus={{ outline: '2px solid', outlineColor: 'blue.400', outlineOffset: '2px' }}
-          >
-            <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={4}>
-              Interventions du jour
-            </Text>
-
-            {plannedShifts.length === 0 && completedShifts.length === 0 && (
-              <Box p={6} textAlign="center">
-                <Text fontSize="3xl" mb={2} aria-hidden="true">📭</Text>
-                <Text color="gray.500">
-                  Aucune intervention prévue aujourd'hui
-                </Text>
-              </Box>
-            )}
-
-            {plannedShifts.length > 0 && (
-              <Stack gap={3}>
-                <Text fontSize="sm" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                  À venir
-                </Text>
-                {plannedShifts.map((shift) => (
-                  <ShiftCard
-                    key={shift.id}
-                    shift={shift}
-                    onClockIn={() => handleClockIn(shift)}
-                  />
-                ))}
-              </Stack>
-            )}
-
-            {completedShifts.length > 0 && (
-              <Stack gap={3} mt={plannedShifts.length > 0 ? 6 : 0}>
-                <Text fontSize="sm" fontWeight="medium" color="gray.500" textTransform="uppercase">
-                  Terminées
-                </Text>
-                {completedShifts.map((shift) => (
-                  <ShiftCard key={shift.id} shift={shift} completed />
-                ))}
-              </Stack>
-            )}
-          </Box>
+          <ClockInTodaySection
+            plannedShifts={plannedShifts}
+            completedShifts={completedShifts}
+            onClockIn={handleClockIn}
+            containerRef={idleSectionRef}
+          />
         )}
 
-        {/* Historique des heures */}
+        {/* Historique */}
         <HistorySection
           historyByDay={historyByDay}
           historyStats={historyStats}
