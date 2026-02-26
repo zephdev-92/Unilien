@@ -276,7 +276,7 @@ export async function getAlreadyNotifiedShiftIds(
 
   return new Set(
     (data || [])
-      .map((n) => (n.data as Record<string, unknown>)?.shiftId as string)
+      .map((n) => n.data?.shiftId as string)
       .filter(Boolean)
   )
 }
