@@ -10,15 +10,21 @@ import type {
   Shift,
 } from '@/types'
 import type { CaregiverDbRow, ShiftDbRow } from '@/types/database'
-import {
-  createTeamMemberAddedNotification,
-  createTeamMemberRemovedNotification,
-  createPermissionsUpdatedNotification,
-} from '@/services/notificationService'
+import { createPermissionsUpdatedNotification } from '@/services/notificationService'
 import { getProfileName } from '@/services/profileService'
 
+// Re-export du module gestion d'équipe pour compatibilité des imports existants
+export type { CaregiverWithProfile } from './caregiverTeamService'
+export {
+  getCaregiversForEmployer,
+  searchCaregiverByEmail,
+  addCaregiverToEmployer,
+  updateCaregiver,
+  removeCaregiverFromEmployer,
+} from './caregiverTeamService'
+
 // ============================================
-// CAREGIVER (profil aidant)
+// CAREGIVER — self-service aidant
 // ============================================
 
 /**
@@ -52,7 +58,7 @@ export async function getCaregiverEmployerId(profileId: string): Promise<string 
     .maybeSingle()
 
   if (error || !data) {
-    logger.error('Erreur récupération employeur de l\'aidant:', error)
+    logger.error("Erreur récupération employeur de l'aidant:", error)
     return null
   }
 
@@ -77,7 +83,6 @@ export async function getShiftsForCaregiver(
   startDate: Date,
   endDate: Date
 ): Promise<Shift[]> {
-  // D'abord récupérer l'employerId de l'aidant
   const employerId = await getCaregiverEmployerId(profileId)
 
   if (!employerId) {
@@ -85,14 +90,12 @@ export async function getShiftsForCaregiver(
     return []
   }
 
-  // Vérifier que l'aidant a la permission de voir le planning
   const permissions = await getCaregiverPermissions(profileId)
   if (!permissions?.canViewPlanning) {
     logger.warn('Aidant sans permission de voir le planning')
     return []
   }
 
-  // Récupérer les shifts de l'employeur
   const { data, error } = await supabase
     .from('shifts')
     .select(`
@@ -130,7 +133,6 @@ export async function getUpcomingShiftsForCaregiver(
 
   const shifts = await getShiftsForCaregiver(profileId, today, nextWeek)
 
-  // Filtrer les shifts futurs et limiter
   const now = new Date()
   return shifts
     .filter((shift) => {
@@ -173,7 +175,7 @@ export async function upsertCaregiver(
 }
 
 /**
- * Met à jour le profil aidant (informations personnelles de l'aidant)
+ * Met à jour le profil aidant (informations personnelles)
  */
 export async function updateCaregiverProfile(
   profileId: string,
@@ -187,12 +189,14 @@ export async function updateCaregiverProfile(
     canReplaceEmployer?: boolean
   }
 ): Promise<void> {
-  const sanitizedAddress = data.address ? {
-    street: data.address.street ? sanitizeText(data.address.street) : '',
-    city: data.address.city ? sanitizeText(data.address.city) : '',
-    postalCode: data.address.postalCode ? sanitizeText(data.address.postalCode) : '',
-    country: data.address.country || 'France',
-  } : null
+  const sanitizedAddress = data.address
+    ? {
+        street: data.address.street ? sanitizeText(data.address.street) : '',
+        city: data.address.city ? sanitizeText(data.address.city) : '',
+        postalCode: data.address.postalCode ? sanitizeText(data.address.postalCode) : '',
+        country: data.address.country || 'France',
+      }
+    : null
 
   const updateData = {
     relationship: data.relationship || null,
@@ -221,20 +225,18 @@ export async function updateCaregiverProfile(
     throw new Error(error.message)
   }
 
-  // Vérifier si des lignes ont été mises à jour
   if (!result || result.length === 0) {
     throw new Error('Aucune donnée mise à jour. Vérifiez que vous avez les permissions nécessaires.')
   }
 }
 
 /**
- * Met à jour les permissions d'un aidant
+ * Met à jour les permissions d'un aidant (côté aidant lui-même)
  */
 export async function updateCaregiverPermissions(
   profileId: string,
   permissions: Partial<CaregiverPermissions>
 ): Promise<void> {
-  // Récupérer les permissions actuelles
   const current = await getCaregiverPermissions(profileId)
   if (!current) {
     throw new Error('Aidant non trouvé')
@@ -242,7 +244,6 @@ export async function updateCaregiverPermissions(
 
   const updatedPermissions = { ...current, ...permissions }
 
-  // Récupérer l'employeur pour la notification
   const { data: caregiver } = await supabase
     .from('caregivers')
     .select('employer_id')
@@ -259,7 +260,6 @@ export async function updateCaregiverPermissions(
     throw new Error(error.message)
   }
 
-  // Notifier l'aidant
   if (caregiver) {
     try {
       const employerName = await getProfileName(caregiver.employer_id)
@@ -271,259 +271,8 @@ export async function updateCaregiverPermissions(
 }
 
 // ============================================
-// EMPLOYER-SIDE CAREGIVER MANAGEMENT
+// MAPPERS
 // ============================================
-
-/**
- * Type pour un aidant avec ses infos de profil
- */
-export interface CaregiverWithProfile {
-  profileId: string
-  employerId: string
-  permissions: CaregiverPermissions
-  permissionsLocked?: boolean
-  legalStatus?: CaregiverLegalStatus
-  relationship?: string
-  createdAt: Date
-  profile: {
-    firstName: string
-    lastName: string
-    email: string
-    phone?: string
-    avatarUrl?: string
-  }
-}
-
-/**
- * Récupère tous les aidants liés à un employeur
- */
-export async function getCaregiversForEmployer(
-  employerId: string
-): Promise<CaregiverWithProfile[]> {
-  const { data, error } = await supabase
-    .from('caregivers')
-    .select(`
-      *,
-      profile:profiles!profile_id(
-        first_name,
-        last_name,
-        email,
-        phone,
-        avatar_url
-      )
-    `)
-    .eq('employer_id', employerId)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    logger.error('Erreur récupération aidants:', error)
-    return []
-  }
-
-  return (data || []).map(mapCaregiverWithProfileFromDb)
-}
-
-/**
- * Recherche un utilisateur par email pour l'ajouter comme aidant
- */
-export async function searchCaregiverByEmail(
-  email: string
-): Promise<{ profileId: string; firstName: string; lastName: string; email: string } | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, email, role')
-    .eq('email', email.toLowerCase().trim())
-    .eq('role', 'caregiver')
-    .maybeSingle()
-
-  if (error) {
-    logger.error('Erreur recherche aidant:', error)
-    return null
-  }
-
-  if (!data) return null
-
-  return {
-    profileId: data.id,
-    firstName: data.first_name,
-    lastName: data.last_name,
-    email: data.email,
-  }
-}
-
-/**
- * Ajoute un aidant à un employeur
- */
-export async function addCaregiverToEmployer(
-  employerId: string,
-  caregiverProfileId: string,
-  data: {
-    permissions: CaregiverPermissions
-    legalStatus?: CaregiverLegalStatus
-    permissionsLocked?: boolean
-  }
-): Promise<void> {
-  // Vérifier que l'aidant n'est pas déjà lié à cet employeur
-  const existing = await supabase
-    .from('caregivers')
-    .select('profile_id')
-    .eq('profile_id', caregiverProfileId)
-    .eq('employer_id', employerId)
-    .maybeSingle()
-
-  if (existing.data) {
-    throw new Error('Cet aidant est déjà lié à votre compte.')
-  }
-
-  // Vérifier que l'utilisateur est bien un aidant
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', caregiverProfileId)
-    .single()
-
-  if (profileError || !profile) {
-    throw new Error('Profil utilisateur non trouvé.')
-  }
-
-  if (profile.role !== 'caregiver') {
-    throw new Error('Cet utilisateur n\'est pas enregistré comme aidant.')
-  }
-
-  // Créer le lien aidant-employeur
-  const { error } = await supabase
-    .from('caregivers')
-    .insert({
-      profile_id: caregiverProfileId,
-      employer_id: employerId,
-      permissions: data.permissions,
-      legal_status: data.legalStatus || null,
-      permissions_locked: data.permissionsLocked || false,
-    })
-
-  if (error) {
-    logger.error('Erreur ajout aidant:', error)
-    throw new Error('Erreur lors de l\'ajout de l\'aidant.')
-  }
-
-  // Notifier l'aidant ajouté
-  try {
-    const employerName = await getProfileName(employerId)
-    await createTeamMemberAddedNotification(caregiverProfileId, employerName)
-  } catch (err) {
-    logger.error('Erreur notification ajout aidant:', err)
-  }
-}
-
-/**
- * Met à jour les permissions d'un aidant
- * Note: Si permissionsLocked est true ou legalStatus est tutor/curator, les permissions ne peuvent pas être modifiées
- */
-export async function updateCaregiver(
-  caregiverProfileId: string,
-  employerId: string,
-  data: {
-    permissions: CaregiverPermissions
-  }
-): Promise<void> {
-  // Vérifier si les permissions sont verrouillées (par flag OU par statut juridique)
-  const { data: existingCaregiver } = await supabase
-    .from('caregivers')
-    .select('permissions_locked, legal_status')
-    .eq('profile_id', caregiverProfileId)
-    .eq('employer_id', employerId)
-    .single()
-
-  const isLegalGuardian = existingCaregiver?.legal_status === 'tutor' || existingCaregiver?.legal_status === 'curator'
-  if (existingCaregiver?.permissions_locked || isLegalGuardian) {
-    throw new Error('Les permissions de cet aidant sont verrouillées (tuteur/curateur) et ne peuvent pas être modifiées.')
-  }
-
-  const { error } = await supabase
-    .from('caregivers')
-    .update({
-      permissions: data.permissions,
-    })
-    .eq('profile_id', caregiverProfileId)
-    .eq('employer_id', employerId)
-
-  if (error) {
-    logger.error('Erreur mise à jour aidant:', error)
-    throw new Error('Erreur lors de la mise à jour de l\'aidant.')
-  }
-
-  // Notifier l'aidant que ses permissions ont été modifiées
-  try {
-    const employerName = await getProfileName(employerId)
-    await createPermissionsUpdatedNotification(caregiverProfileId, employerName)
-  } catch (err) {
-    logger.error('Erreur notification permissions modifiées:', err)
-  }
-}
-
-/**
- * Supprime le lien entre un aidant et un employeur
- */
-export async function removeCaregiverFromEmployer(
-  caregiverProfileId: string,
-  employerId: string
-): Promise<void> {
-  // Récupérer le nom de l'employeur avant suppression
-  let employerName = 'Utilisateur'
-  try {
-    employerName = await getProfileName(employerId)
-  } catch {
-    // Fallback silencieux
-  }
-
-  const { error } = await supabase
-    .from('caregivers')
-    .delete()
-    .eq('profile_id', caregiverProfileId)
-    .eq('employer_id', employerId)
-
-  if (error) {
-    logger.error('Erreur suppression aidant:', error)
-    throw new Error('Erreur lors de la suppression de l\'aidant.')
-  }
-
-  // Notifier l'aidant retiré
-  try {
-    await createTeamMemberRemovedNotification(caregiverProfileId, employerName)
-  } catch (err) {
-    logger.error('Erreur notification retrait aidant:', err)
-  }
-}
-
-// ============================================
-// Mappers
-// ============================================
-
-function mapCaregiverWithProfileFromDb(data: CaregiverDbRow): CaregiverWithProfile {
-  return {
-    profileId: data.profile_id,
-    employerId: data.employer_id,
-    permissions: data.permissions || {
-      canViewPlanning: false,
-      canEditPlanning: false,
-      canViewLiaison: false,
-      canWriteLiaison: false,
-      canManageTeam: false,
-      canExportData: false,
-    },
-    permissionsLocked: data.permissions_locked || false,
-    legalStatus: data.legal_status || undefined,
-    relationship: data.relationship || undefined,
-    createdAt: new Date(data.created_at),
-    profile: {
-      firstName: data.profile?.first_name || '',
-      lastName: data.profile?.last_name || '',
-      email: data.profile?.email || '',
-      phone: data.profile?.phone || undefined,
-      avatarUrl: data.profile?.avatar_url || undefined,
-    },
-  }
-}
 
 function mapCaregiverFromDb(data: CaregiverDbRow): Caregiver {
   return {
