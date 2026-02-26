@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeText } from '@/lib/sanitize'
 
 // ============================================
 // TYPES
@@ -288,7 +289,7 @@ async function savePushSubscription(
     endpoint: subscriptionData.endpoint,
     p256dh: subscriptionData.keys.p256dh,
     auth: subscriptionData.keys.auth,
-    user_agent: navigator.userAgent,
+    user_agent: sanitizeText(navigator.userAgent),
     created_at: new Date().toISOString(),
   }
 

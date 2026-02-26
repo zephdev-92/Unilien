@@ -55,9 +55,12 @@ const mockCreateAbsenceRequestedNotification = vi.fn()
 const mockCreateAbsenceResolvedNotification = vi.fn()
 
 vi.mock('@/services/notificationService', () => ({
-  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
   createAbsenceRequestedNotification: (...args: unknown[]) => mockCreateAbsenceRequestedNotification(...args),
   createAbsenceResolvedNotification: (...args: unknown[]) => mockCreateAbsenceResolvedNotification(...args),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  getProfileName: (...args: unknown[]) => mockGetProfileName(...args),
 }))
 
 const mockAddTakenDays = vi.fn()

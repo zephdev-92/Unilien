@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 24 février 2026 (Semaine 10 — useEmployerResolution hook, sanitizeText notificationService, 578 tests)
-**Version**: 1.4.0
+**Dernière mise à jour**: 26 février 2026 (Sprint refactoring architectural — 6 composants décomposés, database.ts typé, fix absence_type constraint, 1651 tests)
+**Version**: 1.6.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -20,24 +20,96 @@
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~42% | 🟡 En progression (578 tests, 8/8 hooks testés ✅) |
-| **Sécurité** | 92% | ✅ Excellent (routes protégées, sanitisation 6/9 services, fail-fast, FK fix, RLS audit) |
-| **Qualité code** | 90% | ✅ Bon (ErrorBoundary, code splitting, 0 `as any`, 0 `eslint-disable` type) |
+| **Tests** | ~60% | ✅ Bon (1651 tests / 81 fichiers, 8/8 hooks testés ✅) |
+| **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
+| **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
 
 ### Métriques Clés
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
-- **Tests**: 1154 tests / 52 fichiers (~53%+ coverage)
-- **Migrations DB**: 24 migrations
-- **Composants UI**: ~65 composants
-- **Services**: 13 services
-- **Hooks**: 9 hooks (8/8 testés)
-- **Routes**: 16 routes (dont 10 protégées)
+- **Tests**: 1651 tests / 81 fichiers (~60% coverage)
+- **Migrations DB**: 32 migrations
+- **Composants UI**: ~75 composants
+- **Services**: 15 services (+ absenceJustificationService + caregiverTeamService)
+- **Hooks**: 12 hooks custom (useClockIn, useNewShiftForm, useNewContractForm ajoutés) + useShiftValidationData, useShiftNightHours, useShiftRequalification, useShiftEffectiveHours, useGuardSegments
+- **Routes**: 16 routes (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-8 - Février 2026)
+## ✅ Réalisations Récentes (Semaines 6-10 - Février 2026)
+
+### Sprint Refactoring Architectural — 8 PRs (25-26/02/2026)
+
+Décomposition des fichiers monolithiques (> 500 lignes) en modules ciblés, typage précis des types DB, et correction d'un bug de contrainte DB sur les absences.
+
+#### Décompositions (PRs #107–#113)
+
+| PR | Fichier | Avant | Après | Modules extraits |
+|----|---------|-------|-------|-----------------|
+| #107 ✅ | `ShiftDetailModal.tsx` | 979 lignes | 260 lignes | `useShiftDetailData`, `useShiftEditLogic`, `ShiftEditForm`, `ShiftDetailView` |
+| #109 ✅ | `NewShiftModal.tsx` | 811 lignes | 378 lignes | `useNewShiftForm`, `Guard24hSection`, `ShiftHoursSummary` |
+| #110 ✅ | `absenceService.ts` | 592 lignes | 469 lignes | `absenceJustificationService.ts` |
+| #111 ✅ | `caregiverService.ts` | 582 lignes | 331 lignes | `caregiverTeamService.ts` |
+| #112 ✅ | `NewContractModal.tsx` | 547 lignes | 279 lignes | `useNewContractForm`, `ContractLeaveHistorySection`, `contractSchemas.ts` |
+| #113 ✅ | `ClockInPage.tsx` | 557 lignes | 150 lignes | `useClockIn`, `ClockInProgressSection`, `ClockInTodaySection` |
+
+#### Typage database.ts (PR #114 ✅)
+
+Remplacement des 4 types imprécis dans `src/types/database.ts` :
+- `LiaisonMessageDbRow.attachments` + `LogEntryDbRow.attachments` : `unknown[]` → `Attachment[]`
+- `CaregiverDbRow.permissions` : `Record<string,boolean>` → `CaregiverPermissions`
+- `CaregiverDbRow.address` : `Record<string,unknown>` → `AddressDb`
+- `NotificationDbRow.data` : `Record<string,unknown>` → `NotificationData` (nouvelle interface)
+- Suppression des casts `as X[]` dans liaisonService, logbookService, notificationService
+
+#### Fix bug absence événement familial (PR #115 + migration 032 ✅)
+
+La contrainte `absences_absence_type_check` créée à l'init de la table ne couvrait pas `family_event` et `emergency`. Migration 032 corrige le CHECK et est appliquée sur Supabase distant. Le registre des migrations est maintenant synchronisé (025→032 tous alignés).
+
+#### Métriques session (26/02/2026)
+
+- **1651 tests** / 81 fichiers (était 1605 / 79)
+- 32 migrations DB synchronisées (était 30)
+- Aucun composant > 500 lignes dans les modules refactorisés
+
+---
+
+### Sprint /wd:analyze Remediation — 9 PRs (24/02/2026)
+
+Analyse multi-agents (security, performance, quality) suivie d'un sprint de remédiation complet. 9 PRs créées en une session, toutes sur branches séparées.
+
+#### Bug critique corrigé — `calculatePay.ts` dimanche `presence_day` (PR #92 ✅)
+
+Pour les shifts `presence_day` un dimanche ou jour férié, `sundayMajoration` et `holidayMajoration` étaient calculés sur `basePay` (heures brutes × taux) au lieu de `presenceResponsiblePay` (2/3 des heures × taux). Surpaiement de ~50% sur la part majoration. Correction conforme à Art. 137.1 IDCC 3239.
+
+#### Sprint qualité — PRs mergées
+
+| PR | Branche | Description |
+|----|---------|-------------|
+| #87 ✅ | `fix/sanitize-text-services` | Sanitisation services supplémentaires, `useEffect` + cleanup `DocumentManagementSection`, extraction `notificationService.core.ts` + `notificationCreators.ts` |
+| #88 ✅ | `refactor/decouple-getprofilename` | `getProfileName` migré vers `profileService` (5 services + 1 hook + 6 tests mis à jour) |
+| #89 ✅ | `refactor/useauth-split` | Extraction `loadProfile()` helper — DRY `useAuth.ts` (339 → 316 lignes) |
+| #90 ✅ | `fix/newshiftmodal-calculateshiftduration` | Restaurer imports manquants `calculateShiftDuration`, `getMinBreakForSegment`, `GuardSegment` dans `NewShiftModal` |
+| #91 ✅ | `feat/error-boundaries` | `<ErrorBoundary>` autour de chaque route protégée dans `App.tsx` (9 routes) |
+| #92 ✅ | `fix/calculatepay-presence-day-sunday` | **CRITIQUE** : majoration dimanche/férié sur `presenceResponsiblePay` pour `presence_day` |
+
+#### Sprint qualité — PRs ouvertes
+
+| PR | Branche | Description |
+|----|---------|-------------|
+| #93 🔄 | `fix/usenotifications-double-render` | Double `setNotifications` dans UPDATE/DELETE/dismiss → un seul updater (−1 re-render par event) |
+| #94 🔄 | `fix/shift-validation-query-window` | Fenêtre requête shifts validation : 3 mois → ±4 semaines (suffisant pour toutes les règles IDCC 3239) |
+| #95 🔄 | `refactor/shiftdetailmodal-usereducer` | 13 `useState` → 1 `useReducer` + 20 actions typées dans `ShiftDetailModal` + fenêtre requête fixes |
+
+#### Métriques session (24/02/2026)
+
+- **1605 tests** / 79 fichiers (était 1154 / 52)
+- **~60% coverage** (était ~53%)
+- `notificationService.ts` splitté : `notificationService.core.ts` + `notificationCreators.ts`
+- `useShiftValidationData`, `useShiftNightHours`, `useShiftRequalification`, `useShiftEffectiveHours`, `useGuardSegments` ajoutés
+
+---
 
 ### Sprint Tests Hooks Restants + Feature Présence Responsable (17/02/2026)
 
@@ -479,7 +551,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Effort**: 6-8 semaines (Phase 1+2 terminées en 1 jour)
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: ~42% coverage — 835 tests / 35 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
+**État actuel**: ~60% coverage — 1651 tests / 81 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
 
 **Services testés (13/13)** ✅ Phase 1 terminée (12/02/2026):
 ```
@@ -615,7 +687,10 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 ```
 [ ] Aligner accessibility_settings → AccessibilitySettings dans database.ts
 [ ] Aligner computed_pay → ComputedPay dans ShiftDbRow
-[ ] Aligner permissions → CaregiverPermissions dans CaregiverDbRow
+[x] Aligner permissions → CaregiverPermissions dans CaregiverDbRow (PR #114, 26/02/2026)
+[x] Aligner address → AddressDb dans CaregiverDbRow (PR #114, 26/02/2026)
+[x] Typer attachments → Attachment[] dans LiaisonMessageDbRow + LogEntryDbRow (PR #114, 26/02/2026)
+[x] Typer data → NotificationData dans NotificationDbRow (PR #114, 26/02/2026)
 [ ] Regenerer les types complets si besoin (npx supabase gen types)
 ```
 
@@ -1166,7 +1241,28 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 ## 📋 BACKLOG - À PRIORISER
 
-### 14. Fonctionnalités Avancées
+### 14. Reconnaissance Vocale — Fallback Firefox (Whisper)
+
+**Impact** : 🟡 IMPORTANT — Firefox (~30% des utilisateurs desktop) sans reconnaissance vocale
+**Effort** : 1 jour
+**Document** : `docs/SPEECH_RECOGNITION_FIREFOX.md`
+
+**Solution retenue** : Option A — MediaRecorder + OpenAI Whisper via Edge Function
+
+```
+[ ] Créer supabase/functions/speech-to-text/index.ts (Whisper API)
+[ ] Ajouter OPENAI_API_KEY dans les secrets Supabase
+[ ] Modifier useSpeechRecognition : fallback MediaRecorder si !isSupported
+[ ] Exposer isUsingFallback: boolean dans le return du hook
+[ ] Mettre à jour VoiceInput + NewLogEntryModal (indicateur "mode différé")
+[ ] Tests mock Edge Function + MediaRecorder
+```
+
+**Timeline** : Semaines 11-12/2026
+
+---
+
+### 15. Fonctionnalités Avancées
 
 #### 14.1 Messagerie Temps Réel Améliorée
 
@@ -1209,24 +1305,24 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 Fichiers identifiés le 24/02/2026 comme candidats prioritaires au découpage (seuil > 500 lignes) :
 
-| Fichier | Lignes | Type |
-|---------|--------|------|
-| `components/planning/NewShiftModal.tsx` | 972 | Composant |
-| `services/notificationService.ts` | 938 | Service |
-| `components/clock-in/ClockInPage.tsx` | 882 | Page |
-| `components/planning/ShiftDetailModal.tsx` | 873 | Composant |
-| `services/absenceService.ts` | 592 | Service |
-| `services/caregiverService.ts` | 582 | Service |
-| `components/team/NewContractModal.tsx` | 546 | Composant |
-| `components/team/TeamPage.tsx` | 504 | Page |
-| `components/profile/sections/EmployeeSection.tsx` | 504 | Composant |
+| Fichier | Lignes | Type | Statut |
+|---------|--------|------|--------|
+| `components/planning/NewShiftModal.tsx` | ~831 | Composant | 🟡 En attente |
+| `services/notificationService.ts` | ~400 | Service | ✅ Splitté (24/02) → `notificationService.core.ts` + `notificationCreators.ts` |
+| `components/clock-in/ClockInPage.tsx` | ~334 | Page | ✅ Décomposé (24/02) → `ClockInHistorySection`, `ShiftCard`, `clockInUtils` |
+| `components/planning/ShiftDetailModal.tsx` | ~979 | Composant | ✅ useReducer (24/02) — 13 useState → 1 reducer |
+| `services/absenceService.ts` | 592 | Service | 🟡 En attente |
+| `services/caregiverService.ts` | 582 | Service | 🟡 En attente |
+| `components/team/NewContractModal.tsx` | 546 | Composant | 🟡 En attente |
+| `components/team/TeamPage.tsx` | 504 | Page | 🟡 En attente |
+| `components/profile/sections/EmployeeSection.tsx` | 504 | Composant | 🟡 En attente |
 
 **Actions suggérées** :
 ```
 [ ] NewShiftModal → extraire sous-formulaires (ShiftTypeForm, PresenceForm, TasksForm)
-[ ] ShiftDetailModal → extraire sections lecture/édition
+[x] ShiftDetailModal → 13 useState → useReducer (24/02/2026 — PR #95)
 [ ] ClockInPage → Sprint 3 en attente (10 problèmes architecture & perf avancée)
-[ ] notificationService → séparer CRUD / realtime / préférences / rappels
+[x] notificationService → splitté en notificationService.core.ts + notificationCreators.ts (24/02/2026)
 ```
 
 **Effort estimé** : 1 semaine par composant majeur
@@ -1359,7 +1455,8 @@ npx playwright install
 - ✅ Hook `useEmployerResolution` (9e hook — 23/02/2026) — LiaisonPage + LogbookPage sans imports Supabase
 - ✅ Sanitisation `notificationService` (`title` + `message`) — 23/02/2026
 - ✅ Migration `030_guard_segments_v2.sql` — garde 24h N-segments libres
-- ✅ **578 tests** (+5 grâce aux nouveaux hooks), 8/8 hooks testés
+- ✅ **Sprint /wd:analyze** (24/02/2026) — 9 PRs : bug CRITIQUE dimanche presence_day, useReducer ShiftDetailModal, useNotifications double-render, fenêtre requête, ErrorBoundary par route, découpages services
+- ✅ **1605 tests** / 79 fichiers (~60% coverage)
 
 **Semaines 11-13**:
 - 🟡 Notifications Email
@@ -1412,7 +1509,7 @@ npx playwright install
 ### Objectifs Q1 2026
 
 - [x] Coverage tests ≥ 30% (atteint 37% le 12/02/2026) ✅
-- [ ] Coverage tests ≥ 60% (cible Q2 — nécessite tests composants UI)
+- [x] Coverage tests ≥ 60% (atteint ~60% le 24/02/2026 — 1605 tests / 79 fichiers) ✅
 - [ ] 0 bugs critiques en production
 - [x] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git) ✅
 - [x] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute) ✅ 10/02/2026
@@ -1664,10 +1761,11 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 24 février 2026 — Hook `useEmployerResolution` (9e hook, 8/8 testés), sanitisation `notificationService`, migration 030 garde 24h v2, 578 tests (+5). Gros fichiers identifiés pour refactoring futur (14.5).
+> **Dernière review**: 24 février 2026 — Sprint /wd:analyze (9 PRs) : bug CRITIQUE calcul dimanche presence_day corrigé, 13 useState → useReducer ShiftDetailModal, double-render useNotifications éliminé, fenêtre requête shifts réduite, ErrorBoundary sur chaque route, notificationService splitté. **1605 tests / 79 fichiers / ~60% coverage.**
 
 ---
 
 **Maintenu par**: Tech Lead
 **Prochaine revue**: 3 mars 2026
+**PRs ouvertes** : #93 (useNotifications), #94 (fenêtre requête), #95 (ShiftDetailModal useReducer)
 **Feedback**: [Ouvrir une issue](https://github.com/zephdev-92/Unilien/issues)

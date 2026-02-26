@@ -2,7 +2,7 @@
  * Section de gestion des documents (absences, justificatifs)
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   VStack,
   HStack,
@@ -29,7 +29,12 @@ import { updateAbsenceStatus } from '@/services/absenceService'
 import { getContractsForEmployer } from '@/services/contractService'
 import { PayslipGeneratorModal, type PayslipEmployee } from '@/components/documents/PayslipGeneratorModal'
 import { logger } from '@/lib/logger'
-import type { Absence } from '@/types'
+import {
+  ABSENCE_TYPE_LABELS,
+  ABSENCE_TYPE_COLORS,
+  ABSENCE_STATUS_LABELS as STATUS_LABELS,
+  ABSENCE_STATUS_COLORS as STATUS_COLORS,
+} from '@/lib/constants/statusMaps'
 
 // ============================================
 // TYPES
@@ -43,33 +48,6 @@ interface DocumentManagementSectionProps {
 // CONSTANTS
 // ============================================
 
-const ABSENCE_TYPE_LABELS: Record<Absence['absenceType'], string> = {
-  sick: 'Maladie',
-  vacation: 'Congé',
-  training: 'Formation',
-  unavailable: 'Indisponibilité',
-  emergency: 'Urgence',
-}
-
-const ABSENCE_TYPE_COLORS: Record<Absence['absenceType'], string> = {
-  sick: 'red',
-  vacation: 'blue',
-  training: 'purple',
-  unavailable: 'gray',
-  emergency: 'orange',
-}
-
-const STATUS_LABELS: Record<Absence['status'], string> = {
-  pending: 'En attente',
-  approved: 'Approuvée',
-  rejected: 'Refusée',
-}
-
-const STATUS_COLORS: Record<Absence['status'], string> = {
-  pending: 'yellow',
-  approved: 'green',
-  rejected: 'red',
-}
 
 // ============================================
 // COMPONENT
@@ -84,9 +62,10 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false)
   const [employeesForPayslip, setEmployeesForPayslip] = useState<PayslipEmployee[]>([])
+  const [payslipEmployeesError, setPayslipEmployeesError] = useState<string | null>(null)
 
   // Charger les documents
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
@@ -102,25 +81,33 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [employerId])
 
   useEffect(() => {
+    let cancelled = false
+
     loadDocuments()
+    setPayslipEmployeesError(null)
     // Charger les employés actifs pour le générateur de bulletins
-    getContractsForEmployer(employerId).then((contracts) => {
-      setEmployeesForPayslip(
-        contracts
-          .filter((c) => c.employee)
-          .map((c) => ({
-            id: c.employeeId,
-            firstName: c.employee!.firstName,
-            lastName: c.employee!.lastName,
-            pasRate: 0,
-          }))
-      )
-    }).catch((err) => logger.error('Erreur chargement employés bulletins:', err))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employerId])
+    getContractsForEmployer(employerId)
+      .then((contracts) => {
+        if (cancelled) return
+        setEmployeesForPayslip(
+          contracts.flatMap((c) =>
+            c.employee
+              ? [{ id: c.employeeId, firstName: c.employee.firstName, lastName: c.employee.lastName, pasRate: 0 }]
+              : []
+          )
+        )
+      })
+      .catch((err) => {
+        if (cancelled) return
+        logger.error('Erreur chargement employés bulletins:', err)
+        setPayslipEmployeesError('Impossible de charger la liste des employés')
+      })
+
+    return () => { cancelled = true }
+  }, [employerId, loadDocuments])
 
   // Filtrer les documents selon l'onglet actif
   const filteredDocuments = documents.filter((doc) => {
@@ -231,19 +218,28 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
               Générez un bulletin de paie individuel (PDF) pour un employé et un mois donné.
               Le document est calculé selon la Convention Collective IDCC 3239 (barèmes 2025, à titre indicatif).
             </Text>
-            <Button
-              onClick={() => setIsPayslipModalOpen(true)}
-              disabled={employeesForPayslip.length === 0}
-              alignSelf="flex-start"
-              style={{ backgroundColor: '#4E6478', color: 'white' }}
-            >
-              Générer un bulletin de paie
-            </Button>
-            {employeesForPayslip.length === 0 && (
-              <Alert.Root status="info">
+            {payslipEmployeesError ? (
+              <Alert.Root status="error">
                 <Alert.Indicator />
-                <Alert.Title>Aucun employé actif trouvé.</Alert.Title>
+                <Alert.Title>{payslipEmployeesError}</Alert.Title>
               </Alert.Root>
+            ) : (
+              <>
+                <Button
+                  onClick={() => setIsPayslipModalOpen(true)}
+                  disabled={employeesForPayslip.length === 0}
+                  alignSelf="flex-start"
+                  style={{ backgroundColor: '#4E6478', color: 'white' }}
+                >
+                  Générer un bulletin de paie
+                </Button>
+                {employeesForPayslip.length === 0 && (
+                  <Alert.Root status="info">
+                    <Alert.Indicator />
+                    <Alert.Title>Aucun employé actif trouvé.</Alert.Title>
+                  </Alert.Root>
+                )}
+              </>
             )}
           </VStack>
           <PayslipGeneratorModal

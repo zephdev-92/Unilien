@@ -128,6 +128,32 @@ describe('useSpeechRecognition', () => {
 
       expect(result.current.isSupported).toBe(true)
     })
+
+    it('startListening set une erreur si le navigateur ne supporte pas l\'API', () => {
+      setSpeechRecognitionSupport('none')
+
+      const { result } = renderHook(() => useSpeechRecognition())
+
+      act(() => {
+        result.current.startListening()
+      })
+
+      expect(result.current.error).toBe("La reconnaissance vocale n'est pas supportée par ce navigateur.")
+      expect(result.current.isListening).toBe(false)
+    })
+
+    it('toggleListening set une erreur si le navigateur ne supporte pas l\'API', () => {
+      setSpeechRecognitionSupport('none')
+
+      const { result } = renderHook(() => useSpeechRecognition())
+
+      act(() => {
+        result.current.toggleListening()
+      })
+
+      expect(result.current.error).toBe("La reconnaissance vocale n'est pas supportée par ce navigateur.")
+      expect(result.current.isListening).toBe(false)
+    })
   })
 
   // =============================================

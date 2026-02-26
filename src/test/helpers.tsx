@@ -11,43 +11,21 @@ import React from 'react'
 import { render, type RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
-/**
- * Wrapper avec tous les providers nécessaires pour les tests de composants.
- * Inclut : ChakraProvider, BrowserRouter, QueryClientProvider.
- */
-function createTestQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-      },
-      mutations: {
-        retry: false,
-      },
-    },
-  })
-}
 
 interface TestProvidersProps {
   children: React.ReactNode
 }
 
 function TestProviders({ children }: TestProvidersProps) {
-  const queryClient = createTestQueryClient()
   return (
-    <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={defaultSystem}>
-        <BrowserRouter>{children}</BrowserRouter>
-      </ChakraProvider>
-    </QueryClientProvider>
+    <ChakraProvider value={defaultSystem}>
+      <BrowserRouter>{children}</BrowserRouter>
+    </ChakraProvider>
   )
 }
 
 /**
- * Render un composant avec tous les providers (Chakra, Router, QueryClient).
+ * Render un composant avec tous les providers (Chakra, Router).
  *
  * Retourne les mêmes helpers que `@testing-library/react` render().
  */

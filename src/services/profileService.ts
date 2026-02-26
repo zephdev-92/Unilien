@@ -1,11 +1,80 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { Profile, Employer, Employee } from '@/types'
+import type { Profile, Employer, Employee, PchType } from '@/types'
+import type { ProfileDbRow } from '@/types/database'
+import { mapProfileFromDb } from '@/lib/mappers'
 
 // ============================================
 // PROFILE (informations personnelles)
 // ============================================
+
+/**
+ * Récupère un profil par son ID utilisateur.
+ * emailOverride permet de forcer l'email depuis le token auth (source de vérité).
+ */
+/**
+ * Retourne le nom complet d'un profil (prénom + nom).
+ * Fallback : 'Utilisateur' si le profil n'existe pas.
+ */
+export async function getProfileName(profileId: string): Promise<string> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('first_name, last_name')
+    .eq('id', profileId)
+    .single()
+
+  if (!data) return 'Utilisateur'
+  return `${data.first_name} ${data.last_name}`.trim() || 'Utilisateur'
+}
+
+export async function getProfileById(
+  userId: string,
+  emailOverride?: string
+): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Erreur récupération profil:', error)
+    return null
+  }
+
+  return data ? mapProfileFromDb(data as ProfileDbRow, emailOverride) : null
+}
+
+/**
+ * Crée un profil minimal (fallback si le trigger Supabase ne l'a pas créé).
+ * Retourne true si la création a réussi.
+ */
+export async function createFallbackProfile(profile: {
+  id: string
+  role: string
+  firstName: string
+  lastName: string
+  email: string | null
+}): Promise<boolean> {
+  const { error } = await supabase.from('profiles').insert({
+    id: profile.id,
+    role: profile.role,
+    first_name: profile.firstName,
+    last_name: profile.lastName,
+    email: profile.email,
+    phone: null,
+    avatar_url: null,
+    accessibility_settings: {},
+  })
+
+  if (error) {
+    logger.error('Erreur création profil fallback:', error)
+    return false
+  }
+
+  return true
+}
 
 export async function updateProfile(
   profileId: string,
@@ -187,8 +256,10 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
     handicapName: data.handicap_name || undefined,
     specificNeeds: data.specific_needs || undefined,
     cesuNumber: data.cesu_number || undefined,
-    pchBeneficiary: data.pch_beneficiary,
+    pchBeneficiary: data.pch_beneficiary ?? false,
     pchMonthlyAmount: data.pch_monthly_amount || undefined,
+    pchType: (data.pch_type as PchType) || undefined,
+    pchMonthlyHours: data.pch_monthly_hours || undefined,
     emergencyContacts: (data.emergency_contacts || []) as Employer['emergencyContacts'],
   }
 }
@@ -210,6 +281,8 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     cesu_number: data.cesuNumber ? sanitizeText(data.cesuNumber) : null,
     pch_beneficiary: data.pchBeneficiary ?? false,
     pch_monthly_amount: data.pchMonthlyAmount || null,
+    pch_type: data.pchType || null,
+    pch_monthly_hours: data.pchMonthlyHours || null,
     emergency_contacts: data.emergencyContacts || [],
   }
 
