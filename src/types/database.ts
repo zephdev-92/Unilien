@@ -3,7 +3,7 @@
  * Ces types représentent la structure des données telles qu'elles arrivent de la DB
  */
 
-import type { Attachment, CaregiverPermissions } from '@/types'
+import type { Attachment, CaregiverPermissions, AccessibilitySettings, ComputedPay } from '@/types'
 
 // ============================================================
 // PROFILE
@@ -17,7 +17,7 @@ export interface ProfileDbRow {
   email: string | null
   phone: string | null
   avatar_url: string | null
-  accessibility_settings: Record<string, boolean> | null
+  accessibility_settings: AccessibilitySettings | null
   created_at: string
   updated_at: string
 }
@@ -132,6 +132,7 @@ export interface ShiftDbRow {
   is_requalified: boolean // Requalifié en travail effectif si >= 4 interventions nuit
   effective_hours: number | null // Heures effectives après conversion (2/3 pour présence jour)
   guard_segments: GuardSegmentDb[] | null // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
+  computed_pay: ComputedPay | null
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
   created_at: string
   updated_at: string
