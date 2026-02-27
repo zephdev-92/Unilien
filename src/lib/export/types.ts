@@ -96,6 +96,75 @@ export function getMonthLabel(year: number, month: number): string {
   return `${MONTHS_FR[month - 1]} ${year}`
 }
 
+// ─── Export Planning ─────────────────────────────────────────────────────────
+
+import type { ShiftType, AbsenceType } from '@/types'
+
+/** Options de génération du planning export */
+export interface PlanningExportOptions {
+  year: number
+  month: number
+  employeeId?: string // Si vide, tous les employés (vue employeur)
+}
+
+/** Format de l'export planning */
+export type PlanningExportFormat = 'pdf' | 'excel' | 'ical'
+
+/** Une entrée shift dans le planning */
+export interface PlanningShiftEntry {
+  id: string
+  date: Date
+  startTime: string
+  endTime: string
+  breakDuration: number
+  shiftType: ShiftType
+  status: 'planned' | 'completed' | 'cancelled' | 'absent'
+  effectiveHours: number
+  isSunday: boolean
+  isHoliday: boolean
+  totalPay: number
+}
+
+/** Une entrée absence dans le planning */
+export interface PlanningAbsenceEntry {
+  id: string
+  startDate: Date
+  endDate: Date
+  absenceType: AbsenceType
+  status: 'pending' | 'approved' | 'rejected'
+}
+
+/** Données planning d'un employé pour une période */
+export interface EmployeePlanningData {
+  employeeId: string
+  firstName: string
+  lastName: string
+  contractId: string
+  contractType: 'CDI' | 'CDD'
+  weeklyHours: number
+  hourlyRate: number
+  shifts: PlanningShiftEntry[]
+  absences: PlanningAbsenceEntry[]
+  totalShifts: number
+  totalHours: number
+  totalPay: number
+}
+
+/** Données complètes de planning mensuel pour export */
+export interface PlanningExportData {
+  year: number
+  month: number
+  periodLabel: string
+  employerId: string
+  employerFirstName: string
+  employerLastName: string
+  employees: EmployeePlanningData[]
+  totalEmployees: number
+  totalShifts: number
+  totalHours: number
+  generatedAt: Date
+}
+
 // ─── Bulletin de paie ────────────────────────────────────────────────────────
 
 /** Une ligne de cotisation (salariale ou patronale) */

@@ -4,3 +4,4 @@
 
 export { DocumentManagementSection } from './DocumentManagementSection'
 export { PayslipSection } from './PayslipSection'
+export { PlanningExportSection } from './PlanningExportSection'
