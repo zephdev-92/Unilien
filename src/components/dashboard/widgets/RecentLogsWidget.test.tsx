@@ -168,12 +168,12 @@ describe('RecentLogsWidget', () => {
   })
 
   describe('Lien "Voir tout"', () => {
-    it('affiche le lien vers /logbook', async () => {
+    it('affiche le lien vers /cahier-de-liaison', async () => {
       mockGetRecentLogEntries.mockResolvedValue([])
       renderWithProviders(<RecentLogsWidget employerId="employer-1" />)
       await waitFor(() => {
         const link = screen.getByRole('link', { name: /voir tout le cahier de liaison/i })
-        expect(link).toHaveAttribute('href', '/logbook')
+        expect(link).toHaveAttribute('href', '/cahier-de-liaison')
       })
     })
   })

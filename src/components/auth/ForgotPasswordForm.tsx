@@ -77,7 +77,7 @@ export function ForgotPasswordForm() {
             </Alert.Root>
             <Text textAlign="center" fontSize="md">
               <Link asChild color="blue.500" fontWeight="medium">
-                <RouterLink to="/login">
+                <RouterLink to="/connexion">
                   Retour à la connexion
                 </RouterLink>
               </Link>
@@ -121,7 +121,7 @@ export function ForgotPasswordForm() {
             {/* Lien retour */}
             <Text textAlign="center" fontSize="md">
               <Link asChild color="blue.500" fontWeight="medium">
-                <RouterLink to="/login">
+                <RouterLink to="/connexion">
                   Retour à la connexion
                 </RouterLink>
               </Link>

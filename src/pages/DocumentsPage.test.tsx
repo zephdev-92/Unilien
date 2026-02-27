@@ -104,7 +104,7 @@ describe('DocumentsPage', () => {
   })
 
   // 3. Redirection si caregiver sans canExportData
-  it('redirige vers /dashboard si caregiver sans canExportData', async () => {
+  it('redirige vers /tableau-de-bord si caregiver sans canExportData', async () => {
     const profile = createMockProfile({ id: 'caregiver-1', role: 'caregiver' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
     mockGetCaregiver.mockResolvedValue(createMockCaregiver({ permissions: noPermissions }))

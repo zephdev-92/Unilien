@@ -136,7 +136,7 @@ export function LoginForm() {
                 color="blue.500"
                 fontSize="sm"
               >
-                <RouterLink to="/forgot-password">
+                <RouterLink to="/mot-de-passe-oublie">
                   Mot de passe oublié ?
                 </RouterLink>
               </Link>
@@ -159,7 +159,7 @@ export function LoginForm() {
         <Text textAlign="center" fontSize="md">
           Pas encore de compte ?{' '}
           <Link asChild color="blue.500" fontWeight="medium">
-            <RouterLink to="/signup">
+            <RouterLink to="/inscription">
               Créer un compte
             </RouterLink>
           </Link>

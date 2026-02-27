@@ -28,7 +28,7 @@ const actionsByRole: Record<UserRole, QuickAction[]> = {
     {
       label: 'Mes auxiliaires',
       icon: '👥',
-      href: '/team',
+      href: '/equipe',
       description: 'Gérer mon équipe',
     },
     {
@@ -42,7 +42,7 @@ const actionsByRole: Record<UserRole, QuickAction[]> = {
     {
       label: 'Pointer',
       icon: '⏱️',
-      href: '/clock-in',
+      href: '/pointage',
       description: 'Début/fin d\'intervention',
     },
     {
@@ -68,7 +68,7 @@ const actionsByRole: Record<UserRole, QuickAction[]> = {
     {
       label: 'Cahier de liaison',
       icon: '📖',
-      href: '/logbook',
+      href: '/cahier-de-liaison',
       description: 'Lire les dernières notes',
       permissionKey: 'canViewLiaison',
     },

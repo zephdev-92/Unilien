@@ -69,7 +69,7 @@ export function ComplianceWidget({ employerId }: ComplianceWidgetProps) {
         <Text fontSize="lg" fontWeight="semibold" color="gray.900">
           Conformité
         </Text>
-        <RouterLink to="/compliance">
+        <RouterLink to="/conformite">
           <AccessibleButton size="sm" variant="ghost" colorPalette="blue">
             Détails
           </AccessibleButton>

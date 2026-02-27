@@ -83,7 +83,7 @@ export function ResetPasswordForm() {
 
       // Rediriger vers login après 3 secondes
       setTimeout(() => {
-        navigate('/login')
+        navigate('/connexion')
       }, 3000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la réinitialisation')
@@ -134,7 +134,7 @@ export function ResetPasswordForm() {
             </Alert.Description>
           </Alert.Root>
           <Link asChild color="blue.500" fontWeight="medium">
-            <RouterLink to="/forgot-password">
+            <RouterLink to="/mot-de-passe-oublie">
               Demander un nouveau lien
             </RouterLink>
           </Link>

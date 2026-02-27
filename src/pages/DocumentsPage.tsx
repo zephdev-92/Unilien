@@ -79,7 +79,7 @@ export function DocumentsPage() {
 
   // Employeurs, aidants avec canExportData ou employés peuvent accéder
   if (!profile || (!canExport && profile.role !== 'employee')) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   // Générer les années disponibles (année actuelle et 2 précédentes)

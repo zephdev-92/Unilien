@@ -16,9 +16,9 @@ function TestApp({ initialEntries }: { initialEntries: string[] }) {
     <MemoryRouter initialEntries={initialEntries}>
       <RouteAnnouncer />
       <Routes>
-        <Route path="/dashboard" element={<PageA />} />
+        <Route path="/tableau-de-bord" element={<PageA />} />
         <Route path="/planning" element={<PageB />} />
-        <Route path="/login" element={<div>Login</div>} />
+        <Route path="/connexion" element={<div>Login</div>} />
       </Routes>
     </MemoryRouter>
   )
@@ -35,7 +35,7 @@ describe('RouteAnnouncer', () => {
   })
 
   it('rend la région aria-live sans texte au montage initial', () => {
-    render(<TestApp initialEntries={['/dashboard']} />)
+    render(<TestApp initialEntries={['/tableau-de-bord']} />)
     const region = screen.getByTestId('route-announcer')
 
     expect(region).toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('RouteAnnouncer', () => {
   })
 
   it('met à jour document.title dès le montage initial', () => {
-    render(<TestApp initialEntries={['/dashboard']} />)
+    render(<TestApp initialEntries={['/tableau-de-bord']} />)
     // Le title est mis à jour même sur le premier rendu
     expect(document.title).toBe('Tableau de bord — Unilien')
   })
@@ -64,7 +64,7 @@ describe('RouteAnnouncer', () => {
   })
 
   it("n'annonce pas la navigation initiale dans la région live", () => {
-    render(<TestApp initialEntries={['/dashboard']} />)
+    render(<TestApp initialEntries={['/tableau-de-bord']} />)
     act(() => { vi.runAllTimers() })
 
     const region = screen.getByTestId('route-announcer')
@@ -73,7 +73,7 @@ describe('RouteAnnouncer', () => {
   })
 
   it('est visuellement masqué (styles clip)', () => {
-    render(<TestApp initialEntries={['/dashboard']} />)
+    render(<TestApp initialEntries={['/tableau-de-bord']} />)
     const region = screen.getByTestId('route-announcer')
 
     expect(region).toHaveStyle({

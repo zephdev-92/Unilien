@@ -47,7 +47,7 @@ describe('QuickActionsWidget', () => {
       const hrefs = links.map((l) => l.getAttribute('href'))
       expect(hrefs).toContain('/logbook/new')
       expect(hrefs).toContain('/planning')
-      expect(hrefs).toContain('/team')
+      expect(hrefs).toContain('/equipe')
       expect(hrefs).toContain('/documents')
     })
   })
@@ -61,11 +61,11 @@ describe('QuickActionsWidget', () => {
       expect(screen.getByText('Déclarer absence')).toBeInTheDocument()
     })
 
-    it("le lien 'Pointer' pointe vers /clock-in", () => {
+    it("le lien 'Pointer' pointe vers /pointage", () => {
       renderWithProviders(<QuickActionsWidget userRole="employee" />)
       const links = screen.getAllByRole('link')
       const hrefs = links.map((l) => l.getAttribute('href'))
-      expect(hrefs).toContain('/clock-in')
+      expect(hrefs).toContain('/pointage')
     })
   })
 

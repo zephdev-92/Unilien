@@ -133,11 +133,11 @@ describe('ComplianceWidget', () => {
       })
     })
 
-    it('affiche le lien vers /compliance', async () => {
+    it('affiche le lien vers /conformite', async () => {
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
         const link = screen.getByRole('link', { name: /détails/i })
-        expect(link).toHaveAttribute('href', '/compliance')
+        expect(link).toHaveAttribute('href', '/conformite')
       })
     })
   })

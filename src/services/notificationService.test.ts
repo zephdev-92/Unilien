@@ -77,7 +77,7 @@ function createMockNotificationDbRow(overrides: Record<string, unknown> = {}) {
     title: 'Notification titre',
     message: 'Notification message',
     data: {},
-    action_url: '/dashboard',
+    action_url: '/tableau-de-bord',
     is_read: false,
     is_dismissed: false,
     created_at: '2026-01-15T10:00:00.000Z',
@@ -296,13 +296,13 @@ describe('createNotification', () => {
       title: 'Alert',
       message: 'Critical',
       data: { employeeName: 'Jean' },
-      actionUrl: '/compliance',
+      actionUrl: '/conformite',
     })
 
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_priority: 'urgent',
       p_data: { employeeName: 'Jean' },
-      p_action_url: '/compliance',
+      p_action_url: '/conformite',
     }))
   })
 
@@ -686,7 +686,7 @@ describe('createComplianceWarningNotification', () => {
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_type: 'compliance_warning',
       p_priority: 'high',
-      p_action_url: '/compliance',
+      p_action_url: '/conformite',
     }))
   })
 
@@ -854,13 +854,13 @@ describe('createMessageNotification', () => {
     })
   })
 
-  it('crée une notification de message avec actionUrl /liaison', async () => {
+  it('crée une notification de message avec actionUrl /messagerie', async () => {
     await createMessageNotification(USER_ID, 'Jean Martin', 'Bonjour, comment allez-vous ?')
 
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_type: 'message_received',
       p_title: 'Nouveau message',
-      p_action_url: '/liaison',
+      p_action_url: '/messagerie',
     }))
   })
 
@@ -899,7 +899,7 @@ describe('createTeamMemberAddedNotification', () => {
     expect(result).not.toBeNull()
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_type: 'team_member_added',
-      p_action_url: '/dashboard',
+      p_action_url: '/tableau-de-bord',
     }))
   })
 
@@ -1162,7 +1162,7 @@ describe('createLogEntryDirectedNotification', () => {
     expect(result).not.toBeNull()
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_type: 'logbook_entry_directed',
-      p_action_url: '/logbook',
+      p_action_url: '/cahier-de-liaison',
     }))
   })
 })
@@ -1190,7 +1190,7 @@ describe('createPermissionsUpdatedNotification', () => {
     expect(result).not.toBeNull()
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_type: 'permissions_updated',
-      p_action_url: '/dashboard',
+      p_action_url: '/tableau-de-bord',
       p_data: expect.objectContaining({ employerName: 'Famille Martin' }),
     }))
   })

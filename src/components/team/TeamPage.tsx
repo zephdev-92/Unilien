@@ -69,7 +69,7 @@ export function TeamPage() {
   }
 
   if (userRole === 'caregiver' && !currentCaregiver?.permissions?.canManageTeam) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   const canViewAuxiliaries = isEmployer || !!currentCaregiver?.permissions?.canManageTeam
