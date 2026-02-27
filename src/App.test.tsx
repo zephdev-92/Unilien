@@ -77,7 +77,7 @@ describe('App', () => {
         isInitialized: false,
         userRole: null,
       })
-      renderApp('/login')
+      renderApp('/connexion')
       expect(screen.getByText('Chargement...')).toBeInTheDocument()
     })
 
@@ -88,94 +88,94 @@ describe('App', () => {
         isInitialized: false,
         userRole: null,
       })
-      renderApp('/dashboard')
+      renderApp('/tableau-de-bord')
       expect(screen.getByText('Chargement...')).toBeInTheDocument()
     })
   })
 
   describe('PublicRoute', () => {
     it('affiche le formulaire de login quand non connecté', () => {
-      renderApp('/login')
+      renderApp('/connexion')
       expect(screen.getByTestId('login-form')).toBeInTheDocument()
     })
 
-    it('redirige vers /dashboard si déjà connecté (depuis /login)', async () => {
+    it('redirige vers /tableau-de-bord si déjà connecté (depuis /connexion)', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
       })
-      renderApp('/login')
+      renderApp('/connexion')
       await waitFor(() => {
         expect(screen.getByTestId('dashboard')).toBeInTheDocument()
       })
     })
 
-    it('affiche /signup pour un utilisateur non connecté', () => {
-      renderApp('/signup')
+    it('affiche /inscription pour un utilisateur non connecté', () => {
+      renderApp('/inscription')
       expect(screen.getByTestId('signup-form')).toBeInTheDocument()
     })
 
-    it('affiche /forgot-password pour un utilisateur non connecté', () => {
-      renderApp('/forgot-password')
+    it('affiche /mot-de-passe-oublie pour un utilisateur non connecté', () => {
+      renderApp('/mot-de-passe-oublie')
       expect(screen.getByTestId('forgot-password-form')).toBeInTheDocument()
     })
   })
 
   describe('ProtectedRoute', () => {
-    it('redirige vers /login si non connecté (depuis /dashboard)', () => {
-      renderApp('/dashboard')
+    it('redirige vers /connexion si non connecté (depuis /tableau-de-bord)', () => {
+      renderApp('/tableau-de-bord')
       expect(screen.getByTestId('login-form')).toBeInTheDocument()
     })
 
-    it('affiche /dashboard pour un utilisateur connecté', async () => {
+    it('affiche /tableau-de-bord pour un utilisateur connecté', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
       })
-      renderApp('/dashboard')
+      renderApp('/tableau-de-bord')
       await waitFor(() => {
         expect(screen.getByTestId('dashboard')).toBeInTheDocument()
       })
     })
 
-    it('redirige vers /dashboard si le rôle n\'est pas autorisé (/clock-in pour employer)', async () => {
+    it('redirige vers /tableau-de-bord si le rôle n\'est pas autorisé (/pointage pour employer)', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
       })
-      renderApp('/clock-in')
+      renderApp('/pointage')
       await waitFor(() => {
         expect(screen.getByTestId('dashboard')).toBeInTheDocument()
       })
     })
 
-    it('affiche /clock-in pour un employé', async () => {
+    it('affiche /pointage pour un employé', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
         userRole: 'employee',
       })
-      renderApp('/clock-in')
+      renderApp('/pointage')
       await waitFor(() => {
         expect(screen.getByTestId('clock-in-page')).toBeInTheDocument()
       })
     })
 
-    it('affiche /team pour employer', async () => {
+    it('affiche /equipe pour employer', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
       })
-      renderApp('/team')
+      renderApp('/equipe')
       await waitFor(() => {
         expect(screen.getByTestId('team-page')).toBeInTheDocument()
       })
@@ -190,8 +190,8 @@ describe('App', () => {
       })
     })
 
-    it('affiche /reset-password sans PublicRoute', () => {
-      renderApp('/reset-password')
+    it('affiche /reinitialisation sans PublicRoute', () => {
+      renderApp('/reinitialisation')
       expect(screen.getByTestId('reset-password-form')).toBeInTheDocument()
     })
 

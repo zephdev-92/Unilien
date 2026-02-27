@@ -99,10 +99,10 @@ export function HomePage() {
                 <RouterLink to="/contact">Contact</RouterLink>
               </Link>
               <Link asChild color="gray.600" _hover={{ color: 'brand.500' }}>
-                <RouterLink to="/login">Connexion</RouterLink>
+                <RouterLink to="/connexion">Connexion</RouterLink>
               </Link>
               <AccessibleButton asChild colorPalette="blue" size="sm">
-                <RouterLink to="/signup">S'inscrire gratuitement</RouterLink>
+                <RouterLink to="/inscription">S'inscrire gratuitement</RouterLink>
               </AccessibleButton>
             </Flex>
           </Flex>
@@ -138,7 +138,7 @@ export function HomePage() {
                 </Text>
                 <Flex gap={4} flexWrap="wrap">
                   <AccessibleButton asChild colorPalette="blue" size="lg">
-                    <RouterLink to="/signup">Commencer gratuitement</RouterLink>
+                    <RouterLink to="/inscription">Commencer gratuitement</RouterLink>
                   </AccessibleButton>
                   <AccessibleButton asChild variant="outline" size="lg">
                     <RouterLink to="/contact">Nous contacter</RouterLink>
@@ -254,7 +254,7 @@ export function HomePage() {
                 </Flex>
               </Stack>
               <AccessibleButton asChild colorPalette="blue" mt={6}>
-                <RouterLink to="/signup?role=employer">S'inscrire comme employeur</RouterLink>
+                <RouterLink to="/inscription?role=employer">S'inscrire comme employeur</RouterLink>
               </AccessibleButton>
             </Box>
 
@@ -281,7 +281,7 @@ export function HomePage() {
                 </Flex>
               </Stack>
               <AccessibleButton asChild colorPalette="green" mt={6}>
-                <RouterLink to="/signup?role=employee">S'inscrire comme auxiliaire</RouterLink>
+                <RouterLink to="/inscription?role=employee">S'inscrire comme auxiliaire</RouterLink>
               </AccessibleButton>
             </Box>
           </Grid>
@@ -331,7 +331,7 @@ export function HomePage() {
             </Text>
             <Flex gap={4}>
               <AccessibleButton asChild size="lg" bg="white" color="brand.500" _hover={{ bg: 'gray.100' }}>
-                <RouterLink to="/signup">Créer un compte gratuit</RouterLink>
+                <RouterLink to="/inscription">Créer un compte gratuit</RouterLink>
               </AccessibleButton>
               <AccessibleButton asChild size="lg" variant="outline" borderColor="white" color="white" _hover={{ bg: 'whiteAlpha.200' }}>
                 <RouterLink to="/contact">Nous contacter</RouterLink>
@@ -360,10 +360,10 @@ export function HomePage() {
                 Produit
               </Text>
               <Link asChild color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
-                <RouterLink to="/signup">S'inscrire</RouterLink>
+                <RouterLink to="/inscription">S'inscrire</RouterLink>
               </Link>
               <Link asChild color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
-                <RouterLink to="/login">Connexion</RouterLink>
+                <RouterLink to="/connexion">Connexion</RouterLink>
               </Link>
             </Stack>
 

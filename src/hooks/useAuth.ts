@@ -246,7 +246,7 @@ export function useAuth() {
         )
         if (profile) setProfile(profile)
 
-        navigate('/dashboard')
+        navigate('/tableau-de-bord')
         return { success: true }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Erreur de connexion'
@@ -265,7 +265,7 @@ export function useAuth() {
       setLoading(true)
       await supabase.auth.signOut()
       reset()
-      navigate('/login')
+      navigate('/connexion')
     } catch (err) {
       logger.error('Erreur déconnexion:', err)
     } finally {
@@ -280,7 +280,7 @@ export function useAuth() {
       setError(null)
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/reinitialisation`,
       })
 
       if (error) {

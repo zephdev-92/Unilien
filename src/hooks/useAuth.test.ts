@@ -240,7 +240,7 @@ describe('useAuth', () => {
       })
 
       expect(signInResult!.success).toBe(true)
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
+      expect(mockNavigate).toHaveBeenCalledWith('/tableau-de-bord')
       expect(mockSignInWithPassword).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
@@ -327,7 +327,7 @@ describe('useAuth', () => {
       })
 
       expect(mockSignOut).toHaveBeenCalled()
-      expect(mockNavigate).toHaveBeenCalledWith('/login')
+      expect(mockNavigate).toHaveBeenCalledWith('/connexion')
     })
 
     it('devrait réinitialiser le store après déconnexion', async () => {
@@ -364,7 +364,7 @@ describe('useAuth', () => {
       expect(mockResetPasswordForEmail).toHaveBeenCalledWith(
         'test@example.com',
         expect.objectContaining({
-          redirectTo: expect.stringContaining('/reset-password'),
+          redirectTo: expect.stringContaining('/reinitialisation'),
         })
       )
     })

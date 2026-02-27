@@ -113,7 +113,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
           asChild
           accessibleLabel="Voir tout le cahier de liaison"
         >
-          <RouterLink to="/logbook">Voir tout</RouterLink>
+          <RouterLink to="/cahier-de-liaison">Voir tout</RouterLink>
         </AccessibleButton>
       </Flex>
 

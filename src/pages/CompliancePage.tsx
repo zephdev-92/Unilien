@@ -43,13 +43,13 @@ export function CompliancePage() {
   const isCaregiverWithAccess = profile.role === 'caregiver' && caregiver?.permissions?.canExportData
 
   if (!isEmployer && !isCaregiverWithAccess) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   const employerId = isEmployer ? profile.id : caregiver?.employerId
 
   if (!employerId) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   return (

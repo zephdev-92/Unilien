@@ -121,10 +121,10 @@ export function ContactPage() {
                 <RouterLink to="/">Accueil</RouterLink>
               </Link>
               <Link asChild color="gray.600" _hover={{ color: 'brand.500' }}>
-                <RouterLink to="/login">Connexion</RouterLink>
+                <RouterLink to="/connexion">Connexion</RouterLink>
               </Link>
               <AccessibleButton asChild colorPalette="blue" size="sm">
-                <RouterLink to="/signup">S'inscrire</RouterLink>
+                <RouterLink to="/inscription">S'inscrire</RouterLink>
               </AccessibleButton>
             </Flex>
           </Flex>
@@ -310,10 +310,10 @@ export function ContactPage() {
                 <RouterLink to="/">Accueil</RouterLink>
               </Link>
               <Link asChild color="gray.600" fontSize="sm" _hover={{ color: 'brand.500' }}>
-                <RouterLink to="/login">Connexion</RouterLink>
+                <RouterLink to="/connexion">Connexion</RouterLink>
               </Link>
               <Link asChild color="gray.600" fontSize="sm" _hover={{ color: 'brand.500' }}>
-                <RouterLink to="/signup">S'inscrire</RouterLink>
+                <RouterLink to="/inscription">S'inscrire</RouterLink>
               </Link>
             </Flex>
           </Flex>

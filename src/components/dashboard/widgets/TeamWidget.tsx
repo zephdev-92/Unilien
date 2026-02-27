@@ -62,7 +62,7 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
         <Text fontSize="lg" fontWeight="semibold" color="gray.900">
           Mon équipe
         </Text>
-        <RouterLink to="/team">
+        <RouterLink to="/equipe">
           <AccessibleButton size="sm" variant="ghost" colorPalette="blue">
             Voir tout
           </AccessibleButton>
@@ -81,7 +81,7 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
           <Text color="gray.600" mb={4}>
             Aucun auxiliaire actif
           </Text>
-          <RouterLink to="/team">
+          <RouterLink to="/equipe">
             <AccessibleButton size="sm" colorPalette="blue">
               Ajouter un auxiliaire
             </AccessibleButton>

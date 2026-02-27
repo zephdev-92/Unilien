@@ -152,12 +152,12 @@ describe('TeamWidget', () => {
   })
 
   describe('Liens de navigation', () => {
-    it('affiche le lien "Voir tout" vers /team', async () => {
+    it('affiche le lien "Voir tout" vers /equipe', async () => {
       mockGetActiveAuxiliariesForEmployer.mockResolvedValue([])
       renderWithProviders(<TeamWidget employerId="employer-1" />)
       await waitFor(() => {
         const links = screen.getAllByRole('link')
-        const teamLink = links.find((l) => l.getAttribute('href') === '/team')
+        const teamLink = links.find((l) => l.getAttribute('href') === '/equipe')
         expect(teamLink).toBeInTheDocument()
       })
     })

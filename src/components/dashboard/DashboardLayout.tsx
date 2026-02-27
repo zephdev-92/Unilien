@@ -28,13 +28,13 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Tableau de bord', href: '/dashboard', icon: '🏠', ariaLabel: 'Aller au tableau de bord' },
-  { label: 'Mon équipe', href: '/team', icon: '👥', ariaLabel: 'Gérer mes auxiliaires', roles: ['employer'] },
-  { label: 'Conformité', href: '/compliance', icon: '⚖️', ariaLabel: 'Voir la conformité', roles: ['employer'] },
+  { label: 'Tableau de bord', href: '/tableau-de-bord', icon: '🏠', ariaLabel: 'Aller au tableau de bord' },
+  { label: 'Mon équipe', href: '/equipe', icon: '👥', ariaLabel: 'Gérer mes auxiliaires', roles: ['employer'] },
+  { label: 'Conformité', href: '/conformite', icon: '⚖️', ariaLabel: 'Voir la conformité', roles: ['employer'] },
   { label: 'Planning', href: '/planning', icon: '📅', ariaLabel: 'Voir le planning' },
-  { label: 'Messagerie', href: '/liaison', icon: '💬', ariaLabel: 'Ouvrir la messagerie en temps réel' },
-  { label: 'Cahier de liaison', href: '/logbook', icon: '📝', ariaLabel: 'Ouvrir le cahier de liaison' },
-  { label: 'Paramètres', href: '/settings', icon: '⚙️', ariaLabel: 'Accéder aux paramètres' },
+  { label: 'Messagerie', href: '/messagerie', icon: '💬', ariaLabel: 'Ouvrir la messagerie en temps réel' },
+  { label: 'Cahier de liaison', href: '/cahier-de-liaison', icon: '📝', ariaLabel: 'Ouvrir le cahier de liaison' },
+  { label: 'Paramètres', href: '/parametres', icon: '⚙️', ariaLabel: 'Accéder aux paramètres' },
 ]
 
 interface DashboardLayoutProps {
@@ -236,11 +236,11 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
               // Cas spéciaux pour les aidants avec permissions avancées
               if (userRole === 'caregiver') {
                 // "Mon équipe" visible pour les aidants avec canManageTeam
-                if (item.href === '/team' && caregiverPermissions?.canManageTeam) {
+                if (item.href === '/equipe' && caregiverPermissions?.canManageTeam) {
                   return true
                 }
                 // "Conformité" visible pour les aidants avec canExportData
-                if (item.href === '/compliance' && caregiverPermissions?.canExportData) {
+                if (item.href === '/conformite' && caregiverPermissions?.canExportData) {
                   return true
                 }
               }

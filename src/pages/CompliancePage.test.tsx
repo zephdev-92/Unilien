@@ -92,7 +92,7 @@ describe('CompliancePage', () => {
   })
 
   // 3. Redirection si role=employee (ni employer, ni caregiver avec accès)
-  it('redirige vers /dashboard si le rôle est employee', async () => {
+  it('redirige vers /tableau-de-bord si le rôle est employee', async () => {
     const profile = createMockProfile({ role: 'employee' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
@@ -104,7 +104,7 @@ describe('CompliancePage', () => {
   })
 
   // 4. Redirection si caregiver sans canExportData
-  it('redirige vers /dashboard si caregiver sans canExportData', async () => {
+  it('redirige vers /tableau-de-bord si caregiver sans canExportData', async () => {
     const profile = createMockProfile({ id: 'caregiver-1', role: 'caregiver' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
     const caregiver = createMockCaregiver({ permissions: noPermissions })

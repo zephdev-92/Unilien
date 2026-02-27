@@ -98,7 +98,7 @@ export function SignupForm() {
     })
 
     if (result.success) {
-      navigate('/login?registered=true')
+      navigate('/connexion?registered=true')
     }
   }
 
@@ -139,7 +139,7 @@ export function SignupForm() {
                 <>
                   {' '}
                   <Link asChild color="red.700" fontWeight="semibold" textDecoration="underline">
-                    <RouterLink to="/login">Se connecter</RouterLink>
+                    <RouterLink to="/connexion">Se connecter</RouterLink>
                   </Link>
                 </>
               )}
@@ -260,7 +260,7 @@ export function SignupForm() {
         <Text textAlign="center" fontSize="md">
           Déjà un compte ?{' '}
           <Link asChild color="blue.500" fontWeight="medium">
-            <RouterLink to="/login">
+            <RouterLink to="/connexion">
               Se connecter
             </RouterLink>
           </Link>

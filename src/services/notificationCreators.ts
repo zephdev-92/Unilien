@@ -49,7 +49,7 @@ export async function createComplianceWarningNotification(
     priority: 'high',
     title: content.title,
     message: content.message,
-    actionUrl: '/compliance',
+    actionUrl: '/conformite',
     data: {
       employeeName,
       violationType,
@@ -98,7 +98,7 @@ export async function createComplianceCriticalNotification(
     priority: 'urgent',
     title: content.title,
     message: content.message,
-    actionUrl: '/compliance',
+    actionUrl: '/conformite',
     data: {
       employeeName,
       violationType,
@@ -149,7 +149,7 @@ export async function createMessageNotification(
     priority: 'normal',
     title: 'Nouveau message',
     message: `${senderName}: ${messagePreview.substring(0, 100)}${messagePreview.length > 100 ? '...' : ''}`,
-    actionUrl: '/liaison',
+    actionUrl: '/messagerie',
     data: { senderName, messagePreview },
   })
 }
@@ -169,7 +169,7 @@ export async function createTeamMemberAddedNotification(
       priority: 'normal',
       title: 'Ajout à une équipe',
       message: `${employerName} vous a ajouté comme aidant à son équipe.`,
-      actionUrl: '/dashboard',
+      actionUrl: '/tableau-de-bord',
     })
   } catch (err) {
     logger.error('Erreur notification ajout aidant:', err)
@@ -188,7 +188,7 @@ export async function createTeamMemberRemovedNotification(
       priority: 'high',
       title: 'Retrait d\'une équipe',
       message: `Vous avez été retiré de l'équipe de ${employerName}.`,
-      actionUrl: '/dashboard',
+      actionUrl: '/tableau-de-bord',
     })
   } catch (err) {
     logger.error('Erreur notification retrait aidant:', err)
@@ -212,7 +212,7 @@ export async function createContractCreatedNotification(
       priority: 'normal',
       title: 'Nouveau contrat',
       message: `${employerName} a créé un contrat ${contractType} avec vous.`,
-      actionUrl: '/dashboard',
+      actionUrl: '/tableau-de-bord',
       data: { employerName, contractType },
     })
   } catch (err) {
@@ -232,7 +232,7 @@ export async function createContractTerminatedNotification(
       priority: 'high',
       title: 'Fin de contrat',
       message: `Votre contrat avec ${employerName} a été terminé.`,
-      actionUrl: '/dashboard',
+      actionUrl: '/tableau-de-bord',
       data: { employerName },
     })
   } catch (err) {
@@ -348,7 +348,7 @@ export async function createUrgentLogEntryNotification(
         priority: 'urgent' as NotificationPriority,
         title: 'Entrée urgente au cahier',
         message: `${authorName} : ${preview}`,
-        actionUrl: '/logbook',
+        actionUrl: '/cahier-de-liaison',
         data: { authorName, contentPreview: preview },
       }))
     )
@@ -372,7 +372,7 @@ export async function createLogEntryDirectedNotification(
       priority: 'normal',
       title: 'Nouvelle entrée au cahier',
       message: `${authorName} vous a adressé une note : ${preview}`,
-      actionUrl: '/logbook',
+      actionUrl: '/cahier-de-liaison',
       data: { authorName, contentPreview: preview },
     })
   } catch (err) {
@@ -396,7 +396,7 @@ export async function createPermissionsUpdatedNotification(
       priority: 'normal',
       title: 'Permissions modifiées',
       message: `${employerName} a mis à jour vos permissions d'accès.`,
-      actionUrl: '/dashboard',
+      actionUrl: '/tableau-de-bord',
       data: { employerName },
     })
   } catch (err) {
