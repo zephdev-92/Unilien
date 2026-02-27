@@ -35,7 +35,7 @@ import {
   type MonthlyDeclarationData,
 } from '@/lib/export'
 import { getCaregiver } from '@/services/caregiverService'
-import { DocumentManagementSection, PayslipSection } from '@/components/documents'
+import { DocumentManagementSection, PayslipSection, PlanningExportSection } from '@/components/documents'
 import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
@@ -77,8 +77,8 @@ export function DocumentsPage() {
     )
   }
 
-  // Employeurs ou aidants avec canExportData peuvent accéder
-  if (!profile || !canExport) {
+  // Employeurs, aidants avec canExportData ou employés peuvent accéder
+  if (!profile || (!canExport && profile.role !== 'employee')) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -176,6 +176,9 @@ export function DocumentsPage() {
               </Tabs.Trigger>
               <Tabs.Trigger value="documents">
                 Gestion des documents
+              </Tabs.Trigger>
+              <Tabs.Trigger value="planning">
+                Planning
               </Tabs.Trigger>
             </Tabs.List>
 
@@ -494,6 +497,25 @@ export function DocumentsPage() {
                       <Alert.Title>Impossible de charger les documents</Alert.Title>
                     </Alert.Root>
                   )}
+                </Card.Body>
+              </Card.Root>
+            </Tabs.Content>
+
+            {/* Onglet Export Planning */}
+            <Tabs.Content value="planning" pt={6}>
+              <Card.Root>
+                <Card.Header>
+                  <Card.Title>Export du planning</Card.Title>
+                  <Card.Description>
+                    Exportez le planning mensuel en PDF, Excel ou iCal
+                  </Card.Description>
+                </Card.Header>
+                <Card.Body>
+                  <PlanningExportSection
+                    employerId={effectiveEmployerId ?? ''}
+                    profileRole={profile.role as 'employer' | 'employee' | 'caregiver'}
+                    profileId={profile.id}
+                  />
                 </Card.Body>
               </Card.Root>
             </Tabs.Content>

@@ -34,6 +34,7 @@ vi.mock('@/components/documents', () => ({
     <div data-testid="doc-section" data-employer-id={employerId} />
   ),
   PayslipSection: () => <div data-testid="payslip-section" />,
+  PlanningExportSection: () => <div data-testid="planning-export-section" />,
 }))
 
 // ── Imports après mocks ────────────────────────────────────────────────────────
@@ -90,15 +91,15 @@ describe('DocumentsPage', () => {
     expect(screen.queryByTestId('doc-section')).not.toBeInTheDocument()
   })
 
-  // 2. Redirection si role=employee (pas employer, pas caregiver avec accès)
-  it('redirige vers /dashboard si le rôle est employee', async () => {
+  // 2. Un employé peut accéder à la page (onglet Planning visible)
+  it('affiche la page pour un role=employee (acces planning)', async () => {
     const profile = createMockProfile({ role: 'employee' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      expect(screen.queryByText('Documents et Déclarations')).not.toBeInTheDocument()
+      expect(screen.getByText('Documents et Déclarations')).toBeInTheDocument()
     })
   })
 
