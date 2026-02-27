@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 26 février 2026 (Sprint refactoring architectural — 6 composants décomposés, database.ts typé, fix absence_type constraint, 1651 tests)
-**Version**: 1.6.0
+**Dernière mise à jour**: 27 février 2026 (Coverage 70%+ — 1897 tests / 97 fichiers, PCH N1-N3, bulletins v2, RouteAnnouncer, TeamPage/EmployeeSection décomposés)
+**Version**: 1.7.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -20,7 +20,7 @@
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~60% | ✅ Bon (1651 tests / 81 fichiers, 8/8 hooks testés ✅) |
+| **Tests** | ~70% | ✅ Excellent (1897 tests / 97 fichiers, 8/8 hooks testés ✅) |
 | **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
 | **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
 
@@ -28,7 +28,7 @@
 
 - **Fichiers source**: ~140 fichiers TS/TSX
 - **Lignes de code**: ~16,000 lignes
-- **Tests**: 1651 tests / 81 fichiers (~60% coverage)
+- **Tests**: 1897 tests / 97 fichiers (70%+ coverage)
 - **Migrations DB**: 32 migrations
 - **Composants UI**: ~75 composants
 - **Services**: 15 services (+ absenceJustificationService + caregiverTeamService)
@@ -94,13 +94,13 @@ Pour les shifts `presence_day` un dimanche ou jour férié, `sundayMajoration` e
 | #91 ✅ | `feat/error-boundaries` | `<ErrorBoundary>` autour de chaque route protégée dans `App.tsx` (9 routes) |
 | #92 ✅ | `fix/calculatepay-presence-day-sunday` | **CRITIQUE** : majoration dimanche/férié sur `presenceResponsiblePay` pour `presence_day` |
 
-#### Sprint qualité — PRs ouvertes
+#### Sprint qualité — PRs mergées (suite)
 
 | PR | Branche | Description |
 |----|---------|-------------|
-| #93 🔄 | `fix/usenotifications-double-render` | Double `setNotifications` dans UPDATE/DELETE/dismiss → un seul updater (−1 re-render par event) |
-| #94 🔄 | `fix/shift-validation-query-window` | Fenêtre requête shifts validation : 3 mois → ±4 semaines (suffisant pour toutes les règles IDCC 3239) |
-| #95 🔄 | `refactor/shiftdetailmodal-usereducer` | 13 `useState` → 1 `useReducer` + 20 actions typées dans `ShiftDetailModal` + fenêtre requête fixes |
+| #93 ✅ | `fix/usenotifications-double-render` | Double `setNotifications` dans UPDATE/DELETE/dismiss → un seul updater (−1 re-render par event) |
+| #94 ✅ | `fix/shift-validation-query-window` | Fenêtre requête shifts validation : 3 mois → ±4 semaines (suffisant pour toutes les règles IDCC 3239) |
+| #95 ✅ | `refactor/shiftdetailmodal-usereducer` | 13 `useState` → 1 `useReducer` + 20 actions typées dans `ShiftDetailModal` + fenêtre requête fixes |
 
 #### Métriques session (24/02/2026)
 
@@ -551,7 +551,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Effort**: 6-8 semaines (Phase 1+2 terminées en 1 jour)
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: ~60% coverage — 1651 tests / 81 fichiers (cible Q1 30% ✅ atteinte, cible finale: 70%)
+**État actuel**: 70%+ coverage — 1897 tests / 97 fichiers ✅ (cibles Q1 30% et 70% atteintes — PR #121)
 
 **Services testés (13/13)** ✅ Phase 1 terminée (12/02/2026):
 ```
@@ -594,14 +594,14 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 ```
 [x] Corriger vitest.config.ts (coverage global) - 15 min
 [x] Tester tous les services restants - ✅ terminé 12/02/2026
-[ ] Setup GitHub Actions coverage - 30 min
+[x] Setup GitHub Actions coverage (pr-checks.yml) - ✅ Semaine 9/2026
 ```
 
-**Prochaines étapes tests (pour atteindre 60%+)**:
+**Prochaines étapes tests (pour atteindre 70%+)**:
 ```
-[ ] useComplianceMonitor.test.ts — hook complexe (monitoring continu)
-[ ] usePushNotifications.test.ts — hook push notifications
-[ ] Composants UI critiques (dashboard widgets, planning views)
+[x] useComplianceMonitor.test.ts — ✅ 17/02/2026 (PR #71)
+[x] usePushNotifications.test.ts — ✅ 17/02/2026 (PR #71)
+[x] Composants UI critiques (dashboard widgets, planning views) — ✅ Semaine 9/2026
 [ ] Export PDF/CESU (cesuGenerator, pdfGenerator)
 [ ] Tests E2E (Playwright — Phase 4)
 ```
@@ -731,8 +731,8 @@ Aucune `aria-live` region détectée pour les alertes dynamiques (conformité, n
 [x] ClockInPage : aria-live sur majoration nuit, aria-pressed sur filtres historique (10/02/2026)
 [x] ClockInPage : aria-hidden sur 7 emojis décoratifs (10/02/2026)
 [x] ClockInPage : accessibleLabel sur bouton Annuler, htmlFor/id sur switch nuit (10/02/2026)
-[ ] Ajouter aria-live="assertive" sur les alertes de conformité critiques
-[ ] Ajouter aria-live="polite" sur les notifications, indicateurs de frappe
+[x] Ajouter aria-live sur les alertes de conformité critiques — ComplianceAlert.tsx : role="alert" + aria-live="polite" ✅
+[x] Ajouter aria-live="polite" sur les notifications — NotificationBell + NotificationsPanel ✅
 [ ] Tester avec NVDA/VoiceOver
 ```
 
@@ -745,9 +745,9 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 **Actions**:
 ```
 [x] ClockInPage : focus géré après clock-in, clock-out et annulation via useRef (10/02/2026)
-[ ] Implémenter un hook useRouteAnnouncer() ou composant <RouteAnnouncer />
-[ ] Déplacer le focus vers le h1 de la nouvelle page après navigation
-[ ] Annoncer le titre de la page aux lecteurs d'écran
+[x] Implémenter un hook useRouteAnnouncer() ou composant <RouteAnnouncer /> — ✅ PR #120 (25/02/2026)
+[x] Déplacer le focus vers le h1 de la nouvelle page après navigation — ✅ PR #120
+[x] Annoncer le titre de la page aux lecteurs d'écran — ✅ PR #120
 ```
 
 **Effort**: 1h
@@ -883,9 +883,9 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 [x] Exonération cotisations patronales SS (Art. L241-10 CSS — employeurs PCH/invalide/MTP/PCTP)
 [x] Génération PDF (jsPDF) — téléchargement direct
 [x] Onglet "Bulletins de paie" dans DocumentManagementSection
-[ ] Stockage documents (Supabase Storage) — v2
-[ ] Historique bulletins (table DB) — v2
-[ ] Taux PAS configurable par employé (contrats) — v2
+[x] Stockage documents (Supabase Storage) — v2 ✅ PR #117
+[x] Historique bulletins (table DB) — v2 ✅ PR #117
+[x] Taux PAS configurable par employé (contrats) — v2 ✅ PR #117
 ```
 
 ---
@@ -900,16 +900,16 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 #### 6b.1 Données employeur PCH (Niveau 1 — sprint court)
 
-**Effort** : 2 jours · **Timeline** : Semaine 10/2026
+**Effort** : 2 jours · **Timeline** : ✅ Terminé (PR #98 — 25/02/2026)
 
 ```
-[ ] Enrichir type Employer : pchType ('emploiDirect'|'mandataire'|'prestataire'|'aidantFamilial')
-[ ] Enrichir type Employer : pchMonthlyHours (heures allouées par le plan de compensation)
-[ ] Enrichir type Employer : pchElement1Rate (tarif horaire PCH auto-calculé via pchType)
-[ ] Migration DB : pch_type, pch_monthly_hours, pch_element1_rate
-[ ] Mettre à jour EmployerSection.tsx (nouveaux champs + sélecteur pchType)
-[ ] Créer src/lib/pch/pchTariffs.ts avec constantes 2026
-[ ] Auto-suggestion exonération SS si pchBeneficiary === true (bulletin de paie)
+[x] Enrichir type Employer : pchType ('emploiDirect'|'mandataire'|'prestataire'|'aidantFamilial')
+[x] Enrichir type Employer : pchMonthlyHours (heures allouées par le plan de compensation)
+[x] Enrichir type Employer : pchElement1Rate (tarif horaire PCH auto-calculé via pchType)
+[x] Migration DB : pch_type, pch_monthly_hours, pch_element1_rate
+[x] Mettre à jour EmployerSection.tsx (nouveaux champs + sélecteur pchType)
+[x] Créer src/lib/pch/pchTariffs.ts avec constantes 2026
+[x] Auto-suggestion exonération SS si pchBeneficiary === true (bulletin de paie)
 ```
 
 **Constantes PCH 2026 à intégrer** :
@@ -925,14 +925,14 @@ aidantFamilialCessation : 7,16 €/h
 
 #### 6b.2 Widget Enveloppe PCH — Dashboard (Niveau 2)
 
-**Effort** : 2 jours · **Timeline** : Semaine 11/2026
+**Effort** : 2 jours · **Timeline** : ✅ Terminé (PR #98 — 25/02/2026)
 
 ```
-[ ] Composant PchEnvelopeWidget dans EmployerDashboard
-[ ] Calcul mensuel : consommé (coût total employeur) vs alloué (pchMonthlyHours × tarif)
-[ ] Barre de progression avec reste à charge
-[ ] Alerte si dépassement prévu en fin de mois
-[ ] Comparaison avec / sans exonération patronale SS
+[x] Composant PchEnvelopeWidget dans EmployerDashboard
+[x] Calcul mensuel : consommé (coût total employeur) vs alloué (pchMonthlyHours × tarif)
+[x] Barre de progression avec reste à charge
+[x] Alerte si dépassement prévu en fin de mois
+[x] Comparaison avec / sans exonération patronale SS
 ```
 
 **Formule reste à charge** :
@@ -944,13 +944,13 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 #### 6b.3 Bulletin de paie — Section PCH (Niveau 3)
 
-**Effort** : 1 jour · **Timeline** : Semaine 12/2026
+**Effort** : 1 jour · **Timeline** : ✅ Terminé (PR #98 — 25/02/2026)
 
 ```
-[ ] Section "Récapitulatif PCH" dans le PDF généré
+[x] Section "Récapitulatif PCH" dans le PDF généré
     → Enveloppe allouée / coût réel / reste à charge
-[ ] Mention exonération auto si pchBeneficiary === true
-[ ] Note légale : "PCH versée par le Conseil Départemental"
+[x] Mention exonération auto si pchBeneficiary === true
+[x] Note légale : "PCH versée par le Conseil Départemental"
 ```
 
 #### 6b.4 Module PCH complet (Niveau 4 — long terme)
@@ -1307,21 +1307,21 @@ Fichiers identifiés le 24/02/2026 comme candidats prioritaires au découpage (s
 
 | Fichier | Lignes | Type | Statut |
 |---------|--------|------|--------|
-| `components/planning/NewShiftModal.tsx` | ~831 | Composant | 🟡 En attente |
+| `components/planning/NewShiftModal.tsx` | ~811 | Composant | ✅ Décomposé (PR #109) → `useNewShiftForm`, `Guard24hSection`, `ShiftHoursSummary` |
 | `services/notificationService.ts` | ~400 | Service | ✅ Splitté (24/02) → `notificationService.core.ts` + `notificationCreators.ts` |
-| `components/clock-in/ClockInPage.tsx` | ~334 | Page | ✅ Décomposé (24/02) → `ClockInHistorySection`, `ShiftCard`, `clockInUtils` |
-| `components/planning/ShiftDetailModal.tsx` | ~979 | Composant | ✅ useReducer (24/02) — 13 useState → 1 reducer |
-| `services/absenceService.ts` | 592 | Service | 🟡 En attente |
-| `services/caregiverService.ts` | 582 | Service | 🟡 En attente |
-| `components/team/NewContractModal.tsx` | 546 | Composant | 🟡 En attente |
-| `components/team/TeamPage.tsx` | 504 | Page | 🟡 En attente |
-| `components/profile/sections/EmployeeSection.tsx` | 504 | Composant | 🟡 En attente |
+| `components/clock-in/ClockInPage.tsx` | ~557 | Page | ✅ Décomposé (PR #113) → `useClockIn`, `ClockInProgressSection`, `ClockInTodaySection` |
+| `components/planning/ShiftDetailModal.tsx` | ~979 | Composant | ✅ useReducer (PR #95) — 13 useState → 1 reducer |
+| `services/absenceService.ts` | 592 | Service | ✅ Splitté (PR #110) → `absenceJustificationService.ts` |
+| `services/caregiverService.ts` | 582 | Service | ✅ Splitté (PR #111) → `caregiverTeamService.ts` |
+| `components/team/NewContractModal.tsx` | 546 | Composant | ✅ Décomposé (PR #112) → `useNewContractForm`, `ContractLeaveHistorySection` |
+| `components/team/TeamPage.tsx` | 504 | Page | ✅ Décomposé (PR #119) |
+| `components/profile/sections/EmployeeSection.tsx` | 504 | Composant | ✅ Décomposé (PR #119) |
 
 **Actions suggérées** :
 ```
-[ ] NewShiftModal → extraire sous-formulaires (ShiftTypeForm, PresenceForm, TasksForm)
+[x] NewShiftModal → useNewShiftForm + Guard24hSection + ShiftHoursSummary (PR #109 — 26/02/2026)
 [x] ShiftDetailModal → 13 useState → useReducer (24/02/2026 — PR #95)
-[ ] ClockInPage → Sprint 3 en attente (10 problèmes architecture & perf avancée)
+[x] ClockInPage → useClockIn + ClockInProgressSection + ClockInTodaySection (PR #113 — 26/02/2026)
 [x] notificationService → splitté en notificationService.core.ts + notificationCreators.ts (24/02/2026)
 ```
 
@@ -1393,7 +1393,7 @@ npx playwright install
 **Constat audit 09/02/2026** : `calculateNightHours()` dans `utils.ts:118` itère minute par minute (720 itérations pour un shift de 12h). Peut être remplacé par un calcul d'intervalles en O(1). `refetchOnWindowFocus: false` dans React Query désactive le rafraîchissement automatique, risque de données périmées en multi-utilisateurs.
 
 ```
-[ ] Optimiser calculateNightHours() avec calcul d'intervalles (pas de boucle)
+[x] Optimiser calculateNightHours() avec calcul d'intervalles (pas de boucle) ✅
 [ ] Évaluer refetchOnWindowFocus: true pour les données collaboratives (shifts, messages)
 [ ] React.memo sur composants lourds
 [ ] useMemo/useCallback optimisations
@@ -1458,10 +1458,11 @@ npx playwright install
 - ✅ **Sprint /wd:analyze** (24/02/2026) — 9 PRs : bug CRITIQUE dimanche presence_day, useReducer ShiftDetailModal, useNotifications double-render, fenêtre requête, ErrorBoundary par route, découpages services
 - ✅ **1605 tests** / 79 fichiers (~60% coverage)
 
-**Semaines 11-13**:
+**Semaines 11-13** (mars 2026) :
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
-- 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%+)
+- 🟡 Export planning (PDF mensuel, Excel, iCal)
+- 🟡 Tests composants UI critiques restants (Phase 3)
 
 **Semaines 11-13**:
 - 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%)
@@ -1510,6 +1511,7 @@ npx playwright install
 
 - [x] Coverage tests ≥ 30% (atteint 37% le 12/02/2026) ✅
 - [x] Coverage tests ≥ 60% (atteint ~60% le 24/02/2026 — 1605 tests / 79 fichiers) ✅
+- [x] Coverage tests ≥ 70% (atteint 70%+ le 27/02/2026 — 1897 tests / 97 fichiers — PR #121) ✅
 - [ ] 0 bugs critiques en production
 - [x] **NOUVEAU** : 0 secrets exposés dans le filesystem (clé VAPID, .env protégé par git) ✅
 - [x] **NOUVEAU** : Toutes les routes protégées par garde centralisée (ProtectedRoute) ✅ 10/02/2026
@@ -1526,7 +1528,7 @@ npx playwright install
 
 ### Objectifs Q2 2026
 
-- [ ] Coverage tests ≥ 70%
+- [x] Coverage tests ≥ 70% ✅ (atteint en Q1 — PR #121)
 - [ ] Tests E2E critiques passent
 - [ ] Score Web Vitals > 90
 - [ ] 2FA disponible
