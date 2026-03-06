@@ -50,6 +50,9 @@ vi.mock('./widgets', () => ({
   TodayPlanningWidget: ({ employerId }: { employerId: string }) => (
     <div data-testid="today-planning-widget" data-employer-id={employerId} />
   ),
+  BudgetForecastWidget: ({ employerId }: { employerId: string }) => (
+    <div data-testid="budget-forecast-widget" data-employer-id={employerId} />
+  ),
 }))
 
 // ── Mocks services / hooks ────────────────────────────────────────────────────

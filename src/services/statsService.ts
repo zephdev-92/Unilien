@@ -278,6 +278,73 @@ export async function getCaregiverStats(caregiverId: string): Promise<CaregiverS
   }
 }
 
+// ── Budget Forecast ──────────────────────────────────────────────────────────
+
+export interface BudgetForecast {
+  completedHours: number
+  plannedHours: number
+  projectedHours: number
+  avgHourlyRate: number
+  projectedCostGross: number
+  projectedCostWithCharges: number
+}
+
+export async function getEmployerBudgetForecast(employerId: string): Promise<BudgetForecast> {
+  const now = new Date()
+  const thisMonthStart = startOfMonth(now)
+  const thisMonthEnd = endOfMonth(now)
+
+  const { data: contracts } = await supabase
+    .from('contracts')
+    .select('id, hourly_rate')
+    .eq('employer_id', employerId)
+    .eq('status', 'active')
+
+  const contractIds = (contracts || []).map(c => c.id)
+
+  if (contractIds.length === 0) {
+    return {
+      completedHours: 0,
+      plannedHours: 0,
+      projectedHours: 0,
+      avgHourlyRate: 0,
+      projectedCostGross: 0,
+      projectedCostWithCharges: 0,
+    }
+  }
+
+  const { data: shifts } = await supabase
+    .from('shifts')
+    .select('start_time, end_time, break_duration, status')
+    .in('contract_id', contractIds)
+    .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
+    .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
+    .in('status', ['completed', 'planned'])
+
+  const completedShifts = (shifts || []).filter(s => s.status === 'completed')
+  const plannedShifts = (shifts || []).filter(s => s.status === 'planned')
+
+  const completedHours = calculateTotalHours(completedShifts)
+  const plannedHours = calculateTotalHours(plannedShifts)
+  const projectedHours = completedHours + plannedHours
+
+  const avgHourlyRate = contracts.length > 0
+    ? contracts.reduce((sum, c) => sum + (c.hourly_rate || 0), 0) / contracts.length
+    : 0
+
+  const projectedCostGross = projectedHours * avgHourlyRate
+  const projectedCostWithCharges = projectedCostGross * 1.42
+
+  return {
+    completedHours: Math.round(completedHours * 10) / 10,
+    plannedHours: Math.round(plannedHours * 10) / 10,
+    projectedHours: Math.round(projectedHours * 10) / 10,
+    avgHourlyRate: Math.round(avgHourlyRate * 100) / 100,
+    projectedCostGross: Math.round(projectedCostGross),
+    projectedCostWithCharges: Math.round(projectedCostWithCharges),
+  }
+}
+
 /**
  * Calcule le total d'heures depuis une liste de shifts
  */
