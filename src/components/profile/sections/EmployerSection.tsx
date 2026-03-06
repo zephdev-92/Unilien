@@ -39,9 +39,15 @@ const employerSchema = z.object({
   specificNeeds: z.string().optional(),
   cesuNumber: z.string().optional(),
   pchBeneficiary: z.boolean(),
-  pchMonthlyAmount: z.number().optional(),
+  pchMonthlyAmount: z.preprocess(
+    (v) => (v === '' || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+    z.number().optional(),
+  ),
   pchType: z.string().optional(),
-  pchMonthlyHours: z.number().min(0).max(744).optional(),
+  pchMonthlyHours: z.preprocess(
+    (v) => (v === '' || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+    z.number().min(0).max(744).optional(),
+  ),
 })
 
 type EmployerFormData = z.infer<typeof employerSchema>

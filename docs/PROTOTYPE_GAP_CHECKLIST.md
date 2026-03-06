@@ -43,11 +43,11 @@ React n'a qu'une ProfilePage avec onglets.
 - [x] **Greeting enrichi** — eyebrow jour/date, chips (prochaine intervention + alertes conformite), CTA "Voir le planning" ✅
 - [x] **Greeting skeleton** — skeleton loading sur le bloc greeting ✅
 - [x] **Action nudges** — cartes contextuelles ("X bulletins a generer", "Valider les heures de la semaine") ✅
-- [ ] **Planning du jour** — tableau interventions du jour (employe, horaire, type, statut) avec lignes cliquables
-- [ ] **Planning du jour** — empty state avec icone + message + CTA
-- [ ] **Tendances stats** — indicateurs tendance sur les stats cards (fleche haut/bas, +1, +8%)
+- [x] **Planning du jour** — tableau interventions du jour (employe, horaire, type, statut) avec lignes cliquables ✅
+- [x] **Planning du jour** — empty state avec icone + message + CTA ✅
+- [x] **Tendances stats** — indicateurs tendance sur les stats cards (fleche haut/bas, +1, +8%) ✅
 - [x] **Quick actions** — grille 2x2/4 de boutons par role (existait deja : QuickActionsWidget) ✅
-- [ ] **Alertes conformite sidebar** — liste detaillee des alertes (icone, titre, description, niveau)
+- [x] **Alertes conformite sidebar** — liste detaillee des alertes (icone, titre, description, niveau) ✅
 - [ ] **Empty state dashboard** — variante onboarding quand aucun employe/intervention
 
 ---
