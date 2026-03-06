@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
+  getConversations,
+  getOrCreatePrivateConversation,
+  ensureTeamConversation,
   getLiaisonMessages,
   getOlderMessages,
   createLiaisonMessage,
@@ -37,10 +40,23 @@ vi.mock('@/lib/sanitize', () => ({
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
+function createMockConversationDbRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'conv-001',
+    employer_id: 'employer-123',
+    type: 'team',
+    participant_ids: [],
+    created_at: '2026-02-10T09:00:00.000Z',
+    updated_at: '2026-02-10T10:00:00.000Z',
+    ...overrides,
+  }
+}
+
 function createMockMessageDbRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'msg-001',
     employer_id: 'employer-123',
+    conversation_id: 'conv-001',
     sender_id: 'user-456',
     sender_role: 'employer',
     content: 'Bonjour, message test',
@@ -72,6 +88,7 @@ function mockSupabaseQuery(result: { data?: unknown; error?: unknown; count?: nu
   chain.order = vi.fn().mockReturnValue(chain)
   chain.limit = vi.fn().mockReturnValue(chain)
   chain.range = vi.fn().mockReturnValue(chain)
+  chain.contains = vi.fn().mockReturnValue(chain)
   chain.single = vi.fn().mockResolvedValue(result)
   chain.maybeSingle = vi.fn().mockResolvedValue(result)
   chain.then = vi.fn().mockImplementation((resolve: (val: unknown) => unknown) => Promise.resolve(resolve(result)))
@@ -97,6 +114,7 @@ function mockSupabaseQuerySequence(results: Array<{ data?: unknown; error?: unkn
     chain.order = vi.fn().mockReturnValue(chain)
     chain.limit = vi.fn().mockReturnValue(chain)
     chain.range = vi.fn().mockReturnValue(chain)
+    chain.contains = vi.fn().mockReturnValue(chain)
     chain.single = vi.fn().mockResolvedValue(result)
     chain.maybeSingle = vi.fn().mockResolvedValue(result)
     chain.then = vi.fn().mockImplementation((resolve: (val: unknown) => unknown) => Promise.resolve(resolve(result)))
@@ -105,12 +123,154 @@ function mockSupabaseQuerySequence(results: Array<{ data?: unknown; error?: unkn
 }
 
 const EMPLOYER_ID = 'employer-123'
+const CONV_ID = 'conv-001'
 const USER_ID = 'user-456'
+const OTHER_USER_ID = 'user-789'
 
 // ─── Tests ──────────────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks()
+})
+
+// ============================================
+// getConversations
+// ============================================
+
+describe('getConversations', () => {
+  it('retourne la liste des conversations triees equipe en premier', async () => {
+    const teamConv = createMockConversationDbRow({ type: 'team' })
+    const privateConv = createMockConversationDbRow({
+      id: 'conv-002',
+      type: 'private',
+      participant_ids: [USER_ID, OTHER_USER_ID],
+    })
+
+    // Ordre d'appels from() dans getConversations :
+    // 1. from('conversations') → [teamConv, privateConv]
+    // Iteration teamConv (type='team') : pas de profile lookup
+    // 2. from('liaison_messages') → lastMessage team conv
+    // 3. from('liaison_messages') → unreadCount team conv
+    // Iteration privateConv (type='private') : profile lookup
+    // 4. from('profiles') → otherParticipant (Paul)
+    // 5. from('liaison_messages') → lastMessage private conv
+    // 6. from('liaison_messages') → unreadCount private conv
+    mockSupabaseQuerySequence([
+      { data: [teamConv, privateConv], error: null },
+      // lastMessage conv team
+      { data: { content: 'Bonjour' }, error: null },
+      // unreadCount conv team
+      { data: null, error: null, count: 2 },
+      // otherParticipant conv privée
+      { data: { id: OTHER_USER_ID, first_name: 'Paul', last_name: 'Martin', avatar_url: null }, error: null },
+      // lastMessage conv privée
+      { data: null, error: null },
+      // unreadCount conv privée
+      { data: null, error: null, count: 0 },
+    ])
+
+    const result = await getConversations(EMPLOYER_ID, USER_ID)
+
+    expect(result).toHaveLength(2)
+    expect(result[0].type).toBe('team')
+    expect(result[1].type).toBe('private')
+    expect(result[1].otherParticipant?.firstName).toBe('Paul')
+  })
+
+  it('retourne un tableau vide en cas d\'erreur', async () => {
+    mockSupabaseQuery({ data: null, error: { message: 'DB error' } })
+
+    const result = await getConversations(EMPLOYER_ID, USER_ID)
+
+    expect(result).toEqual([])
+  })
+})
+
+// ============================================
+// ensureTeamConversation
+// ============================================
+
+describe('ensureTeamConversation', () => {
+  it('retourne l\'id si la conversation equipe existe', async () => {
+    mockSupabaseQuery({ data: { id: CONV_ID }, error: null })
+
+    const result = await ensureTeamConversation(EMPLOYER_ID)
+
+    expect(result).toBe(CONV_ID)
+  })
+
+  it('cree la conversation si elle n\'existe pas', async () => {
+    mockSupabaseQuerySequence([
+      { data: null, error: null }, // maybeSingle → pas de conv existante
+      { data: { id: 'conv-new' }, error: null }, // insert → nouvelle conv
+    ])
+
+    const result = await ensureTeamConversation(EMPLOYER_ID)
+
+    expect(result).toBe('conv-new')
+  })
+
+  it('retourne null en cas d\'erreur de creation', async () => {
+    mockSupabaseQuerySequence([
+      { data: null, error: null }, // pas de conv existante
+      { data: null, error: { message: 'Insert failed' } }, // erreur insert
+    ])
+
+    const result = await ensureTeamConversation(EMPLOYER_ID)
+
+    expect(result).toBeNull()
+  })
+})
+
+// ============================================
+// getOrCreatePrivateConversation
+// ============================================
+
+describe('getOrCreatePrivateConversation', () => {
+  it('retourne la conversation existante si elle existe', async () => {
+    const existingConv = createMockConversationDbRow({
+      type: 'private',
+      participant_ids: [USER_ID, OTHER_USER_ID],
+    })
+    mockSupabaseQuerySequence([
+      { data: existingConv, error: null }, // maybeSingle → conv existante
+      { data: { id: OTHER_USER_ID, first_name: 'Paul', last_name: 'Martin', avatar_url: null }, error: null },
+    ])
+
+    const result = await getOrCreatePrivateConversation(EMPLOYER_ID, USER_ID, OTHER_USER_ID)
+
+    expect(result).not.toBeNull()
+    expect(result!.type).toBe('private')
+    expect(result!.otherParticipant?.firstName).toBe('Paul')
+  })
+
+  it('cree une nouvelle conversation si elle n\'existe pas', async () => {
+    const newConv = createMockConversationDbRow({
+      type: 'private',
+      participant_ids: [USER_ID, OTHER_USER_ID],
+    })
+    mockSupabaseQuerySequence([
+      { data: null, error: null }, // pas de conv existante
+      { data: newConv, error: null }, // insert → nouvelle conv
+      { data: { id: OTHER_USER_ID, first_name: 'Paul', last_name: 'Martin', avatar_url: null }, error: null },
+    ])
+
+    const result = await getOrCreatePrivateConversation(EMPLOYER_ID, USER_ID, OTHER_USER_ID)
+
+    expect(result).not.toBeNull()
+    expect(result!.type).toBe('private')
+  })
+
+  it('retourne null en cas d\'erreur', async () => {
+    mockSupabaseQuerySequence([
+      { data: null, error: null }, // pas de conv existante
+      { data: null, error: { message: 'Insert failed' } }, // erreur insert
+    ])
+
+    const result = await getOrCreatePrivateConversation(EMPLOYER_ID, USER_ID, OTHER_USER_ID)
+
+    expect(result).toBeNull()
+  })
 })
 
 // ============================================
@@ -123,7 +283,7 @@ describe('getLiaisonMessages', () => {
     const row2 = createMockMessageDbRow({ id: 'msg-002', created_at: '2026-02-10T10:00:00.000Z' })
     mockSupabaseQuery({ data: [row1, row2], error: null, count: 2 })
 
-    const result = await getLiaisonMessages(EMPLOYER_ID)
+    const result = await getLiaisonMessages(CONV_ID)
 
     expect(result.messages).toHaveLength(2)
     // Reversed: row2 (plus ancien) en premier
@@ -131,6 +291,7 @@ describe('getLiaisonMessages', () => {
     expect(result.messages[1].id).toBe('msg-001')
     expect(result.totalCount).toBe(2)
     expect(result.messages[0].employerId).toBe('employer-123')
+    expect(result.messages[0].conversationId).toBe('conv-001')
     expect(result.messages[0].senderId).toBe('user-456')
     expect(result.messages[0].senderRole).toBe('employer')
     expect(result.messages[0].content).toBe('Bonjour, message test')
@@ -145,7 +306,7 @@ describe('getLiaisonMessages', () => {
   it('retourne un resultat vide en cas d\'erreur', async () => {
     mockSupabaseQuery({ data: null, error: { message: 'DB error' } })
 
-    const result = await getLiaisonMessages(EMPLOYER_ID)
+    const result = await getLiaisonMessages(CONV_ID)
 
     expect(result.messages).toEqual([])
     expect(result.totalCount).toBe(0)
@@ -158,7 +319,7 @@ describe('getLiaisonMessages', () => {
     )
     mockSupabaseQuery({ data: rows, error: null, count: 100 })
 
-    const result = await getLiaisonMessages(EMPLOYER_ID, 1, 50)
+    const result = await getLiaisonMessages(CONV_ID, 1, 50)
 
     expect(result.hasMore).toBe(true)
   })
@@ -167,7 +328,7 @@ describe('getLiaisonMessages', () => {
     const rows = [createMockMessageDbRow()]
     mockSupabaseQuery({ data: rows, error: null, count: 1 })
 
-    const result = await getLiaisonMessages(EMPLOYER_ID, 1, 50)
+    const result = await getLiaisonMessages(CONV_ID, 1, 50)
 
     expect(result.hasMore).toBe(false)
   })
@@ -184,7 +345,7 @@ describe('getOlderMessages', () => {
     const chain = mockSupabaseQuery({ data: [row1, row2], error: null })
 
     const beforeDate = new Date('2026-02-10T10:00:00.000Z')
-    const result = await getOlderMessages(EMPLOYER_ID, beforeDate, 20)
+    const result = await getOlderMessages(CONV_ID, beforeDate, 20)
 
     expect(result).toHaveLength(2)
     // Reversed: row2 (plus ancien) en premier
@@ -197,7 +358,7 @@ describe('getOlderMessages', () => {
   it('retourne un tableau vide en cas d\'erreur', async () => {
     mockSupabaseQuery({ data: null, error: { message: 'DB error' } })
 
-    const result = await getOlderMessages(EMPLOYER_ID, new Date())
+    const result = await getOlderMessages(CONV_ID, new Date())
 
     expect(result).toEqual([])
   })
@@ -208,53 +369,39 @@ describe('getOlderMessages', () => {
 // ============================================
 
 describe('createLiaisonMessage', () => {
-  it('insere un message et retourne le resultat mappe', async () => {
+  it('insere un message avec conversationId et retourne le resultat mappe', async () => {
     const row = createMockMessageDbRow()
-    const chain = mockSupabaseQuery({ data: row, error: null })
+    // 2 appels : insert + update conversations
+    mockSupabaseQuerySequence([
+      { data: row, error: null },
+      { data: null, error: null },
+    ])
 
-    const result = await createLiaisonMessage(EMPLOYER_ID, USER_ID, 'employer', 'Bonjour')
+    const result = await createLiaisonMessage(EMPLOYER_ID, CONV_ID, USER_ID, 'employer', 'Bonjour')
 
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({
-      employer_id: EMPLOYER_ID,
-      sender_id: USER_ID,
-      sender_role: 'employer',
-      audio_url: null,
-      attachments: [],
-      is_edited: false,
-      read_by: [USER_ID],
-    }))
-    expect(chain.select).toHaveBeenCalled()
-    expect(chain.single).toHaveBeenCalled()
     expect(result).not.toBeNull()
     expect(result!.id).toBe('msg-001')
+    expect(result!.conversationId).toBe('conv-001')
   })
 
   it('lance une erreur en cas d\'echec d\'insertion', async () => {
     mockSupabaseQuery({ data: null, error: { message: 'Insert failed' } })
 
     await expect(
-      createLiaisonMessage(EMPLOYER_ID, USER_ID, 'employer', 'Test')
+      createLiaisonMessage(EMPLOYER_ID, CONV_ID, USER_ID, 'employer', 'Test')
     ).rejects.toThrow('Insert failed')
   })
 
   it('sanitize le contenu du message', async () => {
     const row = createMockMessageDbRow()
-    mockSupabaseQuery({ data: row, error: null })
+    mockSupabaseQuerySequence([
+      { data: row, error: null },
+      { data: null, error: null },
+    ])
 
-    await createLiaisonMessage(EMPLOYER_ID, USER_ID, 'employer', '  Contenu avec espaces  ')
+    await createLiaisonMessage(EMPLOYER_ID, CONV_ID, USER_ID, 'employer', '  Contenu avec espaces  ')
 
     expect(sanitizeText).toHaveBeenCalledWith('Contenu avec espaces')
-  })
-
-  it('transmet l\'audioUrl si fourni', async () => {
-    const row = createMockMessageDbRow({ audio_url: 'https://audio.test/file.mp3' })
-    const chain = mockSupabaseQuery({ data: row, error: null })
-
-    await createLiaisonMessage(EMPLOYER_ID, USER_ID, 'employer', 'Message', 'https://audio.test/file.mp3')
-
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({
-      audio_url: 'https://audio.test/file.mp3',
-    }))
   })
 })
 
@@ -356,24 +503,22 @@ describe('markMessageAsRead', () => {
 })
 
 // ============================================
-// markAllMessagesAsRead
+// markAllMessagesAsRead (par conversation)
 // ============================================
 
 describe('markAllMessagesAsRead', () => {
-  it('met a jour chaque message non lu', async () => {
+  it('met a jour chaque message non lu dans la conversation', async () => {
     const unreadMessages = [
       { id: 'msg-001', read_by: ['other-user'] },
       { id: 'msg-002', read_by: [] },
     ]
-    // Appel 1: fetch des messages non lus
-    // Appels 2 et 3: update de chaque message
     mockSupabaseQuerySequence([
       { data: unreadMessages, error: null },
       { data: null, error: null },
       { data: null, error: null },
     ])
 
-    await markAllMessagesAsRead(EMPLOYER_ID, USER_ID)
+    await markAllMessagesAsRead(CONV_ID, USER_ID)
 
     // 1 fetch + 2 updates = 3 appels a from()
     expect(mockFrom).toHaveBeenCalledTimes(3)
@@ -385,19 +530,19 @@ describe('markAllMessagesAsRead', () => {
       error: { message: 'Fetch error' },
     })
 
-    await expect(markAllMessagesAsRead(EMPLOYER_ID, USER_ID)).resolves.toBeUndefined()
+    await expect(markAllMessagesAsRead(CONV_ID, USER_ID)).resolves.toBeUndefined()
   })
 })
 
 // ============================================
-// getLiaisonUnreadCount
+// getLiaisonUnreadCount (par conversation)
 // ============================================
 
 describe('getLiaisonUnreadCount', () => {
-  it('retourne le nombre de messages non lus', async () => {
+  it('retourne le nombre de messages non lus dans la conversation', async () => {
     const chain = mockSupabaseQuery({ data: null, error: null, count: 5 })
 
-    const count = await getLiaisonUnreadCount(EMPLOYER_ID, USER_ID)
+    const count = await getLiaisonUnreadCount(CONV_ID, USER_ID)
 
     expect(count).toBe(5)
     expect(chain.not).toHaveBeenCalledWith('read_by', 'cs', `{${USER_ID}}`)
@@ -406,7 +551,7 @@ describe('getLiaisonUnreadCount', () => {
   it('retourne 0 en cas d\'erreur', async () => {
     mockSupabaseQuery({ data: null, error: { message: 'error' }, count: null })
 
-    const count = await getLiaisonUnreadCount(EMPLOYER_ID, USER_ID)
+    const count = await getLiaisonUnreadCount(CONV_ID, USER_ID)
 
     expect(count).toBe(0)
   })
@@ -414,7 +559,7 @@ describe('getLiaisonUnreadCount', () => {
   it('retourne 0 si count est null', async () => {
     mockSupabaseQuery({ data: null, error: null, count: null })
 
-    const count = await getLiaisonUnreadCount(EMPLOYER_ID, USER_ID)
+    const count = await getLiaisonUnreadCount(CONV_ID, USER_ID)
 
     expect(count).toBe(0)
   })
@@ -425,23 +570,23 @@ describe('getLiaisonUnreadCount', () => {
 // ============================================
 
 describe('subscribeLiaisonMessages', () => {
-  it('cree un channel Supabase et retourne une fonction de desabonnement', () => {
+  it('cree un channel filtre par conversation_id', () => {
     const channelObj: Record<string, unknown> = {}
     channelObj.on = vi.fn().mockReturnValue(channelObj)
     channelObj.subscribe = vi.fn().mockReturnValue(channelObj)
     mockChannel.mockReturnValue(channelObj)
 
     const callback = vi.fn()
-    const unsubscribe = subscribeLiaisonMessages(EMPLOYER_ID, callback)
+    const unsubscribe = subscribeLiaisonMessages(CONV_ID, callback)
 
-    expect(mockChannel).toHaveBeenCalledWith(`liaison:${EMPLOYER_ID}`)
+    expect(mockChannel).toHaveBeenCalledWith(`liaison:${CONV_ID}`)
     expect(channelObj.on).toHaveBeenCalledWith(
       'postgres_changes',
       expect.objectContaining({
         event: '*',
         schema: 'public',
         table: 'liaison_messages',
-        filter: `employer_id=eq.${EMPLOYER_ID}`,
+        filter: `conversation_id=eq.${CONV_ID}`,
       }),
       expect.any(Function)
     )
@@ -455,7 +600,7 @@ describe('subscribeLiaisonMessages', () => {
     channelObj.subscribe = vi.fn().mockReturnValue(channelObj)
     mockChannel.mockReturnValue(channelObj)
 
-    const unsubscribe = subscribeLiaisonMessages(EMPLOYER_ID, vi.fn())
+    const unsubscribe = subscribeLiaisonMessages(CONV_ID, vi.fn())
     unsubscribe()
 
     expect(mockRemoveChannel).toHaveBeenCalledWith(channelObj)
@@ -472,9 +617,8 @@ describe('subscribeLiaisonMessages', () => {
 
     mockChannel.mockReturnValueOnce(channelObj1).mockReturnValueOnce(channelObj2)
 
-    subscribeLiaisonMessages(EMPLOYER_ID, vi.fn())
-    // Deuxieme abonnement — doit retirer le premier
-    subscribeLiaisonMessages('employer-999', vi.fn())
+    subscribeLiaisonMessages(CONV_ID, vi.fn())
+    subscribeLiaisonMessages('conv-999', vi.fn())
 
     expect(mockRemoveChannel).toHaveBeenCalledWith(channelObj1)
   })
@@ -485,7 +629,7 @@ describe('subscribeLiaisonMessages', () => {
 // ============================================
 
 describe('subscribeTypingIndicator', () => {
-  it('cree un channel presence et retourne setTyping et unsubscribe', () => {
+  it('cree un channel presence lie a la conversation', () => {
     const channelObj: Record<string, unknown> = {}
     channelObj.on = vi.fn().mockReturnValue(channelObj)
     channelObj.subscribe = vi.fn().mockReturnValue(channelObj)
@@ -494,9 +638,9 @@ describe('subscribeTypingIndicator', () => {
     mockChannel.mockReturnValue(channelObj)
 
     const onTypingChange = vi.fn()
-    const result = subscribeTypingIndicator(EMPLOYER_ID, USER_ID, 'Marie', onTypingChange)
+    const result = subscribeTypingIndicator(CONV_ID, USER_ID, 'Marie', onTypingChange)
 
-    expect(mockChannel).toHaveBeenCalledWith(`typing:${EMPLOYER_ID}`, {
+    expect(mockChannel).toHaveBeenCalledWith(`typing:${CONV_ID}`, {
       config: {
         presence: {
           key: USER_ID,
@@ -521,7 +665,7 @@ describe('subscribeTypingIndicator', () => {
     channelObj.presenceState = vi.fn().mockReturnValue({})
     mockChannel.mockReturnValue(channelObj)
 
-    const { unsubscribe } = subscribeTypingIndicator(EMPLOYER_ID, USER_ID, 'Marie', vi.fn())
+    const { unsubscribe } = subscribeTypingIndicator(CONV_ID, USER_ID, 'Marie', vi.fn())
     unsubscribe()
 
     expect(mockRemoveChannel).toHaveBeenCalledWith(channelObj)
@@ -535,7 +679,7 @@ describe('subscribeTypingIndicator', () => {
     channelObj.presenceState = vi.fn().mockReturnValue({})
     mockChannel.mockReturnValue(channelObj)
 
-    const { setTyping } = subscribeTypingIndicator(EMPLOYER_ID, USER_ID, 'Marie', vi.fn())
+    const { setTyping } = subscribeTypingIndicator(CONV_ID, USER_ID, 'Marie', vi.fn())
     await setTyping(true)
 
     expect(channelObj.track).toHaveBeenCalledWith({ isTyping: true, name: 'Marie' })

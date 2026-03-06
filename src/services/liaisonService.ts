@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
-import type { LiaisonMessageDbRow } from '@/types/database'
+import type { Conversation, LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
+import type { ConversationDbRow, LiaisonMessageDbRow } from '@/types/database'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 // ============================================
@@ -21,11 +21,199 @@ export type MessageChangeCallback = (
 ) => void
 
 // ============================================
+// CONVERSATIONS
+// ============================================
+
+/**
+ * Récupère toutes les conversations accessibles par un utilisateur pour un employeur.
+ * Inclut toujours la conversation d'équipe + les conversations privées de l'utilisateur.
+ */
+export async function getConversations(
+  employerId: string,
+  userId: string
+): Promise<Conversation[]> {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('employer_id', employerId)
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    logger.error('Erreur récupération conversations:', error)
+    return []
+  }
+
+  const conversations = data || []
+  const result: Conversation[] = []
+
+  for (const conv of conversations) {
+    // Pour les conversations privées, récupérer le profil de l'autre participant
+    let otherParticipant: Conversation['otherParticipant'] = undefined
+
+    if (conv.type === 'private') {
+      const otherUserId = conv.participant_ids.find((id: string) => id !== userId)
+      if (otherUserId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', otherUserId)
+          .single()
+
+        if (profile) {
+          otherParticipant = {
+            id: profile.id,
+            firstName: profile.first_name,
+            lastName: profile.last_name,
+            avatarUrl: profile.avatar_url || undefined,
+          }
+        }
+      }
+    }
+
+    // Dernier message
+    const { data: lastMsgData } = await supabase
+      .from('liaison_messages')
+      .select('content')
+      .eq('conversation_id', conv.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    // Nombre de messages non lus
+    const { count: unreadCount } = await supabase
+      .from('liaison_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('conversation_id', conv.id)
+      .not('read_by', 'cs', `{${userId}}`)
+
+    result.push(mapConversationFromDb(conv, {
+      otherParticipant,
+      lastMessage: lastMsgData?.content,
+      unreadCount: unreadCount || 0,
+    }))
+  }
+
+  // Toujours mettre la conversation d'équipe en premier
+  result.sort((a, b) => {
+    if (a.type === 'team') return -1
+    if (b.type === 'team') return 1
+    return b.updatedAt.getTime() - a.updatedAt.getTime()
+  })
+
+  return result
+}
+
+/**
+ * Crée ou retrouve la conversation privée entre deux utilisateurs.
+ */
+export async function getOrCreatePrivateConversation(
+  employerId: string,
+  userId: string,
+  otherUserId: string
+): Promise<Conversation | null> {
+  // Chercher une conversation privée existante entre ces deux participants
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('employer_id', employerId)
+    .eq('type', 'private')
+    .contains('participant_ids', [userId, otherUserId])
+    .maybeSingle()
+
+  if (existing) {
+    // Récupérer le profil de l'autre participant
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, avatar_url')
+      .eq('id', otherUserId)
+      .single()
+
+    return mapConversationFromDb(existing, {
+      otherParticipant: profile
+        ? {
+            id: profile.id,
+            firstName: profile.first_name,
+            lastName: profile.last_name,
+            avatarUrl: profile.avatar_url || undefined,
+          }
+        : undefined,
+      unreadCount: 0,
+    })
+  }
+
+  // Créer une nouvelle conversation privée
+  const { data: created, error } = await supabase
+    .from('conversations')
+    .insert({
+      employer_id: employerId,
+      type: 'private',
+      participant_ids: [userId, otherUserId],
+    })
+    .select()
+    .single()
+
+  if (error) {
+    logger.error('Erreur création conversation privée:', error)
+    return null
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar_url')
+    .eq('id', otherUserId)
+    .single()
+
+  return mapConversationFromDb(created, {
+    otherParticipant: profile
+      ? {
+          id: profile.id,
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          avatarUrl: profile.avatar_url || undefined,
+        }
+      : undefined,
+    unreadCount: 0,
+  })
+}
+
+/**
+ * Crée ou retrouve la conversation d'équipe d'un employeur.
+ * Retourne l'ID de la conversation.
+ */
+export async function ensureTeamConversation(employerId: string): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('employer_id', employerId)
+    .eq('type', 'team')
+    .maybeSingle()
+
+  if (existing) return existing.id
+
+  const { data: created, error } = await supabase
+    .from('conversations')
+    .insert({
+      employer_id: employerId,
+      type: 'team',
+      participant_ids: [],
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    logger.error('Erreur création conversation équipe:', error)
+    return null
+  }
+
+  return created.id
+}
+
+// ============================================
 // GET MESSAGES
 // ============================================
 
 export async function getLiaisonMessages(
-  employerId: string,
+  conversationId: string,
   page: number = 1,
   pageSize: number = 50
 ): Promise<PaginatedMessages> {
@@ -42,7 +230,7 @@ export async function getLiaisonMessages(
         avatar_url
       )
     `, { count: 'exact' })
-    .eq('employer_id', employerId)
+    .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -64,7 +252,7 @@ export async function getLiaisonMessages(
 // ============================================
 
 export async function getOlderMessages(
-  employerId: string,
+  conversationId: string,
   beforeDate: Date,
   limit: number = 20
 ): Promise<LiaisonMessageWithSender[]> {
@@ -78,7 +266,7 @@ export async function getOlderMessages(
         avatar_url
       )
     `)
-    .eq('employer_id', employerId)
+    .eq('conversation_id', conversationId)
     .lt('created_at', beforeDate.toISOString())
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -98,6 +286,7 @@ export async function getOlderMessages(
 
 export async function createLiaisonMessage(
   employerId: string,
+  conversationId: string,
   senderId: string,
   senderRole: UserRole,
   content: string,
@@ -107,6 +296,7 @@ export async function createLiaisonMessage(
     .from('liaison_messages')
     .insert({
       employer_id: employerId,
+      conversation_id: conversationId,
       sender_id: senderId,
       sender_role: senderRole,
       content: sanitizeText(content.trim()),
@@ -122,6 +312,12 @@ export async function createLiaisonMessage(
     logger.error('Erreur création message liaison:', error)
     throw new Error(error.message)
   }
+
+  // Mettre à jour updated_at de la conversation
+  await supabase
+    .from('conversations')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', conversationId)
 
   return mapMessageFromDb(data)
 }
@@ -198,18 +394,18 @@ export async function markMessageAsRead(
 }
 
 // ============================================
-// MARK ALL AS READ
+// MARK ALL AS READ (par conversation)
 // ============================================
 
 export async function markAllMessagesAsRead(
-  employerId: string,
+  conversationId: string,
   userId: string
 ): Promise<void> {
-  // Get all unread messages
+  // Get all unread messages in this conversation
   const { data: unreadMessages, error: fetchError } = await supabase
     .from('liaison_messages')
     .select('id, read_by')
-    .eq('employer_id', employerId)
+    .eq('conversation_id', conversationId)
     .not('read_by', 'cs', `{${userId}}`)
 
   if (fetchError) {
@@ -228,10 +424,31 @@ export async function markAllMessagesAsRead(
 }
 
 // ============================================
-// GET UNREAD COUNT
+// GET UNREAD COUNT (par conversation)
 // ============================================
 
 export async function getLiaisonUnreadCount(
+  conversationId: string,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('liaison_messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId)
+    .not('read_by', 'cs', `{${userId}}`)
+
+  if (error) {
+    logger.error('Erreur comptage messages non lus:', error)
+    return 0
+  }
+
+  return count || 0
+}
+
+/**
+ * Compte le total des messages non lus pour un employeur (pour badge nav).
+ */
+export async function getTotalUnreadCount(
   employerId: string,
   userId: string
 ): Promise<number> {
@@ -242,7 +459,7 @@ export async function getLiaisonUnreadCount(
     .not('read_by', 'cs', `{${userId}}`)
 
   if (error) {
-    logger.error('Erreur comptage messages non lus:', error)
+    logger.error('Erreur comptage messages non lus total:', error)
     return 0
   }
 
@@ -256,7 +473,7 @@ export async function getLiaisonUnreadCount(
 let activeChannel: RealtimeChannel | null = null
 
 export function subscribeLiaisonMessages(
-  employerId: string,
+  conversationId: string,
   onMessage: MessageChangeCallback
 ): () => void {
   // Unsubscribe from previous channel if exists
@@ -266,14 +483,14 @@ export function subscribeLiaisonMessages(
   }
 
   const channel = supabase
-    .channel(`liaison:${employerId}`)
+    .channel(`liaison:${conversationId}`)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'liaison_messages',
-        filter: `employer_id=eq.${employerId}`,
+        filter: `conversation_id=eq.${conversationId}`,
       },
       async (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
         const eventType = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE'
@@ -330,7 +547,7 @@ export interface TypingUser {
 }
 
 export function subscribeTypingIndicator(
-  employerId: string,
+  conversationId: string,
   userId: string,
   userName: string,
   onTypingChange: (typingUsers: TypingUser[]) => void
@@ -338,7 +555,7 @@ export function subscribeTypingIndicator(
   setTyping: (isTyping: boolean) => void
   unsubscribe: () => void
 } {
-  const channel = supabase.channel(`typing:${employerId}`, {
+  const channel = supabase.channel(`typing:${conversationId}`, {
     config: {
       presence: {
         key: userId,
@@ -382,27 +599,50 @@ export function subscribeTypingIndicator(
 }
 
 // ============================================
-// HELPER: MAP FROM DB
+// HELPERS: MAP FROM DB
 // ============================================
 
-function mapMessageFromDb(data: LiaisonMessageDbRow): LiaisonMessageWithSender {
+function mapConversationFromDb(
+  data: ConversationDbRow,
+  computed: {
+    otherParticipant?: Conversation['otherParticipant']
+    lastMessage?: string
+    unreadCount: number
+  }
+): Conversation {
   return {
     id: data.id,
     employerId: data.employer_id,
-    senderId: data.sender_id,
-    senderRole: data.sender_role,
-    content: data.content,
-    audioUrl: data.audio_url || undefined,
-    attachments: data.attachments || [],
-    isEdited: data.is_edited || false,
-    readBy: data.read_by || [],
+    type: data.type,
+    participantIds: data.participant_ids || [],
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
-    sender: data.sender
+    otherParticipant: computed.otherParticipant,
+    lastMessage: computed.lastMessage,
+    unreadCount: computed.unreadCount,
+  }
+}
+
+function mapMessageFromDb(data: LiaisonMessageDbRow | Record<string, unknown>): LiaisonMessageWithSender {
+  const row = data as LiaisonMessageDbRow
+  return {
+    id: row.id,
+    employerId: row.employer_id,
+    conversationId: row.conversation_id || '',
+    senderId: row.sender_id,
+    senderRole: row.sender_role,
+    content: row.content,
+    audioUrl: row.audio_url || undefined,
+    attachments: row.attachments || [],
+    isEdited: row.is_edited || false,
+    readBy: row.read_by || [],
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+    sender: row.sender
       ? {
-          firstName: data.sender.first_name,
-          lastName: data.sender.last_name,
-          avatarUrl: data.sender.avatar_url || undefined,
+          firstName: row.sender.first_name,
+          lastName: row.sender.last_name,
+          avatarUrl: row.sender.avatar_url || undefined,
         }
       : undefined,
   }

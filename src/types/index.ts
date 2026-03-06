@@ -371,10 +371,30 @@ export interface ComplianceWarning {
   rule: string
 }
 
+// Conversation (fil d'équipe ou privée)
+export interface Conversation {
+  id: string
+  employerId: string
+  type: 'team' | 'private'
+  participantIds: string[]
+  createdAt: Date
+  updatedAt: Date
+  // computed au fetch
+  otherParticipant?: {
+    id: string
+    firstName: string
+    lastName: string
+    avatarUrl?: string
+  }
+  lastMessage?: string
+  unreadCount: number
+}
+
 // Message de liaison (chat en temps réel)
 export interface LiaisonMessage {
   id: string
   employerId: string
+  conversationId: string
   senderId: string
   senderRole: UserRole
   content: string
