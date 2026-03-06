@@ -45,7 +45,11 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
 
   return (
     <Stack gap={6}>
-      <WelcomeCard profile={profile} />
+      <WelcomeCard
+        profile={profile}
+        nextShift={shifts[0] ?? null}
+        loading={isLoadingShifts}
+      />
       <StatsWidget userRole="employee" profileId={profile.id} />
       <QuickActionsWidget userRole="employee" />
       <UpcomingShiftsWidget

@@ -1,4 +1,5 @@
 export { WelcomeCard } from './WelcomeCard'
+export { ActionNudgesWidget } from './ActionNudgesWidget'
 export { UpcomingShiftsWidget } from './UpcomingShiftsWidget'
 export { RecentLogsWidget } from './RecentLogsWidget'
 export { QuickActionsWidget } from './QuickActionsWidget'

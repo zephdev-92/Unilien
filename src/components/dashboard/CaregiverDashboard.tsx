@@ -93,7 +93,11 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
 
   return (
     <Stack gap={6}>
-      <WelcomeCard profile={profile} />
+      <WelcomeCard
+        profile={profile}
+        nextShift={shifts[0] ?? null}
+        loading={isLoading}
+      />
 
       {/* Message si aucune permission */}
       {!hasAnyViewPermission && !hasAdvancedPermissions && (

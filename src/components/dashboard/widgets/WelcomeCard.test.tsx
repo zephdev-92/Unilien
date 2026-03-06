@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import { renderWithProviders } from '@/test/helpers'
-import { createMockProfile } from '@/test/fixtures'
+import { createMockProfile, createMockShift } from '@/test/fixtures'
 import { WelcomeCard } from './WelcomeCard'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -108,6 +108,86 @@ describe('WelcomeCard', () => {
     it('affiche la description aidant', () => {
       renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'caregiver' })} />)
       expect(screen.getByText(/Suivez les soins/)).toBeInTheDocument()
+    })
+  })
+
+  describe('Eyebrow date', () => {
+    it('affiche la date du jour formatée', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 2, 6, 10, 0, 0)) // 6 mars 2026
+      renderWithProviders(<WelcomeCard profile={createMockProfile()} />)
+      expect(screen.getByText(/vendredi 6 mars 2026/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('Chips contextuels', () => {
+    it('affiche le chip prochaine intervention quand nextShift est fourni', () => {
+      vi.useFakeTimers()
+      const today = new Date(2026, 2, 6, 10, 0, 0)
+      vi.setSystemTime(today)
+      const shift = createMockShift({ date: today, startTime: '14:00' })
+      renderWithProviders(
+        <WelcomeCard profile={createMockProfile()} nextShift={shift} />
+      )
+      expect(screen.getByText(/Prochaine intervention à 14:00/)).toBeInTheDocument()
+    })
+
+    it('affiche "Demain" quand le shift est le lendemain', () => {
+      vi.useFakeTimers()
+      const today = new Date(2026, 2, 6, 10, 0, 0)
+      vi.setSystemTime(today)
+      const tomorrow = new Date(2026, 2, 7)
+      const shift = createMockShift({ date: tomorrow, startTime: '09:00' })
+      renderWithProviders(
+        <WelcomeCard profile={createMockProfile()} nextShift={shift} />
+      )
+      expect(screen.getByText(/Demain à 09:00/)).toBeInTheDocument()
+    })
+
+    it('affiche le badge alertes conformité quand complianceAlertCount > 0', () => {
+      renderWithProviders(
+        <WelcomeCard profile={createMockProfile()} complianceAlertCount={3} />
+      )
+      expect(screen.getByText(/3 alertes conformité/)).toBeInTheDocument()
+    })
+
+    it('n\'affiche pas le badge alertes si complianceAlertCount est 0', () => {
+      renderWithProviders(
+        <WelcomeCard profile={createMockProfile()} complianceAlertCount={0} />
+      )
+      expect(screen.queryByText(/alertes conformité/)).not.toBeInTheDocument()
+    })
+
+    it('affiche le lien "Voir le planning" quand il y a des chips', () => {
+      const shift = createMockShift({ startTime: '08:00' })
+      renderWithProviders(
+        <WelcomeCard profile={createMockProfile()} nextShift={shift} />
+      )
+      expect(screen.getByText('Voir le planning')).toBeInTheDocument()
+    })
+
+    it('n\'affiche pas les chips quand aucune donnée contextuelle', () => {
+      renderWithProviders(<WelcomeCard profile={createMockProfile()} />)
+      expect(screen.queryByText('Voir le planning')).not.toBeInTheDocument()
+      expect(screen.queryByText(/alertes conformité/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Skeleton loading', () => {
+    it('affiche le skeleton quand loading=true', () => {
+      const { container } = renderWithProviders(
+        <WelcomeCard profile={createMockProfile()} loading={true} />
+      )
+      // Chakra Skeleton renders with class containing "skeleton" or the chakra-skeleton data attr
+      const skeletons = container.querySelectorAll('[class*="chakra-skeleton"], [data-status]')
+      expect(skeletons.length).toBeGreaterThan(0)
+    })
+
+    it('n\'affiche pas le greeting en mode skeleton', () => {
+      renderWithProviders(
+        <WelcomeCard profile={createMockProfile({ firstName: 'Sophie' })} loading={true} />
+      )
+      expect(screen.queryByText(/Sophie/)).not.toBeInTheDocument()
     })
   })
 })
