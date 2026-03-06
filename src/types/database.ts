@@ -180,9 +180,19 @@ export interface LeaveBalanceDbRow {
 // LIAISON MESSAGE
 // ============================================================
 
+export interface ConversationDbRow {
+  id: string
+  employer_id: string
+  type: 'team' | 'private'
+  participant_ids: string[]
+  created_at: string
+  updated_at: string
+}
+
 export interface LiaisonMessageDbRow {
   id: string
   employer_id: string
+  conversation_id: string | null
   sender_id: string
   sender_role: 'employer' | 'employee' | 'caregiver'
   content: string

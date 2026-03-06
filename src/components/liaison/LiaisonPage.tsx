@@ -7,13 +7,20 @@ import {
   Spinner,
   Badge,
   VisuallyHidden,
+  IconButton,
 } from '@chakra-ui/react'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEmployerResolution } from '@/hooks/useEmployerResolution'
 import { DashboardLayout } from '@/components/dashboard'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
+import { ConversationList } from './ConversationList'
+import { NewConversationModal } from './NewConversationModal'
 import {
+  getConversations,
+  getOrCreatePrivateConversation,
+  ensureTeamConversation,
   getLiaisonMessages,
   getOlderMessages,
   createLiaisonMessage,
@@ -24,7 +31,7 @@ import {
   type TypingUser,
 } from '@/services/liaisonService'
 import { logger } from '@/lib/logger'
-import type { LiaisonMessageWithSender } from '@/types'
+import type { Conversation, LiaisonMessageWithSender } from '@/types'
 
 // ============================================
 // TYPING INDICATOR COMPONENT
@@ -112,8 +119,17 @@ function DateSeparator({ date }: { date: Date }) {
 export function LiaisonPage() {
   const { profile, isInitialized } = useAuth()
 
+  // Conversations
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [selectedConv, setSelectedConv] = useState<Conversation | null>(null)
+  const [isLoadingConvs, setIsLoadingConvs] = useState(true)
+  const [isNewConvOpen, setIsNewConvOpen] = useState(false)
+  // Mobile: afficher la liste ou le thread
+  const [showConvList, setShowConvList] = useState(true)
+
+  // Messages
   const [messages, setMessages] = useState<LiaisonMessageWithSender[]>([])
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
@@ -128,103 +144,159 @@ export function LiaisonPage() {
   // Refs
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const typingControlRef = useRef<{ setTyping: (v: boolean) => void; unsubscribe: () => void } | null>(null)
-  const isInitialLoad = useRef(true)
+  const unsubscribeMessagesRef = useRef<(() => void) | null>(null)
 
-  // Load initial messages
+  // ---- Charger les conversations au mount ----
   useEffect(() => {
-    async function loadMessages() {
+    async function loadConversations() {
       if (!profile || !resolvedEmployerId) return
 
-      setIsLoadingMessages(true)
+      setIsLoadingConvs(true)
       try {
-        const result = await getLiaisonMessages(resolvedEmployerId)
-        setMessages(result.messages)
-        setHasMore(result.hasMore)
+        // S'assurer que la conv équipe existe
+        await ensureTeamConversation(resolvedEmployerId)
 
-        // Mark all as read
-        await markAllMessagesAsRead(resolvedEmployerId, profile.id)
+        const convs = await getConversations(resolvedEmployerId, profile.id)
+        setConversations(convs)
+
+        // Sélectionner automatiquement la conv d'équipe
+        const team = convs.find(c => c.type === 'team')
+        if (team && !selectedConv) {
+          setSelectedConv(team)
+        }
       } catch (error) {
-        logger.error('Erreur chargement messages:', error)
+        logger.error('Erreur chargement conversations:', error)
       } finally {
-        setIsLoadingMessages(false)
-        isInitialLoad.current = false
+        setIsLoadingConvs(false)
       }
     }
 
     if (profile && isInitialized && resolvedEmployerId) {
-      loadMessages()
+      loadConversations()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, isInitialized, resolvedEmployerId])
 
-  // Subscribe to realtime updates
+  // ---- Charger les messages quand la conversation change ----
   useEffect(() => {
-    if (!profile || !resolvedEmployerId) return
+    if (!selectedConv || !profile) return
 
-    const unsubscribe = subscribeLiaisonMessages(
-      resolvedEmployerId,
-      (eventType, message) => {
-        if (eventType === 'INSERT') {
-          setMessages(prev => [...prev, message])
-          // Auto-scroll to bottom for new messages
-          setTimeout(() => {
-            messagesContainerRef.current?.scrollTo({
-              top: messagesContainerRef.current.scrollHeight,
-              behavior: 'smooth',
-            })
-          }, 100)
-        } else if (eventType === 'UPDATE') {
-          setMessages(prev =>
-            prev.map(m => m.id === message.id ? message : m)
-          )
-        } else if (eventType === 'DELETE') {
-          setMessages(prev => prev.filter(m => m.id !== message.id))
-        }
-      }
-    )
-
-    return unsubscribe
-  }, [profile, resolvedEmployerId])
-
-  // Subscribe to typing indicator
-  useEffect(() => {
-    if (!profile || !resolvedEmployerId) return
-
-    const userName = `${profile.firstName} ${profile.lastName}`
-    const control = subscribeTypingIndicator(
-      resolvedEmployerId,
-      profile.id,
-      userName,
-      setTypingUsers
-    )
-
-    typingControlRef.current = control
-
-    return () => {
-      control.unsubscribe()
+    // Annuler les subscriptions précédentes
+    if (unsubscribeMessagesRef.current) {
+      unsubscribeMessagesRef.current()
+      unsubscribeMessagesRef.current = null
+    }
+    if (typingControlRef.current) {
+      typingControlRef.current.unsubscribe()
       typingControlRef.current = null
     }
+
+    setMessages([])
+    setHasMore(false)
+    setTypingUsers([])
+    setIsLoadingMessages(true)
+
+    async function loadAndSubscribe() {
+      if (!selectedConv || !profile) return
+
+      try {
+        const result = await getLiaisonMessages(selectedConv.id)
+        setMessages(result.messages)
+        setHasMore(result.hasMore)
+        await markAllMessagesAsRead(selectedConv.id, profile.id)
+
+        // Scroll to bottom
+        setTimeout(() => {
+          messagesContainerRef.current?.scrollTo({
+            top: messagesContainerRef.current.scrollHeight,
+          })
+        }, 50)
+      } catch (error) {
+        logger.error('Erreur chargement messages:', error)
+      } finally {
+        setIsLoadingMessages(false)
+      }
+
+      // Subscription realtime
+      const unsubMessages = subscribeLiaisonMessages(
+        selectedConv.id,
+        (eventType, message) => {
+          if (eventType === 'INSERT') {
+            setMessages(prev => [...prev, message])
+            // Mettre à jour le dernier message dans la liste
+            setConversations(prev =>
+              prev.map(c =>
+                c.id === selectedConv.id
+                  ? { ...c, lastMessage: message.content, updatedAt: message.createdAt, unreadCount: 0 }
+                  : c
+              )
+            )
+            setTimeout(() => {
+              messagesContainerRef.current?.scrollTo({
+                top: messagesContainerRef.current.scrollHeight,
+                behavior: 'smooth',
+              })
+            }, 100)
+          } else if (eventType === 'UPDATE') {
+            setMessages(prev => prev.map(m => m.id === message.id ? message : m))
+          } else if (eventType === 'DELETE') {
+            setMessages(prev => prev.filter(m => m.id !== message.id))
+          }
+        }
+      )
+      unsubscribeMessagesRef.current = unsubMessages
+
+      // Typing indicator
+      const userName = `${profile.firstName} ${profile.lastName}`
+      const control = subscribeTypingIndicator(selectedConv.id, profile.id, userName, setTypingUsers)
+      typingControlRef.current = control
+    }
+
+    loadAndSubscribe()
+
+    return () => {
+      if (unsubscribeMessagesRef.current) {
+        unsubscribeMessagesRef.current()
+        unsubscribeMessagesRef.current = null
+      }
+      if (typingControlRef.current) {
+        typingControlRef.current.unsubscribe()
+        typingControlRef.current = null
+      }
+    }
+  }, [selectedConv?.id, profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---- Sélection conversation ----
+  const handleSelectConv = useCallback((conv: Conversation) => {
+    setSelectedConv(conv)
+    setShowConvList(false) // mobile: passer au thread
+  }, [])
+
+  // ---- Nouvelle conversation privée ----
+  const handleNewConversationSelect = useCallback(async (memberId: string) => {
+    if (!profile || !resolvedEmployerId) return
+
+    const conv = await getOrCreatePrivateConversation(resolvedEmployerId, profile.id, memberId)
+    if (!conv) return
+
+    // Ajouter ou mettre à jour dans la liste
+    setConversations(prev => {
+      const exists = prev.find(c => c.id === conv.id)
+      if (exists) return prev
+      return [...prev, conv]
+    })
+    setSelectedConv(conv)
+    setShowConvList(false)
   }, [profile, resolvedEmployerId])
 
-  // Scroll to bottom on initial load
-  useEffect(() => {
-    if (!isLoadingMessages && messages.length > 0 && isInitialLoad.current === false) {
-      messagesContainerRef.current?.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-      })
-    }
-  }, [isLoadingMessages, messages.length])
-
-  // Load older messages
+  // ---- Charger messages plus anciens ----
   const handleLoadMore = useCallback(async () => {
-    if (!resolvedEmployerId || isLoadingMore || messages.length === 0) return
+    if (!selectedConv || isLoadingMore || messages.length === 0) return
 
     setIsLoadingMore(true)
     try {
       const oldestMessage = messages[0]
-      const olderMessages = await getOlderMessages(
-        resolvedEmployerId,
-        oldestMessage.createdAt
-      )
+      const olderMessages = await getOlderMessages(selectedConv.id, oldestMessage.createdAt)
 
       if (olderMessages.length > 0) {
         setMessages(prev => [...olderMessages, ...prev])
@@ -235,9 +307,9 @@ export function LiaisonPage() {
     } finally {
       setIsLoadingMore(false)
     }
-  }, [resolvedEmployerId, isLoadingMore, messages])
+  }, [selectedConv, isLoadingMore, messages])
 
-  // Handle scroll for infinite loading
+  // ---- Scroll infini ----
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement
     if (target.scrollTop < 100 && hasMore && !isLoadingMore) {
@@ -245,19 +317,20 @@ export function LiaisonPage() {
     }
   }, [hasMore, isLoadingMore, handleLoadMore])
 
-  // Send message
+  // ---- Envoyer un message ----
   const handleSend = useCallback(async (content: string) => {
-    if (!profile || !resolvedEmployerId) return
+    if (!profile || !resolvedEmployerId || !selectedConv) return
 
     await createLiaisonMessage(
       resolvedEmployerId,
+      selectedConv.id,
       profile.id,
       profile.role,
       content
     )
-  }, [profile, resolvedEmployerId])
+  }, [profile, resolvedEmployerId, selectedConv])
 
-  // Delete message
+  // ---- Supprimer un message ----
   const handleDelete = useCallback(async (messageId: string) => {
     try {
       await deleteLiaisonMessage(messageId)
@@ -266,12 +339,12 @@ export function LiaisonPage() {
     }
   }, [])
 
-  // Handle typing
+  // ---- Typing ----
   const handleTyping = useCallback((isTyping: boolean) => {
     typingControlRef.current?.setTyping(isTyping)
   }, [])
 
-  // Group messages by date
+  // ---- Groupage par date ----
   const groupedMessages = messages.reduce<{
     date: string
     messages: LiaisonMessageWithSender[]
@@ -288,7 +361,7 @@ export function LiaisonPage() {
     return groups
   }, [])
 
-  // Loading state (resolving employer for caregivers)
+  // ---- États d'erreur / chargement global ----
   if (!profile || isResolvingEmployer) {
     return (
       <DashboardLayout title="Liaison">
@@ -299,7 +372,6 @@ export function LiaisonPage() {
     )
   }
 
-  // Access denied
   if (accessDenied) {
     return (
       <DashboardLayout title="Liaison">
@@ -324,16 +396,26 @@ export function LiaisonPage() {
     )
   }
 
-  // Check write permission
   const canWrite =
     profile.role === 'employer' ||
     profile.role === 'employee' ||
     (profile.role === 'caregiver' && caregiverPermissions?.canWriteLiaison === true)
 
+  // IDs des membres déjà en conv privée
+  const existingPrivateMemberIds = conversations
+    .filter(c => c.type === 'private' && c.otherParticipant)
+    .map(c => c.otherParticipant!.id)
+
+  // Titre de la conversation sélectionnée
+  const convTitle = selectedConv?.type === 'team'
+    ? 'Équipe'
+    : selectedConv?.otherParticipant
+      ? `${selectedConv.otherParticipant.firstName} ${selectedConv.otherParticipant.lastName}`
+      : 'Conversation'
+
   return (
     <DashboardLayout title="Liaison">
       <Flex
-        direction="column"
         h="calc(100vh - 200px)"
         minH="400px"
         bg="white"
@@ -342,124 +424,185 @@ export function LiaisonPage() {
         borderColor="gray.200"
         overflow="hidden"
       >
-        {/* Header */}
+        {/* ===== LISTE CONVERSATIONS ===== */}
+        {/* Desktop : toujours visible | Mobile : togglé par showConvList */}
         <Box
-          px={4}
-          py={3}
-          borderBottomWidth="1px"
-          borderColor="gray.200"
-          bg="gray.50"
+          w={{ base: '100%', md: '280px' }}
+          display={{ base: showConvList ? 'flex' : 'none', md: 'flex' }}
+          flexDirection="column"
+          flexShrink={0}
         >
-          <Text fontWeight="semibold" fontSize="lg">
-            Messagerie
-          </Text>
-          <Text fontSize="sm" color="gray.600">
-            Communication en temps réel avec votre équipe
-          </Text>
-        </Box>
-
-        {/* Messages container */}
-        <Box
-          ref={messagesContainerRef}
-          flex={1}
-          overflowY="auto"
-          onScroll={handleScroll}
-          py={4}
-          css={{
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: 'var(--chakra-colors-gray-300)',
-              borderRadius: '4px',
-            },
-          }}
-        >
-          {/* Load more indicator */}
-          {isLoadingMore && (
-            <Center py={4}>
-              <Spinner size="sm" color="blue.500" />
-            </Center>
-          )}
-
-          {/* Load more button */}
-          {hasMore && !isLoadingMore && (
-            <Center py={4}>
-              <Text
-                as="button"
-                fontSize="sm"
-                color="blue.500"
-                onClick={handleLoadMore}
-                _hover={{ textDecoration: 'underline' }}
-              >
-                Charger les messages précédents
-              </Text>
-            </Center>
-          )}
-
-          {/* Messages */}
-          {isLoadingMessages ? (
-            <Center py={12}>
-              <Spinner size="lg" color="blue.500" />
-            </Center>
-          ) : messages.length === 0 ? (
-            <Center py={12}>
-              <Box textAlign="center">
-                <Text fontSize="lg" color="gray.500" mb={2}>
-                  Aucun message
-                </Text>
-                <Text fontSize="sm" color="gray.400">
-                  Commencez la conversation !
-                </Text>
-              </Box>
+          {isLoadingConvs ? (
+            <Center flex={1}>
+              <Spinner size="md" color="blue.500" />
             </Center>
           ) : (
-            groupedMessages.map((group) => (
-              <Box key={group.date}>
-                <DateSeparator date={new Date(group.date)} />
-                {group.messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isOwnMessage={message.senderId === profile.id}
-                    onDelete={message.senderId === profile.id ? handleDelete : undefined}
-                  />
-                ))}
-              </Box>
-            ))
+            <ConversationList
+              conversations={conversations}
+              selectedId={selectedConv?.id ?? null}
+              onSelect={handleSelectConv}
+              onNewPrivate={() => setIsNewConvOpen(true)}
+              currentUserId={profile.id}
+            />
           )}
-
-          {/* Typing indicator */}
-          <TypingIndicator users={typingUsers} />
         </Box>
 
-        {/* Message input */}
-        {canWrite ? (
-          <MessageInput
-            onSend={handleSend}
-            onTyping={handleTyping}
-          />
-        ) : (
-          <Box
-            p={4}
-            bg="gray.50"
-            borderTopWidth="1px"
+        {/* ===== THREAD DE MESSAGES ===== */}
+        <Flex
+          direction="column"
+          flex={1}
+          minW={0}
+          display={{ base: showConvList ? 'none' : 'flex', md: 'flex' }}
+          borderLeftWidth={{ md: '1px' }}
+          borderLeftColor={{ md: 'gray.200' }}
+        >
+          {/* Header conversation */}
+          <Flex
+            align="center"
+            gap={3}
+            px={4}
+            py={3}
+            borderBottomWidth="1px"
             borderColor="gray.200"
-            textAlign="center"
+            bg="gray.50"
           >
-            <Text fontSize="sm" color="gray.500">
-              Vous n'avez pas la permission d'envoyer des messages.
-            </Text>
-          </Box>
-        )}
+            {/* Bouton retour (mobile) */}
+            <IconButton
+              aria-label="Retour aux conversations"
+              variant="ghost"
+              size="sm"
+              display={{ base: 'flex', md: 'none' }}
+              onClick={() => setShowConvList(true)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </IconButton>
 
-        {/* Screen reader announcements */}
-        <VisuallyHidden>
-          <div aria-live="polite" aria-atomic="true">
-            {messages.length > 0 && `${messages.length} messages dans la conversation`}
-          </div>
-        </VisuallyHidden>
+            <Box>
+              <Text fontWeight="semibold" fontSize="md">
+                {selectedConv ? convTitle : 'Messagerie'}
+              </Text>
+              {selectedConv?.type === 'team' && (
+                <Text fontSize="xs" color="gray.500">
+                  Conversation d'équipe
+                </Text>
+              )}
+            </Box>
+          </Flex>
+
+          {/* Messages container */}
+          {!selectedConv ? (
+            <Center flex={1}>
+              <Text color="gray.400" fontSize="sm">
+                Sélectionnez une conversation
+              </Text>
+            </Center>
+          ) : (
+            <>
+              <Box
+                ref={messagesContainerRef}
+                flex={1}
+                overflowY="auto"
+                onScroll={handleScroll}
+                py={4}
+                css={{
+                  '&::-webkit-scrollbar': { width: '8px' },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'var(--chakra-colors-gray-300)',
+                    borderRadius: '4px',
+                  },
+                }}
+              >
+                {isLoadingMore && (
+                  <Center py={4}>
+                    <Spinner size="sm" color="blue.500" />
+                  </Center>
+                )}
+
+                {hasMore && !isLoadingMore && (
+                  <Center py={4}>
+                    <Text
+                      as="button"
+                      fontSize="sm"
+                      color="blue.500"
+                      onClick={handleLoadMore}
+                      _hover={{ textDecoration: 'underline' }}
+                    >
+                      Charger les messages précédents
+                    </Text>
+                  </Center>
+                )}
+
+                {isLoadingMessages ? (
+                  <Center py={12}>
+                    <Spinner size="lg" color="blue.500" />
+                  </Center>
+                ) : messages.length === 0 ? (
+                  <Center py={12}>
+                    <Box textAlign="center">
+                      <Text fontSize="lg" color="gray.500" mb={2}>
+                        Aucun message
+                      </Text>
+                      <Text fontSize="sm" color="gray.400">
+                        Commencez la conversation !
+                      </Text>
+                    </Box>
+                  </Center>
+                ) : (
+                  groupedMessages.map((group) => (
+                    <Box key={group.date}>
+                      <DateSeparator date={new Date(group.date)} />
+                      {group.messages.map((message) => (
+                        <MessageBubble
+                          key={message.id}
+                          message={message}
+                          isOwnMessage={message.senderId === profile.id}
+                          onDelete={message.senderId === profile.id ? handleDelete : undefined}
+                        />
+                      ))}
+                    </Box>
+                  ))
+                )}
+
+                <TypingIndicator users={typingUsers} />
+              </Box>
+
+              {/* Message input */}
+              {canWrite ? (
+                <MessageInput onSend={handleSend} onTyping={handleTyping} />
+              ) : (
+                <Box
+                  p={4}
+                  bg="gray.50"
+                  borderTopWidth="1px"
+                  borderColor="gray.200"
+                  textAlign="center"
+                >
+                  <Text fontSize="sm" color="gray.500">
+                    Vous n'avez pas la permission d'envoyer des messages.
+                  </Text>
+                </Box>
+              )}
+            </>
+          )}
+        </Flex>
       </Flex>
+
+      {/* Modal nouvelle conversation */}
+      <NewConversationModal
+        isOpen={isNewConvOpen}
+        onClose={() => setIsNewConvOpen(false)}
+        employerId={resolvedEmployerId}
+        currentUserId={profile.id}
+        existingConversationMemberIds={existingPrivateMemberIds}
+        onSelect={handleNewConversationSelect}
+      />
+
+      {/* Screen reader announcements */}
+      <VisuallyHidden>
+        <div aria-live="polite" aria-atomic="true">
+          {messages.length > 0 && `${messages.length} messages dans la conversation`}
+        </div>
+      </VisuallyHidden>
     </DashboardLayout>
   )
 }
