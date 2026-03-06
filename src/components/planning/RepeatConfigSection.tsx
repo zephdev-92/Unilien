@@ -143,6 +143,6 @@ export function RepeatConfigSection({
 
 function buildSummary(dates: Date[]): string {
   if (dates.length === 0) return ''
-  if (dates.length === 1) return '1 intervention supplémentaire sera créée'
-  return `${dates.length} interventions supplémentaires seront créées`
+  if (dates.length === 1) return '1 répétition générée'
+  return `${dates.length} répétitions générées`
 }

@@ -21,18 +21,30 @@ export interface RepeatConfigState {
 export function useRepeatConfig(baseDate?: Date): RepeatConfigState {
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false)
   const [frequency, setFrequency] = useState<RepeatFrequency>('weekly')
-  // Pré-cocher le jour de la semaine du shift source
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(() =>
-    baseDate ? [baseDate.getDay()] : []
-  )
   const [intervalDays, setIntervalDays] = useState(7)
   const [repeatCount, setRepeatCount] = useState<number | undefined>(4)
   const [endDate, setEndDate] = useState('')
 
+  // L'override stocke les jours sélectionnés manuellement + le jour UTC de base
+  // auquel il correspond. Si baseDate change de jour, l'override est ignoré.
+  const [override, setOverride] = useState<{ baseDay: number; days: number[] } | null>(null)
+
+  const currentBaseDay = baseDate?.getUTCDay()
+
+  // Si l'override est valide pour le jour actuel, l'utiliser ; sinon dériver de baseDate
+  const daysOfWeek = useMemo(() => {
+    if (override !== null && override.baseDay === currentBaseDay) {
+      return override.days
+    }
+    if (currentBaseDay !== undefined) return [currentBaseDay]
+    return []
+  }, [override, currentBaseDay])
+
   const toggleDayOfWeek = (day: number) => {
-    setDaysOfWeek((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    )
+    const next = daysOfWeek.includes(day)
+      ? daysOfWeek.filter((d) => d !== day)
+      : [...daysOfWeek, day]
+    setOverride({ baseDay: currentBaseDay ?? -1, days: next })
   }
 
   const generatedDates = useMemo(() => {

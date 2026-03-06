@@ -95,20 +95,23 @@ export function NewShiftModal({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false)
 
-  const repeatOccurrences: RepeatOccurrence[] = repeatConfig.generatedDates.map((date) => ({
-    date,
-    shiftData: {
-      contractId: watchedValues.contractId ?? '',
-      employeeId: contracts.find((c) => c.id === watchedValues.contractId)?.employeeId ?? '',
-      startTime: watchedValues.startTime ?? '09:00',
-      endTime: watchedValues.endTime ?? '12:00',
-      breakDuration: watchedValues.breakDuration ?? 0,
-      shiftType: shiftType,
-      hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
-      nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
-      guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
-    },
-  }))
+  const buildShiftData = () => ({
+    contractId: watchedValues.contractId ?? '',
+    employeeId: contracts.find((c) => c.id === watchedValues.contractId)?.employeeId ?? '',
+    startTime: watchedValues.startTime ?? '09:00',
+    endTime: watchedValues.endTime ?? '12:00',
+    breakDuration: watchedValues.breakDuration ?? 0,
+    shiftType: shiftType,
+    hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+    nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
+    guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+  })
+
+  // Inclure le shift original (baseDate) + toutes les répétitions
+  const repeatOccurrences: RepeatOccurrence[] = [
+    ...(baseDate ? [{ date: baseDate, shiftData: buildShiftData() }] : []),
+    ...repeatConfig.generatedDates.map((date) => ({ date, shiftData: buildShiftData() })),
+  ]
 
   const handleRepeatConfirm = async (validOccurrences: RepeatOccurrence[]) => {
     if (!watchedValues.contractId) return
@@ -438,10 +441,10 @@ export function NewShiftModal({
                   {repeatConfig.isRepeatEnabled ? (
                     <AccessibleButton
                       colorPalette="blue"
-                      disabled={isSubmitDisabled || repeatConfig.generatedDates.length === 0}
+                      disabled={isSubmitDisabled || repeatOccurrences.length === 0}
                       onClick={() => setIsPreviewOpen(true)}
                     >
-                      Vérifier les {repeatConfig.generatedDates.length} répétition{repeatConfig.generatedDates.length > 1 ? 's' : ''}
+                      Vérifier ({repeatOccurrences.length} intervention{repeatOccurrences.length > 1 ? 's' : ''})
                     </AccessibleButton>
                   ) : (
                     <AccessibleButton
