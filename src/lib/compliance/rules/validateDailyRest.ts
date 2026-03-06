@@ -112,6 +112,9 @@ export function findPreviousShift(
       // Exclure l'intervention elle-même si elle a un ID
       if (newShift.id && shift.id === newShift.id) return false
 
+      // Filtrer par employé quand l'information est disponible
+      if (newShift.employeeId && shift.employeeId && shift.employeeId !== newShift.employeeId) return false
+
       const shiftEnd = getShiftEndDateTime(shift.date, shift.startTime, shift.endTime)
       return shiftEnd <= newStart
     })
@@ -138,6 +141,9 @@ export function findNextShift(
     .filter((shift) => {
       // Exclure l'intervention elle-même si elle a un ID
       if (newShift.id && shift.id === newShift.id) return false
+
+      // Filtrer par employé quand l'information est disponible
+      if (newShift.employeeId && shift.employeeId && shift.employeeId !== newShift.employeeId) return false
 
       const shiftStart = createDateTime(shift.date, shift.startTime)
       return shiftStart >= newEnd

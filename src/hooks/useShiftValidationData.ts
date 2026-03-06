@@ -75,7 +75,7 @@ export function useShiftValidationData({
         const shiftsForValidation: ShiftForValidation[] = shifts.map((s) => ({
           id: s.id,
           contractId: s.contractId,
-          employeeId: '',
+          employeeId: s.employeeId ?? '',
           date: new Date(s.date),
           startTime: s.startTime,
           endTime: s.endTime,
