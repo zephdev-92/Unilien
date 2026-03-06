@@ -155,6 +155,7 @@ export function useNewShiftForm({
   useEffect(() => {
     if (isOpen) {
       reset({
+        shiftType: 'effective',
         date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
         startTime: '09:00',
         endTime: '12:00',

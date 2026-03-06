@@ -46,7 +46,15 @@ export async function getShifts(
     return []
   }
 
-  return (data || []).map(mapShiftFromDb)
+  return (data || []).map((row) => {
+    const shift = mapShiftFromDb(row as ShiftDbRow)
+    // Extraire l'employeeId du JOIN contract (disponible au runtime même si absent du type généré)
+    const contractJoin = (row as Record<string, unknown>).contract as { employee_id?: string } | null
+    if (contractJoin?.employee_id) {
+      shift.employeeId = contractJoin.employee_id
+    }
+    return shift
+  })
 }
 
 export async function getShiftById(shiftId: string): Promise<Shift | null> {
