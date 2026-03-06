@@ -254,6 +254,43 @@ export async function updateShift(
   }
 }
 
+/**
+ * Crée plusieurs interventions en séquence.
+ * Retourne les interventions créées et les dates en échec.
+ */
+export async function createShifts(
+  contractId: string,
+  occurrences: Array<{
+    date: Date
+    startTime: string
+    endTime: string
+    breakDuration?: number
+    tasks?: string[]
+    notes?: string
+    hasNightAction?: boolean
+    shiftType?: ShiftType
+    nightInterventionsCount?: number
+    isRequalified?: boolean
+    effectiveHours?: number
+    guardSegments?: GuardSegment[]
+  }>
+): Promise<{ created: Shift[]; failed: Date[] }> {
+  const created: Shift[] = []
+  const failed: Date[] = []
+
+  for (const occurrence of occurrences) {
+    try {
+      const shift = await createShift(contractId, occurrence)
+      if (shift) created.push(shift)
+      else failed.push(occurrence.date)
+    } catch {
+      failed.push(occurrence.date)
+    }
+  }
+
+  return { created, failed }
+}
+
 export async function deleteShift(shiftId: string): Promise<void> {
   const { error } = await supabase
     .from('shifts')

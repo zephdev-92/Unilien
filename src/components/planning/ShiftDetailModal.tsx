@@ -145,6 +145,7 @@ interface ShiftDetailModalProps {
   profileId: string
   onSuccess: () => void
   caregiverCanEdit?: boolean
+  onRepeat?: (shift: Shift) => void
 }
 
 export function ShiftDetailModal({
@@ -155,6 +156,7 @@ export function ShiftDetailModal({
   profileId,
   onSuccess,
   caregiverCanEdit = false,
+  onRepeat,
 }: ShiftDetailModalProps) {
   const [state, dispatch] = useReducer(reducer, initialState)
   const {
@@ -510,6 +512,15 @@ export function ShiftDetailModal({
                       <Text fontSize="sm" color="green.600" alignSelf="center">
                         Vous avez validé cette intervention
                       </Text>
+                    )}
+                    {canEdit && onRepeat && shift && shift.status === 'planned' && (
+                      <AccessibleButton
+                        variant="outline"
+                        colorPalette="blue"
+                        onClick={() => onRepeat(shift)}
+                      >
+                        Répéter
+                      </AccessibleButton>
                     )}
                     {canEdit && (
                       <AccessibleButton

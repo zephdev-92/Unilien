@@ -22,6 +22,7 @@ import { WeekView } from './WeekView'
 import { MonthView } from './MonthView'
 import { NewShiftModal } from './NewShiftModal'
 import { ShiftDetailModal } from './ShiftDetailModal'
+import { RepeatShiftModal } from './RepeatShiftModal'
 import { AbsenceRequestModal } from './AbsenceRequestModal'
 import { AbsenceDetailModal } from './AbsenceDetailModal'
 import { getShifts } from '@/services/shiftService'
@@ -43,6 +44,7 @@ export function PlanningPage() {
   const [isNewShiftModalOpen, setIsNewShiftModalOpen] = useState(false)
   const [isAbsenceRequestModalOpen, setIsAbsenceRequestModalOpen] = useState(false)
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null)
+  const [repeatShift, setRepeatShift] = useState<Shift | null>(null)
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null)
   const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
 
@@ -328,11 +330,39 @@ export function PlanningPage() {
         userRole={profile.role}
         profileId={profile.id}
         caregiverCanEdit={caregiver?.permissions?.canEditPlanning}
+        onRepeat={canEditPlanning && employerIdForShifts ? (shift) => {
+          setSelectedShift(null)
+          setRepeatShift(shift)
+        } : undefined}
         onSuccess={() => {
           loadShifts()
           setSelectedShift(null)
         }}
       />
+
+      {repeatShift && employerIdForShifts && (
+        <RepeatShiftModal
+          isOpen={true}
+          onClose={() => setRepeatShift(null)}
+          shift={repeatShift}
+          employerId={employerIdForShifts}
+          existingShifts={shifts.map((s) => ({
+            id: s.id,
+            contractId: s.contractId,
+            employeeId: s.employeeId ?? '',
+            date: s.date,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            breakDuration: s.breakDuration,
+            shiftType: s.shiftType,
+          }))}
+          approvedAbsences={[]}
+          onSuccess={() => {
+            loadShifts()
+            setRepeatShift(null)
+          }}
+        />
+      )}
 
       {profile.role === 'employee' && (
         <AbsenceRequestModal
