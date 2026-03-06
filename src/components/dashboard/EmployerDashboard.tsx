@@ -12,6 +12,7 @@ import {
   ComplianceWidget,
   PchEnvelopeWidget,
   TodayPlanningWidget,
+  BudgetForecastWidget,
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { getEmployer } from '@/services/profileService'
@@ -91,6 +92,7 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
             {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (
               <PchEnvelopeWidget employerId={profile.id} />
             )}
+            <BudgetForecastWidget employerId={profile.id} />
           </Stack>
         </GridItem>
         <GridItem minW={0}>

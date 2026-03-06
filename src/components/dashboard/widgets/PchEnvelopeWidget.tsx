@@ -10,7 +10,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Stack, Flex, Text, Skeleton, Progress } from '@chakra-ui/react'
 import { getEmployer } from '@/services/profileService'
-import { getEmployerStats } from '@/services/statsService'
+import { getEmployerStats, getEmployerBudgetForecast } from '@/services/statsService'
 import { calcEnveloppePch, getPchElementRate, PCH_TYPE_LABELS } from '@/lib/pch/pchTariffs'
 import type { PchType } from '@/lib/pch/pchTariffs'
 import { logger } from '@/lib/logger'
@@ -27,6 +27,9 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
     consumed: number
     resteACharge: number
     ratio: number
+    completedHours: number
+    plannedHours: number
+    projectedHours: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notConfigured, setNotConfigured] = useState(false)
@@ -39,9 +42,10 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
     async function load() {
       setIsLoading(true)
       try {
-        const [employer, stats] = await Promise.all([
+        const [employer, stats, forecast] = await Promise.all([
           getEmployer(employerId),
           getEmployerStats(employerId),
+          getEmployerBudgetForecast(employerId),
         ])
 
         if (cancelled) return
@@ -67,6 +71,9 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
           consumed,
           resteACharge,
           ratio,
+          completedHours: forecast.completedHours,
+          plannedHours: forecast.plannedHours,
+          projectedHours: forecast.projectedHours,
         })
       } catch (err) {
         logger.error('PchEnvelopeWidget — erreur chargement:', err)
@@ -98,7 +105,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
     return null
   }
 
-  const { pchType, pchMonthlyHours, envelopePch, consumed, resteACharge, ratio } = data
+  const { pchType, pchMonthlyHours, envelopePch, consumed, resteACharge, ratio, completedHours, plannedHours, projectedHours } = data
   const ratioPercent = Math.round(ratio * 100)
   const isWarning = ratio >= 0.9
   const isOver = consumed > envelopePch
@@ -170,6 +177,24 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
           </Progress.Track>
         </Progress.Root>
       </Box>
+
+      {/* Heures du mois */}
+      {projectedHours > 0 && (
+        <Stack gap={1} mt={3}>
+          <Flex justify="space-between">
+            <Text fontSize="sm" color="gray.600">Heures effectuées</Text>
+            <Text fontSize="sm" fontWeight="medium">{completedHours}h</Text>
+          </Flex>
+          <Flex justify="space-between">
+            <Text fontSize="sm" color="gray.600">Heures planifiées</Text>
+            <Text fontSize="sm" fontWeight="medium">{plannedHours}h</Text>
+          </Flex>
+          <Flex justify="space-between">
+            <Text fontSize="sm" fontWeight="semibold" color="gray.800">Total projeté</Text>
+            <Text fontSize="sm" fontWeight="bold" color="brand.600">{projectedHours}h</Text>
+          </Flex>
+        </Stack>
+      )}
 
       {/* Lignes détail */}
       <Stack gap={2} mt={4}>
