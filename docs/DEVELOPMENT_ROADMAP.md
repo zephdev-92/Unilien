@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 27 février 2026 (Coverage 70%+ — 1897 tests / 97 fichiers, PCH N1-N3, bulletins v2, RouteAnnouncer, TeamPage/EmployeeSection décomposés)
-**Version**: 1.7.0
+**Dernière mise à jour**: 6 mars 2026 (1942 tests / 102 fichiers, URLs francisées, répétition interventions, fix validation inter-employeurs, conversations privées en cours)
+**Version**: 1.8.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -13,31 +13,71 @@
 | Catégorie | Complétude | Statut |
 |-----------|------------|--------|
 | **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
-| **Dashboards** | 95% | ✅ Excellent (3 dashboards rôle-spécifiques) |
-| **Planning** | 95% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits) |
-| **Cahier de liaison** | 80% | 🟡 Bon (realtime, typing indicators) |
+| **Dashboards** | 75% | 🟡 Bon (3 dashboards rôle-spécifiques, manque onboarding/nudges/planning du jour/tendances — cf. 7b) |
+| **Planning** | 97% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition interventions) |
+| **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, conversations privées en cours) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
-| **Documents/Export** | 75% | 🟡 À améliorer (gestion OK, exports avancés manquants) |
+| **Documents/Export** | 92% | ✅ Bon (bulletins v2, export planning PDF/Excel/iCal ✅ mergé, archivage avancé à faire) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~70% | ✅ Excellent (1897 tests / 97 fichiers, 8/8 hooks testés ✅) |
+| **Tests** | ~70% | ✅ Excellent (1942 tests / 102 fichiers, 8/8 hooks testés ✅) |
 | **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
 | **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
 
 ### Métriques Clés
 
-- **Fichiers source**: ~140 fichiers TS/TSX
-- **Lignes de code**: ~16,000 lignes
-- **Tests**: 1897 tests / 97 fichiers (70%+ coverage)
-- **Migrations DB**: 32 migrations
-- **Composants UI**: ~75 composants
-- **Services**: 15 services (+ absenceJustificationService + caregiverTeamService)
-- **Hooks**: 12 hooks custom (useClockIn, useNewShiftForm, useNewContractForm ajoutés) + useShiftValidationData, useShiftNightHours, useShiftRequalification, useShiftEffectiveHours, useGuardSegments
-- **Routes**: 16 routes (dont 10 protégées avec ErrorBoundary individuel)
+- **Fichiers source**: ~190 fichiers TS/TSX (hors tests)
+- **Tests**: 1942 tests / 102 fichiers (70%+ coverage)
+- **Migrations DB**: 35 migrations
+- **Composants UI**: ~88 composants
+- **Services**: 19 services
+- **Hooks**: 20 hooks custom
+- **Routes**: 16 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-10 - Février 2026)
+## ✅ Réalisations Récentes (Semaines 6-13 - Février/Mars 2026)
+
+### Semaine 10-11 — Mars 2026 (PRs #122–#136)
+
+#### URLs francisées (PR #126 ✅)
+
+Toutes les routes de l'application ont été francisées pour une meilleure UX et cohérence linguistique. Redirect URL Supabase mise à jour en conséquence (PR #127).
+
+#### Fix création intervention travail effectif + validation inter-employeurs (PR #135 ✅)
+
+Correction de deux bugs dans le module planning :
+- La création d'intervention de type "travail effectif" ne transmettait pas le `shiftType` lors du reset du formulaire
+- La validation quotidienne des heures prenait en compte les shifts d'autres employeurs → corrigée pour filtrer par employeur
+
+#### Répétition d'interventions (PR #136 ✅)
+
+Nouvelle fonctionnalité permettant de répéter une intervention de manière hebdomadaire ou personnalisée :
+- Sélection de la fréquence (hebdomadaire, personnalisée)
+- Configuration des jours de la semaine
+- Le shift original est inclus dans la série générée
+
+#### Conversations privées — en cours (branche `feat/private-conversations`)
+
+Ajout de conversations privées (1-à-1) entre membres d'une équipe dans le cahier de liaison :
+- Migration 035 : table `conversations` (types `team` / `private`, `participant_ids UUID[]`)
+- Remplacement de `react-icons` par des SVGs inline (non installé)
+- Migration des icônes vers SVGs natifs
+
+#### CI/CD & Dépendances (PRs #128–#130)
+
+- Bump `actions/github-script` v7 → v8
+- Bump `actions/upload-artifact` v6 → v7
+- Bump dépendances dev
+
+#### Métriques session (06/03/2026)
+
+- **1942 tests** / 102 fichiers (était 1897 / 97)
+- 35 migrations DB (était 32)
+- Routes francisées
+- Aucune régression (lint + tests passent)
+
+---
 
 ### Sprint Refactoring Architectural — 8 PRs (25-26/02/2026)
 
@@ -359,10 +399,12 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 | **Push Notifications** | Code implémenté, service worker, Edge Function (config VAPID restante) |
 | **Messaging Realtime** | Cahier de liaison temps réel avec indicateurs de frappe |
 | **Navigation Responsive** | Sidebar rôle-based, mobile overlay, accessibility (skip link) |
-| **24 Migrations DB** | Tables, RLS policies, fonctions, storage buckets, realtime |
-| **786 Tests (32 fichiers)** | Services (13/13), Compliance (7), Auth (4), Hooks (4), Store (1), Export (1) |
-| **13 Services** | CRUD complet pour toutes les entités métier |
+| **35 Migrations DB** | Tables, RLS policies, fonctions, storage buckets, realtime, conversations |
+| **1942 Tests (102 fichiers)** | Services (13/13), Compliance (7), Auth (4), Hooks (8/8), Store (1), Export (4), Composants UI |
+| **19 Services** | CRUD complet pour toutes les entités métier |
 | **Composants Accessibles** | AccessibleInput, AccessibleButton, AccessibleSelect, VoiceInput |
+| **URLs Francisées** | Toutes les routes de l'app en français (PR #126) |
+| **Répétition Interventions** | Hebdomadaire ou personnalisée, configuration jours de la semaine (PR #136) |
 
 ---
 
@@ -419,7 +461,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] Vérifier que .env n'a jamais été commité (git log — confirmé)
 [x] Vérifier absence de service_role_key côté client (confirmé)
 [x] Ajouter supabase/.temp/ au .gitignore (10/02/2026)
-[ ] Auditer les RLS policies (sécurité dépend des RLS, pas de la clé anon)
+[x] Auditer les RLS policies (sécurité dépend des RLS, pas de la clé anon) — ✅ 24/02/2026
 ```
 
 ---
@@ -551,7 +593,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 **Effort**: 6-8 semaines (Phase 1+2 terminées en 1 jour)
 **Document**: `docs/TEST_COVERAGE_ANALYSIS.md`
 
-**État actuel**: 70%+ coverage — 1897 tests / 97 fichiers ✅ (cibles Q1 30% et 70% atteintes — PR #121)
+**État actuel**: 70%+ coverage — 1942 tests / 102 fichiers ✅ (cibles Q1 30% et 70% atteintes — PR #121)
 
 **Services testés (13/13)** ✅ Phase 1 terminée (12/02/2026):
 ```
@@ -572,7 +614,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] src/services/shiftService.test.ts (existant, complété)
 ```
 
-**Hooks testés (7/7)** ✅ — Phase 2 terminée (17/02/2026):
+**Hooks testés (8/8)** ✅ — Phase 2 terminée (17/02/2026) + useEmployerResolution (24/02/2026):
 ```
 [x] useAuth.test.ts (existant)
 [x] useNotifications.test.ts (20 tests)
@@ -581,6 +623,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] useComplianceMonitor.test.ts (~15 tests) — ✅ 17/02/2026
 [x] usePushNotifications.test.ts (~17 tests) — ✅ 17/02/2026
 [x] useSpeechRecognition.test.ts (~17 tests) — ✅ 17/02/2026
+[x] useEmployerResolution.test.ts (5 tests) — ✅ 24/02/2026
 ```
 
 **Autres tests existants**:
@@ -973,10 +1016,10 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 **Effort**: 2 jours
 
 ```
-[ ] Export PDF planning mensuel
-[ ] Export Excel (heures détaillées)
-[ ] Export iCal (intégration calendriers)
-[ ] Filtres avancés (employé, période)
+[x] Export PDF planning mensuel (planningPdfGenerator.ts — feat/export-planning)
+[x] Export Excel (heures détaillées) (planningExcelGenerator.ts — feat/export-planning)
+[x] Export iCal (intégration calendriers) (planningIcalGenerator.ts — feat/export-planning)
+[x] Filtres avancés (employé, période) (PlanningExportSection.tsx — feat/export-planning)
 ```
 
 #### 6.3 Archivage Documents
@@ -1039,6 +1082,59 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 ---
 
+### 7b. 🏠 Dashboard — Alignement Prototype
+
+**Impact**: 🟡 IMPORTANT - Première impression utilisateur, onboarding, engagement
+**Effort**: 1-2 semaines
+**Référence**: `template-final/dashboard.html`
+
+Le prototype statique contient plusieurs éléments dashboard absents de l'app React.
+
+#### 7b.1 Onboarding & Demo
+
+```
+[ ] Demo banner — bandeau "Mode démo" avec badge, texte explicatif, CTA inscription, bouton fermer (dismissible localStorage)
+[ ] Onboarding banner — 3 étapes avec progression (compte créé ✓, ajouter employé, planifier intervention) + CTA par étape
+[ ] Empty state dashboard — variante onboarding quand aucun employé/intervention (stats à "0", planning vide avec CTA)
+```
+
+#### 7b.2 Greeting & Navigation Contextuelle
+
+```
+[x] Greeting enrichi — eyebrow jour/date, greeting "Bonjour, [Name]" ✅
+[x] Greeting chips — "Prochaine intervention à 14:00" + "3 alertes conformité" (badges) ✅
+[x] Greeting CTA — bouton "Voir le planning" (lien vers /planning) ✅
+[x] Greeting skeleton — skeleton loading sur le bloc greeting ✅
+[ ] Role switcher — barre de sélection employeur / employé / aidant en haut du dashboard (prototypage/démo)
+```
+
+#### 7b.3 Action Nudges & Quick Actions
+
+```
+[x] Action nudges — ActionNudgesWidget : bulletins non générés + heures non validées, dynamique ✅
+[x] Quick actions grid — QuickActionsWidget existant : 4 actions par rôle, grille 2×4 responsive ✅
+```
+
+#### 7b.4 Planning du Jour
+
+```
+[ ] Carte "Planning du jour" — tableau interventions du jour (employé avec avatar, horaire, type tag, statut pill)
+[ ] Planning du jour — lignes cliquables (navigation vers détail shift)
+[ ] Planning du jour — empty state (icône + message + CTA "Planifier une intervention")
+```
+
+#### 7b.5 Stats & Tendances
+
+```
+[ ] Tendances stats — indicateurs ↑/↓ sur les stats cards (+1 employé, +8% heures, etc.)
+[ ] Alertes conformité sidebar — liste détaillée des alertes (icône, titre, description, niveau danger/warning/success)
+```
+
+**Effort**: 1-2 semaines
+**Timeline**: Semaines 12-14/2026
+
+---
+
 ### 8. 📊 Analytics & Reporting
 
 **Impact**: 🟡 IMPORTANT - Business intelligence
@@ -1098,11 +1194,14 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 #### 9.2 Onboarding Utilisateur
 
+> Note : Les éléments de base (demo banner, onboarding banner 3 étapes, empty states) sont dans la section 7b.1 ci-dessus. Cette section couvre les améliorations avancées.
+
 ```
-[ ] Tour guidé première connexion
-[ ] Tooltips contextuels
+[ ] Tour guidé première connexion (highlight interactif des éléments clés)
+[ ] Tooltips contextuels (première visite de chaque page)
 [ ] Vidéos tutoriels
 [ ] FAQ intégrée
+[ ] Checklist profil complet (widget progression — cf. prototype profile.html)
 ```
 
 **Effort**: 1 semaine
@@ -1228,7 +1327,7 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 #### 13.4 Headers Sécurité
 
 ```
-[ ] Content-Security-Policy
+[x] Content-Security-Policy — ✅ (CSP headers en production)
 [ ] X-Frame-Options
 [ ] X-Content-Type-Options
 [ ] Referrer-Policy
@@ -1459,14 +1558,15 @@ npx playwright install
 - ✅ **1605 tests** / 79 fichiers (~60% coverage)
 
 **Semaines 11-13** (mars 2026) :
+- ✅ Export planning (PDF mensuel, Excel, iCal) — PR #124
+- ✅ URLs francisées — PR #126
+- ✅ Fix validation inter-employeurs — PR #135
+- ✅ Répétition d'interventions (hebdomadaire/personnalisée) — PR #136
+- 🟡 Conversations privées (feat/private-conversations — en cours)
+- 🟡 Dashboard — alignement prototype (onboarding, nudges, planning du jour, tendances) — section 7b
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
-- 🟡 Export planning (PDF mensuel, Excel, iCal)
 - 🟡 Tests composants UI critiques restants (Phase 3)
-
-**Semaines 11-13**:
-- 🟡 Tests composants UI critiques (Phase 3 — pour atteindre 60%)
-- 🟡 Export documents amélioré
 - 🟢 Headers sécurité
 
 ### Q2 2026 (Avril - Juin)

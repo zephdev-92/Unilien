@@ -3,6 +3,7 @@ import { Stack, SimpleGrid } from '@chakra-ui/react'
 import type { Profile, Shift, Employer } from '@/types'
 import {
   WelcomeCard,
+  ActionNudgesWidget,
   UpcomingShiftsWidget,
   RecentLogsWidget,
   QuickActionsWidget,
@@ -13,6 +14,7 @@ import {
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { getEmployer } from '@/services/profileService'
+import { getWeeklyComplianceOverview } from '@/services/complianceService'
 import { useComplianceMonitor } from '@/hooks/useComplianceMonitor'
 import { logger } from '@/lib/logger'
 
@@ -24,6 +26,7 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [isLoadingShifts, setIsLoadingShifts] = useState(true)
   const [employer, setEmployer] = useState<Employer | null>(null)
+  const [complianceAlertCount, setComplianceAlertCount] = useState(0)
 
   // Monitor compliance and create notifications for threshold violations
   useComplianceMonitor({
@@ -37,6 +40,13 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
     getEmployer(profile.id)
       .then(setEmployer)
       .catch((err) => logger.error('Erreur chargement profil employeur:', err))
+
+    getWeeklyComplianceOverview(profile.id)
+      .then((overview) => {
+        const alertCount = (overview.summary.critical ?? 0) + (overview.summary.warnings ?? 0)
+        setComplianceAlertCount(alertCount)
+      })
+      .catch((err) => logger.error('Erreur chargement conformité:', err))
   }, [profile.id])
 
   useEffect(() => {
@@ -65,7 +75,13 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
 
   return (
     <Stack gap={6}>
-      <WelcomeCard profile={profile} />
+      <WelcomeCard
+        profile={profile}
+        nextShift={shifts[0] ?? null}
+        complianceAlertCount={complianceAlertCount}
+        loading={isLoadingShifts}
+      />
+      <ActionNudgesWidget employerId={profile.id} />
       <StatsWidget userRole="employer" profileId={profile.id} />
       <QuickActionsWidget userRole="employer" />
       {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (

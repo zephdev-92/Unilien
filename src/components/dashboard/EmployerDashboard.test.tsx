@@ -10,6 +10,9 @@ vi.mock('./widgets', () => ({
   WelcomeCard: ({ profile }: { profile: { firstName: string } }) => (
     <div data-testid="welcome-card">{profile.firstName}</div>
   ),
+  ActionNudgesWidget: ({ employerId }: { employerId: string }) => (
+    <div data-testid="action-nudges-widget" data-employer-id={employerId} />
+  ),
   StatsWidget: ({ userRole }: { userRole: string }) => (
     <div data-testid="stats-widget" data-role={userRole} />
   ),
@@ -58,6 +61,11 @@ vi.mock('@/services/profileService', () => ({
   getEmployer: (...args: unknown[]) => mockGetEmployer(...args),
 }))
 
+const mockGetWeeklyComplianceOverview = vi.fn()
+vi.mock('@/services/complianceService', () => ({
+  getWeeklyComplianceOverview: (...args: unknown[]) => mockGetWeeklyComplianceOverview(...args),
+}))
+
 const mockUseComplianceMonitor = vi.fn()
 vi.mock('@/hooks/useComplianceMonitor', () => ({
   useComplianceMonitor: (...args: unknown[]) => mockUseComplianceMonitor(...args),
@@ -74,6 +82,7 @@ describe('EmployerDashboard', () => {
     vi.clearAllMocks()
     mockGetShifts.mockResolvedValue([])
     mockGetEmployer.mockResolvedValue(null)
+    mockGetWeeklyComplianceOverview.mockResolvedValue({ summary: { critical: 0, warnings: 0 } })
     mockUseComplianceMonitor.mockReturnValue(undefined)
   })
 
