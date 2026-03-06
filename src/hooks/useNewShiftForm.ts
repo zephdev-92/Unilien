@@ -270,6 +270,9 @@ export function useNewShiftForm({
     contracts,
     isLoadingContracts,
     contractOptions,
+    // validation data (for repeat preview)
+    existingShifts,
+    approvedAbsences,
     // submit
     onSubmit,
     isSubmitDisabled,

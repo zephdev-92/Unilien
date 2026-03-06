@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Dialog,
   Portal,
@@ -16,7 +17,13 @@ import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSecti
 import { NightActionToggle } from './NightActionToggle'
 import { Guard24hSection } from './Guard24hSection'
 import { ShiftHoursSummary } from './ShiftHoursSummary'
+import { RepeatConfigSection } from './RepeatConfigSection'
+import { RepeatPreviewModal, type RepeatOccurrence } from './RepeatPreviewModal'
 import { useNewShiftForm } from '@/hooks/useNewShiftForm'
+import { useRepeatConfig } from '@/hooks/useRepeatConfig'
+import { createShifts } from '@/services/shiftService'
+import { SHIFT_TYPE_LABELS } from './shiftTypeLabels'
+import { logger } from '@/lib/logger'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -76,11 +83,75 @@ export function NewShiftModal({
     contracts,
     isLoadingContracts,
     contractOptions,
+    existingShifts,
+    approvedAbsences,
     onSubmit,
     isSubmitDisabled,
   } = useNewShiftForm({ isOpen, employerId, defaultDate, onSuccess, onClose })
 
+  const baseDate = watchedValues.date ? new Date(watchedValues.date) : defaultDate
+  const repeatConfig = useRepeatConfig(baseDate)
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false)
+
+  const repeatOccurrences: RepeatOccurrence[] = repeatConfig.generatedDates.map((date) => ({
+    date,
+    shiftData: {
+      contractId: watchedValues.contractId ?? '',
+      employeeId: contracts.find((c) => c.id === watchedValues.contractId)?.employeeId ?? '',
+      startTime: watchedValues.startTime ?? '09:00',
+      endTime: watchedValues.endTime ?? '12:00',
+      breakDuration: watchedValues.breakDuration ?? 0,
+      shiftType: shiftType,
+      hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+      nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
+      guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+    },
+  }))
+
+  const handleRepeatConfirm = async (validOccurrences: RepeatOccurrence[]) => {
+    if (!watchedValues.contractId) return
+    setIsBatchSubmitting(true)
+    try {
+      const { failed } = await createShifts(
+        watchedValues.contractId,
+        validOccurrences.map((occ) => ({
+          date: occ.date,
+          startTime: watchedValues.startTime ?? '09:00',
+          endTime: watchedValues.endTime ?? '12:00',
+          breakDuration: watchedValues.breakDuration ?? 0,
+          tasks: watchedValues.tasks ? watchedValues.tasks.split('\n').filter(Boolean) : [],
+          notes: watchedValues.notes || undefined,
+          hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+          shiftType,
+          nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
+          isRequalified,
+          effectiveHours: effectiveHoursComputed ?? undefined,
+          guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+        }))
+      )
+      if (failed.length > 0) {
+        logger.error('Certaines occurrences ont échoué:', failed)
+      }
+      setIsPreviewOpen(false)
+      onSuccess()
+      onClose()
+    } catch (error) {
+      logger.error('Erreur création répétitions:', error)
+    } finally {
+      setIsBatchSubmitting(false)
+    }
+  }
+
+  const baseShiftSummary = (() => {
+    if (!watchedValues.date) return ''
+    const typeLabel = SHIFT_TYPE_LABELS[shiftType]
+    return `${watchedValues.date} · ${watchedValues.startTime ?? ''}–${watchedValues.endTime ?? ''} · ${typeLabel}`
+  })()
+
   return (
+    <>
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <Portal>
         <Dialog.Backdrop bg="blackAlpha.600" />
@@ -147,6 +218,13 @@ export function NewShiftModal({
                       }
                       if (newType !== 'effective') {
                         setHasNightAction(false)
+                      }
+                      if (newType === 'presence_night') {
+                        setValue('startTime', '21:00')
+                        setValue('endTime', '07:00')
+                      } else if (newType !== 'guard_24h') {
+                        setValue('startTime', '09:00')
+                        setValue('endTime', '12:00')
                       }
                     }}
                   />
@@ -330,6 +408,12 @@ export function NewShiftModal({
                     />
                   </Box>
 
+                  {/* Répétition */}
+                  <RepeatConfigSection
+                    {...repeatConfig}
+                    baseDate={baseDate}
+                  />
+
                   {/* Erreur de soumission */}
                   {submitError && (
                     <Box p={4} bg="red.50" borderRadius="md">
@@ -348,23 +432,33 @@ export function NewShiftModal({
                   </Text>
                 )}
                 <Flex gap={3} ml="auto">
-                  <AccessibleButton variant="outline" onClick={onClose} disabled={isSubmitting}>
+                  <AccessibleButton variant="outline" onClick={onClose} disabled={isSubmitting || isBatchSubmitting}>
                     Annuler
                   </AccessibleButton>
-                  <AccessibleButton
-                    type="submit"
-                    form="new-shift-form"
-                    colorPalette={hasErrors ? 'gray' : 'blue'}
-                    loading={isSubmitting}
-                    disabled={isSubmitDisabled}
-                  >
-                    {hasErrors
-                      ? 'Intervention non conforme'
-                      : hasWarnings && !acknowledgeWarnings
-                        ? 'Vérifiez les avertissements'
-                        : "Créer l'intervention"
-                    }
-                  </AccessibleButton>
+                  {repeatConfig.isRepeatEnabled ? (
+                    <AccessibleButton
+                      colorPalette="blue"
+                      disabled={isSubmitDisabled || repeatConfig.generatedDates.length === 0}
+                      onClick={() => setIsPreviewOpen(true)}
+                    >
+                      Vérifier les {repeatConfig.generatedDates.length} répétition{repeatConfig.generatedDates.length > 1 ? 's' : ''}
+                    </AccessibleButton>
+                  ) : (
+                    <AccessibleButton
+                      type="submit"
+                      form="new-shift-form"
+                      colorPalette={hasErrors ? 'gray' : 'blue'}
+                      loading={isSubmitting}
+                      disabled={isSubmitDisabled}
+                    >
+                      {hasErrors
+                        ? 'Intervention non conforme'
+                        : hasWarnings && !acknowledgeWarnings
+                          ? 'Vérifiez les avertissements'
+                          : "Créer l'intervention"
+                      }
+                    </AccessibleButton>
+                  )}
                 </Flex>
               </Flex>
             </Dialog.Footer>
@@ -372,6 +466,20 @@ export function NewShiftModal({
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>
+
+    {isPreviewOpen && (
+      <RepeatPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        occurrences={repeatOccurrences}
+        existingShifts={existingShifts}
+        approvedAbsences={approvedAbsences}
+        baseShiftSummary={baseShiftSummary}
+        isSubmitting={isBatchSubmitting}
+        onConfirm={handleRepeatConfirm}
+      />
+    )}
+    </>
   )
 }
 
