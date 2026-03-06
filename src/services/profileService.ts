@@ -280,9 +280,9 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     specific_needs: data.specificNeeds ? sanitizeText(data.specificNeeds) : null,
     cesu_number: data.cesuNumber ? sanitizeText(data.cesuNumber) : null,
     pch_beneficiary: data.pchBeneficiary ?? false,
-    pch_monthly_amount: data.pchMonthlyAmount || null,
+    pch_monthly_amount: Number.isFinite(data.pchMonthlyAmount) ? data.pchMonthlyAmount : null,
     pch_type: data.pchType || null,
-    pch_monthly_hours: data.pchMonthlyHours || null,
+    pch_monthly_hours: Number.isFinite(data.pchMonthlyHours) ? data.pchMonthlyHours : null,
     emergency_contacts: data.emergencyContacts || [],
   }
 

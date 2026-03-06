@@ -1118,16 +1118,16 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 #### 7b.4 Planning du Jour
 
 ```
-[ ] Carte "Planning du jour" — tableau interventions du jour (employé avec avatar, horaire, type tag, statut pill)
-[ ] Planning du jour — lignes cliquables (navigation vers détail shift)
-[ ] Planning du jour — empty state (icône + message + CTA "Planifier une intervention")
+[x] Carte "Planning du jour" — TodayPlanningWidget : tableau interventions du jour (employé avec avatar, horaire, type tag, statut pill) ✅
+[x] Planning du jour — lignes cliquables (navigation vers /planning?shift=id) ✅
+[x] Planning du jour — empty state (icône calendrier + message + CTA "Planifier une intervention" + "Voir l'equipe") ✅
 ```
 
 #### 7b.5 Stats & Tendances
 
 ```
-[ ] Tendances stats — indicateurs ↑/↓ sur les stats cards (+1 employé, +8% heures, etc.)
-[ ] Alertes conformité sidebar — liste détaillée des alertes (icône, titre, description, niveau danger/warning/success)
+[x] Tendances stats — indicateurs ↑/↓ sur les stats cards, SVG icons avec backgrounds colorés (remplace emojis) ✅
+[x] Alertes conformité sidebar — AlertSummaryList : alertes flat (icône SVG, titre, description, critical/warning/success) ✅
 ```
 
 **Effort**: 1-2 semaines

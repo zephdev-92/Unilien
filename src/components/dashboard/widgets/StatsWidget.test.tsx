@@ -112,12 +112,12 @@ describe('StatsWidget', () => {
       })
     })
 
-    it('affiche la variation positive des heures vs mois dernier', async () => {
+    it('affiche la variation positive des heures vs mois dernier avec fleche', async () => {
       renderWithProviders(
         <StatsWidget userRole="employer" profileId="employer-1" />
       )
       await waitFor(() => {
-        expect(screen.getByText('+20h vs mois dernier')).toBeInTheDocument()
+        expect(screen.getByText(/\u2191 \+20h vs mois dernier/)).toBeInTheDocument()
       })
     })
 
@@ -233,7 +233,7 @@ describe('StatsWidget', () => {
   })
 
   describe('Variation négative des heures', () => {
-    it('affiche la variation négative', async () => {
+    it('affiche la variation négative avec fleche', async () => {
       mockGetEmployerStats.mockResolvedValue({
         ...employerStats,
         hoursThisMonth: 80,
@@ -244,7 +244,7 @@ describe('StatsWidget', () => {
         <StatsWidget userRole="employer" profileId="employer-1" />
       )
       await waitFor(() => {
-        expect(screen.getByText('-20h vs mois dernier')).toBeInTheDocument()
+        expect(screen.getByText(/\u2193 -20h vs mois dernier/)).toBeInTheDocument()
       })
     })
   })

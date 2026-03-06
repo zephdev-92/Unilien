@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Stack, SimpleGrid } from '@chakra-ui/react'
+import { Stack, Grid, GridItem } from '@chakra-ui/react'
 import type { Profile, Shift, Employer } from '@/types'
 import {
   WelcomeCard,
   ActionNudgesWidget,
-  UpcomingShiftsWidget,
-  RecentLogsWidget,
+  // UpcomingShiftsWidget,
+  // RecentLogsWidget,
   QuickActionsWidget,
   StatsWidget,
-  TeamWidget,
+  // TeamWidget,
   ComplianceWidget,
   PchEnvelopeWidget,
+  TodayPlanningWidget,
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { getEmployer } from '@/services/profileService'
@@ -83,22 +84,33 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
       />
       <ActionNudgesWidget employerId={profile.id} />
       <StatsWidget userRole="employer" profileId={profile.id} />
-      <QuickActionsWidget userRole="employer" />
-      {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (
-        <PchEnvelopeWidget employerId={profile.id} />
-      )}
+      <Grid templateColumns={{ base: '1fr', lg: '1fr 340px' }} gap={6}>
+        <GridItem minW={0}>
+          <Stack gap={6}>
+            <TodayPlanningWidget employerId={profile.id} />
+            {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (
+              <PchEnvelopeWidget employerId={profile.id} />
+            )}
+          </Stack>
+        </GridItem>
+        <GridItem minW={0}>
+          <Stack gap={6}>
+            <ComplianceWidget employerId={profile.id} />
+            <QuickActionsWidget userRole="employer" />
+          </Stack>
+        </GridItem>
+      </Grid>
+      {/* TODO: réactiver quand les données seront disponibles
       <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
         <TeamWidget employerId={profile.id} />
-        <ComplianceWidget employerId={profile.id} />
-      </SimpleGrid>
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
         <UpcomingShiftsWidget
           shifts={shifts}
           loading={isLoadingShifts}
           userRole="employer"
         />
-        <RecentLogsWidget employerId={profile.id} />
       </SimpleGrid>
+      <RecentLogsWidget employerId={profile.id} />
+      */}
     </Stack>
   )
 }

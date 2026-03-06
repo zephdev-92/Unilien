@@ -105,9 +105,9 @@ describe('ComplianceWidget', () => {
     it('affiche les noms des employés', async () => {
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Marie Martin')).toBeInTheDocument()
-        expect(screen.getByText('Pierre Dupont')).toBeInTheDocument()
-        expect(screen.getByText('Sophie Leclerc')).toBeInTheDocument()
+        expect(screen.getAllByText('Marie Martin').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('Pierre Dupont').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('Sophie Leclerc').length).toBeGreaterThanOrEqual(1)
       })
     })
 
@@ -121,8 +121,8 @@ describe('ComplianceWidget', () => {
     it('affiche les alertes des employés', async () => {
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Proche des 44h')).toBeInTheDocument()
-        expect(screen.getByText('Dépasse 44h')).toBeInTheDocument()
+        expect(screen.getAllByText('Proche des 44h').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText('Dépasse 44h').length).toBeGreaterThanOrEqual(1)
       })
     })
 
@@ -164,18 +164,49 @@ describe('ComplianceWidget', () => {
     })
   })
 
-  describe('Tri par statut', () => {
-    it('affiche les employés critiques en premier', async () => {
+  describe('Liste d\'alertes resume', () => {
+    it('affiche "Convention respectee" quand aucune alerte', async () => {
+      const allOk: WeeklyComplianceOverview = {
+        ...overviewWithEmployees,
+        employees: [
+          makeEmployee({ employeeId: 'emp-1', employeeName: 'Marie Martin', status: 'ok', alerts: [] }),
+        ],
+        summary: { totalEmployees: 1, compliant: 1, warnings: 0, critical: 0 },
+      }
+      mockGetWeeklyComplianceOverview.mockResolvedValue(allOk)
+      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText('Convention respectee')).toBeInTheDocument()
+        expect(screen.getByText('Planning de la semaine conforme.')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les alertes critiques et warnings dans la liste resume', async () => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithEmployees)
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
-        const names = screen
+        // Alert list shows the alert messages
+        const alerts = screen.getAllByRole('alert')
+        expect(alerts.length).toBeGreaterThan(0)
+      })
+    })
+  })
+
+  describe('Tri par statut', () => {
+    it('affiche les employés critiques en premier dans les lignes', async () => {
+      mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithEmployees)
+      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
+      await waitFor(() => {
+        // Get all name elements, filter to those in employee rows (which contain hours info)
+        const allNames = screen
           .getAllByText(/Marie Martin|Pierre Dupont|Sophie Leclerc/)
           .map((el) => el.textContent)
+        // The last 3 occurrences are the sorted employee rows (after alert list names)
+        const employeeRowNames = allNames.slice(-3)
         // critical avant warning avant ok
-        expect(names[0]).toBe('Sophie Leclerc')
-        expect(names[1]).toBe('Pierre Dupont')
-        expect(names[2]).toBe('Marie Martin')
+        expect(employeeRowNames[0]).toBe('Sophie Leclerc')
+        expect(employeeRowNames[1]).toBe('Pierre Dupont')
+        expect(employeeRowNames[2]).toBe('Marie Martin')
       })
     })
   })
