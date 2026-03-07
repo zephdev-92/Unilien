@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
 import { logger } from '@/lib/logger'
-import { createContract, searchAuxiliaryByEmail } from '@/services/auxiliaryService'
+import { createContract, searchAuxiliaryByEmail, inviteEmployeeByEmail } from '@/services/auxiliaryService'
 import {
   calculateAcquiredFromMonths,
   calculateDefaultMonthsWorked,
@@ -30,6 +30,15 @@ export function useNewContractForm({ employerId, onSuccess }: UseNewContractForm
   const [searchError, setSearchError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  // Invitation flow
+  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [isInviting, setIsInviting] = useState(false)
+  const [inviteSuccess, setInviteSuccess] = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteFirstName, setInviteFirstName] = useState('')
+  const [inviteLastName, setInviteLastName] = useState('')
+  const [searchedEmail, setSearchedEmail] = useState('')
 
   const searchForm = useForm<SearchFormData>({
     resolver: zodResolver(searchSchema),
@@ -93,6 +102,13 @@ export function useNewContractForm({ employerId, onSuccess }: UseNewContractForm
     setFoundEmployee(null)
     setSearchError(null)
     setSubmitError(null)
+    setShowInviteForm(false)
+    setIsInviting(false)
+    setInviteSuccess(false)
+    setInviteError(null)
+    setInviteFirstName('')
+    setInviteLastName('')
+    setSearchedEmail('')
     searchForm.reset()
     contractForm.reset()
   }
@@ -100,15 +116,18 @@ export function useNewContractForm({ employerId, onSuccess }: UseNewContractForm
   const onSearch = async (data: SearchFormData) => {
     setIsSearching(true)
     setSearchError(null)
+    setShowInviteForm(false)
+    setInviteSuccess(false)
+    setSearchedEmail(data.email)
 
     try {
       const employee = await searchAuxiliaryByEmail(data.email)
 
       if (!employee) {
         setSearchError(
-          "Aucun auxiliaire trouvé avec cette adresse email. " +
-            "L'auxiliaire doit d'abord créer un compte sur Unilien."
+          "Aucun auxiliaire trouve avec cette adresse email."
         )
+        setShowInviteForm(true)
         return
       }
 
@@ -119,6 +138,37 @@ export function useNewContractForm({ employerId, onSuccess }: UseNewContractForm
       setSearchError('Une erreur est survenue lors de la recherche')
     } finally {
       setIsSearching(false)
+    }
+  }
+
+  const onInvite = async () => {
+    if (!inviteFirstName.trim() || !inviteLastName.trim() || !searchedEmail) {
+      setInviteError('Veuillez renseigner le prenom et le nom.')
+      return
+    }
+
+    setIsInviting(true)
+    setInviteError(null)
+
+    try {
+      const { userId } = await inviteEmployeeByEmail(
+        searchedEmail,
+        inviteFirstName.trim(),
+        inviteLastName.trim(),
+        employerId,
+      )
+
+      setInviteSuccess(true)
+      setFoundEmployee({
+        id: userId,
+        firstName: inviteFirstName.trim(),
+        lastName: inviteLastName.trim(),
+      })
+    } catch (error) {
+      logger.error('Erreur invitation:', error)
+      setInviteError(error instanceof Error ? error.message : "Erreur lors de l'envoi de l'invitation")
+    } finally {
+      setIsInviting(false)
     }
   }
 
@@ -143,7 +193,7 @@ export function useNewContractForm({ employerId, onSuccess }: UseNewContractForm
 
       onSuccess()
     } catch (error) {
-      logger.error('Erreur création contrat:', error)
+      logger.error('Erreur creation contrat:', error)
       setSubmitError(error instanceof Error ? error.message : 'Une erreur est survenue')
     } finally {
       setIsSubmitting(false)
@@ -160,6 +210,17 @@ export function useNewContractForm({ employerId, onSuccess }: UseNewContractForm
     isSubmitting,
     searchError,
     submitError,
+    // Invitation
+    showInviteForm,
+    isInviting,
+    inviteSuccess,
+    inviteError,
+    inviteFirstName,
+    setInviteFirstName,
+    inviteLastName,
+    setInviteLastName,
+    searchedEmail,
+    onInvite,
     // Forms
     searchForm,
     contractForm,

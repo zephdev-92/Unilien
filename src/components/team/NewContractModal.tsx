@@ -6,6 +6,7 @@ import {
   Flex,
   Text,
   Steps,
+  Input,
 } from '@chakra-ui/react'
 import { format, addMonths } from 'date-fns'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
@@ -34,6 +35,16 @@ export function NewContractModal({
     isSubmitting,
     searchError,
     submitError,
+    showInviteForm,
+    isInviting,
+    inviteSuccess,
+    inviteError,
+    inviteFirstName,
+    setInviteFirstName,
+    inviteLastName,
+    setInviteLastName,
+    searchedEmail,
+    onInvite,
     searchForm,
     contractForm,
     watchContractType,
@@ -95,43 +106,154 @@ export function NewContractModal({
                 </Steps.List>
               </Steps.Root>
 
-              {/* Étape 1 : Recherche auxiliaire */}
+              {/* Etape 1 : Recherche auxiliaire */}
               {step === 0 && (
-                <form onSubmit={searchForm.handleSubmit(onSearch)}>
-                  <Stack gap={4}>
-                    <Text color="gray.600">
-                      Recherchez l'auxiliaire par son adresse email. Il doit avoir un compte
-                      Unilien avec le rôle "Auxiliaire de vie".
-                    </Text>
+                <Stack gap={4}>
+                  <form onSubmit={searchForm.handleSubmit(onSearch)}>
+                    <Stack gap={4}>
+                      <Text color="gray.600">
+                        Recherchez l'auxiliaire par son adresse email.
+                      </Text>
 
-                    <AccessibleInput
-                      label="Email de l'auxiliaire"
-                      type="email"
-                      placeholder="auxiliaire@email.com"
-                      error={searchForm.formState.errors.email?.message}
-                      required
-                      {...searchForm.register('email')}
-                    />
+                      <AccessibleInput
+                        label="Email de l'auxiliaire"
+                        type="email"
+                        placeholder="auxiliaire@email.com"
+                        error={searchForm.formState.errors.email?.message}
+                        required
+                        {...searchForm.register('email')}
+                      />
 
-                    {searchError && (
-                      <Box p={4} bg="orange.50" borderRadius="md">
-                        <Text color="orange.700">{searchError}</Text>
-                      </Box>
-                    )}
+                      {searchError && !showInviteForm && (
+                        <Box p={4} bg="orange.50" borderRadius="md">
+                          <Text color="orange.700">{searchError}</Text>
+                        </Box>
+                      )}
 
-                    <AccessibleButton
-                      type="submit"
-                      colorPalette="blue"
-                      loading={isSearching}
-                      loadingText="Recherche..."
+                      <AccessibleButton
+                        type="submit"
+                        colorPalette="blue"
+                        loading={isSearching}
+                        loadingText="Recherche..."
+                      >
+                        Rechercher
+                      </AccessibleButton>
+                    </Stack>
+                  </form>
+
+                  {/* Invitation form — shown when no account found */}
+                  {showInviteForm && !inviteSuccess && (
+                    <Box
+                      p={5}
+                      bg="blue.50"
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor="blue.200"
                     >
-                      Rechercher
-                    </AccessibleButton>
-                  </Stack>
-                </form>
+                      <Flex align="center" gap={2} mb={3}>
+                        <Box color="blue.600" flexShrink={0}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                          </svg>
+                        </Box>
+                        <Text fontWeight="semibold" color="blue.800">
+                          Inviter par email
+                        </Text>
+                      </Flex>
+                      <Text fontSize="sm" color="blue.700" mb={4}>
+                        Aucun compte trouve pour <strong>{searchedEmail}</strong>.
+                        Renseignez le nom de l'auxiliaire pour lui envoyer une invitation.
+                        Il recevra un email pour creer son mot de passe.
+                      </Text>
+
+                      <Stack gap={3}>
+                        <Flex gap={3}>
+                          <Box flex={1}>
+                            <Text fontSize="sm" fontWeight="medium" mb={1}>
+                              Prenom *
+                            </Text>
+                            <Input
+                              placeholder="Prenom"
+                              value={inviteFirstName}
+                              onChange={(e) => setInviteFirstName(e.target.value)}
+                              size="sm"
+                              autoComplete="given-name"
+                            />
+                          </Box>
+                          <Box flex={1}>
+                            <Text fontSize="sm" fontWeight="medium" mb={1}>
+                              Nom *
+                            </Text>
+                            <Input
+                              placeholder="Nom"
+                              value={inviteLastName}
+                              onChange={(e) => setInviteLastName(e.target.value)}
+                              size="sm"
+                              autoComplete="family-name"
+                            />
+                          </Box>
+                        </Flex>
+
+                        {inviteError && (
+                          <Box p={3} bg="red.50" borderRadius="md">
+                            <Text fontSize="sm" color="red.700">{inviteError}</Text>
+                          </Box>
+                        )}
+
+                        <AccessibleButton
+                          colorPalette="blue"
+                          size="sm"
+                          onClick={onInvite}
+                          loading={isInviting}
+                          loadingText="Envoi..."
+                          disabled={!inviteFirstName.trim() || !inviteLastName.trim()}
+                        >
+                          Envoyer l'invitation
+                        </AccessibleButton>
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {/* Invitation success */}
+                  {inviteSuccess && foundEmployee && (
+                    <Box
+                      p={5}
+                      bg="green.50"
+                      borderRadius="lg"
+                      borderWidth="1px"
+                      borderColor="green.200"
+                    >
+                      <Flex align="center" gap={2} mb={2}>
+                        <Box color="green.600" flexShrink={0}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </Box>
+                        <Text fontWeight="semibold" color="green.800">
+                          Invitation envoyee
+                        </Text>
+                      </Flex>
+                      <Text fontSize="sm" color="green.700" mb={3}>
+                        Un email a ete envoye a <strong>{searchedEmail}</strong>.
+                        {foundEmployee.firstName} {foundEmployee.lastName} pourra creer son mot de passe et acceder a Unilien.
+                      </Text>
+                      <Text fontSize="sm" color="green.700" mb={4}>
+                        Vous pouvez maintenant creer le contrat.
+                      </Text>
+                      <AccessibleButton
+                        colorPalette="green"
+                        size="sm"
+                        onClick={() => setStep(1)}
+                      >
+                        Configurer le contrat
+                      </AccessibleButton>
+                    </Box>
+                  )}
+                </Stack>
               )}
 
-              {/* Étape 2 : Détails du contrat */}
+              {/* Etape 2 : Details du contrat */}
               {step === 1 && foundEmployee && (
                 <form id="contract-form" onSubmit={contractForm.handleSubmit(onSubmitContract)}>
                   <Stack gap={4}>
@@ -139,7 +261,7 @@ export function NewContractModal({
                       <Flex justify="space-between" align="center">
                         <Box>
                           <Text fontWeight="semibold" color="green.700">
-                            Auxiliaire trouvé
+                            Auxiliaire {inviteSuccess ? 'invite' : 'trouve'}
                           </Text>
                           <Text fontSize="lg" color="green.800">
                             {foundEmployee.firstName} {foundEmployee.lastName}
@@ -161,8 +283,8 @@ export function NewContractModal({
                     <AccessibleSelect
                       label="Type de contrat"
                       options={[
-                        { value: 'CDI', label: 'CDI - Contrat à durée indéterminée' },
-                        { value: 'CDD', label: 'CDD - Contrat à durée déterminée' },
+                        { value: 'CDI', label: 'CDI - Contrat a duree indeterminee' },
+                        { value: 'CDD', label: 'CDD - Contrat a duree determinee' },
                       ]}
                       error={contractForm.formState.errors.contractType?.message}
                       required
@@ -170,7 +292,7 @@ export function NewContractModal({
                     />
 
                     <AccessibleInput
-                      label="Date de début"
+                      label="Date de debut"
                       type="date"
                       error={contractForm.formState.errors.startDate?.message}
                       required
@@ -251,7 +373,7 @@ export function NewContractModal({
                 <AccessibleButton
                   variant="outline"
                   onClick={handleClose}
-                  disabled={isSearching || isSubmitting}
+                  disabled={isSearching || isSubmitting || isInviting}
                 >
                   Annuler
                 </AccessibleButton>
@@ -262,9 +384,9 @@ export function NewContractModal({
                     form="contract-form"
                     colorPalette="blue"
                     loading={isSubmitting}
-                    loadingText="Création..."
+                    loadingText="Creation..."
                   >
-                    Créer le contrat
+                    Creer le contrat
                   </AccessibleButton>
                 )}
               </Flex>

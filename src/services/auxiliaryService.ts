@@ -17,6 +17,7 @@ export {
   suspendContract,
   resumeContract,
   searchEmployeeByEmail as searchAuxiliaryByEmail,
+  inviteEmployeeByEmail,
 } from '@/services/contractService'
 
 // Type complet pour un auxiliaire avec son profil et contrat
@@ -36,6 +37,7 @@ export interface AuxiliarySummary {
   id: string
   firstName: string
   lastName: string
+  email?: string
   phone?: string
   avatarUrl?: string
   qualifications: string[]
@@ -72,6 +74,7 @@ export async function getAuxiliariesForEmployer(
           id,
           first_name,
           last_name,
+          email,
           phone,
           avatar_url
         )
@@ -112,6 +115,7 @@ export async function getActiveAuxiliariesForEmployer(
           id,
           first_name,
           last_name,
+          email,
           phone,
           avatar_url
         )
@@ -205,6 +209,7 @@ function mapAuxiliaryFromDb(data: ContractWithEmployeeDbRow): AuxiliarySummary {
     id: profile?.id || data.employee_id || '',
     firstName: profile?.first_name || '',
     lastName: profile?.last_name || '',
+    email: profile?.email || undefined,
     phone: profile?.phone || undefined,
     avatarUrl: profile?.avatar_url || undefined,
     qualifications: data.employee_profile?.qualifications || [],
