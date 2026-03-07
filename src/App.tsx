@@ -20,6 +20,7 @@ const TeamPage = lazy(() => import('@/components/team/TeamPage'))
 const ClockInPage = lazy(() => import('@/components/clock-in/ClockInPage'))
 const CompliancePage = lazy(() => import('@/pages/CompliancePage'))
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage'))
+const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'))
 
 // Applique les attributs data-* sur <html> selon les préférences d'accessibilité
 function AccessibilityApplier() {
@@ -158,6 +159,7 @@ function App() {
           <Route path="/equipe" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><TeamPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/conformite" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><CompliancePage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/analytique" element={<ProtectedRoute><ErrorBoundary><AnalyticsPage /></ErrorBoundary></ProtectedRoute>} />
 
           {/* Redirection par défaut pour les routes inconnues */}
           <Route path="*" element={<Navigate to="/" replace />} />

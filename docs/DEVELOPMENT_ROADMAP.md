@@ -1140,19 +1140,22 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 **Impact**: 🟡 IMPORTANT - Business intelligence
 **Effort**: 2 semaines
 
-**Dashboards à créer**:
+**Décision** : Page `/analytics` dédiée (pas sur le dashboard, qui est déjà chargé).
+Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" vers Analytics.
 
-#### 8.1 Dashboard Employeur
+> **V2** : Dashboard configurable (choix des widgets affichés par l'utilisateur)
+
+#### 8.1 Page Analytics Employeur (`/analytics`)
 
 ```
 [ ] Coût total mensuel (par employé, par période)
 [ ] Heures travaillées (graphiques)
 [ ] Taux de présence auxiliaires
-[ ] Conformité (score, alertes)
-[ ] Prévisions budget
+[ ] Conformité (score, alertes, historique)
+[x] Prévisions budget (déjà sur dashboard — lien vers vue détaillée)
 ```
 
-#### 8.2 Dashboard Auxiliaire
+#### 8.2 Page Analytics Auxiliaire (`/analytics`)
 
 ```
 [ ] Revenu mensuel (détaillé)
