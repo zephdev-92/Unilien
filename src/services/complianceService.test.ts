@@ -118,8 +118,8 @@ beforeEach(() => {
 
 import {
   getWeeklyComplianceOverview,
-  getComplianceHistory,
   getCriticalAlerts,
+  checkSmicCompliance,
 } from '@/services/complianceService'
 
 // ============================================
@@ -226,64 +226,34 @@ describe('complianceService', () => {
   })
 
   // ------------------------------------------
-  // getComplianceHistory
+  // checkSmicCompliance
   // ------------------------------------------
-  describe('getComplianceHistory', () => {
-    it('retourne l historique inverse sur 4 semaines par defaut', async () => {
-      // 4 semaines = 4 appels a getWeeklyComplianceOverview = 8 appels DB (contracts + shifts)
-      const sequence: Array<{ data?: unknown; error?: unknown; count?: number | null }> = []
-      for (let i = 0; i < 4; i++) {
-        sequence.push(
-          { data: [createMockContractRow()], error: null },
-          { data: [], error: null },
-        )
-      }
-      mockSupabaseQuerySequence(sequence)
+  describe('checkSmicCompliance', () => {
+    it('retourne true quand tous les taux sont au-dessus du SMIC', async () => {
+      mockSupabaseQuerySequence([
+        { data: [], error: null },
+      ])
 
-      const result = await getComplianceHistory('employer-123')
-
-      expect(result).toHaveLength(4)
-      // L'historique est inverse (du plus ancien au plus recent)
-      // Chaque element a les bonnes proprietes
-      expect(result[0]).toHaveProperty('weekStart')
-      expect(result[0]).toHaveProperty('weekLabel')
-      expect(result[0]).toHaveProperty('compliant')
-      expect(result[0]).toHaveProperty('warnings')
-      expect(result[0]).toHaveProperty('critical')
+      const result = await checkSmicCompliance('employer-123')
+      expect(result).toBe(true)
     })
 
-    it('respecte le parametre weeksBack personnalise', async () => {
-      const sequence: Array<{ data?: unknown; error?: unknown; count?: number | null }> = []
-      for (let i = 0; i < 2; i++) {
-        sequence.push(
-          { data: [], error: null },
-          { data: [], error: null },
-        )
-      }
-      mockSupabaseQuerySequence(sequence)
+    it('retourne false quand un taux est en dessous du SMIC', async () => {
+      mockSupabaseQuerySequence([
+        { data: [{ hourly_rate: 10.50 }], error: null },
+      ])
 
-      const result = await getComplianceHistory('employer-123', 2)
-
-      expect(result).toHaveLength(2)
+      const result = await checkSmicCompliance('employer-123')
+      expect(result).toBe(false)
     })
 
-    it('contient les totaux compliant/warnings/critical pour chaque semaine', async () => {
-      const sequence: Array<{ data?: unknown; error?: unknown; count?: number | null }> = []
-      for (let i = 0; i < 4; i++) {
-        sequence.push(
-          { data: [createMockContractRow()], error: null },
-          { data: [], error: null },
-        )
-      }
-      mockSupabaseQuerySequence(sequence)
+    it('retourne true en cas d erreur DB', async () => {
+      mockSupabaseQuerySequence([
+        { data: null, error: { message: 'DB error' } },
+      ])
 
-      const result = await getComplianceHistory('employer-123')
-
-      for (const week of result) {
-        expect(typeof week.compliant).toBe('number')
-        expect(typeof week.warnings).toBe('number')
-        expect(typeof week.critical).toBe('number')
-      }
+      const result = await checkSmicCompliance('employer-123')
+      expect(result).toBe(true)
     })
   })
 

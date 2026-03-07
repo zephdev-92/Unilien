@@ -67,7 +67,6 @@ describe('ComplianceWidget', () => {
     it('affiche un spinner pendant le chargement', () => {
       mockGetWeeklyComplianceOverview.mockReturnValue(new Promise(() => {}))
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      // Le titre "Conformité" est visible mais pas les données
       expect(screen.getByText('Conformité')).toBeInTheDocument()
     })
 
@@ -102,69 +101,16 @@ describe('ComplianceWidget', () => {
       })
     })
 
-    it('affiche les noms des employés', async () => {
-      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getAllByText('Marie Martin').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('Pierre Dupont').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('Sophie Leclerc').length).toBeGreaterThanOrEqual(1)
-      })
-    })
-
-    it('affiche les heures courantes et restantes', async () => {
-      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getByText('20h / 48h')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche les alertes des employés', async () => {
-      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getAllByText('Proche des 44h').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getAllByText('Dépasse 44h').length).toBeGreaterThanOrEqual(1)
-      })
-    })
-
-    it('affiche les compteurs de la barre de résumé (1 OK)', async () => {
-      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getByText('1 OK')).toBeInTheDocument()
-      })
-    })
-
     it('affiche le lien vers /conformite', async () => {
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
-        const link = screen.getByRole('link', { name: /détails/i })
+        const link = screen.getByRole('link', { name: /tout voir/i })
         expect(link).toHaveAttribute('href', '/conformite')
       })
     })
   })
 
-  describe('Overflow +N employés', () => {
-    it('affiche "+N autres" si plus de 4 employés', async () => {
-      const manyEmployees: WeeklyComplianceOverview = {
-        ...overviewWithEmployees,
-        employees: [
-          makeEmployee({ employeeId: 'emp-1', employeeName: 'Employé 1' }),
-          makeEmployee({ employeeId: 'emp-2', employeeName: 'Employé 2' }),
-          makeEmployee({ employeeId: 'emp-3', employeeName: 'Employé 3' }),
-          makeEmployee({ employeeId: 'emp-4', employeeName: 'Employé 4' }),
-          makeEmployee({ employeeId: 'emp-5', employeeName: 'Employé 5' }),
-          makeEmployee({ employeeId: 'emp-6', employeeName: 'Employé 6' }),
-        ],
-        summary: { totalEmployees: 6, compliant: 6, warnings: 0, critical: 0 },
-      }
-      mockGetWeeklyComplianceOverview.mockResolvedValue(manyEmployees)
-      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getByText(/\+2 autres/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Liste d\'alertes resume', () => {
+  describe('Liste d\'alertes résumé', () => {
     it('affiche "Convention respectee" quand aucune alerte', async () => {
       const allOk: WeeklyComplianceOverview = {
         ...overviewWithEmployees,
@@ -181,32 +127,12 @@ describe('ComplianceWidget', () => {
       })
     })
 
-    it('affiche les alertes critiques et warnings dans la liste resume', async () => {
+    it('affiche les alertes critiques et warnings', async () => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithEmployees)
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
-        // Alert list shows the alert messages
         const alerts = screen.getAllByRole('alert')
         expect(alerts.length).toBeGreaterThan(0)
-      })
-    })
-  })
-
-  describe('Tri par statut', () => {
-    it('affiche les employés critiques en premier dans les lignes', async () => {
-      mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithEmployees)
-      renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      await waitFor(() => {
-        // Get all name elements, filter to those in employee rows (which contain hours info)
-        const allNames = screen
-          .getAllByText(/Marie Martin|Pierre Dupont|Sophie Leclerc/)
-          .map((el) => el.textContent)
-        // The last 3 occurrences are the sorted employee rows (after alert list names)
-        const employeeRowNames = allNames.slice(-3)
-        // critical avant warning avant ok
-        expect(employeeRowNames[0]).toBe('Sophie Leclerc')
-        expect(employeeRowNames[1]).toBe('Pierre Dupont')
-        expect(employeeRowNames[2]).toBe('Marie Martin')
       })
     })
   })

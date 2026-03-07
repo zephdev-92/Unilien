@@ -11,12 +11,12 @@ import type {
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockGetWeeklyComplianceOverview = vi.fn()
-const mockGetComplianceHistory = vi.fn()
+const mockCheckSmicCompliance = vi.fn()
 
 vi.mock('@/services/complianceService', () => ({
   getWeeklyComplianceOverview: (...args: unknown[]) =>
     mockGetWeeklyComplianceOverview(...args),
-  getComplianceHistory: (...args: unknown[]) => mockGetComplianceHistory(...args),
+  checkSmicCompliance: (...args: unknown[]) => mockCheckSmicCompliance(...args),
 }))
 
 vi.mock('./ComplianceHelp', () => ({
@@ -66,17 +66,12 @@ const overviewWithData: WeeklyComplianceOverview = {
   summary: { totalEmployees: 2, compliant: 1, warnings: 0, critical: 1 },
 }
 
-const mockHistory = [
-  { weekStart: new Date('2026-02-02'), weekLabel: 'S1', compliant: 2, warnings: 1, critical: 0 },
-  { weekStart: new Date('2026-02-09'), weekLabel: 'S2', compliant: 3, warnings: 0, critical: 0 },
-]
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('ComplianceDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetComplianceHistory.mockResolvedValue([])
+    mockCheckSmicCompliance.mockResolvedValue(true)
   })
 
   describe('État loading', () => {
@@ -90,11 +85,8 @@ describe('ComplianceDashboard', () => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
       renderWithProviders(<ComplianceDashboard employerId="employer-99" />)
       await waitFor(() => {
-        expect(mockGetWeeklyComplianceOverview).toHaveBeenCalledWith(
-          'employer-99',
-          expect.any(Date)
-        )
-        expect(mockGetComplianceHistory).toHaveBeenCalledWith('employer-99', 4)
+        expect(mockGetWeeklyComplianceOverview).toHaveBeenCalledWith('employer-99')
+        expect(mockCheckSmicCompliance).toHaveBeenCalledWith('employer-99')
       })
     })
   })
@@ -119,90 +111,163 @@ describe('ComplianceDashboard', () => {
       })
     })
 
-    it('affiche le libellé de la semaine', async () => {
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getByText('S. 16-22 fév.')).toBeInTheDocument()
-      })
-    })
   })
 
-  describe('Stat cards (résumé)', () => {
+  describe('Score card', () => {
     beforeEach(() => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithData)
     })
 
-    it('affiche le nombre total d\'auxiliaires', async () => {
+    it('affiche le score de conformité', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Total auxiliaires')).toBeInTheDocument()
-        expect(screen.getByText('2')).toBeInTheDocument()
+        expect(screen.getByText('Score de conformité')).toBeInTheDocument()
       })
     })
 
-    it('affiche le nombre de conformes', async () => {
+    it('affiche le nombre de points conformes', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Conformes')).toBeInTheDocument()
+        expect(screen.getByText('Points conformes')).toBeInTheDocument()
       })
     })
 
-    it('affiche le nombre de critiques', async () => {
+    it('affiche le nombre d\'alertes actives', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Critiques')).toBeInTheDocument()
+        // "Alertes actives" apparaît dans le stat box et dans le titre de section
+        expect(screen.getAllByText('Alertes actives').length).toBeGreaterThanOrEqual(1)
+      })
+    })
+
+    it('affiche le nombre d\'avertissements', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText('Avertissements')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche le SVG ring avec aria-label', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        const ring = screen.getByLabelText(/score de conformité : \d+%/i)
+        expect(ring).toBeInTheDocument()
       })
     })
   })
 
-  describe('Tableau des employés', () => {
+  describe('Alertes actives', () => {
     beforeEach(() => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithData)
     })
 
-    it('affiche les noms des employés dans le tableau', async () => {
+    it('affiche la section alertes avec la légende', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Marie Dupont')).toBeInTheDocument()
-        expect(screen.getByText('Jean Martin')).toBeInTheDocument()
+        // "Critique" apparaît dans la légende et dans le badge StatusBadge
+        expect(screen.getAllByText('Critique').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getByText('À surveiller')).toBeInTheDocument()
       })
     })
 
-    it('affiche le badge "Conforme" pour un employé ok', async () => {
+    it('affiche les cartes d\'alerte enrichies', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Conforme')).toBeInTheDocument()
+        expect(screen.getByText('Dépassement heures hebdomadaires')).toBeInTheDocument()
+        expect(screen.getByText(/Jean Martin — Dépasse 44h/)).toBeInTheDocument()
       })
     })
 
-    it('affiche le badge "Critique" pour un employé critical', async () => {
+    it('affiche les tags (employé et ref légale) sur les alertes', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Critique')).toBeInTheDocument()
+        expect(screen.getByText('Art. L3121-20')).toBeInTheDocument()
       })
     })
 
-    it('affiche les alertes des employés', async () => {
+    it('affiche les boutons Corriger et Ignorer', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('Dépasse 44h')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /corriger/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /ignorer/i })).toBeInTheDocument()
       })
     })
 
-    it('affiche les heures de la semaine', async () => {
+    it('affiche la toolbar de recherche et filtres', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByText('20h')).toBeInTheDocument()
+        expect(screen.getByPlaceholderText(/rechercher une alerte/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/filtrer par sévérité/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/filtrer par employé/i)).toBeInTheDocument()
       })
     })
 
-    it('affiche les employés critiques en premier (tri)', async () => {
+    it('masque une alerte quand on clique sur Ignorer', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => screen.getByText('Dépassement heures hebdomadaires'))
+
+      await user.click(screen.getByRole('button', { name: /ignorer/i }))
+      expect(screen.queryByText('Dépassement heures hebdomadaires')).not.toBeInTheDocument()
+      expect(screen.getByText(/aucune alerte active/i)).toBeInTheDocument()
+    })
+
+    it('affiche message vide quand aucune alerte', async () => {
+      mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        const names = screen
-          .getAllByText(/Marie Dupont|Jean Martin/)
-          .map((el) => el.textContent)
-        expect(names[0]).toBe('Jean Martin') // critique avant ok
+        expect(screen.getByText(/aucune alerte active/i)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Contrôles par catégorie', () => {
+    beforeEach(() => {
+      mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithData)
+    })
+
+    it('affiche le titre "Contrôles IDCC 3239"', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText('Contrôles IDCC 3239')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les 3 groupes de contrôles', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText('Temps de travail')).toBeInTheDocument()
+        expect(screen.getByText('Paie et rémunération')).toBeInTheDocument()
+        expect(screen.getByText('Contrats et congés')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les items de contrôle "Temps de travail"', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText(/durée maximale journalière/i)).toBeInTheDocument()
+        expect(screen.getByText(/pause 20 min/i)).toBeInTheDocument()
+        expect(screen.getByText(/amplitude maximale hebdomadaire/i)).toBeInTheDocument()
+        expect(screen.getByText(/repos quotidien minimum/i)).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les items de contrôle "Paie et rémunération"', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText(/taux horaire au-dessus du smic/i)).toBeInTheDocument()
+        expect(screen.getByText(/majorations dimanche/i)).toBeInTheDocument()
+        expect(screen.getByText(/heures supplémentaires majorées/i)).toBeInTheDocument()
+        expect(screen.getByText(/bulletins de paie/i)).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les items de contrôle "Contrats et congés"', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
+      await waitFor(() => {
+        expect(screen.getByText(/repos hebdomadaire/i)).toBeInTheDocument()
+        expect(screen.getByText(/solde de congés payés/i)).toBeInTheDocument()
+        expect(screen.getByText(/déclarations cesu/i)).toBeInTheDocument()
       })
     })
   })
@@ -213,59 +278,6 @@ describe('ComplianceDashboard', () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
         expect(screen.getByText(/aucun auxiliaire actif/i)).toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Historique', () => {
-    it('affiche les libellés de semaines historiques', async () => {
-      mockGetWeeklyComplianceOverview.mockResolvedValue(overviewWithData)
-      mockGetComplianceHistory.mockResolvedValue(mockHistory)
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getByText('Historique des 4 dernières semaines')).toBeInTheDocument()
-        expect(screen.getByText('S1')).toBeInTheDocument()
-        expect(screen.getByText('S2')).toBeInTheDocument()
-      })
-    })
-
-    it("n'affiche pas la section historique si vide", async () => {
-      mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
-      mockGetComplianceHistory.mockResolvedValue([])
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => {
-        expect(
-          screen.queryByText(/historique des 4 dernières semaines/i)
-        ).not.toBeInTheDocument()
-      })
-    })
-  })
-
-  describe('Navigation semaine', () => {
-    beforeEach(() => {
-      mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
-    })
-
-    it('affiche les boutons de navigation', async () => {
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => {
-        expect(screen.getByText(/semaine précédente/i)).toBeInTheDocument()
-        expect(screen.getByText(/semaine suivante/i)).toBeInTheDocument()
-      })
-    })
-
-    it('recharge les données en cliquant sur "Semaine précédente"', async () => {
-      const user = userEvent.setup()
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => screen.getByText(/semaine précédente/i))
-
-      const initialCallCount = mockGetWeeklyComplianceOverview.mock.calls.length
-      await user.click(screen.getByText(/semaine précédente/i))
-
-      await waitFor(() => {
-        expect(mockGetWeeklyComplianceOverview.mock.calls.length).toBeGreaterThan(
-          initialCallCount
-        )
       })
     })
   })

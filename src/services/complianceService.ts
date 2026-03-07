@@ -305,44 +305,20 @@ export async function getWeeklyComplianceOverview(
 }
 
 /**
- * Récupère l'historique de conformité sur plusieurs semaines
+ * Vérifie si tous les contrats actifs ont un taux horaire au-dessus du SMIC
  */
-export async function getComplianceHistory(
-  employerId: string,
-  weeksBack: number = 4
-): Promise<
-  Array<{
-    weekStart: Date
-    weekLabel: string
-    compliant: number
-    warnings: number
-    critical: number
-  }>
-> {
-  const history: Array<{
-    weekStart: Date
-    weekLabel: string
-    compliant: number
-    warnings: number
-    critical: number
-  }> = []
+export async function checkSmicCompliance(employerId: string): Promise<boolean> {
+  const SMIC_BRUT = 11.65
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('hourly_rate')
+    .eq('employer_id', employerId)
+    .eq('status', 'active')
+    .lt('hourly_rate', SMIC_BRUT)
+    .limit(1)
 
-  const today = new Date()
-
-  for (let i = 0; i < weeksBack; i++) {
-    const refDate = subDays(today, i * 7)
-    const overview = await getWeeklyComplianceOverview(employerId, refDate)
-
-    history.push({
-      weekStart: overview.weekStart,
-      weekLabel: format(overview.weekStart, "'S'w", { locale: fr }),
-      compliant: overview.summary.compliant,
-      warnings: overview.summary.warnings,
-      critical: overview.summary.critical,
-    })
-  }
-
-  return history.reverse()
+  if (error) return true // Assume compliant on error
+  return !data || data.length === 0
 }
 
 /**
