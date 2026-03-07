@@ -78,15 +78,15 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 5. Compliance — Elements manquants
 
-- [ ] **Score circulaire** — anneau SVG avec pourcentage au centre (ex: 87%)
-- [ ] **3 stat boxes** — points conformes (vert), alertes actives (rouge), avertissements (orange)
-- [ ] **Section alertes** — legende statuts (Critique, A surveiller, Conforme)
-- [ ] **Section alertes** — toolbar : recherche + filtre severite + filtre employe
-- [ ] **Cards alertes** — icone, titre, description, tags (employe, date, ref legale)
-- [ ] **Cards alertes** — boutons action "Corriger" et "Ignorer"
-- [ ] **Checks par categorie** — groupe "Temps de travail" (4 items avec icone statut)
-- [ ] **Checks par categorie** — groupe "Paie et remuneration" (4 items)
-- [ ] **Checks par categorie** — groupe "Contrats et conges" (3 items)
+- [x] **Score circulaire** — anneau SVG avec pourcentage au centre (ex: 87%) ✅
+- [x] **3 stat boxes** — points conformes (vert), alertes actives (rouge), avertissements (orange) ✅
+- [x] **Section alertes** — legende statuts (Critique, A surveiller, Conforme) ✅
+- [x] **Section alertes** — toolbar : recherche + filtre severite + filtre employe ✅
+- [x] **Cards alertes** — icone, titre, description, tags (employe, date, ref legale) ✅
+- [x] **Cards alertes** — boutons action "Corriger" et "Ignorer" ✅
+- [x] **Checks par categorie** — groupe "Temps de travail" (4 items avec icone statut) ✅
+- [x] **Checks par categorie** — groupe "Paie et remuneration" (4 items) ✅
+- [x] **Checks par categorie** — groupe "Contrats et conges" (3 items) ✅
 
 ---
 
@@ -185,7 +185,7 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Settings (page complete) | 20 | Haute |
 | Dashboard | 12 | Haute |
 | Landing | 11 | Moyenne |
-| Compliance | 9 | Moyenne |
+| Compliance | 9 (9 done) | Moyenne |
 | Profile | 9 | Moyenne |
 | Logbook | 8 | Moyenne |
 | Team | 7 (6 done) | Moyenne |

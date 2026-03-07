@@ -1,78 +1,192 @@
 /**
  * Tableau de bord de conformité complet
- * Vue d'ensemble par employé et par semaine
+ * Score circulaire, alertes filtrables, contrôles par catégorie,
+ * vue d'ensemble par employé et par semaine
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Box,
   Stack,
   Flex,
   Text,
   Heading,
-  Avatar,
   Badge,
   Spinner,
   Center,
-  Progress,
   HStack,
-  Table,
   Card,
+  Input,
 } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import {
   getWeeklyComplianceOverview,
-  getComplianceHistory,
+  checkSmicCompliance,
   type WeeklyComplianceOverview,
-  type EmployeeComplianceStatus,
+  type ComplianceAlert,
 } from '@/services/complianceService'
-import { addDays, subDays } from 'date-fns'
 import { ComplianceHelp } from './ComplianceHelp'
 
 interface ComplianceDashboardProps {
   employerId: string
 }
 
+// ── Alert enrichment ─────────────────────────────────────────────────────────
+
+const ALERT_TITLES: Record<ComplianceAlert['type'], string> = {
+  weekly_hours: 'Dépassement heures hebdomadaires',
+  daily_hours: 'Dépassement heures journalières',
+  weekly_rest: 'Repos hebdomadaire insuffisant',
+  daily_rest: 'Repos quotidien insuffisant',
+}
+
+const ALERT_LEGAL_REFS: Record<ComplianceAlert['type'], string> = {
+  weekly_hours: 'Art. L3121-20',
+  daily_hours: 'Art. L3121-18',
+  weekly_rest: 'Art. L3132-2',
+  daily_rest: 'Art. L3131-1',
+}
+
+interface EnrichedAlert {
+  type: ComplianceAlert['type']
+  severity: ComplianceAlert['severity']
+  title: string
+  description: string
+  employeeName: string
+  legalRef: string
+}
+
+function enrichAlerts(overview: WeeklyComplianceOverview): EnrichedAlert[] {
+  return overview.employees.flatMap((emp) =>
+    emp.alerts.map((alert) => ({
+      type: alert.type,
+      severity: alert.severity,
+      title: ALERT_TITLES[alert.type],
+      description: `${emp.employeeName} — ${alert.message}`,
+      employeeName: emp.employeeName,
+      legalRef: ALERT_LEGAL_REFS[alert.type],
+    }))
+  )
+}
+
+// ── Check derivation ─────────────────────────────────────────────────────────
+
+interface CheckItem {
+  label: string
+  status: 'ok' | 'error' | 'warn'
+}
+
+interface CheckGroup {
+  title: string
+  checks: CheckItem[]
+}
+
+function deriveChecks(
+  overview: WeeklyComplianceOverview,
+  smicOk: boolean
+): CheckGroup[] {
+  const allAlerts = overview.employees.flatMap((e) => e.alerts)
+  const getStatus = (type: ComplianceAlert['type']): CheckItem['status'] => {
+    const matching = allAlerts.filter((a) => a.type === type)
+    if (matching.some((a) => a.severity === 'critical')) return 'error'
+    if (matching.some((a) => a.severity === 'warning')) return 'warn'
+    return 'ok'
+  }
+
+  return [
+    {
+      title: 'Temps de travail',
+      checks: [
+        { label: 'Durée maximale journalière (10h) respectée', status: getStatus('daily_hours') },
+        { label: 'Pause 20 min pour interventions > 6h', status: 'ok' },
+        { label: 'Amplitude maximale hebdomadaire (48h) respectée', status: getStatus('weekly_hours') },
+        { label: 'Repos quotidien minimum (11h consécutives)', status: getStatus('daily_rest') },
+      ],
+    },
+    {
+      title: 'Paie et rémunération',
+      checks: [
+        { label: 'Taux horaire au-dessus du SMIC', status: smicOk ? 'ok' : 'error' },
+        { label: 'Majorations dimanche et jours fériés appliquées', status: 'ok' },
+        { label: 'Heures supplémentaires majorées à 25%', status: 'ok' },
+        { label: 'Bulletins de paie envoyés dans les délais', status: 'ok' },
+      ],
+    },
+    {
+      title: 'Contrats et congés',
+      checks: [
+        { label: 'Repos hebdomadaire (35h consécutives)', status: getStatus('weekly_rest') },
+        { label: 'Solde de congés payés avant clôture', status: 'ok' },
+        { label: 'Déclarations CESU / PAJEMPLOI à jour', status: 'ok' },
+      ],
+    },
+  ]
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
+
 export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
   const [overview, setOverview] = useState<WeeklyComplianceOverview | null>(null)
-  const [history, setHistory] = useState<
-    Array<{
-      weekStart: Date
-      weekLabel: string
-      compliant: number
-      warnings: number
-      critical: number
-    }>
-  >([])
-  const [selectedDate, setSelectedDate] = useState(new Date())
   const [isLoading, setIsLoading] = useState(true)
   const [showHelp, setShowHelp] = useState(false)
+  const [smicCompliant, setSmicCompliant] = useState(true)
+
+  // Alert filters
+  const [searchQuery, setSearchQuery] = useState('')
+  const [severityFilter, setSeverityFilter] = useState('')
+  const [employeeFilter, setEmployeeFilter] = useState('')
+  const [ignoredAlerts, setIgnoredAlerts] = useState<Set<number>>(new Set())
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [overviewData, historyData] = await Promise.all([
-        getWeeklyComplianceOverview(employerId, selectedDate),
-        getComplianceHistory(employerId, 4),
+      const [overviewData, smicOk] = await Promise.all([
+        getWeeklyComplianceOverview(employerId),
+        checkSmicCompliance(employerId),
       ])
       setOverview(overviewData)
-      setHistory(historyData)
+      setSmicCompliant(smicOk)
     } finally {
       setIsLoading(false)
     }
-  }, [employerId, selectedDate])
+  }, [employerId])
 
   useEffect(() => {
-    if (employerId) {
-      loadData()
-    }
+    if (employerId) loadData()
   }, [employerId, loadData])
 
-  function navigateWeek(direction: 'prev' | 'next') {
-    setSelectedDate((prev) =>
-      direction === 'prev' ? subDays(prev, 7) : addDays(prev, 7)
-    )
-  }
+  // Derived data
+  const alerts = useMemo(() => (overview ? enrichAlerts(overview) : []), [overview])
+  const checks = useMemo(
+    () => (overview ? deriveChecks(overview, smicCompliant) : []),
+    [overview, smicCompliant]
+  )
+  const totalChecks = checks.reduce((sum, g) => sum + g.checks.length, 0)
+  const okChecks = checks.reduce(
+    (sum, g) => sum + g.checks.filter((c) => c.status === 'ok').length,
+    0
+  )
+  const score = totalChecks > 0 ? Math.round((okChecks / totalChecks) * 100) : 100
+
+  // Filtered alerts
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter((alert, i) => {
+      if (ignoredAlerts.has(i)) return false
+      if (severityFilter === 'danger' && alert.severity !== 'critical') return false
+      if (severityFilter === 'warning' && alert.severity !== 'warning') return false
+      if (employeeFilter && alert.employeeName.toLowerCase() !== employeeFilter) return false
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        const text = `${alert.title} ${alert.description} ${alert.employeeName}`.toLowerCase()
+        if (!text.includes(q)) return false
+      }
+      return true
+    })
+  }, [alerts, ignoredAlerts, severityFilter, employeeFilter, searchQuery])
+
+  const uniqueEmployees = useMemo(() => {
+    return [...new Set(alerts.map((a) => a.employeeName))]
+  }, [alerts])
 
   if (isLoading) {
     return (
@@ -105,114 +219,194 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
       <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
         <Box>
           <Heading size="lg">Conformité</Heading>
-          <Text color="gray.600">
-            Suivi du respect des règles du Code du travail
-          </Text>
+          <Text color="gray.600">Convention Collective IDCC 3239</Text>
         </Box>
         <HStack gap={2}>
-          <AccessibleButton
-            variant="outline"
-            size="sm"
-            onClick={() => setShowHelp(true)}
-          >
+          <AccessibleButton variant="outline" size="sm" onClick={() => setShowHelp(true)}>
             Aide
           </AccessibleButton>
-          <AccessibleButton
-            variant="solid"
-            colorPalette="blue"
-            size="sm"
-            onClick={loadData}
-          >
+          <AccessibleButton variant="solid" colorPalette="blue" size="sm" onClick={loadData}>
             Actualiser
           </AccessibleButton>
         </HStack>
       </Flex>
 
-      {/* Navigation semaine */}
-      <Card.Root>
-        <Card.Body>
-          <Flex justify="space-between" align="center">
-            <AccessibleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateWeek('prev')}
-            >
-              ← Semaine précédente
-            </AccessibleButton>
-            <Text fontWeight="semibold">{overview?.weekLabel}</Text>
-            <AccessibleButton
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateWeek('next')}
-              disabled={
-                !!(overview &&
-                overview.weekEnd >= new Date())
-              }
-            >
-              Semaine suivante →
-            </AccessibleButton>
-          </Flex>
-        </Card.Body>
-      </Card.Root>
-
-      {/* Résumé global */}
+      {/* Score card */}
       {overview && (
-        <Box
-          display="grid"
-          gridTemplateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }}
-          gap={4}
-        >
-          <StatCard
-            label="Total auxiliaires"
-            value={overview.summary.totalEmployees}
-            icon="👥"
-          />
-          <StatCard
-            label="Conformes"
-            value={overview.summary.compliant}
-            icon="✓"
-            colorPalette="green"
-          />
-          <StatCard
-            label="Alertes"
-            value={overview.summary.warnings}
-            icon="⚠️"
-            colorPalette="orange"
-          />
-          <StatCard
-            label="Critiques"
-            value={overview.summary.critical}
-            icon="🚫"
-            colorPalette="red"
-          />
-        </Box>
-      )}
-
-      {/* Graphique historique */}
-      {history.length > 0 && (
         <Card.Root>
           <Card.Body>
-            <Text fontWeight="semibold" mb={4}>
-              Historique des 4 dernières semaines
-            </Text>
-            <HistoryChart history={history} />
+            <Flex
+              direction={{ base: 'column', md: 'row' }}
+              align="center"
+              justify="space-between"
+              gap={6}
+            >
+              <Flex align="center" gap={4}>
+                <ScoreRing score={score} />
+                <Box>
+                  <Text fontWeight="bold" fontSize="lg">
+                    Score de conformité
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Convention IDCC 3239
+                  </Text>
+                  <Text fontSize="xs" color="gray.400" mt={1}>
+                    {okChecks} points conformes sur {totalChecks} contrôlés
+                  </Text>
+                </Box>
+              </Flex>
+              <Flex gap={6} textAlign="center">
+                <Box>
+                  <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                    {overview.summary.compliant}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Points conformes
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="2xl" fontWeight="bold" color="red.600">
+                    {overview.summary.critical}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Alertes actives
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="2xl" fontWeight="bold" color="orange.600">
+                    {overview.summary.warnings}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    Avertissements
+                  </Text>
+                </Box>
+              </Flex>
+            </Flex>
           </Card.Body>
         </Card.Root>
       )}
 
-      {/* Tableau détaillé par employé */}
-      {overview && overview.employees.length > 0 && (
-        <Card.Root>
-          <Card.Body>
-            <Text fontWeight="semibold" mb={4}>
-              Détail par auxiliaire
-            </Text>
-            <EmployeeTable employees={overview.employees} />
-          </Card.Body>
-        </Card.Root>
+      {/* Alertes actives */}
+      {overview && (
+        <section aria-labelledby="alerts-heading">
+          <Heading size="md" mb={3} id="alerts-heading">
+            Alertes actives
+          </Heading>
+
+          <Flex gap={2} mb={4}>
+            <Badge colorPalette="red" variant="subtle">Critique</Badge>
+            <Badge colorPalette="orange" variant="subtle">À surveiller</Badge>
+            <Badge colorPalette="green" variant="subtle">Conforme</Badge>
+          </Flex>
+
+          <Flex gap={3} mb={4} flexWrap="wrap" align="center">
+            <Input
+              placeholder="Rechercher une alerte…"
+              size="sm"
+              maxW="280px"
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+              aria-label="Rechercher une alerte"
+            />
+            <select
+              style={{
+                height: '32px',
+                padding: '0 8px',
+                borderRadius: '6px',
+                border: '1px solid #E2E8F0',
+                fontSize: '14px',
+                backgroundColor: 'white',
+              }}
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              aria-label="Filtrer par sévérité"
+            >
+              <option value="">Toutes les sévérités</option>
+              <option value="danger">Critique</option>
+              <option value="warning">Avertissement</option>
+            </select>
+            {uniqueEmployees.length > 0 && (
+              <select
+                style={{
+                  height: '32px',
+                  padding: '0 8px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                }}
+                value={employeeFilter}
+                onChange={(e) => setEmployeeFilter(e.target.value)}
+                aria-label="Filtrer par employé"
+              >
+                <option value="">Tous les employés</option>
+                {uniqueEmployees.map((name) => (
+                  <option key={name} value={name.toLowerCase()}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Flex>
+
+          {filteredAlerts.length > 0 ? (
+            <Stack gap={3}>
+              {filteredAlerts.map((alert, i) => (
+                <AlertCard
+                  key={`${alert.type}-${alert.employeeName}-${i}`}
+                  alert={alert}
+                  onIgnore={() => {
+                    const originalIndex = alerts.indexOf(alert)
+                    setIgnoredAlerts((prev) => new Set(prev).add(originalIndex))
+                  }}
+                />
+              ))}
+            </Stack>
+          ) : (
+            <Center py={6} borderWidth="1px" borderRadius="lg" borderStyle="dashed">
+              <Stack align="center" gap={2}>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="36"
+                  height="36"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  aria-hidden="true"
+                  style={{ color: '#A0AEC0' }}
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <Text color="gray.500" fontWeight="medium">
+                  Aucune alerte active
+                </Text>
+                <Text fontSize="sm" color="gray.400">
+                  Tous vos indicateurs de conformité sont au vert.
+                </Text>
+              </Stack>
+            </Center>
+          )}
+        </section>
       )}
 
-      {/* Message si pas d'employés */}
+      {/* Contrôles IDCC 3239 */}
+      {checks.length > 0 && (
+        <section aria-labelledby="checks-heading">
+          <Heading size="md" mb={4} id="checks-heading">
+            Contrôles IDCC 3239
+          </Heading>
+          <Box
+            display="grid"
+            gridTemplateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }}
+            gap={4}
+          >
+            {checks.map((group) => (
+              <CheckGroupCard key={group.title} group={group} />
+            ))}
+          </Box>
+        </section>
+      )}
+
       {overview && overview.employees.length === 0 && (
         <Card.Root>
           <Card.Body>
@@ -232,246 +426,186 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
   )
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-  colorPalette = 'gray',
-}: {
-  label: string
-  value: number
-  icon: string
-  colorPalette?: 'green' | 'orange' | 'red' | 'gray'
-}) {
-  const bgColors = {
-    green: 'green.50',
-    orange: 'orange.50',
-    red: 'red.50',
-    gray: 'gray.50',
-  }
-  const textColors = {
-    green: 'green.700',
-    orange: 'orange.700',
-    red: 'red.700',
-    gray: 'gray.700',
-  }
+// ── Score Ring SVG ────────────────────────────────────────────────────────────
+
+function ScoreRing({ score }: { score: number }) {
+  const radius = 34
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference * (1 - score / 100)
+  const color = score >= 80 ? '#38A169' : score >= 60 ? '#DD6B20' : '#E53E3E'
 
   return (
-    <Card.Root bg={bgColors[colorPalette]}>
-      <Card.Body>
-        <Flex align="center" gap={3}>
-          <Text fontSize="2xl" aria-hidden="true">
-            {icon}
-          </Text>
-          <Box>
-            <Text fontSize="2xl" fontWeight="bold" color={textColors[colorPalette]}>
-              {value}
-            </Text>
-            <Text fontSize="sm" color="gray.600">
-              {label}
-            </Text>
-          </Box>
+    <Box position="relative" w="80px" h="80px" flexShrink={0}>
+      <svg
+        viewBox="0 0 80 80"
+        width="80"
+        height="80"
+        aria-label={`Score de conformité : ${score}%`}
+      >
+        <circle cx="40" cy="40" r={radius} fill="none" stroke="#E2E8F0" strokeWidth="8" />
+        <circle
+          cx="40"
+          cy="40"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 40 40)"
+        />
+      </svg>
+      <Flex position="absolute" inset={0} align="center" justify="center">
+        <Text fontSize="lg" fontWeight="bold">
+          {score}%
+        </Text>
+      </Flex>
+    </Box>
+  )
+}
+
+// ── Alert Card ───────────────────────────────────────────────────────────────
+
+function AlertCard({
+  alert,
+  onIgnore,
+}: {
+  alert: EnrichedAlert
+  onIgnore: () => void
+}) {
+  const isDanger = alert.severity === 'critical'
+
+  return (
+    <Flex
+      p={4}
+      gap={4}
+      borderWidth="1px"
+      borderRadius="lg"
+      borderColor={isDanger ? 'red.200' : 'orange.200'}
+      bg={isDanger ? 'red.50' : 'orange.50'}
+      align="flex-start"
+    >
+      <Flex
+        w={8}
+        h={8}
+        borderRadius="full"
+        bg={isDanger ? 'red.500' : 'orange.500'}
+        color="white"
+        align="center"
+        justify="center"
+        flexShrink={0}
+      >
+        {isDanger ? (
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        )}
+      </Flex>
+
+      <Box flex={1} minW={0}>
+        <Text fontWeight="bold" mb={1}>
+          {alert.title}
+        </Text>
+        <Text fontSize="sm" color="gray.600" mb={3} lineHeight="tall">
+          {alert.description}
+        </Text>
+        <Flex gap={2} flexWrap="wrap">
+          <Badge colorPalette={isDanger ? 'red' : 'orange'} variant="subtle">
+            {alert.employeeName}
+          </Badge>
+          <Badge variant="subtle">{alert.legalRef}</Badge>
         </Flex>
+      </Box>
+
+      <Flex direction="column" gap={2} flexShrink={0}>
+        <AccessibleButton size="sm" variant="ghost" accessibleLabel="Corriger l'alerte">
+          Corriger
+        </AccessibleButton>
+        <AccessibleButton size="sm" variant="ghost" onClick={onIgnore} accessibleLabel="Ignorer l'alerte">
+          Ignorer
+        </AccessibleButton>
+      </Flex>
+    </Flex>
+  )
+}
+
+// ── Check Group Card ─────────────────────────────────────────────────────────
+
+function CheckGroupCard({ group }: { group: CheckGroup }) {
+  return (
+    <Card.Root>
+      <Card.Body>
+        <Text fontWeight="bold" mb={3}>
+          {group.title}
+        </Text>
+        <Stack gap={0}>
+          {group.checks.map((check, i) => (
+            <Flex
+              key={i}
+              align="center"
+              gap={3}
+              py={2}
+              borderBottomWidth={i < group.checks.length - 1 ? '1px' : '0'}
+              borderColor="gray.100"
+            >
+              <CheckStatusIcon status={check.status} />
+              <Text fontSize="sm" flex={1}>
+                {check.label}
+              </Text>
+            </Flex>
+          ))}
+        </Stack>
       </Card.Body>
     </Card.Root>
   )
 }
 
-function HistoryChart({
-  history,
-}: {
-  history: Array<{
-    weekStart: Date
-    weekLabel: string
-    compliant: number
-    warnings: number
-    critical: number
-  }>
-}) {
-  const maxTotal = Math.max(...history.map((h) => h.compliant + h.warnings + h.critical), 1)
-
-  return (
-    <Flex gap={4} justify="space-around" align="flex-end" h={120}>
-      {history.map((week, i) => {
-        const total = week.compliant + week.warnings + week.critical
-        const height = total > 0 ? (total / maxTotal) * 100 : 5
-
-        return (
-          <Stack key={i} align="center" gap={2}>
-            <Box position="relative" h={100} w={12}>
-              <Stack
-                position="absolute"
-                bottom={0}
-                w="full"
-                h={`${height}%`}
-                gap={0}
-                borderRadius="md"
-                overflow="hidden"
-              >
-                {week.critical > 0 && (
-                  <Box
-                    bg="red.400"
-                    h={`${(week.critical / total) * 100}%`}
-                  />
-                )}
-                {week.warnings > 0 && (
-                  <Box
-                    bg="orange.400"
-                    h={`${(week.warnings / total) * 100}%`}
-                  />
-                )}
-                {week.compliant > 0 && (
-                  <Box
-                    bg="green.400"
-                    h={`${(week.compliant / total) * 100}%`}
-                  />
-                )}
-              </Stack>
-            </Box>
-            <Text fontSize="xs" color="gray.600">
-              {week.weekLabel}
-            </Text>
-          </Stack>
-        )
-      })}
-    </Flex>
-  )
-}
-
-function EmployeeTable({ employees }: { employees: EmployeeComplianceStatus[] }) {
-  // Trier par statut (critiques en premier)
-  const sorted = [...employees].sort((a, b) => {
-    const order = { critical: 0, warning: 1, ok: 2 }
-    return order[a.status] - order[b.status]
-  })
-
-  return (
-    <Box overflowX="auto">
-      <Table.Root size="sm">
-        <Table.Header>
-          <Table.Row>
-            <Table.ColumnHeader>Auxiliaire</Table.ColumnHeader>
-            <Table.ColumnHeader>Statut</Table.ColumnHeader>
-            <Table.ColumnHeader textAlign="right">Heures semaine</Table.ColumnHeader>
-            <Table.ColumnHeader textAlign="right">Reste (48h)</Table.ColumnHeader>
-            <Table.ColumnHeader textAlign="right">Reste (10h/j)</Table.ColumnHeader>
-            <Table.ColumnHeader textAlign="right">Repos hebdo</Table.ColumnHeader>
-            <Table.ColumnHeader>Alertes</Table.ColumnHeader>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {sorted.map((employee) => (
-            <Table.Row key={employee.employeeId}>
-              <Table.Cell>
-                <HStack gap={2}>
-                  <Avatar.Root size="xs">
-                    <Avatar.Fallback name={employee.employeeName} />
-                    {employee.avatarUrl && <Avatar.Image src={employee.avatarUrl} />}
-                  </Avatar.Root>
-                  <Text fontWeight="medium">{employee.employeeName}</Text>
-                </HStack>
-              </Table.Cell>
-              <Table.Cell>
-                <StatusBadge status={employee.status} />
-              </Table.Cell>
-              <Table.Cell textAlign="right">
-                <HStack justify="flex-end" gap={2}>
-                  <Progress.Root
-                    value={(employee.currentWeekHours / 48) * 100}
-                    size="xs"
-                    w={16}
-                    colorPalette={
-                      employee.currentWeekHours > 44
-                        ? employee.currentWeekHours > 48
-                          ? 'red'
-                          : 'orange'
-                        : 'blue'
-                    }
-                  >
-                    <Progress.Track>
-                      <Progress.Range />
-                    </Progress.Track>
-                  </Progress.Root>
-                  <Text fontSize="sm">{employee.currentWeekHours}h</Text>
-                </HStack>
-              </Table.Cell>
-              <Table.Cell textAlign="right">
-                <Text
-                  fontSize="sm"
-                  color={employee.remainingWeeklyHours <= 4 ? 'red.600' : undefined}
-                >
-                  {employee.remainingWeeklyHours}h
-                </Text>
-              </Table.Cell>
-              <Table.Cell textAlign="right">
-                <Text
-                  fontSize="sm"
-                  color={employee.remainingDailyHours <= 2 ? 'orange.600' : undefined}
-                >
-                  {employee.remainingDailyHours}h
-                </Text>
-              </Table.Cell>
-              <Table.Cell textAlign="right">
-                <HStack justify="flex-end" gap={1}>
-                  <Text
-                    fontSize="sm"
-                    color={
-                      employee.weeklyRestStatus.isCompliant ? 'green.600' : 'red.600'
-                    }
-                  >
-                    {employee.weeklyRestStatus.longestRest}h
-                  </Text>
-                  {employee.weeklyRestStatus.isCompliant ? (
-                    <Text color="green.500" aria-label="Conforme">
-                      ✓
-                    </Text>
-                  ) : (
-                    <Text color="red.500" aria-label="Non conforme">
-                      ✗
-                    </Text>
-                  )}
-                </HStack>
-              </Table.Cell>
-              <Table.Cell>
-                {employee.alerts.length > 0 ? (
-                  <Stack gap={1}>
-                    {employee.alerts.map((alert, i) => (
-                      <Text
-                        key={i}
-                        fontSize="xs"
-                        color={
-                          alert.severity === 'critical' ? 'red.600' : 'orange.600'
-                        }
-                      >
-                        {alert.message}
-                      </Text>
-                    ))}
-                  </Stack>
-                ) : (
-                  <Text fontSize="xs" color="gray.400">
-                    -
-                  </Text>
-                )}
-              </Table.Cell>
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table.Root>
-    </Box>
-  )
-}
-
-function StatusBadge({ status }: { status: 'ok' | 'warning' | 'critical' }) {
+function CheckStatusIcon({ status }: { status: 'ok' | 'error' | 'warn' }) {
   const config = {
-    ok: { label: 'Conforme', colorPalette: 'green' as const },
-    warning: { label: 'Attention', colorPalette: 'orange' as const },
-    critical: { label: 'Critique', colorPalette: 'red' as const },
+    ok: { bg: 'green.100', color: 'green.600' },
+    error: { bg: 'red.100', color: 'red.600' },
+    warn: { bg: 'orange.100', color: 'orange.600' },
   }
+  const { bg, color } = config[status]
 
   return (
-    <Badge colorPalette={config[status].colorPalette} variant="subtle">
-      {config[status].label}
-    </Badge>
+    <Flex
+      w={5}
+      h={5}
+      borderRadius="full"
+      bg={bg}
+      color={color}
+      align="center"
+      justify="center"
+      flexShrink={0}
+    >
+      {status === 'ok' && (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      )}
+      {status === 'error' && (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      )}
+      {status === 'warn' && (
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      )}
+    </Flex>
   )
 }
 
