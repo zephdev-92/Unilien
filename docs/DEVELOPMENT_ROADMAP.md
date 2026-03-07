@@ -1056,16 +1056,17 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 **Effort**: 2 jours
 
-#### 7.2 Historique Interventions
+#### 7.2 Évaluations Auxiliaires
 
 ```
-[ ] Liste interventions passées par auxiliaire
-[ ] Statistiques (ponctualité, heures effectuées)
-[ ] Évaluations/Feedbacks
-[ ] Export historique
+[ ] Évaluations/Feedbacks par auxiliaire
+[ ] Note moyenne et commentaires
 ```
 
-**Effort**: 2 jours
+> Historique interventions et statistiques → couverts par 8.1 Analytics
+> Export historique → déplacé vers 8.3
+
+**Effort**: 1 jour
 
 #### 7.3 Gestion Disponibilités
 
@@ -1140,27 +1141,29 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 **Impact**: 🟡 IMPORTANT - Business intelligence
 **Effort**: 2 semaines
 
-**Décision** : Page `/analytics` dédiée (pas sur le dashboard, qui est déjà chargé).
+**Décision** : Page `/analytique` dédiée (pas sur le dashboard, qui est déjà chargé).
 Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" vers Analytics.
 
 > **V2** : Dashboard configurable (choix des widgets affichés par l'utilisateur)
 
-#### 8.1 Page Analytics Employeur (`/analytics`)
+#### 8.1 Page Analytics Employeur (`/analytique`) — PR #141 ✅
 
 ```
-[ ] Coût total mensuel (par employé, par période)
-[ ] Heures travaillées (graphiques)
-[ ] Taux de présence auxiliaires
-[ ] Conformité (score, alertes, historique)
+[x] Coût total mensuel (par employé, par période) — AnalyticsSummaryCards + MonthlyChart
+[x] Heures travaillées (graphiques) — MonthlyChart barres avec completed/planned
+[x] Taux de présence auxiliaires — PresenceRateWidget (anneau SVG + mini trend)
+[x] Répartition par auxiliaire — AuxiliaryBreakdownWidget (heures, coût, barres)
 [x] Prévisions budget (déjà sur dashboard — lien vers vue détaillée)
+[x] Sélecteur de période 3/6/12 mois
 ```
 
-#### 8.2 Page Analytics Auxiliaire (`/analytics`)
+#### 8.2 Page Analytics Auxiliaire (`/analytique`) — PR #141 ✅
 
 ```
-[ ] Revenu mensuel (détaillé)
+[x] Revenu mensuel (détaillé) — MonthlyChart + AnalyticsSummaryCards
+[x] Heures travaillées (graphiques) — MonthlyChart barres
+[x] Taux de présence — PresenceRateWidget
 [ ] Heures travaillées vs contractuelles
-[ ] Prochains shifts
 [ ] Historique interventions
 ```
 
@@ -1168,6 +1171,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 
 ```
 [ ] Export Excel (toutes données)
+[ ] Export historique interventions par auxiliaire (ex-7.2)
 [ ] Graphiques imprimables (PDF)
 [ ] Comparaisons période N vs N-1
 ```
@@ -1577,7 +1581,7 @@ npx playwright install
 **Semaines 14-18**:
 - 🔴 Tests UI composants (Phase 3)
 - 🟡 Gestion équipe avancée
-- 🟡 Analytics & Reporting
+- 🟡 Analytics & Reporting (page créée PR #141 — exports restants)
 - 🟢 2FA
 
 **Semaines 19-22**:
@@ -1635,7 +1639,7 @@ npx playwright install
 - [ ] Tests E2E critiques passent
 - [ ] Score Web Vitals > 90
 - [ ] 2FA disponible
-- [ ] Analytics complets
+- [~] Analytics (page /analytique créée PR #141 — exports restants)
 
 ### Objectifs Q3-Q4 2026
 

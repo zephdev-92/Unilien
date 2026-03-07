@@ -353,8 +353,37 @@ export async function searchEmployeeByEmail(
 }
 
 /**
- * Vérifie si un contrat actif existe entre un employeur et un employé
+ * Invite un nouvel auxiliaire par email via Edge Function.
+ * Crée le compte, envoie le mail d'invitation, retourne l'ID utilisateur.
  */
+export async function inviteEmployeeByEmail(
+  email: string,
+  firstName: string,
+  lastName: string,
+  employerId: string,
+): Promise<{ userId: string }> {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  const response = await supabase.functions.invoke('invite-employee', {
+    body: { email, firstName, lastName, employerId },
+    headers: session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : undefined,
+  })
+
+  if (response.error) {
+    throw new Error(response.error.message || "Erreur lors de l'invitation")
+  }
+
+  const result = response.data as { success?: boolean; userId?: string; error?: string }
+
+  if (result.error) {
+    throw new Error(result.error)
+  }
+
+  return { userId: result.userId! }
+}
+
 /**
  * Retourne l'id de l'employeur associé à un employé via son contrat actif.
  * Utilisé par `useEmployerResolution` pour les utilisateurs de rôle `employee`.

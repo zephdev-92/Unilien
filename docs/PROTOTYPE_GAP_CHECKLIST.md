@@ -37,7 +37,6 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 2. Dashboard — Elements manquants
 
-- [ ] **Role switcher** — barre de selection employeur / employe / aidant en haut du dashboard
 - [ ] **Demo banner** — bandeau "Mode demo" avec badge, texte explicatif, CTA inscription, bouton fermer
 - [ ] **Onboarding banner** — 3 etapes avec progression (compte cree, ajouter employe, planifier intervention)
 - [x] **Greeting enrichi** — eyebrow jour/date, chips (prochaine intervention + alertes conformite), CTA "Voir le planning" ✅
@@ -93,13 +92,13 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 6. Team — Elements manquants
 
-- [ ] **Stats equipe** — 4 cards : employes actifs, en conge, heures du mois, contrats actifs
-- [ ] **Recherche employes** — input "Rechercher un employe..."
+- [x] **Stats equipe** — 4 cards : employes actifs, inactifs, heures/semaine, contrats actifs ✅
+- [x] **Recherche employes** — input "Rechercher un employe..." avec filtre texte ✅
 - [ ] **Filtre "En conge"** — ajouter le statut "En conge" au filtre existant
-- [ ] **Cards enrichies** — date d'embauche dans les metadata (icone + date)
-- [ ] **Cards enrichies** — heures/semaine dans les metadata (icone + nombre)
-- [ ] **Cards enrichies** — email avec ellipsis dans les metadata
-- [ ] **Modale ajout employe** — champs : poste (select), heures/semaine, date debut
+- [x] **Cards enrichies** — date d'embauche dans les metadata (icone + date) ✅
+- [x] **Cards enrichies** — heures/semaine dans les metadata (icone + nombre) ✅
+- [x] **Cards enrichies** — email avec ellipsis dans les metadata ✅
+- [x] **Modale ajout employe** — flow invitation si pas de compte (Edge Function + email) ✅
 
 ---
 
@@ -189,7 +188,7 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Compliance | 9 | Moyenne |
 | Profile | 9 | Moyenne |
 | Logbook | 8 | Moyenne |
-| Team | 7 | Moyenne |
+| Team | 7 (6 done) | Moyenne |
 | Clock-in | 6 | Moyenne |
 | Contact | 4 | Basse |
 | Messaging | 4 | Basse |
