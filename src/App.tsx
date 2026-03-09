@@ -155,7 +155,7 @@ function App() {
           <Route path="/messagerie" element={<ProtectedRoute><ErrorBoundary><LiaisonPage /></ErrorBoundary></ProtectedRoute>} />
 
           {/* Routes protégées avec restriction de rôle */}
-          <Route path="/pointage" element={<ProtectedRoute allowedRoles={['employee']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/pointage" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/equipe" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><TeamPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/conformite" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><CompliancePage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />

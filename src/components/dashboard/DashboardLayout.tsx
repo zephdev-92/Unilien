@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { label: 'Tableau de bord', href: '/tableau-de-bord', icon: '🏠', ariaLabel: 'Aller au tableau de bord' },
   { label: 'Mon équipe', href: '/equipe', icon: '👥', ariaLabel: 'Gérer mes auxiliaires', roles: ['employer'] },
   { label: 'Conformité', href: '/conformite', icon: '⚖️', ariaLabel: 'Voir la conformité', roles: ['employer'] },
+  { label: 'Pointage', href: '/pointage', icon: '⏱️', ariaLabel: 'Accéder au pointage' },
   { label: 'Planning', href: '/planning', icon: '📅', ariaLabel: 'Voir le planning' },
   { label: 'Messagerie', href: '/messagerie', icon: '💬', ariaLabel: 'Ouvrir la messagerie en temps réel' },
   { label: 'Cahier de liaison', href: '/cahier-de-liaison', icon: '📝', ariaLabel: 'Ouvrir le cahier de liaison' },

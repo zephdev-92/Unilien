@@ -47,7 +47,7 @@ export function useClockIn(
       tomorrow.setDate(tomorrow.getDate() + 1)
       const historyStart = startOfDay(subDays(today, historyDays))
 
-      const shifts = await getShifts(profile.id, 'employee', historyStart, endOfDay(tomorrow))
+      const shifts = await getShifts(profile.id, profile.role, historyStart, endOfDay(tomorrow))
 
       const todayStr = format(today, 'yyyy-MM-dd')
       setTodayShifts(shifts.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === todayStr))
@@ -243,11 +243,14 @@ export function useClockIn(
     historyDays,
     setHistoryDays,
     // Shifts
+    todayShifts,
+    historyShifts,
     plannedShifts,
     completedShifts,
     historyByDay,
     historyStats,
     activeShift,
+    activeShiftId,
     clockInTime,
     hasNightAction,
     setHasNightAction,
@@ -257,6 +260,8 @@ export function useClockIn(
     handleClockIn,
     handleClockOut,
     handleCancel,
+    // Reload
+    loadAllShifts,
     // Refs forwarding
     inProgressRef,
     idleSectionRef,

@@ -75,6 +75,10 @@ React n'a qu'une ProfilePage avec onglets.
 - [ ] **Contacts d'urgence** — section dediee avec formulaire contacts urgence
 
 ---
+- [ ] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in
+
+---
+
 
 ## 5. Compliance — Elements manquants
 

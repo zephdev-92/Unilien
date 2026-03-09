@@ -142,14 +142,14 @@ describe('App', () => {
       })
     })
 
-    it('redirige vers /tableau-de-bord si le rôle n\'est pas autorisé (/pointage pour employer)', async () => {
+    it('redirige vers /tableau-de-bord si le rôle n\'est pas autorisé (/equipe pour employee)', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
-        userRole: 'employer',
+        userRole: 'employee',
       })
-      renderApp('/pointage')
+      renderApp('/equipe')
       await waitFor(() => {
         expect(screen.getByTestId('dashboard')).toBeInTheDocument()
       })
