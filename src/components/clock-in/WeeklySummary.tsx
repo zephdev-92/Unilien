@@ -1,0 +1,107 @@
+import { useMemo } from 'react'
+import { Box, Flex, Text } from '@chakra-ui/react'
+import { startOfWeek, addDays, format, isToday } from 'date-fns'
+import { calculateShiftDuration } from '@/lib/compliance'
+import type { Shift } from '@/types'
+import { formatHours } from './clockInUtils'
+
+const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+interface WeeklySummaryProps {
+  todayShifts: Shift[]
+  historyShifts: Shift[]
+}
+
+export function WeeklySummary({ todayShifts, historyShifts }: WeeklySummaryProps) {
+  const weekData = useMemo(() => {
+    const allShifts = [...todayShifts, ...historyShifts].filter(
+      (s) => s.status === 'completed'
+    )
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+
+    const days = DAY_LABELS.map((label, i) => {
+      const date = addDays(weekStart, i)
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const dayShifts = allShifts.filter(
+        (s) => format(new Date(s.date), 'yyyy-MM-dd') === dateStr
+      )
+      const totalMin = dayShifts.reduce(
+        (acc, s) => acc + calculateShiftDuration(s.startTime, s.endTime, s.breakDuration),
+        0
+      )
+      return { label, date, hours: totalMin / 60, isToday: isToday(date) }
+    })
+
+    const maxHours = Math.max(...days.map((d) => d.hours), 1)
+    const totalHours = days.reduce((acc, d) => acc + d.hours, 0)
+
+    return { days, maxHours, totalHours }
+  }, [todayShifts, historyShifts])
+
+  return (
+    <Box
+      bg="white"
+      borderRadius="xl"
+      borderWidth="1px"
+      borderColor="gray.200"
+      p={5}
+      boxShadow="sm"
+    >
+      <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={4}>
+        Semaine en cours
+      </Text>
+
+      <Flex direction="column" gap={2.5}>
+        {weekData.days.map((day) => (
+          <Flex key={day.label} align="center" gap={3}>
+            <Text
+              fontSize="xs"
+              fontWeight={day.isToday ? 'bold' : 'medium'}
+              color={day.isToday ? 'blue.600' : 'gray.500'}
+              w="28px"
+              flexShrink={0}
+            >
+              {day.label}
+            </Text>
+            <Box flex={1} bg="gray.100" borderRadius="full" h="8px" overflow="hidden">
+              {day.hours > 0 && (
+                <Box
+                  h="100%"
+                  borderRadius="full"
+                  bg={day.isToday ? 'blue.400' : 'blue.300'}
+                  w={`${Math.max((day.hours / weekData.maxHours) * 100, 4)}%`}
+                  transition="width 0.3s"
+                  aria-label={`${day.label} : ${formatHours(day.hours)}`}
+                />
+              )}
+            </Box>
+            <Text
+              fontSize="xs"
+              fontWeight={day.isToday ? 'semibold' : 'normal'}
+              color={day.hours > 0 ? 'gray.700' : 'gray.400'}
+              w="36px"
+              textAlign="right"
+              flexShrink={0}
+            >
+              {day.hours > 0 ? formatHours(day.hours) : '—'}
+            </Text>
+          </Flex>
+        ))}
+      </Flex>
+
+      <Flex
+        justify="space-between"
+        align="center"
+        mt={4}
+        pt={3}
+        borderTopWidth="1px"
+        borderColor="gray.100"
+      >
+        <Text fontSize="sm" color="gray.600">Total semaine</Text>
+        <Text fontSize="sm" fontWeight="bold" color="gray.900">
+          {formatHours(weekData.totalHours)}
+        </Text>
+      </Flex>
+    </Box>
+  )
+}

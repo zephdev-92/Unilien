@@ -17,16 +17,34 @@ export async function getShifts(
   endDate: Date
 ): Promise<Shift[]> {
   // Construire la requête selon le rôle
-  let query = supabase
-    .from('shifts')
-    .select(`
+  // Pour les employeurs, on JOIN aussi le profil de l'employé pour afficher son nom
+  const selectClause = role === 'employer'
+    ? `
+      *,
+      contract:contracts!inner(
+        id,
+        employer_id,
+        employee_id,
+        employee:employees!employee_id(
+          profile:profiles!profile_id(
+            first_name,
+            last_name
+          )
+        )
+      )
+    `
+    : `
       *,
       contract:contracts!inner(
         id,
         employer_id,
         employee_id
       )
-    `)
+    `
+
+  let query = supabase
+    .from('shifts')
+    .select(selectClause)
     .gte('date', startDate.toISOString().split('T')[0])
     .lte('date', endDate.toISOString().split('T')[0])
     .order('date', { ascending: true })
@@ -48,10 +66,17 @@ export async function getShifts(
 
   return (data || []).map((row) => {
     const shift = mapShiftFromDb(row as ShiftDbRow)
-    // Extraire l'employeeId du JOIN contract (disponible au runtime même si absent du type généré)
-    const contractJoin = (row as Record<string, unknown>).contract as { employee_id?: string } | null
+    // Extraire l'employeeId et employeeName du JOIN contract
+    const contractJoin = (row as Record<string, unknown>).contract as {
+      employee_id?: string
+      employee?: { profile?: { first_name?: string; last_name?: string } | null } | null
+    } | null
     if (contractJoin?.employee_id) {
       shift.employeeId = contractJoin.employee_id
+    }
+    if (contractJoin?.employee?.profile) {
+      const p = contractJoin.employee.profile
+      shift.employeeName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || undefined
     }
     return shift
   })

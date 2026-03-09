@@ -177,6 +177,7 @@ export interface Shift {
   id: string
   contractId: string
   employeeId?: string // Disponible quand le shift est chargé avec JOIN contract
+  employeeName?: string // Disponible quand le shift est chargé avec JOIN contract+profile
   date: Date
   startTime: string
   endTime: string
