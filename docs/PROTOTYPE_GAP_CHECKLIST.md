@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 6 mars 2026
+**Derniere mise a jour** : 9 mars 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -133,9 +133,9 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 9. Messaging (Liaison) — Elements manquants
 
-- [ ] **Recherche conversations** — barre de recherche dans la liste des conversations
-- [ ] **Pieces jointes** — bouton attacher fichier dans le compose (images, documents)
-- [ ] **Labels groupes** — labels "General" et "Conversations" dans la liste
+- [x] **Recherche conversations** — barre de recherche dans la liste des conversations ✅ (PR #137)
+- [x] **Pieces jointes** — bouton attacher fichier dans le compose (images, documents) ✅ (09/03/2026)
+- [x] **Labels groupes** — labels "General" et "Conversations" dans la liste ✅ (PR #137)
 - [ ] **Empty state desktop** — icone + "Selectionnez une conversation" quand aucune selectionnee
 
 ---
@@ -180,19 +180,19 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 
 ## Resume
 
-| Bloc | Items | Priorite |
-|------|-------|----------|
-| Settings (page complete) | 20 | Haute |
-| Dashboard | 12 | Haute |
-| Landing | 11 | Moyenne |
-| Compliance | 9 (9 done) | Moyenne |
-| Profile | 9 | Moyenne |
-| Logbook | 8 | Moyenne |
-| Team | 7 (6 done) | Moyenne |
-| Clock-in | 6 | Moyenne |
-| Contact | 4 | Basse |
-| Messaging | 4 | Basse |
-| Planning | 4 | Basse |
-| Documents | 3 | Basse |
-| Patterns UI | 4 | Basse |
-| **Total** | **~101** | — |
+| Bloc | Items | Done | Priorite |
+|------|-------|------|----------|
+| Settings (page complete) | 20 | 0 | Haute |
+| Dashboard | 12 | 8 | Haute |
+| Landing | 11 | 0 | Moyenne |
+| Compliance | 9 | 9 | ✅ Termine |
+| Profile | 9 | 0 | Moyenne |
+| Logbook | 8 | 0 | Moyenne |
+| Team | 7 | 6 | Moyenne |
+| Clock-in | 6 | 0 | Moyenne |
+| Contact | 4 | 0 | Basse |
+| Messaging | 4 | 3 | Basse |
+| Planning | 4 | 0 | Basse |
+| Documents | 3 | 0 | Basse |
+| Patterns UI | 4 | 0 | Basse |
+| **Total** | **~101** | **26** | — |

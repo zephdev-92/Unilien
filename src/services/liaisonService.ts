@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
-import type { Conversation, LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
+import type { Attachment, Conversation, LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
 import type { ConversationDbRow, LiaisonMessageDbRow } from '@/types/database'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
@@ -290,7 +290,8 @@ export async function createLiaisonMessage(
   senderId: string,
   senderRole: UserRole,
   content: string,
-  audioUrl?: string
+  audioUrl?: string,
+  attachments?: Attachment[]
 ): Promise<LiaisonMessage | null> {
   const { data, error } = await supabase
     .from('liaison_messages')
@@ -301,7 +302,7 @@ export async function createLiaisonMessage(
       sender_role: senderRole,
       content: sanitizeText(content.trim()),
       audio_url: audioUrl || null,
-      attachments: [],
+      attachments: attachments || [],
       is_edited: false,
       read_by: [senderId],
     })

@@ -57,12 +57,41 @@ Nouvelle fonctionnalité permettant de répéter une intervention de manière he
 - Configuration des jours de la semaine
 - Le shift original est inclus dans la série générée
 
-#### Conversations privées — en cours (branche `feat/private-conversations`)
+#### Conversations privées (PR #137 ✅)
 
 Ajout de conversations privées (1-à-1) entre membres d'une équipe dans le cahier de liaison :
 - Migration 035 : table `conversations` (types `team` / `private`, `participant_ids UUID[]`)
+- Composants : `ConversationList`, `MessageInput` avec saisie vocale, `NewConversationModal`
 - Remplacement de `react-icons` par des SVGs inline (non installé)
-- Migration des icônes vers SVGs natifs
+- Labels groupes (Général / Conversations), recherche dans la liste
+- Tests : `ConversationList.test.tsx` (11 tests), `MessageInput.test.tsx` (28 tests)
+
+#### Dashboard — Alignement prototype (PRs #138–#140 ✅)
+
+- **PR #138** : Greeting enrichi (eyebrow jour/date, chips contextuelles), action nudges, PROTOTYPE_GAP_CHECKLIST créée
+- **PR #139** : Planning du jour, tendances stats, alertes conformité sidebar, restructuration layout
+- **PR #140** : Planning du jour finalisé, budget forecast, stats trends & compliance alerts
+
+#### Analytics (PR #141 ✅)
+
+Page analytics dédiée (`/analytique`) avec statistiques multi-mois pour employeurs et auxiliaires.
+
+#### Team — Enrichissement (PR #142 ✅)
+
+Cards auxiliaires enrichies (date embauche, heures/semaine, email), recherche employés, flow invitation.
+
+#### Pièces jointes messagerie (09/03/2026)
+
+Implémentation complète de l'upload de pièces jointes dans le cahier de liaison :
+- Service `attachmentService.ts` : upload vers bucket `liaison-attachments`, validation (5 Mo max, 5 fichiers/message, JPG/PNG/WebP/GIF/PDF/DOCX)
+- `MessageInput` : sélection multi-fichiers, prévisualisation avec nom/taille/suppression
+- `MessageBubble` : affichage images (prévisualisation cliquable) et documents (carte icône/nom/taille)
+- `liaisonService.createLiaisonMessage()` : paramètre `attachments` ajouté
+- Tests : 18 tests attachmentService + tests MessageInput mis à jour
+
+#### Compliance — Redesign dashboard (commit c92f213)
+
+Redesign complet du dashboard conformité : score circulaire SVG, cards alertes avec actions, checks IDCC par catégorie.
 
 #### CI/CD & Dépendances (PRs #128–#130)
 
@@ -70,10 +99,10 @@ Ajout de conversations privées (1-à-1) entre membres d'une équipe dans le cah
 - Bump `actions/upload-artifact` v6 → v7
 - Bump dépendances dev
 
-#### Métriques session (06/03/2026)
+#### Métriques session (09/03/2026)
 
-- **1942 tests** / 102 fichiers (était 1897 / 97)
-- 35 migrations DB (était 32)
+- **2014 tests** / 108 fichiers (était 1942 / 102)
+- 35 migrations DB
 - Routes francisées
 - Aucune régression (lint + tests passent)
 
@@ -1372,7 +1401,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 
 #### 14.1 Messagerie Temps Réel Améliorée
 
-- [ ] Pièces jointes (images, documents)
+- [x] Pièces jointes (images, documents) ✅ (09/03/2026)
 - [ ] Émojis/réactions
 - [ ] Recherche dans messages
 - [ ] Archivage conversations
@@ -1569,8 +1598,11 @@ npx playwright install
 - ✅ URLs francisées — PR #126
 - ✅ Fix validation inter-employeurs — PR #135
 - ✅ Répétition d'interventions (hebdomadaire/personnalisée) — PR #136
-- 🟡 Conversations privées (feat/private-conversations — en cours)
-- 🟡 Dashboard — alignement prototype (onboarding, nudges, planning du jour, tendances) — section 7b
+- ✅ Conversations privées — PR #137
+- ✅ Dashboard — alignement prototype (greeting, nudges, planning du jour, tendances, budget) — PRs #138–#140
+- ✅ Analytics page — PR #141
+- ✅ Team enrichissement (cards, recherche, invitation) — PR #142
+- ✅ Compliance redesign (score ring, alert cards, IDCC checks)
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
 - 🟡 Tests composants UI critiques restants (Phase 3)

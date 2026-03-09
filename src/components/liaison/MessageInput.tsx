@@ -10,13 +10,18 @@ import {
 } from '@chakra-ui/react'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { logger } from '@/lib/logger'
+import {
+  validateAttachmentFiles,
+  formatSize,
+  getAttachmentType,
+} from '@/services/attachmentService'
 
 // ============================================
 // PROPS
 // ============================================
 
 export interface MessageInputProps {
-  onSend: (content: string) => Promise<void>
+  onSend: (content: string, files?: File[]) => Promise<void>
   onTyping?: (isTyping: boolean) => void
   disabled?: boolean
   placeholder?: string
@@ -81,6 +86,15 @@ function MicOffIcon() {
   )
 }
 
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -93,7 +107,10 @@ export function MessageInput({
 }: MessageInputProps) {
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [files, setFiles] = useState<File[]>([])
+  const [fileError, setFileError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Content before voice input started (to append voice transcript to)
@@ -158,10 +175,38 @@ export function MessageInput({
     handleTyping()
   }, [handleTyping])
 
+  // Handle file selection
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || [])
+    if (selectedFiles.length === 0) return
+
+    const allFiles = [...files, ...selectedFiles]
+    const validation = validateAttachmentFiles(allFiles)
+
+    if (!validation.valid) {
+      setFileError(validation.error!)
+      return
+    }
+
+    setFileError(null)
+    setFiles(allFiles)
+
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [files])
+
+  // Remove a file from the list
+  const handleRemoveFile = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index))
+    setFileError(null)
+  }, [])
+
   // Handle send
   const handleSend = useCallback(async () => {
     const trimmedContent = content.trim()
-    if (!trimmedContent || isSending || disabled) return
+    if ((!trimmedContent && files.length === 0) || isSending || disabled) return
 
     // Stop voice if active
     if (isListening) {
@@ -173,8 +218,10 @@ export function MessageInput({
     onTyping?.(false)
 
     try {
-      await onSend(trimmedContent)
+      await onSend(trimmedContent || '', files.length > 0 ? files : undefined)
       setContent('')
+      setFiles([])
+      setFileError(null)
       contentBeforeVoiceRef.current = ''
 
       if (textareaRef.current) {
@@ -185,7 +232,7 @@ export function MessageInput({
     } finally {
       setIsSending(false)
     }
-  }, [content, isSending, disabled, isListening, onSend, onTyping, stopListening, resetVoice])
+  }, [content, files, isSending, disabled, isListening, onSend, onTyping, stopListening, resetVoice])
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -210,7 +257,7 @@ export function MessageInput({
     }
   }, [isListening, content, startListening, stopListening, resetVoice])
 
-  const canSend = content.trim().length > 0 && !isSending && !disabled
+  const canSend = (content.trim().length > 0 || files.length > 0) && !isSending && !disabled
 
   return (
     <Box
@@ -235,7 +282,88 @@ export function MessageInput({
         </Box>
       )}
 
+      {/* File error banner */}
+      {fileError && (
+        <Box
+          bg="orange.50"
+          borderRadius="md"
+          p={2}
+          mb={3}
+          borderWidth="1px"
+          borderColor="orange.200"
+        >
+          <Text fontSize="sm" color="orange.700" role="alert">
+            {fileError}
+          </Text>
+        </Box>
+      )}
+
+      {/* File previews */}
+      {files.length > 0 && (
+        <Flex gap={2} mb={3} flexWrap="wrap">
+          {files.map((file, index) => (
+            <Flex
+              key={`${file.name}-${index}`}
+              align="center"
+              gap={2}
+              bg="gray.50"
+              borderWidth="1px"
+              borderColor="gray.200"
+              borderRadius="md"
+              px={3}
+              py={1.5}
+              fontSize="sm"
+            >
+              <Text color="gray.500" flexShrink={0}>
+                {getAttachmentType(file) === 'image' ? '🖼' : '📄'}
+              </Text>
+              <Text color="gray.700" truncate maxW="150px">
+                {file.name}
+              </Text>
+              <Text color="gray.400" fontSize="xs" flexShrink={0}>
+                {formatSize(file.size)}
+              </Text>
+              <IconButton
+                aria-label={`Retirer ${file.name}`}
+                size="xs"
+                variant="ghost"
+                colorPalette="gray"
+                onClick={() => handleRemoveFile(index)}
+                minW="24px"
+                minH="24px"
+              >
+                <CloseIcon />
+              </IconButton>
+            </Flex>
+          ))}
+        </Flex>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+        aria-label="Sélectionner des fichiers"
+      />
+
       <Flex gap={3} align="flex-end">
+        {/* Attach file button */}
+        <IconButton
+          aria-label="Joindre un fichier"
+          variant="ghost"
+          colorPalette="gray"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled || isSending}
+          minW="44px"
+          minH="44px"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </IconButton>
+
         {/* Voice input button — toujours affiché, opacifié si non supporté */}
         <Box position="relative" opacity={isVoiceSupported ? 1 : 0.4}>
           <IconButton

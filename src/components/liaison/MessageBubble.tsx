@@ -6,13 +6,16 @@ import {
   Avatar,
   Badge,
   IconButton,
+  Image,
+  Link,
   Menu,
   Portal,
 } from '@chakra-ui/react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { sanitizeText } from '@/lib/sanitize'
-import type { LiaisonMessageWithSender, UserRole } from '@/types'
+import { formatSize } from '@/services/attachmentService'
+import type { Attachment, LiaisonMessageWithSender, UserRole } from '@/types'
 
 // ============================================
 // PROPS
@@ -150,9 +153,20 @@ export const MessageBubble = memo(function MessageBubble({
             }}
           >
             {/* Message text */}
-            <Text fontSize="md" whiteSpace="pre-wrap">
-              {sanitizeText(message.content)}
-            </Text>
+            {message.content && (
+              <Text fontSize="md" whiteSpace="pre-wrap">
+                {sanitizeText(message.content)}
+              </Text>
+            )}
+
+            {/* Attachments */}
+            {message.attachments.length > 0 && (
+              <Flex direction="column" gap={2} mt={message.content ? 2 : 0}>
+                {message.attachments.map((att) => (
+                  <AttachmentPreview key={att.id} attachment={att} isOwnMessage={isOwnMessage} />
+                ))}
+              </Flex>
+            )}
 
             {/* Edited indicator */}
             {message.isEdited && (
@@ -234,5 +248,65 @@ export const MessageBubble = memo(function MessageBubble({
     </Flex>
   )
 })
+
+// ============================================
+// ATTACHMENT PREVIEW
+// ============================================
+
+function AttachmentPreview({ attachment, isOwnMessage }: { attachment: Attachment; isOwnMessage: boolean }) {
+  if (attachment.type === 'image') {
+    return (
+      <Link href={attachment.url} target="_blank" rel="noopener noreferrer">
+        <Image
+          src={attachment.url}
+          alt={attachment.name}
+          maxH="200px"
+          maxW="300px"
+          borderRadius="md"
+          objectFit="cover"
+          cursor="pointer"
+          _hover={{ opacity: 0.9 }}
+        />
+      </Link>
+    )
+  }
+
+  return (
+    <Link
+      href={attachment.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      _hover={{ textDecoration: 'none' }}
+    >
+      <Flex
+        align="center"
+        gap={2}
+        bg={isOwnMessage ? 'blue.500' : 'gray.100'}
+        borderRadius="md"
+        px={3}
+        py={2}
+        _hover={{ opacity: 0.85 }}
+        cursor="pointer"
+      >
+        <Text flexShrink={0}>
+          {attachment.name.endsWith('.pdf') ? '📄' : '📎'}
+        </Text>
+        <Box flex={1} minW={0}>
+          <Text
+            fontSize="sm"
+            fontWeight="medium"
+            color={isOwnMessage ? 'white' : 'gray.700'}
+            truncate
+          >
+            {attachment.name}
+          </Text>
+          <Text fontSize="xs" color={isOwnMessage ? 'blue.100' : 'gray.500'}>
+            {formatSize(attachment.size)}
+          </Text>
+        </Box>
+      </Flex>
+    </Link>
+  )
+}
 
 export default MessageBubble
