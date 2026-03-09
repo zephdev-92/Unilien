@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '@/test/helpers'
 import { createMockProfile } from '@/test/fixtures'
 
-// ─── Mocks sous-composants lourds ─────────────────────────────────────────────
+// --- Mocks sous-composants lourds ---
 
 vi.mock('@/components/dashboard', () => ({
   DashboardLayout: ({
@@ -27,6 +27,26 @@ vi.mock('@/components/profile/sections', () => ({
   CaregiverSection: () => <div data-testid="caregiver-section" />,
 }))
 
+vi.mock('@/components/profile/ProfileHero', () => ({
+  ProfileHero: ({ profile }: { profile: { firstName: string; lastName: string } }) => (
+    <div data-testid="profile-hero">{profile.firstName} {profile.lastName}</div>
+  ),
+}))
+
+vi.mock('@/components/profile/ProfileJumpNav', () => ({
+  ProfileJumpNav: ({ items }: { items: { label: string }[] }) => (
+    <nav data-testid="profile-jump-nav">
+      {items.map((item) => (
+        <span key={item.label}>{item.label}</span>
+      ))}
+    </nav>
+  ),
+}))
+
+vi.mock('@/components/profile/ProfileViewList', () => ({
+  ProfileViewList: () => <div data-testid="profile-view-list" />,
+}))
+
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: vi.fn(),
 }))
@@ -45,7 +65,7 @@ vi.mock('@/services/profileService', () => ({
   upsertEmployee: vi.fn(),
 }))
 
-// ─── Imports après mocks ──────────────────────────────────────────────────────
+// --- Imports apres mocks ---
 
 import { useAuth } from '@/hooks/useAuth'
 import { getEmployer, getEmployee } from '@/services/profileService'
@@ -53,7 +73,7 @@ import { ProfilePage } from './ProfilePage'
 
 const mockUseAuth = vi.mocked(useAuth)
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
+// --- Tests ---
 
 describe('ProfilePage', () => {
   beforeEach(() => {
@@ -81,7 +101,7 @@ describe('ProfilePage', () => {
       expect(screen.getByText('Profil incomplet')).toBeInTheDocument()
     })
 
-    it('affiche le DashboardLayout avec le titre "Paramètres"', () => {
+    it('affiche le DashboardLayout avec le titre "Mon profil"', () => {
       mockUseAuth.mockReturnValue({
         profile: null,
         userRole: null,
@@ -98,13 +118,13 @@ describe('ProfilePage', () => {
 
       expect(screen.getByTestId('dashboard-layout')).toHaveAttribute(
         'data-title',
-        'Paramètres'
+        'Mon profil'
       )
     })
   })
 
   describe('Profil employeur', () => {
-    it('affiche les onglets Informations, Accessibilité et Mon profil employeur', async () => {
+    it('affiche le hero, la jump nav avec sections employeur', async () => {
       const profile = createMockProfile({ role: 'employer' })
       mockUseAuth.mockReturnValue({
         profile,
@@ -121,13 +141,15 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Informations')).toBeInTheDocument()
-        expect(screen.getByText('Accessibilité')).toBeInTheDocument()
-        expect(screen.getByText('Mon profil employeur')).toBeInTheDocument()
+        expect(screen.getByTestId('profile-hero')).toBeInTheDocument()
+        expect(screen.getByTestId('profile-jump-nav')).toBeInTheDocument()
+        expect(screen.getByText('Mon profil')).toBeInTheDocument()
+        expect(screen.getByText('Ma situation')).toBeInTheDocument()
+        expect(screen.getByText("Contacts d'urgence")).toBeInTheDocument()
       })
     })
 
-    it('n\'affiche pas l\'onglet "Mon profil auxiliaire" pour un employeur', async () => {
+    it('affiche les informations personnelles en mode lecture par defaut', async () => {
       const profile = createMockProfile({ role: 'employer' })
       mockUseAuth.mockReturnValue({
         profile,
@@ -144,7 +166,7 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.queryByText('Mon profil auxiliaire')).not.toBeInTheDocument()
+        expect(screen.getByText('Informations personnelles')).toBeInTheDocument()
       })
     })
 
@@ -171,7 +193,7 @@ describe('ProfilePage', () => {
   })
 
   describe('Profil employee', () => {
-    it('affiche les onglets Informations, Accessibilité et Mon profil auxiliaire', async () => {
+    it('affiche la jump nav avec section Mon metier', async () => {
       const profile = createMockProfile({ role: 'employee' })
       mockUseAuth.mockReturnValue({
         profile,
@@ -188,12 +210,11 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Informations')).toBeInTheDocument()
-        expect(screen.getByText('Mon profil auxiliaire')).toBeInTheDocument()
+        expect(screen.getByText('Mon metier')).toBeInTheDocument()
       })
     })
 
-    it('n\'affiche pas l\'onglet employeur pour un employee', async () => {
+    it('n\'affiche pas la section Ma situation pour un employee', async () => {
       const profile = createMockProfile({ role: 'employee' })
       mockUseAuth.mockReturnValue({
         profile,
@@ -210,7 +231,7 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.queryByText('Mon profil employeur')).not.toBeInTheDocument()
+        expect(screen.queryByText('Ma situation')).not.toBeInTheDocument()
       })
     })
 
@@ -237,7 +258,7 @@ describe('ProfilePage', () => {
   })
 
   describe('Profil caregiver', () => {
-    it('affiche l\'onglet "Mon profil aidant" pour un caregiver', async () => {
+    it('affiche la jump nav avec section Mon profil aidant', async () => {
       const profile = createMockProfile({ role: 'caregiver' })
       mockUseAuth.mockReturnValue({
         profile,
@@ -254,7 +275,7 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Mon profil aidant')).toBeInTheDocument()
+        expect(screen.getAllByText('Mon profil aidant').length).toBeGreaterThanOrEqual(1)
       })
     })
 
@@ -275,7 +296,7 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Mon profil aidant')).toBeInTheDocument()
+        expect(screen.getAllByText('Mon profil aidant').length).toBeGreaterThanOrEqual(1)
       })
 
       expect(getEmployer).not.toHaveBeenCalled()
