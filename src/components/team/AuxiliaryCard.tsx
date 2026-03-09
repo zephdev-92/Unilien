@@ -65,9 +65,13 @@ export function AuxiliaryCard({ auxiliary, onClick }: AuxiliaryCardProps) {
           <Avatar.Fallback name={`${auxiliary.firstName} ${auxiliary.lastName}`} />
           {auxiliary.avatarUrl && <Avatar.Image src={auxiliary.avatarUrl} />}
         </Avatar.Root>
-        <Badge colorPalette={isActive ? 'green' : 'gray'} size="sm">
-          {isActive ? 'Actif' : 'Inactif'}
-        </Badge>
+        {auxiliary.isOnLeave ? (
+          <Badge colorPalette="orange" size="sm">En conge</Badge>
+        ) : (
+          <Badge colorPalette={isActive ? 'green' : 'gray'} size="sm">
+            {isActive ? 'Actif' : 'Inactif'}
+          </Badge>
+        )}
       </Flex>
 
       {/* Name + role */}

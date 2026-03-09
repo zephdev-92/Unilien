@@ -48,6 +48,7 @@ export interface AuxiliarySummary {
   contractStartDate: Date
   contractEndDate?: Date
   contractId: string
+  isOnLeave?: boolean
 }
 
 /**

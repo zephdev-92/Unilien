@@ -10,6 +10,7 @@ import {
   removeCaregiverFromEmployer,
   type CaregiverWithProfile,
 } from '@/services/caregiverService'
+import { getAbsencesForEmployer } from '@/services/absenceService'
 import { logger } from '@/lib/logger'
 import type { Caregiver } from '@/types'
 
@@ -26,11 +27,12 @@ export interface UseTeamPageReturn {
   auxiliaries: AuxiliarySummary[]
   isLoadingAuxiliaries: boolean
   auxiliariesError: string | null
-  auxiliaryFilter: 'all' | 'active' | 'inactive'
-  setAuxiliaryFilter: (f: 'all' | 'active' | 'inactive') => void
+  auxiliaryFilter: 'all' | 'active' | 'inactive' | 'on_leave'
+  setAuxiliaryFilter: (f: 'all' | 'active' | 'inactive' | 'on_leave') => void
   filteredAuxiliaries: AuxiliarySummary[]
   activeAuxCount: number
   inactiveAuxCount: number
+  onLeaveAuxCount: number
   isNewContractOpen: boolean
   setIsNewContractOpen: (v: boolean) => void
   selectedAuxiliary: AuxiliarySummary | null
@@ -66,7 +68,7 @@ export function useTeamPage(): UseTeamPageReturn {
   const [isLoadingAuxiliaries, setIsLoadingAuxiliaries] = useState(true)
   const [isNewContractOpen, setIsNewContractOpen] = useState(false)
   const [selectedAuxiliary, setSelectedAuxiliary] = useState<AuxiliarySummary | null>(null)
-  const [auxiliaryFilter, setAuxiliaryFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [auxiliaryFilter, setAuxiliaryFilter] = useState<'all' | 'active' | 'inactive' | 'on_leave'>('all')
   const [auxiliariesError, setAuxiliariesError] = useState<string | null>(null)
 
   // Caregivers state
@@ -128,15 +130,38 @@ export function useTeamPage(): UseTeamPageReturn {
         ? getAuxiliariesForEmployer(effectiveEmployerId)
         : Promise.resolve([])
 
-      const [auxResult, caregiverResult] = await Promise.allSettled([
+      const [auxResult, caregiverResult, absencesResult] = await Promise.allSettled([
         auxPromise,
         getCaregiversForEmployer(effectiveEmployerId),
+        getAbsencesForEmployer(effectiveEmployerId),
       ])
 
       if (cancelled) return
 
       if (auxResult.status === 'fulfilled') {
-        setAuxiliaries(auxResult.value)
+        let auxList = auxResult.value
+        // Tag auxiliaries currently on leave
+        if (absencesResult.status === 'fulfilled') {
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const onLeaveIds = new Set(
+            absencesResult.value
+              .filter((a) => {
+                if (a.status !== 'approved') return false
+                const start = new Date(a.startDate)
+                const end = new Date(a.endDate)
+                start.setHours(0, 0, 0, 0)
+                end.setHours(23, 59, 59, 999)
+                return start <= today && end >= today
+              })
+              .map((a) => a.employeeId)
+          )
+          auxList = auxList.map((aux) => ({
+            ...aux,
+            isOnLeave: onLeaveIds.has(aux.id),
+          }))
+        }
+        setAuxiliaries(auxList)
       } else {
         logger.error('Erreur chargement auxiliaires:', auxResult.reason)
         setAuxiliariesError('Impossible de charger les auxiliaires')
@@ -204,10 +229,12 @@ export function useTeamPage(): UseTeamPageReturn {
   // Computed
   const filteredAuxiliaries = auxiliaries.filter((aux) => {
     if (auxiliaryFilter === 'all') return true
-    if (auxiliaryFilter === 'active') return aux.contractStatus === 'active'
+    if (auxiliaryFilter === 'active') return aux.contractStatus === 'active' && !aux.isOnLeave
+    if (auxiliaryFilter === 'on_leave') return aux.isOnLeave
     return aux.contractStatus !== 'active'
   })
-  const activeAuxCount = auxiliaries.filter((a) => a.contractStatus === 'active').length
+  const onLeaveAuxCount = auxiliaries.filter((a) => a.isOnLeave).length
+  const activeAuxCount = auxiliaries.filter((a) => a.contractStatus === 'active' && !a.isOnLeave).length
   const inactiveAuxCount = auxiliaries.filter((a) => a.contractStatus !== 'active').length
 
   return {
@@ -225,6 +252,7 @@ export function useTeamPage(): UseTeamPageReturn {
     filteredAuxiliaries,
     activeAuxCount,
     inactiveAuxCount,
+    onLeaveAuxCount,
     isNewContractOpen,
     setIsNewContractOpen,
     selectedAuxiliary,
