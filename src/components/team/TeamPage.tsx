@@ -35,6 +35,7 @@ export function TeamPage() {
     filteredAuxiliaries,
     activeAuxCount,
     inactiveAuxCount,
+    onLeaveAuxCount,
     isNewContractOpen,
     setIsNewContractOpen,
     selectedAuxiliary,
@@ -98,6 +99,7 @@ export function TeamPage() {
                 error={auxiliariesError}
                 activeAuxCount={activeAuxCount}
                 inactiveAuxCount={inactiveAuxCount}
+                onLeaveAuxCount={onLeaveAuxCount}
                 filter={auxiliaryFilter}
                 onFilterChange={setAuxiliaryFilter}
                 onAdd={() => setIsNewContractOpen(true)}

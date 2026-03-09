@@ -22,8 +22,9 @@ interface AuxiliaryTabProps {
   error: string | null
   activeAuxCount: number
   inactiveAuxCount: number
-  filter: 'all' | 'active' | 'inactive'
-  onFilterChange: (f: 'all' | 'active' | 'inactive') => void
+  onLeaveAuxCount: number
+  filter: 'all' | 'active' | 'inactive' | 'on_leave'
+  onFilterChange: (f: 'all' | 'active' | 'inactive' | 'on_leave') => void
   onAdd: () => void
   onSelect: (a: AuxiliarySummary) => void
 }
@@ -56,6 +57,7 @@ export function AuxiliaryTab({
   error,
   activeAuxCount,
   inactiveAuxCount,
+  onLeaveAuxCount,
   filter,
   onFilterChange,
   onAdd,
@@ -130,16 +132,17 @@ export function AuxiliaryTab({
           <Flex gap={1}>
             {(
               [
-                { value: 'all', label: 'Tous' },
-                { value: 'active', label: 'Actifs' },
-                { value: 'inactive', label: 'Inactifs' },
+                { value: 'all', label: 'Tous', palette: 'blue' },
+                { value: 'active', label: 'Actifs', palette: 'blue' },
+                { value: 'on_leave', label: `En conge${onLeaveAuxCount > 0 ? ` (${onLeaveAuxCount})` : ''}`, palette: 'orange' },
+                { value: 'inactive', label: 'Inactifs', palette: 'blue' },
               ] as const
-            ).map(({ value, label }) => (
+            ).map(({ value, label, palette }) => (
               <AccessibleButton
                 key={value}
                 size="sm"
                 variant={filter === value ? 'solid' : 'outline'}
-                colorPalette={filter === value ? 'blue' : 'gray'}
+                colorPalette={filter === value ? palette : 'gray'}
                 onClick={() => onFilterChange(value)}
                 minH="36px"
               >
