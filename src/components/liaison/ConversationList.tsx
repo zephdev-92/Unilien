@@ -1,4 +1,5 @@
-import { Box, Flex, Text, Badge, Avatar, IconButton, Stack } from '@chakra-ui/react'
+import { useState, useMemo } from 'react'
+import { Box, Flex, Text, Badge, Avatar, IconButton, Stack, Input } from '@chakra-ui/react'
 
 import type { Conversation } from '@/types'
 import { format } from 'date-fns'
@@ -18,8 +19,29 @@ export function ConversationList({
   onSelect,
   onNewPrivate,
 }: ConversationListProps) {
+  const [search, setSearch] = useState('')
+
   const team = conversations.find((c) => c.type === 'team')
   const privates = conversations.filter((c) => c.type === 'private')
+
+  // Filter by search query
+  const filteredTeam = useMemo(() => {
+    if (!search.trim() || !team) return team
+    const q = search.toLowerCase()
+    if ('équipe'.includes(q) || team.lastMessage?.toLowerCase().includes(q)) return team
+    return null
+  }, [team, search])
+
+  const filteredPrivates = useMemo(() => {
+    if (!search.trim()) return privates
+    const q = search.toLowerCase()
+    return privates.filter((c) => {
+      const name = c.otherParticipant
+        ? `${c.otherParticipant.firstName} ${c.otherParticipant.lastName}`.toLowerCase()
+        : ''
+      return name.includes(q) || c.lastMessage?.toLowerCase().includes(q)
+    })
+  }, [privates, search])
 
   return (
     <Flex
@@ -52,21 +74,48 @@ export function ConversationList({
         </IconButton>
       </Flex>
 
+      {/* Recherche */}
+      <Box px={3} py={2} borderBottomWidth="1px" borderColor="gray.100">
+        <Flex align="center" gap={2} bg="gray.50" borderRadius="md" px={3} py={1.5}>
+          <Box color="gray.400" flexShrink={0}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </Box>
+          <Input
+            placeholder="Rechercher…"
+            aria-label="Rechercher une conversation"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            variant="unstyled"
+            size="sm"
+            fontSize="sm"
+          />
+        </Flex>
+      </Box>
+
       {/* Liste */}
       <Stack gap={0} flex={1} overflowY="auto">
+        {/* Label Général */}
+        {filteredTeam && (
+          <Box px={4} py={2}>
+            <Text fontSize="xs" color="gray.400" fontWeight="medium" textTransform="uppercase">
+              Général
+            </Text>
+          </Box>
+        )}
+
         {/* Équipe */}
-        {team && (
+        {filteredTeam && (
           <ConvItem
-            conv={team}
-            isSelected={selectedId === team.id}
+            conv={filteredTeam}
+            isSelected={selectedId === filteredTeam.id}
             onSelect={onSelect}
             label="Équipe"
             icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
           />
         )}
 
-        {/* Séparateur si conversations privées */}
-        {privates.length > 0 && (
+        {/* Label Conversations */}
+        {filteredPrivates.length > 0 && (
           <Box px={4} py={2}>
             <Text fontSize="xs" color="gray.400" fontWeight="medium" textTransform="uppercase">
               Conversations
@@ -75,7 +124,7 @@ export function ConversationList({
         )}
 
         {/* Conversations privées */}
-        {privates.map((conv) => (
+        {filteredPrivates.map((conv) => (
           <ConvItem
             key={conv.id}
             conv={conv}
@@ -91,7 +140,15 @@ export function ConversationList({
         ))}
 
         {/* État vide */}
-        {privates.length === 0 && (
+        {filteredPrivates.length === 0 && !filteredTeam && search.trim() && (
+          <Box px={4} py={6} textAlign="center">
+            <Text fontSize="sm" color="gray.400">
+              Aucun résultat
+            </Text>
+          </Box>
+        )}
+
+        {filteredPrivates.length === 0 && !search.trim() && (
           <Box px={4} py={3}>
             <Text fontSize="xs" color="gray.400">
               Aucune conversation privée

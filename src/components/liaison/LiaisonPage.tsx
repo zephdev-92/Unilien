@@ -30,6 +30,7 @@ import {
   subscribeTypingIndicator,
   type TypingUser,
 } from '@/services/liaisonService'
+import { uploadAttachments } from '@/services/attachmentService'
 import { logger } from '@/lib/logger'
 import type { Conversation, LiaisonMessageWithSender } from '@/types'
 
@@ -318,15 +319,22 @@ export function LiaisonPage() {
   }, [hasMore, isLoadingMore, handleLoadMore])
 
   // ---- Envoyer un message ----
-  const handleSend = useCallback(async (content: string) => {
+  const handleSend = useCallback(async (content: string, files?: File[]) => {
     if (!profile || !resolvedEmployerId || !selectedConv) return
+
+    let attachments
+    if (files && files.length > 0) {
+      attachments = await uploadAttachments(selectedConv.id, profile.id, files)
+    }
 
     await createLiaisonMessage(
       resolvedEmployerId,
       selectedConv.id,
       profile.id,
       profile.role,
-      content
+      content,
+      undefined,
+      attachments
     )
   }, [profile, resolvedEmployerId, selectedConv])
 
@@ -492,9 +500,14 @@ export function LiaisonPage() {
           {/* Messages container */}
           {!selectedConv ? (
             <Center flex={1}>
-              <Text color="gray.400" fontSize="sm">
-                Sélectionnez une conversation
-              </Text>
+              <Box textAlign="center">
+                <Box color="gray.300" mb={4} mx="auto" w="fit-content">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="48" height="48"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </Box>
+                <Text color="gray.400" fontSize="sm">
+                  Sélectionnez une conversation
+                </Text>
+              </Box>
             </Center>
           ) : (
             <>
