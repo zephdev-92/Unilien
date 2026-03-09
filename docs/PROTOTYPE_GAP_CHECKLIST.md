@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 10 mars 2026
+**Derniere mise a jour** : 09 mars 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -64,15 +64,15 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 4. Profile — Elements manquants
 
-- [ ] **Hero profil** — background colore, grand avatar 80x80, nom h1, role + badge convention
-- [ ] **Hero profil** — tags : localisation, badge verifie, date inscription
-- [ ] **Hero profil** — bouton "Modifier le profil"
-- [ ] **Navigation ancres** — jump nav vers sections (Mon profil, Ma situation, Urgence)
-- [ ] **Mode vue/edition** — toggle entre lecture seule (definition list dt/dd) et formulaire
-- [ ] **Section Ma Situation** — carte informations complementaires (type handicap, precision)
-- [ ] **Section Ma Situation** — panneau depliable "Besoins, CESU & convention"
-- [ ] **Section Ma Situation** — carte PCH (toggle beneficiaire, champs conditionnels, taux, enveloppe)
-- [ ] **Contacts d'urgence** — section dediee avec formulaire contacts urgence
+- [x] **Hero profil** — background colore, grand avatar 80x80, nom h1, role + badge convention _(ProfileHero.tsx)_
+- [x] **Hero profil** — tags : localisation, badge verifie, date inscription _(ProfileHero.tsx)_
+- [x] **Hero profil** — bouton "Modifier le profil" _(ProfileHero.tsx)_
+- [x] **Navigation ancres** — jump nav vers sections (Mon profil, Ma situation, Urgence) _(ProfileJumpNav.tsx)_
+- [x] **Mode vue/edition** — toggle entre lecture seule (definition list dt/dd) et formulaire _(ProfilePage.tsx + ProfileViewList.tsx)_
+- [x] **Section Ma Situation** — carte informations complementaires (type handicap, precision) _(EmployerSection.tsx — existait, restructure dans ProfilePage)_
+- [x] **Section Ma Situation** — panneau depliable "Besoins, CESU & convention" _(EmployerSection.tsx — Collapsible)_
+- [x] **Section Ma Situation** — carte PCH (toggle beneficiaire, champs conditionnels, taux, enveloppe) _(EmployerSection.tsx — existait)_
+- [x] **Contacts d'urgence** — section dediee avec formulaire contacts urgence _(ProfilePage.tsx — EmergencyContactsView/Edit)_
 
 ---
 - [ ] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in
@@ -98,7 +98,7 @@ React n'a qu'une ProfilePage avec onglets.
 
 - [x] **Stats equipe** — 4 cards : employes actifs, inactifs, heures/semaine, contrats actifs ✅
 - [x] **Recherche employes** — input "Rechercher un employe..." avec filtre texte ✅
-- [ ] **Filtre "En conge"** — ajouter le statut "En conge" au filtre existant
+- [x] **Filtre "En conge"** — ajouter le statut "En conge" au filtre existant ✅
 - [x] **Cards enrichies** — date d'embauche dans les metadata (icone + date) ✅
 - [x] **Cards enrichies** — heures/semaine dans les metadata (icone + nombre) ✅
 - [x] **Cards enrichies** — email avec ellipsis dans les metadata ✅
@@ -190,7 +190,7 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Dashboard | 12 | 8 | Haute |
 | Landing | 11 | 0 | Moyenne |
 | Compliance | 9 | 9 | ✅ Termine |
-| Profile | 9 | 0 | Moyenne |
+| Profile | 9 | 9 | ✅ Termine |
 | Logbook | 8 | 0 | Moyenne |
 | Team | 7 | 6 | Moyenne |
 | Clock-in | 6 | 6 | ✅ Termine |
@@ -199,4 +199,4 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 0 | Basse |
 | Patterns UI | 4 | 0 | Basse |
-| **Total** | **~101** | **36** | — |
+| **Total** | **~101** | **45** | — |

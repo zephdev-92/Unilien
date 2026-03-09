@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Box, Stack, Flex, Text, Switch } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Switch, Collapsible } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton, AccessibleSelect } from '@/components/ui'
 import { logger } from '@/lib/logger'
 import type { Employer, EmergencyContact, PchType } from '@/types'
@@ -232,21 +232,61 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
             {...register('handicapName')}
           />
 
-          <AccessibleInput
-            label="Besoins spécifiques"
-            type="text"
-            placeholder="Précisions sur vos besoins..."
-            helperText="Optionnel"
-            {...register('specificNeeds')}
-          />
+          {/* Panneau depliable : Besoins, CESU & convention */}
+          <Collapsible.Root>
+            <Collapsible.Trigger asChild>
+              <Box
+                as="button"
+                type="button"
+                w="full"
+                p={3}
+                bg="gray.50"
+                borderRadius="md"
+                borderWidth="1px"
+                borderColor="gray.200"
+                cursor="pointer"
+                _hover={{ bg: 'gray.100' }}
+                textAlign="left"
+              >
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                    Besoins, CESU & convention
+                  </Text>
+                  <Box color="gray.400">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </Box>
+                </Flex>
+              </Box>
+            </Collapsible.Trigger>
+            <Collapsible.Content>
+              <Stack gap={5} pt={4}>
+                <AccessibleInput
+                  label="Besoins specifiques"
+                  type="text"
+                  placeholder="Precisions sur vos besoins..."
+                  helperText="Optionnel"
+                  {...register('specificNeeds')}
+                />
 
-          <AccessibleInput
-            label="Numéro CESU"
-            type="text"
-            placeholder="Votre numéro CESU"
-            helperText="Chèque Emploi Service Universel"
-            {...register('cesuNumber')}
-          />
+                <AccessibleInput
+                  label="Numero CESU"
+                  type="text"
+                  placeholder="Votre numero CESU"
+                  helperText="Cheque Emploi Service Universel"
+                  {...register('cesuNumber')}
+                />
+
+                <Box p={3} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
+                  <Text fontSize="sm" color="blue.800">
+                    <Text as="span" fontWeight="medium">Convention applicable :</Text>{' '}
+                    IDCC 3239 — Convention collective du particulier employeur
+                  </Text>
+                </Box>
+              </Stack>
+            </Collapsible.Content>
+          </Collapsible.Root>
 
           <Flex
             justify="space-between"
