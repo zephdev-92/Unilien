@@ -7,6 +7,7 @@ import {
   Text,
   Badge,
 } from '@chakra-ui/react'
+import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { shiftDetailSchema as shiftSchema, type ShiftDetailFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
@@ -158,6 +159,7 @@ export function ShiftDetailModal({
   caregiverCanEdit = false,
   onRepeat,
 }: ShiftDetailModalProps) {
+  const navigate = useNavigate()
   const [state, dispatch] = useReducer(reducer, initialState)
   const {
     isEditing,
@@ -512,6 +514,15 @@ export function ShiftDetailModal({
                       <Text fontSize="sm" color="green.600" alignSelf="center">
                         Vous avez validé cette intervention
                       </Text>
+                    )}
+                    {userRole === 'employee' && shift && shift.status === 'planned' && (
+                      <AccessibleButton
+                        colorPalette="teal"
+                        onClick={() => navigate('/pointage')}
+                        accessibleLabel="Aller au pointage pour cette intervention"
+                      >
+                        Pointer
+                      </AccessibleButton>
                     )}
                     {canEdit && onRepeat && shift && shift.status === 'planned' && (
                       <AccessibleButton

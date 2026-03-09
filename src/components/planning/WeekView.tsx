@@ -164,7 +164,8 @@ interface ShiftCardProps {
   onClick?: () => void
 }
 
-function ShiftCard({ shift, isContinuation, onClick }: ShiftCardProps) {
+function ShiftCard({ shift, isContinuation, userRole, onClick }: ShiftCardProps) {
+  const isEmployer = userRole === 'employer' || userRole === 'caregiver'
   return (
     <Box
       p={2}
@@ -202,6 +203,12 @@ function ShiftCard({ shift, isContinuation, onClick }: ShiftCardProps) {
           {isContinuation ? 'Suite' : statusLabels[shift.status]}
         </Badge>
       </Flex>
+
+      {isEmployer && shift.employeeName && !isContinuation && (
+        <Text fontSize="xs" fontWeight="medium" color="blue.600" lineClamp={1}>
+          {shift.employeeName}
+        </Text>
+      )}
 
       {!isContinuation && shift.tasks.length > 0 && (
         <Text fontSize="xs" color="gray.600" lineClamp={2}>

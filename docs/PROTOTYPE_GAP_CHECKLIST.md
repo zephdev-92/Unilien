@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 9 mars 2026
+**Derniere mise a jour** : 10 mars 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -53,12 +53,12 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 3. Clock-in — Elements manquants
 
-- [ ] **Horloge digitale** — grande horloge HH:MM:SS live avec mise a jour chaque seconde
-- [ ] **Affichage date** — date complete sous l'horloge ("Mardi 3 mars 2026")
-- [ ] **Resume semaine** — sidebar avec barres horizontales Lun-Ven + total heures
-- [ ] **Anomalies detectees** — sidebar alertes (ex: "7h30 sans pause", "fin d'heure manquante")
-- [ ] **Saisie manuelle** — formulaire ajout heure manuelle (employe, date, debut, fin)
-- [ ] **Tableau heures du jour** — colonnes : employe, debut, fin, duree, statut, actions + duree temps reel
+- [x] **Horloge digitale** — grande horloge HH:MM:SS live avec mise a jour chaque seconde _(LiveClock.tsx)_
+- [x] **Affichage date** — date complete sous l'horloge _(LiveClock.tsx)_
+- [x] **Resume semaine** — sidebar avec barres horizontales Lun-Dim + total heures _(WeeklySummary.tsx)_
+- [x] **Anomalies detectees** — sidebar alertes _(AnomaliesPanel.tsx)_
+- [x] **Saisie manuelle** — formulaire ajout heure manuelle avec selecteur auxiliaire _(ManualEntryForm.tsx)_
+- [x] **Tableau heures du jour** — colonnes avec nom auxiliaire (employeur), duree temps reel, statut, actions _(TodayTable.tsx)_
 
 ---
 
@@ -155,10 +155,10 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 11. Planning — Elements manquants mineurs
 
-- [ ] **Sidebar filtres** — liste employes avec avatars, filtre type shift, filtre statut
-- [ ] **Vue employe stats** — barre stats : heures effectuees/contractuelles, interventions, conges
-- [ ] **Chip prochaine intervention** — dans le topbar (vue employe)
-- [ ] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in
+- [x] **Sidebar filtres** — liste employes avec avatars, filtre type shift, filtre statut _(PlanningSidebar.tsx)_
+- [x] **Vue employe stats** — barre stats : heures effectuees/contractuelles, interventions, conges _(PlanningStatsBar.tsx)_
+- [x] **Chip prochaine intervention** — dans le topbar (vue employe) _(NextShiftChip)_
+- [x] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in _(ShiftDetailModal.tsx)_
 
 ---
 
@@ -193,10 +193,10 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Profile | 9 | 0 | Moyenne |
 | Logbook | 8 | 0 | Moyenne |
 | Team | 7 | 6 | Moyenne |
-| Clock-in | 6 | 0 | Moyenne |
+| Clock-in | 6 | 6 | ✅ Termine |
 | Contact | 4 | 0 | Basse |
 | Messaging | 4 | 3 | Basse |
-| Planning | 4 | 0 | Basse |
+| Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 0 | Basse |
 | Patterns UI | 4 | 0 | Basse |
-| **Total** | **~101** | **26** | — |
+| **Total** | **~101** | **36** | — |
