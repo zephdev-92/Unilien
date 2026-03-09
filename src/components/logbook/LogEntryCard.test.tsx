@@ -45,18 +45,18 @@ describe('LogEntryCard', () => {
       expect(screen.getByText(/Marie Dupont/)).toBeInTheDocument()
     })
 
-    it('affiche le rôle de l\'auteur comme fallback si author absent', () => {
+    it('affiche le role de l\'auteur comme fallback si author absent', () => {
       const entry = makeEntry({ author: undefined, authorRole: 'employee' })
       renderWithProviders(<LogEntryCard entry={entry} currentUserId="user-1" />)
       // Quand author absent, authorName = authorRoleLabels[authorRole] = 'Auxiliaire'
-      expect(screen.getByText(/Auxiliaire/)).toBeInTheDocument()
+      expect(screen.getAllByText(/Auxiliaire/).length).toBeGreaterThanOrEqual(1)
     })
   })
 
   describe('Types d\'entrée', () => {
-    it('affiche le badge "Information" pour le type info', () => {
+    it('affiche le badge "Observation" pour le type info', () => {
       renderWithProviders(<LogEntryCard entry={makeEntry({ type: 'info' })} currentUserId="user-1" />)
-      expect(screen.getByText('Information')).toBeInTheDocument()
+      expect(screen.getByText('Observation')).toBeInTheDocument()
     })
 
     it('affiche le badge "Alerte" pour le type alert', () => {
@@ -90,10 +90,10 @@ describe('LogEntryCard', () => {
   })
 
   describe('Formatage du temps', () => {
-    it('affiche "À l\'instant" pour une entrée très récente (< 1min)', () => {
+    it('affiche "A l\'instant" pour une entree tres recente (< 1min)', () => {
       const entry = makeEntry({ createdAt: new Date(Date.now() - 30 * 1000) }) // 30s
       renderWithProviders(<LogEntryCard entry={entry} currentUserId="user-1" />)
-      expect(screen.getByText("À l'instant")).toBeInTheDocument()
+      expect(screen.getByText("A l'instant")).toBeInTheDocument()
     })
 
     it('affiche "Il y a X min" pour une entrée de moins d\'1h', () => {

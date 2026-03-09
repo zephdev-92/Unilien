@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Flex, Text, Badge, Stack } from '@chakra-ui/react'
+import { Box, Flex, Text, Badge, Stack, Avatar } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { sanitizeText } from '@/lib/sanitize'
 import type { LogEntryWithAuthor } from '@/services/logbookService'
@@ -12,23 +12,25 @@ interface LogEntryCardProps {
   onDelete?: (entryId: string) => void
 }
 
-const typeIcons: Record<string, string> = {
-  info: 'ℹ️',
-  alert: '⚠️',
-  incident: '🚨',
-  instruction: '📋',
-}
-
 const typeLabels: Record<string, string> = {
-  info: 'Information',
+  info: 'Observation',
   alert: 'Alerte',
   incident: 'Incident',
   instruction: 'Instruction',
 }
 
-const importanceColors: Record<string, string> = {
-  normal: 'gray',
-  urgent: 'red',
+const typeBadgeColors: Record<string, string> = {
+  info: 'blue',
+  alert: 'orange',
+  incident: 'red',
+  instruction: 'purple',
+}
+
+const timelineDotColors: Record<string, string> = {
+  info: 'blue.400',
+  alert: 'orange.400',
+  incident: 'red.500',
+  instruction: 'purple.400',
 }
 
 const authorRoleLabels: Record<string, string> = {
@@ -45,7 +47,7 @@ function formatTimeAgo(date: Date): string {
   const diffDays = Math.floor(diffMs / 86400000)
 
   if (diffMins < 1) {
-    return "À l'instant"
+    return "A l'instant"
   }
   if (diffMins < 60) {
     return `Il y a ${diffMins} min`
@@ -89,107 +91,155 @@ export function LogEntryCard({
   }
 
   return (
-    <Box
-      p={4}
-      bg={entry.importance === 'urgent' ? 'red.50' : isUnread ? 'blue.50' : 'gray.50'}
-      borderRadius="md"
-      borderLeftWidth="4px"
-      borderLeftColor={
-        entry.importance === 'urgent'
-          ? 'red.500'
-          : isUnread
-          ? 'blue.500'
-          : 'gray.300'
-      }
-      onClick={handleClick}
-      cursor={isUnread ? 'pointer' : 'default'}
-      transition="all 0.2s"
-      _hover={{
-        boxShadow: 'sm',
-      }}
-    >
-      {/* Header: Type, Badge, Time */}
-      <Flex justify="space-between" align="start" mb={2}>
-        <Flex align="center" gap={2}>
-          <Text fontSize="lg" aria-hidden="true">
-            {typeIcons[entry.type]}
-          </Text>
-          <Badge colorPalette={importanceColors[entry.importance]} size="sm">
-            {typeLabels[entry.type]}
-          </Badge>
-          {isUnread && (
-            <Badge colorPalette="blue" size="sm">
-              Non lu
+    <Flex gap={0}>
+      {/* Timeline dot */}
+      <Flex direction="column" align="center" w="40px" flexShrink={0} pt={5}>
+        <Box
+          w="12px"
+          h="12px"
+          borderRadius="full"
+          bg={timelineDotColors[entry.type] || 'gray.400'}
+          borderWidth="2px"
+          borderColor="white"
+          boxShadow="sm"
+          flexShrink={0}
+        />
+        <Box w="2px" flex={1} bg="gray.200" mt={1} />
+      </Flex>
+
+      {/* Card */}
+      <Box
+        flex={1}
+        p={4}
+        mb={2}
+        bg={entry.importance === 'urgent' ? 'red.50' : isUnread ? 'blue.50' : 'white'}
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor={entry.importance === 'urgent' ? 'red.200' : isUnread ? 'blue.200' : 'gray.200'}
+        onClick={handleClick}
+        cursor={isUnread ? 'pointer' : 'default'}
+        transition="all 0.2s"
+        _hover={{
+          boxShadow: 'sm',
+        }}
+      >
+        {/* Header: Category badge + Time */}
+        <Flex justify="space-between" align="start" mb={2}>
+          <Flex align="center" gap={2}>
+            <Badge colorPalette={typeBadgeColors[entry.type]} size="sm">
+              {typeLabels[entry.type]}
             </Badge>
+            {entry.importance === 'urgent' && (
+              <Badge colorPalette="red" size="sm" variant="solid">
+                Urgent
+              </Badge>
+            )}
+            {isUnread && (
+              <Badge colorPalette="blue" size="sm" variant="outline">
+                Non lu
+              </Badge>
+            )}
+          </Flex>
+          <Text fontSize="xs" color="gray.500" whiteSpace="nowrap" ml={2}>
+            {formatTimeAgo(entry.createdAt)}
+          </Text>
+        </Flex>
+
+        {/* Alert block for urgent/incident entries */}
+        {(entry.importance === 'urgent' || entry.type === 'incident') && (
+          <Box
+            p={3}
+            mb={3}
+            bg={entry.type === 'incident' ? 'red.100' : 'orange.100'}
+            borderRadius="md"
+            borderLeftWidth="3px"
+            borderLeftColor={entry.type === 'incident' ? 'red.500' : 'orange.500'}
+          >
+            <Text fontSize="xs" fontWeight="semibold" color={entry.type === 'incident' ? 'red.700' : 'orange.700'}>
+              {entry.type === 'incident' ? 'Incident signale — action requise' : 'Attention — message urgent'}
+            </Text>
+          </Box>
+        )}
+
+        {/* Content */}
+        <Text fontSize="sm" color="gray.700" whiteSpace="pre-wrap">
+          {displayContent}
+        </Text>
+
+        {/* Expand/Collapse button */}
+        {shouldTruncate && (
+          <AccessibleButton
+            variant="ghost"
+            size="xs"
+            mt={1}
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsExpanded(!isExpanded)
+            }}
+            accessibleLabel={isExpanded ? 'Voir moins' : 'Voir plus'}
+          >
+            {isExpanded ? 'Voir moins' : 'Voir plus'}
+          </AccessibleButton>
+        )}
+
+        {/* Footer: Author avatar + name + Actions */}
+        <Flex justify="space-between" align="center" mt={3} pt={3} borderTopWidth="1px" borderTopColor="gray.100">
+          <Flex align="center" gap={2}>
+            <Avatar.Root size="xs">
+              <Avatar.Fallback name={authorName} />
+            </Avatar.Root>
+            <Box>
+              <Text fontSize="xs" fontWeight="medium" color="gray.700">
+                {authorName}
+              </Text>
+              <Text fontSize="xs" color="gray.400">
+                {authorRoleLabels[entry.authorRole]}
+              </Text>
+            </Box>
+          </Flex>
+
+          {isAuthor && (onEdit || onDelete) && (
+            <Stack direction="row" gap={1}>
+              {onEdit && (
+                <AccessibleButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit(entry)
+                  }}
+                  accessibleLabel="Modifier cette entree"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                </AccessibleButton>
+              )}
+              {onDelete && (
+                <AccessibleButton
+                  variant="ghost"
+                  size="xs"
+                  colorPalette="red"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('Supprimer cette entree ?')) {
+                      onDelete(entry.id)
+                    }
+                  }}
+                  accessibleLabel="Supprimer cette entree"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </AccessibleButton>
+              )}
+            </Stack>
           )}
         </Flex>
-        <Text fontSize="xs" color="gray.500">
-          {formatTimeAgo(entry.createdAt)}
-        </Text>
-      </Flex>
-
-      {/* Content */}
-      <Text fontSize="sm" color="gray.700" whiteSpace="pre-wrap">
-        {displayContent}
-      </Text>
-
-      {/* Expand/Collapse button */}
-      {shouldTruncate && (
-        <AccessibleButton
-          variant="ghost"
-          size="xs"
-          mt={1}
-          onClick={(e) => {
-            e.stopPropagation()
-            setIsExpanded(!isExpanded)
-          }}
-          accessibleLabel={isExpanded ? 'Voir moins' : 'Voir plus'}
-        >
-          {isExpanded ? 'Voir moins' : 'Voir plus'}
-        </AccessibleButton>
-      )}
-
-      {/* Footer: Author + Actions */}
-      <Flex justify="space-between" align="center" mt={3}>
-        <Text fontSize="xs" color="gray.500">
-          Par {authorName} ({authorRoleLabels[entry.authorRole]})
-        </Text>
-
-        {isAuthor && (onEdit || onDelete) && (
-          <Stack direction="row" gap={1}>
-            {onEdit && (
-              <AccessibleButton
-                variant="ghost"
-                size="xs"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEdit(entry)
-                }}
-                accessibleLabel="Modifier cette entrée"
-              >
-                Modifier
-              </AccessibleButton>
-            )}
-            {onDelete && (
-              <AccessibleButton
-                variant="ghost"
-                size="xs"
-                colorPalette="red"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
-                    onDelete(entry.id)
-                  }
-                }}
-                accessibleLabel="Supprimer cette entrée"
-              >
-                Supprimer
-              </AccessibleButton>
-            )}
-          </Stack>
-        )}
-      </Flex>
-    </Box>
+      </Box>
+    </Flex>
   )
 }
 
