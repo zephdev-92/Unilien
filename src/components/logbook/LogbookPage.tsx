@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Box, Stack, Flex, Text, Center, Spinner, Badge } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
@@ -6,6 +6,7 @@ import { AccessibleButton } from '@/components/ui'
 import { LogEntryCard } from './LogEntryCard'
 import { LogbookFilters } from './LogbookFilters'
 import { NewLogEntryModal } from './NewLogEntryModal'
+import { EditLogEntryModal } from './EditLogEntryModal'
 import {
   getLogEntries,
   markAsRead,
@@ -19,17 +20,43 @@ import { logger } from '@/lib/logger'
 
 const PAGE_SIZE = 20
 
+function formatDateSeparator(date: Date): string {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 86400000)
+  const entryDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+  if (entryDate.getTime() === today.getTime()) {
+    return "Aujourd'hui"
+  }
+  if (entryDate.getTime() === yesterday.getTime()) {
+    return 'Hier'
+  }
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  })
+}
+
+function getDateKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`
+}
+
 export function LogbookPage() {
   const { profile, isInitialized } = useAuth()
 
   const [entries, setEntries] = useState<LogEntryWithAuthor[]>([])
   const [isLoadingEntries, setIsLoadingEntries] = useState(true)
   const [filters, setFilters] = useState<LogEntryFilters>({})
+  const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [isNewEntryModalOpen, setIsNewEntryModalOpen] = useState(false)
+  const [editingEntry, setEditingEntry] = useState<LogEntryWithAuthor | null>(null)
 
   const {
     resolvedEmployerId,
@@ -38,7 +65,6 @@ export function LogbookPage() {
     accessDenied,
   } = useEmployerResolution({ requiredCaregiverPermission: 'canViewLiaison' })
 
-  // Determine the actual employerId to use
   const employerId = resolvedEmployerId || ''
 
   const loadEntries = useCallback(async (resetPage = false) => {
@@ -69,7 +95,6 @@ export function LogbookPage() {
       setTotalCount(result.totalCount)
       setHasMore(result.hasMore)
 
-      // Also update unread count
       const unread = await getUnreadCount(resolvedEmployerId, profile.id)
       setUnreadCount(unread)
     } catch (error) {
@@ -79,19 +104,51 @@ export function LogbookPage() {
     }
   }, [profile, resolvedEmployerId, filters, page])
 
-  // Initial load and when filters change
   useEffect(() => {
     if (profile && isInitialized && resolvedEmployerId) {
       loadEntries(true)
     }
   }, [profile, isInitialized, filters, resolvedEmployerId, loadEntries])
 
-  // Handle page changes for "load more"
   useEffect(() => {
     if (page > 1) {
       loadEntries(false)
     }
   }, [page, loadEntries])
+
+  // Filter entries by search query (client-side)
+  const displayedEntries = useMemo(() => {
+    if (!searchQuery) return entries
+    const q = searchQuery.toLowerCase()
+    return entries.filter((entry) => {
+      const content = entry.content.toLowerCase()
+      const authorName = entry.author
+        ? `${entry.author.firstName} ${entry.author.lastName}`.toLowerCase()
+        : ''
+      return content.includes(q) || authorName.includes(q)
+    })
+  }, [entries, searchQuery])
+
+  // Group entries by date for separators
+  const entriesWithSeparators = useMemo(() => {
+    const result: { type: 'separator'; label: string; key: string }[] | { type: 'entry'; entry: LogEntryWithAuthor }[] = []
+    let lastDateKey = ''
+
+    for (const entry of displayedEntries) {
+      const dateKey = getDateKey(entry.createdAt)
+      if (dateKey !== lastDateKey) {
+        (result as { type: string; label?: string; key?: string; entry?: LogEntryWithAuthor }[]).push({
+          type: 'separator',
+          label: formatDateSeparator(entry.createdAt),
+          key: dateKey,
+        })
+        lastDateKey = dateKey
+      }
+      (result as { type: string; entry?: LogEntryWithAuthor }[]).push({ type: 'entry', entry })
+    }
+
+    return result as ({ type: 'separator'; label: string; key: string } | { type: 'entry'; entry: LogEntryWithAuthor })[]
+  }, [displayedEntries])
 
   const handleFiltersChange = (newFilters: LogEntryFilters) => {
     setFilters(newFilters)
@@ -100,7 +157,6 @@ export function LogbookPage() {
   const handleMarkAsRead = async (entryId: string) => {
     if (!profile) return
     await markAsRead(entryId, profile.id)
-    // Update local state
     setEntries((prev) =>
       prev.map((entry) =>
         entry.id === entryId
@@ -111,13 +167,22 @@ export function LogbookPage() {
     setUnreadCount((prev) => Math.max(0, prev - 1))
   }
 
+  const handleEdit = (entry: LogEntryWithAuthor) => {
+    setEditingEntry(entry)
+  }
+
+  const handleEditSuccess = () => {
+    setEditingEntry(null)
+    loadEntries(true)
+  }
+
   const handleDelete = async (entryId: string) => {
     try {
       await deleteLogEntry(entryId)
       setEntries((prev) => prev.filter((entry) => entry.id !== entryId))
       setTotalCount((prev) => prev - 1)
     } catch (error) {
-      logger.error('Erreur suppression entrée:', error)
+      logger.error('Erreur suppression entree:', error)
     }
   }
 
@@ -129,7 +194,7 @@ export function LogbookPage() {
     loadEntries(true)
   }
 
-  // Loading state (resolving employer for caregivers)
+  // Loading state
   if (!profile || isResolvingEmployer) {
     return (
       <DashboardLayout title="Cahier de liaison">
@@ -140,7 +205,7 @@ export function LogbookPage() {
     )
   }
 
-  // Access denied for caregivers without permission
+  // Access denied
   if (accessDenied) {
     return (
       <DashboardLayout title="Cahier de liaison">
@@ -153,21 +218,18 @@ export function LogbookPage() {
           textAlign="center"
         >
           <Text fontSize="xl" fontWeight="semibold" color="orange.800" mb={2}>
-            Accès non autorisé
+            Acces non autorise
           </Text>
           <Text color="orange.700">
             {profile.role === 'caregiver'
-              ? "Vous n'avez pas la permission d'accéder au cahier de liaison. Contactez votre proche pour qu'il vous accorde cet accès."
-              : "Vous n'avez pas accès à ce cahier de liaison."}
+              ? "Vous n'avez pas la permission d'acceder au cahier de liaison. Contactez votre proche pour qu'il vous accorde cet acces."
+              : "Vous n'avez pas acces a ce cahier de liaison."}
           </Text>
         </Box>
       </DashboardLayout>
     )
   }
 
-  // Check write permission
-  // - Employers and employees can always write
-  // - Caregivers need canWriteLiaison permission
   const canWrite =
     profile.role === 'employer' ||
     profile.role === 'employee' ||
@@ -176,7 +238,7 @@ export function LogbookPage() {
   return (
     <DashboardLayout title="Cahier de liaison">
       <Box>
-        {/* Header with title and new entry button */}
+        {/* Header */}
         <Flex
           justify="space-between"
           align="center"
@@ -210,15 +272,20 @@ export function LogbookPage() {
           )}
         </Flex>
 
-        {/* Filters */}
-        <LogbookFilters filters={filters} onFiltersChange={handleFiltersChange} />
+        {/* Filters with search */}
+        <LogbookFilters
+          filters={filters}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onFiltersChange={handleFiltersChange}
+        />
 
-        {/* Entries list */}
+        {/* Entries list with date separators and timeline */}
         {isLoadingEntries && entries.length === 0 ? (
           <Center py={12}>
             <Spinner size="lg" color="brand.500" />
           </Center>
-        ) : entries.length === 0 ? (
+        ) : displayedEntries.length === 0 ? (
           <Box
             bg="white"
             borderRadius="lg"
@@ -228,29 +295,45 @@ export function LogbookPage() {
             textAlign="center"
           >
             <Text fontSize="lg" color="gray.500" mb={4}>
-              Aucune entrée dans le cahier de liaison
+              {searchQuery
+                ? `Aucun resultat pour "${searchQuery}"`
+                : 'Aucune entree dans le cahier de liaison'}
             </Text>
-            {canWrite && (
+            {canWrite && !searchQuery && (
               <AccessibleButton
                 colorPalette="blue"
                 variant="outline"
                 onClick={() => setIsNewEntryModalOpen(true)}
               >
-                Créer la première entrée
+                Creer la premiere entree
               </AccessibleButton>
             )}
           </Box>
         ) : (
-          <Stack gap={3}>
-            {entries.map((entry) => (
-              <LogEntryCard
-                key={entry.id}
-                entry={entry}
-                currentUserId={profile.id}
-                onMarkAsRead={handleMarkAsRead}
-                onDelete={handleDelete}
-              />
-            ))}
+          <Stack gap={0}>
+            {entriesWithSeparators.map((item) => {
+              if (item.type === 'separator') {
+                return (
+                  <Flex key={`sep-${item.key}`} align="center" gap={3} py={3} pl="40px">
+                    <Box h="1px" flex={1} bg="gray.200" />
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="capitalize" whiteSpace="nowrap">
+                      {item.label}
+                    </Text>
+                    <Box h="1px" flex={1} bg="gray.200" />
+                  </Flex>
+                )
+              }
+              return (
+                <LogEntryCard
+                  key={item.entry.id}
+                  entry={item.entry}
+                  currentUserId={profile.id}
+                  onMarkAsRead={handleMarkAsRead}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              )
+            })}
 
             {/* Load more button */}
             {hasMore && (
@@ -269,9 +352,9 @@ export function LogbookPage() {
         )}
 
         {/* Results count */}
-        {entries.length > 0 && (
+        {displayedEntries.length > 0 && (
           <Text fontSize="sm" color="gray.500" mt={4} textAlign="center">
-            {entries.length} sur {totalCount} entrée{totalCount > 1 ? 's' : ''}
+            {displayedEntries.length} sur {totalCount} entree{totalCount > 1 ? 's' : ''}
           </Text>
         )}
       </Box>
@@ -287,6 +370,13 @@ export function LogbookPage() {
           onSuccess={handleNewEntrySuccess}
         />
       )}
+
+      {/* Edit entry modal */}
+      <EditLogEntryModal
+        entry={editingEntry}
+        onClose={() => setEditingEntry(null)}
+        onSuccess={handleEditSuccess}
+      />
     </DashboardLayout>
   )
 }

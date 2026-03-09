@@ -108,14 +108,14 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 7. Logbook — Elements manquants
 
-- [ ] **Recherche** — input "Rechercher dans le journal..."
-- [ ] **Filtre categories** — Observation, Incident, Medical, Administratif
-- [ ] **Timeline visuelle** — points colores sur la timeline (rouge incident, vert medical, etc.)
-- [ ] **Separateurs de dates** — "Aujourd'hui", "Hier", dates formatees
-- [ ] **Badges categorie** — badge colore sur chaque entree (bleu obs, rouge incident, vert medical, gris admin)
-- [ ] **Edition entree** — bouton crayon pour modifier une entree existante
-- [ ] **Alerte dans entree** — encart alerte conditionnel dans le corps de l'entree
-- [ ] **Footer auteur** — avatar + nom auteur en bas de chaque entree
+- [x] **Recherche** — input "Rechercher dans le journal..." _(LogbookFilters.tsx)_
+- [x] **Filtre categories** — Observation, Incident, Alerte, Instruction en pills toggleables _(LogbookFilters.tsx)_
+- [x] **Timeline visuelle** — points colores sur la timeline (bleu obs, rouge incident, orange alerte, violet instruction) _(LogEntryCard.tsx)_
+- [x] **Separateurs de dates** — "Aujourd'hui", "Hier", dates formatees _(LogbookPage.tsx)_
+- [x] **Badges categorie** — badge colore par type sur chaque entree _(LogEntryCard.tsx)_
+- [x] **Edition entree** — bouton crayon pour modifier une entree existante _(EditLogEntryModal.tsx)_
+- [x] **Alerte dans entree** — encart alerte conditionnel pour incidents et urgents _(LogEntryCard.tsx)_
+- [x] **Footer auteur** — avatar + nom + role auteur en bas de chaque entree _(LogEntryCard.tsx)_
 
 ---
 
@@ -191,7 +191,7 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Landing | 11 | 0 | Moyenne |
 | Compliance | 9 | 9 | ✅ Termine |
 | Profile | 9 | 9 | ✅ Termine |
-| Logbook | 8 | 0 | Moyenne |
+| Logbook | 8 | 8 | ✅ Termine |
 | Team | 7 | 6 | Moyenne |
 | Clock-in | 6 | 6 | ✅ Termine |
 | Contact | 4 | 0 | Basse |
@@ -199,4 +199,4 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 0 | Basse |
 | Patterns UI | 4 | 0 | Basse |
-| **Total** | **~101** | **45** | — |
+| **Total** | **~101** | **53** | — |
