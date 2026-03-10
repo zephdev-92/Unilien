@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 6 mars 2026 (1942 tests / 102 fichiers, URLs francisées, répétition interventions, fix validation inter-employeurs, conversations privées en cours)
+**Dernière mise à jour**: 10 mars 2026 (2026 tests / 108 fichiers, landing page redesign, documents restructure)
 **Version**: 1.8.0
 **Statut projet**: 🟡 En développement actif
 
@@ -37,6 +37,28 @@
 ---
 
 ## ✅ Réalisations Récentes (Semaines 6-13 - Février/Mars 2026)
+
+### Semaine 11 — 10 mars 2026 (PRs #154–#155)
+
+#### Documents restructure (PR #154 ✅)
+
+Restructuration complète de la page Documents pour correspondre au prototype :
+- Nouveaux onglets : Bulletins → Contrats → Absences → Export planning → Déclarations CESU
+- `ContractsSection` : liste des contrats avec statut (Actif/Résilié/Suspendu)
+- `DocumentManagementSection` : absences converties en tableau (Employé, Type, Du, Au, Durée, Statut, Actions)
+- `PayslipSection` : tableau récapitulatif des bulletins + formulaire de génération
+
+#### Landing page redesign (PR #155 ✅)
+
+Refonte complète de la page d'accueil (11 items checklist) :
+- Navigation avec ancres, hero avec risque juridique, 4 stats clés, 3 pain points
+- 6 feature cards, section conformité IDCC 3239, 3 témoignages
+- 3 plans tarifaires (Gratuit/Essentiel/Pro), FAQ accordéon, footer complet
+- 27 tests couvrant toutes les sections
+
+#### Métriques session (10/03/2026)
+- Tests : 2017 → 2026 (+9 tests, 108 fichiers)
+- Prototype Gap Checklist : 53/101 → 67/101 (Landing 11/11, Documents 3/3)
 
 ### Semaine 10-11 — Mars 2026 (PRs #122–#136)
 

@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 09 mars 2026
+**Derniere mise a jour** : 10 mars 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -121,17 +121,17 @@ React n'a qu'une ProfilePage avec onglets.
 
 ## 8. Landing — Elements manquants
 
-- [ ] **Nav fonctionnalites** — liens ancres : Fonctionnalites, Conformite, Tarifs, FAQ
-- [ ] **Hero enrichi** — message risque legal ("8 000 euros aux Prud'hommes") avec emphase
-- [ ] **Hero enrichi** — liste reassurance (pas de CB, WCAG AAA, valide par avocat)
-- [ ] **Hero enrichi** — mockup produit avec shield, alertes legales
-- [ ] **Chiffres cles** — 4 stats : 280 000 beneficiaires, 2 000+ litiges, 8 000 euros, -40% admin
-- [ ] **Section problemes** — 3 pain points cards avec icones
-- [ ] **Section fonctionnalites** — grille 6+ feature cards (planning, bulletins, conformite, exports, PCH, analytics)
-- [ ] **Section conformite** — features IDCC 3239 avec checklist
-- [ ] **Section tarifs** — 3 plans (Starter, Standard, Pro) avec features, prix, CTA
-- [ ] **Section FAQ** — questions depliables avec chevron rotatif
-- [ ] **Footer complet** — liens par categorie, copyright, mentions legales
+- [x] **Nav fonctionnalites** — liens ancres : Fonctionnalites, Conformite, Tarifs, FAQ ✅ (PR #155)
+- [x] **Hero enrichi** — message risque legal ("8 000 euros aux Prud'hommes") avec emphase ✅ (PR #155)
+- [x] **Hero enrichi** — liste reassurance (pas de CB, WCAG AAA, valide par avocat) ✅ (PR #155)
+- [x] **Hero enrichi** — mockup produit avec shield, alertes legales ✅ (PR #155)
+- [x] **Chiffres cles** — 4 stats : 280 000 beneficiaires, 2 000+ litiges, 8 000 euros, -40% admin ✅ (PR #155)
+- [x] **Section problemes** — 3 pain points cards avec icones ✅ (PR #155)
+- [x] **Section fonctionnalites** — grille 6+ feature cards (planning, bulletins, conformite, exports, PCH, analytics) ✅ (PR #155)
+- [x] **Section conformite** — features IDCC 3239 avec checklist ✅ (PR #155)
+- [x] **Section tarifs** — 3 plans (Gratuit, Essentiel, Pro) avec features, prix, CTA ✅ (PR #155)
+- [x] **Section FAQ** — questions depliables avec chevron rotatif ✅ (PR #155)
+- [x] **Footer complet** — liens par categorie, copyright, mentions legales ✅ (PR #155)
 
 ---
 
@@ -188,7 +188,7 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 |------|-------|------|----------|
 | Settings (page complete) | 20 | 0 | Haute |
 | Dashboard | 12 | 8 | Haute |
-| Landing | 11 | 0 | Moyenne |
+| Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |
 | Profile | 9 | 9 | ✅ Termine |
 | Logbook | 8 | 8 | ✅ Termine |
@@ -197,6 +197,6 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Contact | 4 | 0 | Basse |
 | Messaging | 4 | 3 | Basse |
 | Planning | 4 | 4 | ✅ Termine |
-| Documents | 3 | 0 | Basse |
+| Documents | 3 | 3 | ✅ Termine |
 | Patterns UI | 4 | 0 | Basse |
-| **Total** | **~101** | **53** | — |
+| **Total** | **~101** | **67** | — |
