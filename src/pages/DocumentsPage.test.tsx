@@ -30,6 +30,9 @@ vi.mock('@/lib/export', () => ({
 }))
 
 vi.mock('@/components/documents', () => ({
+  ContractsSection: ({ employerId }: { employerId: string }) => (
+    <div data-testid="contracts-section" data-employer-id={employerId} />
+  ),
   DocumentManagementSection: ({ employerId }: { employerId: string }) => (
     <div data-testid="doc-section" data-employer-id={employerId} />
   ),
@@ -139,8 +142,14 @@ describe('DocumentsPage', () => {
       expect(screen.getByText('Documents et Déclarations')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('Déclarations CESU')).toBeInTheDocument()
-    expect(screen.getByText('Gestion des documents')).toBeInTheDocument()
+    // Certains labels apparaissent dans le tab trigger ET le Card.Title
+    const tabs = screen.getByRole('tablist')
+    expect(tabs).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Bulletins de paie' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Contrats' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Absences' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Export planning' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Déclarations CESU' })).toBeInTheDocument()
   })
 
   // 6. Les boutons de sélection de mois sont présents pour un employeur
@@ -264,15 +273,29 @@ describe('DocumentsPage', () => {
     })
   })
 
-  // 14. L'onglet "Gestion des documents" affiche le sous-titre de gestion des absences
-  it('affiche le sous-titre de gestion des absences dans l\'onglet documents', async () => {
+  // 14. L'onglet "Absences" affiche le sous-titre de gestion des absences
+  it('affiche le sous-titre de gestion des absences dans l\'onglet absences', async () => {
     const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Gestion des absences et justificatifs')).toBeInTheDocument()
+      expect(screen.getByText('Gestion des absences')).toBeInTheDocument()
+    })
+  })
+
+  // 15. L'onglet "Contrats" rend ContractsSection avec le bon employerId
+  it('rend ContractsSection avec l\'employerId correct pour un employeur', async () => {
+    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
+    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
+
+    renderWithProviders(<DocumentsPage />)
+
+    await waitFor(() => {
+      const contractsSection = screen.getByTestId('contracts-section')
+      expect(contractsSection).toBeInTheDocument()
+      expect(contractsSection).toHaveAttribute('data-employer-id', 'employer-99')
     })
   })
 })

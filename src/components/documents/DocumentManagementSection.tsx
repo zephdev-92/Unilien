@@ -1,5 +1,6 @@
 /**
- * Section de gestion des documents (absences, justificatifs)
+ * Section de gestion des absences — format tableau
+ * Colonnes : Employé, Type, Du, Au, Durée, Statut, Actions
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -7,17 +8,19 @@ import {
   VStack,
   HStack,
   Text,
-  Card,
   Badge,
   Spinner,
   Center,
   Alert,
   Grid,
+  Card,
   Tabs,
   Button,
   EmptyState,
+  Box,
+  Table,
 } from '@chakra-ui/react'
-import { format } from 'date-fns'
+import { format, differenceInCalendarDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import {
   getDocumentsForEmployer,
@@ -26,8 +29,6 @@ import {
   type DocumentStats,
 } from '@/services/documentService'
 import { updateAbsenceStatus } from '@/services/absenceService'
-import { getContractsForEmployer } from '@/services/contractService'
-import { PayslipGeneratorModal, type PayslipEmployee } from '@/components/documents/PayslipGeneratorModal'
 import { logger } from '@/lib/logger'
 import {
   ABSENCE_TYPE_LABELS,
@@ -45,11 +46,6 @@ interface DocumentManagementSectionProps {
 }
 
 // ============================================
-// CONSTANTS
-// ============================================
-
-
-// ============================================
 // COMPONENT
 // ============================================
 
@@ -60,9 +56,6 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<string>('all')
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false)
-  const [employeesForPayslip, setEmployeesForPayslip] = useState<PayslipEmployee[]>([])
-  const [payslipEmployeesError, setPayslipEmployeesError] = useState<string | null>(null)
 
   // Charger les documents
   const loadDocuments = useCallback(async () => {
@@ -84,38 +77,14 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   }, [employerId])
 
   useEffect(() => {
-    let cancelled = false
-
     loadDocuments()
-    setPayslipEmployeesError(null)
-    // Charger les employés actifs pour le générateur de bulletins
-    getContractsForEmployer(employerId)
-      .then((contracts) => {
-        if (cancelled) return
-        setEmployeesForPayslip(
-          contracts.flatMap((c) =>
-            c.employee
-              ? [{ id: c.employeeId, firstName: c.employee.firstName, lastName: c.employee.lastName, pasRate: 0 }]
-              : []
-          )
-        )
-      })
-      .catch((err) => {
-        if (cancelled) return
-        logger.error('Erreur chargement employés bulletins:', err)
-        setPayslipEmployeesError('Impossible de charger la liste des employés')
-      })
-
-    return () => { cancelled = true }
-  }, [employerId, loadDocuments])
+  }, [loadDocuments])
 
   // Filtrer les documents selon l'onglet actif
   const filteredDocuments = documents.filter((doc) => {
     switch (activeTab) {
       case 'pending':
         return doc.absence.status === 'pending'
-      case 'justifications':
-        return !!doc.absence.justificationUrl
       case 'approved':
         return doc.absence.status === 'approved'
       case 'rejected':
@@ -201,84 +170,130 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
           <Tabs.Trigger value="pending">
             En attente ({stats?.pendingAbsences || 0})
           </Tabs.Trigger>
-          <Tabs.Trigger value="justifications">
-            Justificatifs ({stats?.withJustification || 0})
-          </Tabs.Trigger>
           <Tabs.Trigger value="approved">
             Approuvées ({stats?.approvedAbsences || 0})
           </Tabs.Trigger>
-          <Tabs.Trigger value="payslips">
-            Bulletins de paie
+          <Tabs.Trigger value="rejected">
+            Refusées ({stats?.rejectedAbsences || 0})
           </Tabs.Trigger>
         </Tabs.List>
 
-        <Tabs.Content value="payslips" pt={4}>
-          <VStack gap={4} align="stretch">
-            <Text color="gray.600" fontSize="sm">
-              Générez un bulletin de paie individuel (PDF) pour un employé et un mois donné.
-              Le document est calculé selon la Convention Collective IDCC 3239 (barèmes 2025, à titre indicatif).
-            </Text>
-            {payslipEmployeesError ? (
-              <Alert.Root status="error">
-                <Alert.Indicator />
-                <Alert.Title>{payslipEmployeesError}</Alert.Title>
-              </Alert.Root>
-            ) : (
-              <>
-                <Button
-                  onClick={() => setIsPayslipModalOpen(true)}
-                  disabled={employeesForPayslip.length === 0}
-                  alignSelf="flex-start"
-                  style={{ backgroundColor: '#4E6478', color: 'white' }}
-                >
-                  Générer un bulletin de paie
-                </Button>
-                {employeesForPayslip.length === 0 && (
-                  <Alert.Root status="info">
-                    <Alert.Indicator />
-                    <Alert.Title>Aucun employé actif trouvé.</Alert.Title>
-                  </Alert.Root>
-                )}
-              </>
-            )}
-          </VStack>
-          <PayslipGeneratorModal
-            isOpen={isPayslipModalOpen}
-            onClose={() => setIsPayslipModalOpen(false)}
-            employerId={employerId}
-            employees={employeesForPayslip}
-          />
-        </Tabs.Content>
-
-        {activeTab !== 'payslips' && <Tabs.Content value={activeTab} pt={4}>
+        <Tabs.Content value={activeTab} pt={4}>
           {filteredDocuments.length === 0 ? (
             <EmptyState.Root>
               <EmptyState.Content>
-                <EmptyState.Title>Aucun document</EmptyState.Title>
+                <EmptyState.Title>Aucune absence</EmptyState.Title>
                 <EmptyState.Description>
                   {activeTab === 'pending'
                     ? 'Aucune absence en attente de validation'
-                    : activeTab === 'justifications'
-                    ? 'Aucun justificatif disponible'
+                    : activeTab === 'approved'
+                    ? 'Aucune absence approuvée'
+                    : activeTab === 'rejected'
+                    ? 'Aucune absence refusée'
                     : 'Aucune absence enregistrée pour vos employés'}
                 </EmptyState.Description>
               </EmptyState.Content>
             </EmptyState.Root>
           ) : (
-            <VStack gap={3} align="stretch">
-              {filteredDocuments.map((doc) => (
-                <DocumentCard
-                  key={doc.absence.id}
-                  document={doc}
-                  onApprove={() => handleStatusUpdate(doc.absence.id, 'approved')}
-                  onReject={() => handleStatusUpdate(doc.absence.id, 'rejected')}
-                  onViewJustification={() => doc.absence.justificationUrl && openJustification(doc.absence.justificationUrl)}
-                  isProcessing={processingId === doc.absence.id}
-                />
-              ))}
-            </VStack>
+            <Box overflowX="auto">
+              <Table.Root size="sm">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeader>Employé</Table.ColumnHeader>
+                    <Table.ColumnHeader>Type</Table.ColumnHeader>
+                    <Table.ColumnHeader>Du</Table.ColumnHeader>
+                    <Table.ColumnHeader>Au</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="center">Durée</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
+                    <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {filteredDocuments.map((doc) => {
+                    const { absence, employee } = doc
+                    const isPending = absence.status === 'pending'
+                    const days = differenceInCalendarDays(absence.endDate, absence.startDate) + 1
+
+                    return (
+                      <Table.Row key={absence.id}>
+                        <Table.Cell>
+                          <Text fontWeight="medium" fontSize="sm">
+                            {employee.firstName} {employee.lastName}
+                          </Text>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Badge colorPalette={ABSENCE_TYPE_COLORS[absence.absenceType]} variant="subtle" size="sm">
+                            {ABSENCE_TYPE_LABELS[absence.absenceType]}
+                          </Badge>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Text fontSize="sm">
+                            {format(absence.startDate, 'd MMM yyyy', { locale: fr })}
+                          </Text>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Text fontSize="sm">
+                            {format(absence.endDate, 'd MMM yyyy', { locale: fr })}
+                          </Text>
+                        </Table.Cell>
+                        <Table.Cell textAlign="center">
+                          <Text fontSize="sm">
+                            {days} j
+                          </Text>
+                        </Table.Cell>
+                        <Table.Cell textAlign="center">
+                          <Badge colorPalette={STATUS_COLORS[absence.status]} variant="subtle" size="sm">
+                            {STATUS_LABELS[absence.status]}
+                          </Badge>
+                        </Table.Cell>
+                        <Table.Cell textAlign="center">
+                          <HStack gap={1} justify="center" flexWrap="wrap">
+                            {absence.justificationUrl && (
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                colorPalette="blue"
+                                onClick={() => openJustification(absence.justificationUrl!)}
+                              >
+                                Justificatif
+                              </Button>
+                            )}
+                            {isPending && (
+                              <>
+                                <Button
+                                  size="xs"
+                                  colorPalette="green"
+                                  onClick={() => handleStatusUpdate(absence.id, 'approved')}
+                                  loading={processingId === absence.id}
+                                  disabled={processingId === absence.id}
+                                >
+                                  Approuver
+                                </Button>
+                                <Button
+                                  size="xs"
+                                  variant="ghost"
+                                  colorPalette="red"
+                                  onClick={() => handleStatusUpdate(absence.id, 'rejected')}
+                                  loading={processingId === absence.id}
+                                  disabled={processingId === absence.id}
+                                >
+                                  Refuser
+                                </Button>
+                              </>
+                            )}
+                            {!isPending && !absence.justificationUrl && (
+                              <Text fontSize="xs" color="gray.400">—</Text>
+                            )}
+                          </HStack>
+                        </Table.Cell>
+                      </Table.Row>
+                    )
+                  })}
+                </Table.Body>
+              </Table.Root>
+            </Box>
           )}
-        </Tabs.Content>}
+        </Tabs.Content>
       </Tabs.Root>
     </VStack>
   )
@@ -306,105 +321,6 @@ function StatCard({ label, value, colorScheme }: StatCardProps) {
             {label}
           </Text>
         </VStack>
-      </Card.Body>
-    </Card.Root>
-  )
-}
-
-interface DocumentCardProps {
-  document: DocumentWithEmployee
-  onApprove: () => void
-  onReject: () => void
-  onViewJustification: () => void
-  isProcessing: boolean
-}
-
-function DocumentCard({
-  document,
-  onApprove,
-  onReject,
-  onViewJustification,
-  isProcessing,
-}: DocumentCardProps) {
-  const { absence, employee } = document
-  const isPending = absence.status === 'pending'
-
-  // Formater les dates
-  const startDateStr = format(absence.startDate, 'd MMM yyyy', { locale: fr })
-  const endDateStr = format(absence.endDate, 'd MMM yyyy', { locale: fr })
-  const isSingleDay = startDateStr === endDateStr
-
-  return (
-    <Card.Root variant="outline">
-      <Card.Body p={4}>
-        <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
-          {/* Informations principales */}
-          <VStack align="start" gap={2} flex={1} minW="200px">
-            <HStack gap={2} flexWrap="wrap">
-              <Text fontWeight="semibold">
-                {employee.firstName} {employee.lastName}
-              </Text>
-              <Badge colorPalette={ABSENCE_TYPE_COLORS[absence.absenceType]}>
-                {ABSENCE_TYPE_LABELS[absence.absenceType]}
-              </Badge>
-              <Badge colorPalette={STATUS_COLORS[absence.status]}>
-                {STATUS_LABELS[absence.status]}
-              </Badge>
-            </HStack>
-
-            <Text fontSize="sm" color="gray.600">
-              {isSingleDay ? startDateStr : `${startDateStr} - ${endDateStr}`}
-            </Text>
-
-            {absence.reason && (
-              <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                "{absence.reason}"
-              </Text>
-            )}
-
-            <Text fontSize="xs" color="gray.400">
-              Demandé le {format(absence.createdAt, 'd MMM yyyy à HH:mm', { locale: fr })}
-            </Text>
-          </VStack>
-
-          {/* Actions */}
-          <HStack gap={2} flexWrap="wrap">
-            {absence.justificationUrl && (
-              <Button
-                size="sm"
-                variant="outline"
-                colorPalette="blue"
-                onClick={onViewJustification}
-              >
-                Voir justificatif
-              </Button>
-            )}
-
-            {isPending && (
-              <>
-                <Button
-                  size="sm"
-                  colorPalette="green"
-                  onClick={onApprove}
-                  loading={isProcessing}
-                  disabled={isProcessing}
-                >
-                  Approuver
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  colorPalette="red"
-                  onClick={onReject}
-                  loading={isProcessing}
-                  disabled={isProcessing}
-                >
-                  Refuser
-                </Button>
-              </>
-            )}
-          </HStack>
-        </HStack>
       </Card.Body>
     </Card.Root>
   )
