@@ -18,16 +18,16 @@
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, conversations privées en cours) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
-| **Documents/Export** | 92% | ✅ Bon (bulletins v2, export planning PDF/Excel/iCal ✅ mergé, archivage avancé à faire) |
+| **Documents/Export** | 95% | ✅ Excellent (bulletins v2, export planning PDF/Excel/iCal, onglets Contrats/Absences/Bulletins alignés prototype ✅, archivage avancé à faire) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~70% | ✅ Excellent (1942 tests / 102 fichiers, 8/8 hooks testés ✅) |
+| **Tests** | ~70% | ✅ Excellent (2017 tests / 108 fichiers, 8/8 hooks testés ✅) |
 | **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
 | **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
 
 ### Métriques Clés
 
 - **Fichiers source**: ~190 fichiers TS/TSX (hors tests)
-- **Tests**: 1942 tests / 102 fichiers (70%+ coverage)
+- **Tests**: 2017 tests / 108 fichiers (70%+ coverage)
 - **Migrations DB**: 35 migrations
 - **Composants UI**: ~88 composants
 - **Services**: 19 services

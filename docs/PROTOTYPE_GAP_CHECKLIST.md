@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 09 mars 2026
+**Derniere mise a jour** : 10 mars 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -165,11 +165,11 @@ React n'a qu'une ProfilePage avec onglets.
 ## 12. Documents — Ecarts de structure
 
 Le prototype a 4 onglets : Bulletins, Contrats, Absences, Export planning.
-React a 4 onglets : CESU, Bulletins, Documents, Planning.
+React a 5 onglets : Bulletins, Contrats, Absences, Export planning, Declarations CESU.
 
-- [ ] **Onglet Contrats** — liste documents contrats avec download, statut pill "Actif"
-- [ ] **Onglet Absences** — tableau (employe, type, du, au, duree, statut, actions approuver/refuser)
-- [ ] **Tableau bulletins** — format tableau (employe, periode, heures, net, statut, actions)
+- [x] **Onglet Contrats** — liste documents contrats avec statut pill "Actif" _(ContractsSection.tsx)_ ✅
+- [x] **Onglet Absences** — tableau (employe, type, du, au, duree, statut, actions approuver/refuser) _(DocumentManagementSection.tsx)_ ✅
+- [x] **Tableau bulletins** — format tableau (employe, periode, heures, net, statut, actions) _(PayslipSection.tsx)_ ✅
 
 ---
 
@@ -197,6 +197,6 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 | Contact | 4 | 0 | Basse |
 | Messaging | 4 | 3 | Basse |
 | Planning | 4 | 4 | ✅ Termine |
-| Documents | 3 | 0 | Basse |
+| Documents | 3 | 3 | ✅ Termine |
 | Patterns UI | 4 | 0 | Basse |
-| **Total** | **~101** | **53** | — |
+| **Total** | **~101** | **56** | — |
