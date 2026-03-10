@@ -1,0 +1,289 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { screen, fireEvent } from '@testing-library/react'
+import { renderWithProviders } from '@/test/helpers'
+import { createMockProfile } from '@/test/fixtures'
+import { SettingsPage } from './SettingsPage'
+
+// ── Mocks ─────────────────────────────────────────────────────────────────────
+
+vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
+
+vi.mock('@/components/dashboard', () => ({
+  DashboardLayout: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="layout">{children}</div>
+  ),
+}))
+
+vi.mock('@/components/profile/sections', () => ({
+  AccessibilitySection: () => <div data-testid="accessibility-section" />,
+}))
+
+import { useAuth } from '@/hooks/useAuth'
+
+const mockUseAuth = vi.mocked(useAuth)
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('SettingsPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // ── Spinner si pas de profil ──
+
+  it('affiche un Spinner quand profile est null', () => {
+    mockUseAuth.mockReturnValue({ profile: null, userRole: null } as ReturnType<typeof useAuth>)
+    renderWithProviders(<SettingsPage />)
+    expect(screen.getByTestId('layout')).toBeInTheDocument()
+    expect(screen.queryByText('Informations')).not.toBeInTheDocument()
+  })
+
+  // ── Navigation par panneaux ──
+
+  describe('Navigation', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche les sections de navigation pour un employeur', () => {
+      renderWithProviders(<SettingsPage />)
+      expect(screen.getAllByText('Informations').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Sécurité').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('Abonnement')).toBeInTheDocument()
+      expect(screen.getByText('Notifications')).toBeInTheDocument()
+      expect(screen.getByText('Convention')).toBeInTheDocument()
+      expect(screen.getByText('Apparence')).toBeInTheDocument()
+      expect(screen.getAllByText('Accessibilité').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('Données')).toBeInTheDocument()
+    })
+
+    it('masque Abonnement et Convention pour un employee', () => {
+      const profile = createMockProfile({ role: 'employee' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employee' } as ReturnType<typeof useAuth>)
+      renderWithProviders(<SettingsPage />)
+      expect(screen.queryByText('Abonnement')).not.toBeInTheDocument()
+      expect(screen.queryByText('Convention')).not.toBeInTheDocument()
+      expect(screen.queryByText('PCH')).not.toBeInTheDocument()
+    })
+
+    it('affiche PCH pour un caregiver', () => {
+      const profile = createMockProfile({ role: 'caregiver' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'caregiver' } as ReturnType<typeof useAuth>)
+      renderWithProviders(<SettingsPage />)
+      expect(screen.getByText('PCH')).toBeInTheDocument()
+      expect(screen.queryByText('Abonnement')).not.toBeInTheDocument()
+      expect(screen.queryByText('Convention')).not.toBeInTheDocument()
+    })
+
+    it('change de panneau au clic sur un item de navigation', () => {
+      renderWithProviders(<SettingsPage />)
+      // Par défaut on est sur Profil
+      expect(screen.getByText('Informations personnelles')).toBeInTheDocument()
+
+      // Clic sur Sécurité
+      fireEvent.click(screen.getByText('Sécurité'))
+      expect(screen.getByText('Changer le mot de passe')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Profil ──
+
+  describe('Panneau Informations', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer', firstName: 'Marie', lastName: 'Fontaine' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche le formulaire d\'informations personnelles', () => {
+      renderWithProviders(<SettingsPage />)
+      expect(screen.getByText('Informations personnelles')).toBeInTheDocument()
+      expect(screen.getByText('Langue et format')).toBeInTheDocument()
+    })
+
+    it('affiche les boutons Annuler et Enregistrer', () => {
+      renderWithProviders(<SettingsPage />)
+      expect(screen.getByText('Annuler')).toBeInTheDocument()
+      expect(screen.getAllByText('Enregistrer').length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  // ── Panneau Sécurité ──
+
+  describe('Panneau Sécurité', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche les sections mot de passe, 2FA et zone de danger', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Sécurité'))
+
+      expect(screen.getByText('Changer le mot de passe')).toBeInTheDocument()
+      expect(screen.getByText('Double authentification (2FA)')).toBeInTheDocument()
+      expect(screen.getByText('Zone de danger')).toBeInTheDocument()
+    })
+
+    it('affiche le toggle 2FA', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Sécurité'))
+      expect(screen.getByText('Activer la 2FA')).toBeInTheDocument()
+    })
+
+    it('affiche les options de zone de danger', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Sécurité'))
+      expect(screen.getByText('Supprimer toutes les données')).toBeInTheDocument()
+      expect(screen.getByText('Désactiver le compte')).toBeInTheDocument()
+    })
+
+    it('affiche le champ de confirmation quand on clique sur Supprimer', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Sécurité'))
+      fireEvent.click(screen.getByText('Supprimer', { exact: true }))
+      expect(screen.getByPlaceholderText('SUPPRIMER')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Abonnement ──
+
+  describe('Panneau Abonnement', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche le plan actuel et les barres d\'usage', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Abonnement'))
+      expect(screen.getAllByText('Plan actuel').length).toBeGreaterThanOrEqual(1)
+      // "Essentiel" apparait dans plan actuel + grille plans + historique
+      expect(screen.getAllByText('Essentiel').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('3 / 3')).toBeInTheDocument()
+    })
+
+    it('affiche les 3 plans disponibles', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Abonnement'))
+      expect(screen.getByText('Plans disponibles')).toBeInTheDocument()
+      expect(screen.getByText('Gratuit')).toBeInTheDocument()
+      expect(screen.getByText('Pro')).toBeInTheDocument()
+    })
+
+    it('affiche le moyen de paiement', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Abonnement'))
+      expect(screen.getByText('Moyen de paiement')).toBeInTheDocument()
+      expect(screen.getAllByText(/Visa ····/).length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('affiche l\'historique de facturation', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Abonnement'))
+      expect(screen.getByText('Historique de facturation')).toBeInTheDocument()
+      expect(screen.getByText('3 mars 2026')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Notifications ──
+
+  describe('Panneau Notifications', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche les toggles push et email', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Notifications'))
+      expect(screen.getByText('Notifications push')).toBeInTheDocument()
+      expect(screen.getByText('Notifications e-mail')).toBeInTheDocument()
+      expect(screen.getByText('Rappels d\'intervention')).toBeInTheDocument()
+      expect(screen.getByText('Bulletins de paie générés')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Convention ──
+
+  describe('Panneau Convention', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche les règles de validation et majorations', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Convention'))
+      expect(screen.getByText('Règles de validation')).toBeInTheDocument()
+      expect(screen.getByText('Majorations par défaut')).toBeInTheDocument()
+      expect(screen.getByText(/Pause obligatoire/)).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau PCH ──
+
+  describe('Panneau PCH', () => {
+    it('affiche les alertes PCH et l\'IBAN pour un caregiver', () => {
+      const profile = createMockProfile({ role: 'caregiver' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'caregiver' } as ReturnType<typeof useAuth>)
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('PCH'))
+      expect(screen.getByText('Alertes PCH')).toBeInTheDocument()
+      expect(screen.getByText('IBAN de versement')).toBeInTheDocument()
+      expect(screen.getByText('Quota atteint à 90 %')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Apparence ──
+
+  describe('Panneau Apparence', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche le toggle mode sombre et la densité', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Apparence'))
+      expect(screen.getByText('Mode sombre')).toBeInTheDocument()
+      expect(screen.getByText('Densité de l\'interface')).toBeInTheDocument()
+      expect(screen.getByText('Confortable')).toBeInTheDocument()
+      expect(screen.getByText('Compact')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Accessibilité ──
+
+  describe('Panneau Accessibilité', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('rend le composant AccessibilitySection', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Accessibilité'))
+      expect(screen.getByTestId('accessibility-section')).toBeInTheDocument()
+    })
+  })
+
+  // ── Panneau Données ──
+
+  describe('Panneau Données', () => {
+    beforeEach(() => {
+      const profile = createMockProfile({ role: 'employer' })
+      mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
+    })
+
+    it('affiche les boutons d\'export et les toggles de confidentialité', () => {
+      renderWithProviders(<SettingsPage />)
+      fireEvent.click(screen.getByText('Données'))
+      expect(screen.getByText('Export des données')).toBeInTheDocument()
+      expect(screen.getByText(/Exporter toutes les données/)).toBeInTheDocument()
+      expect(screen.getByText(/Exporter le planning/)).toBeInTheDocument()
+      expect(screen.getByText('Confidentialité')).toBeInTheDocument()
+      expect(screen.getByText('Analyses anonymisées')).toBeInTheDocument()
+    })
+  })
+})

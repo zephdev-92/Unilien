@@ -36,6 +36,7 @@ const navItems: NavItem[] = [
   { label: 'Messagerie', href: '/messagerie', icon: '💬', ariaLabel: 'Ouvrir la messagerie en temps réel' },
   { label: 'Cahier de liaison', href: '/cahier-de-liaison', icon: '📝', ariaLabel: 'Ouvrir le cahier de liaison' },
   { label: 'Analytique', href: '/analytique', icon: '📊', ariaLabel: 'Voir les statistiques détaillées' },
+  { label: 'Mon profil', href: '/profil', icon: '👤', ariaLabel: 'Voir mon profil' },
   { label: 'Paramètres', href: '/parametres', icon: '⚙️', ariaLabel: 'Accéder aux paramètres' },
 ]
 
