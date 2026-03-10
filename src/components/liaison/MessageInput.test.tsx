@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/helpers'
 import { MessageInput } from './MessageInput'
@@ -267,12 +267,13 @@ describe('MessageInput', () => {
       expect(screen.queryByText(/\/2000/)).not.toBeInTheDocument()
     })
 
-    it('affiche le compteur quand le texte dépasse 500 caractères', async () => {
-      const user = userEvent.setup()
+    it('affiche le compteur quand le texte dépasse 500 caractères', () => {
       renderWithProviders(<MessageInput {...defaultProps} />)
 
       const longText = 'a'.repeat(501)
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), longText)
+      fireEvent.change(screen.getByPlaceholderText('Écrivez un message...'), {
+        target: { value: longText },
+      })
 
       expect(screen.getByText('501/2000')).toBeInTheDocument()
     })
