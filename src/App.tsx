@@ -13,6 +13,7 @@ const HomePage = lazy(() => import('@/pages/HomePage'))
 const ContactPage = lazy(() => import('@/pages/ContactPage'))
 const Dashboard = lazy(() => import('@/components/dashboard/Dashboard'))
 const ProfilePage = lazy(() => import('@/components/profile/ProfilePage'))
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const PlanningPage = lazy(() => import('@/components/planning/PlanningPage'))
 const LogbookPage = lazy(() => import('@/components/logbook/LogbookPage'))
 const LiaisonPage = lazy(() => import('@/components/liaison/LiaisonPage'))
@@ -149,7 +150,8 @@ function App() {
 
           {/* Routes protégées - authentification requise */}
           <Route path="/tableau-de-bord" element={<ProtectedRoute><ErrorBoundary><Dashboard /></ErrorBoundary></ProtectedRoute>} />
-          <Route path="/parametres" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/parametres" element={<ProtectedRoute><ErrorBoundary><SettingsPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/profil" element={<ProtectedRoute><ErrorBoundary><ProfilePage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/planning" element={<ProtectedRoute><ErrorBoundary><PlanningPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/cahier-de-liaison" element={<ProtectedRoute><ErrorBoundary><LogbookPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/messagerie" element={<ProtectedRoute><ErrorBoundary><LiaisonPage /></ErrorBoundary></ProtectedRoute>} />

@@ -8,7 +8,6 @@ import { ProfileJumpNav } from './ProfileJumpNav'
 import { ProfileViewList } from './ProfileViewList'
 import {
   PersonalInfoSection,
-  AccessibilitySection,
   EmployerSection,
   EmployeeSection,
   CaregiverSection,
@@ -121,7 +120,6 @@ export function ProfilePage() {
       : userRole === 'employee'
         ? [{ id: 'section-metier', label: 'Mon metier' }]
         : [{ id: 'section-aidant', label: 'Mon profil aidant' }]),
-    { id: 'section-accessibilite', label: 'Accessibilite' },
   ]
 
   return (
@@ -229,10 +227,6 @@ export function ProfilePage() {
             </Box>
           )}
 
-          {/* Section: Accessibilite */}
-          <Box id="section-accessibilite" scrollMarginTop="140px">
-            <AccessibilitySection />
-          </Box>
         </Stack>
       </Box>
     </DashboardLayout>
