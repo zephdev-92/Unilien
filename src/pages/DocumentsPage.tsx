@@ -35,7 +35,7 @@ import {
   type MonthlyDeclarationData,
 } from '@/lib/export'
 import { getCaregiver } from '@/services/caregiverService'
-import { DocumentManagementSection, PayslipSection, PlanningExportSection } from '@/components/documents'
+import { ContractsSection, DocumentManagementSection, PayslipSection, PlanningExportSection } from '@/components/documents'
 import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
@@ -166,19 +166,22 @@ export function DocumentsPage() {
           </Box>
 
           {/* Navigation par onglets */}
-          <Tabs.Root defaultValue="declarations" variant="enclosed">
+          <Tabs.Root defaultValue="payslips" variant="enclosed">
             <Tabs.List>
-              <Tabs.Trigger value="declarations">
-                Déclarations CESU
-              </Tabs.Trigger>
               <Tabs.Trigger value="payslips">
                 Bulletins de paie
               </Tabs.Trigger>
-              <Tabs.Trigger value="documents">
-                Gestion des documents
+              <Tabs.Trigger value="contracts">
+                Contrats
+              </Tabs.Trigger>
+              <Tabs.Trigger value="absences">
+                Absences
               </Tabs.Trigger>
               <Tabs.Trigger value="planning">
-                Planning
+                Export planning
+              </Tabs.Trigger>
+              <Tabs.Trigger value="declarations">
+                Déclarations CESU
               </Tabs.Trigger>
             </Tabs.List>
 
@@ -463,7 +466,7 @@ export function DocumentsPage() {
                 <Card.Header>
                   <Card.Title>Bulletins de paie</Card.Title>
                   <Card.Description>
-                    Générez, sauvegardez et consultez l'historique des bulletins de paie
+                    Consultez, générez et téléchargez les bulletins de paie
                   </Card.Description>
                 </Card.Header>
                 <Card.Body>
@@ -479,11 +482,33 @@ export function DocumentsPage() {
               </Card.Root>
             </Tabs.Content>
 
-            {/* Onglet Gestion des documents */}
-            <Tabs.Content value="documents" pt={6}>
+            {/* Onglet Contrats */}
+            <Tabs.Content value="contracts" pt={6}>
               <Card.Root>
                 <Card.Header>
-                  <Card.Title>Gestion des absences et justificatifs</Card.Title>
+                  <Card.Title>Contrats</Card.Title>
+                  <Card.Description>
+                    Liste des contrats de travail de vos employés
+                  </Card.Description>
+                </Card.Header>
+                <Card.Body>
+                  {effectiveEmployerId ? (
+                    <ContractsSection employerId={effectiveEmployerId} />
+                  ) : (
+                    <Alert.Root status="warning">
+                      <Alert.Indicator />
+                      <Alert.Title>Impossible de charger les contrats</Alert.Title>
+                    </Alert.Root>
+                  )}
+                </Card.Body>
+              </Card.Root>
+            </Tabs.Content>
+
+            {/* Onglet Absences */}
+            <Tabs.Content value="absences" pt={6}>
+              <Card.Root>
+                <Card.Header>
+                  <Card.Title>Gestion des absences</Card.Title>
                   <Card.Description>
                     Consultez et gérez les demandes d'absence de vos employés
                   </Card.Description>
@@ -494,7 +519,7 @@ export function DocumentsPage() {
                   ) : (
                     <Alert.Root status="warning">
                       <Alert.Indicator />
-                      <Alert.Title>Impossible de charger les documents</Alert.Title>
+                      <Alert.Title>Impossible de charger les absences</Alert.Title>
                     </Alert.Root>
                   )}
                 </Card.Body>
@@ -505,7 +530,7 @@ export function DocumentsPage() {
             <Tabs.Content value="planning" pt={6}>
               <Card.Root>
                 <Card.Header>
-                  <Card.Title>Export du planning</Card.Title>
+                  <Card.Title>Export planning</Card.Title>
                   <Card.Description>
                     Exportez le planning mensuel en PDF, Excel ou iCal
                   </Card.Description>

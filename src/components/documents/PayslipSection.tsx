@@ -1,12 +1,9 @@
 /**
  * Section "Bulletins de paie" dans la page Documents.
  *
- * Fonctionnalités :
- *  - Sélection employé + période (mois/année)
- *  - Taux PAS pré-rempli depuis le contrat, modifiable
- *  - Génération + téléchargement local
- *  - Génération + sauvegarde dans Supabase Storage + historique DB
- *  - Tableau de l'historique avec re-téléchargement et suppression
+ * Structure (alignée sur le prototype) :
+ *  1. Tableau récapitulatif de tous les bulletins (Employé, Période, Heures, Net, Statut, Actions)
+ *  2. Formulaire de génération (sélection employé, période, taux PAS, etc.)
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -27,6 +24,7 @@ import {
   Input,
   Field,
   Separator,
+  EmptyState,
 } from '@chakra-ui/react'
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import {
@@ -74,9 +72,9 @@ export function PayslipSection({ employerId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // ── Historique ────────────────────────────────────────────────────────────
-  const [history, setHistory] = useState<Payslip[]>([])
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  // ── Tous les bulletins (tableau récapitulatif) ─────────────────────────
+  const [allPayslips, setAllPayslips] = useState<Payslip[]>([])
+  const [isLoadingAll, setIsLoadingAll] = useState(false)
 
   const years = [currentYear, currentYear - 1, currentYear - 2]
 
@@ -86,7 +84,6 @@ export function PayslipSection({ employerId }: Props) {
       setContracts(list)
       if (list.length > 0) {
         setSelectedContractId(list[0].id)
-        // Pré-remplir le taux PAS depuis le premier contrat
         const rate = list[0].pasRate ?? 0
         setPasRateInput((rate * 100).toFixed(2))
       }
@@ -102,21 +99,28 @@ export function PayslipSection({ employerId }: Props) {
     }
   }, [selectedContractId, contracts])
 
-  // Charger l'historique
-  const loadHistory = useCallback(async () => {
-    setIsLoadingHistory(true)
-    const contract = contracts.find((c) => c.id === selectedContractId)
-    const employeeId = contract?.employeeId
-    const list = await getPayslipsHistory(employerId, employeeId)
-    setHistory(list)
-    setIsLoadingHistory(false)
-  }, [employerId, selectedContractId, contracts])
+  // Charger tous les bulletins (sans filtre employé)
+  const loadAllPayslips = useCallback(async () => {
+    setIsLoadingAll(true)
+    const list = await getPayslipsHistory(employerId)
+    setAllPayslips(list)
+    setIsLoadingAll(false)
+  }, [employerId])
 
   useEffect(() => {
-    if (selectedContractId) {
-      loadHistory()
+    loadAllPayslips()
+  }, [loadAllPayslips])
+
+  // ── Helpers ─────────────────────────────────────────────────────────────
+
+  // Trouver le nom de l'employé à partir de son ID
+  const getEmployeeName = (employeeId: string): string => {
+    const contract = contracts.find((c) => c.employeeId === employeeId)
+    if (contract?.employee) {
+      return `${contract.employee.firstName} ${contract.employee.lastName}`
     }
-  }, [selectedContractId, loadHistory])
+    return 'Employé inconnu'
+  }
 
   // ── Génération ────────────────────────────────────────────────────────────
 
@@ -152,11 +156,9 @@ export function PayslipSection({ employerId }: Props) {
         return
       }
 
-      // Téléchargement local
       downloadExport(result)
 
       if (saveToStorage) {
-        // Upload + sauvegarde DB
         const storagePath = await uploadPayslipPdf(
           employerId,
           selectedContract.employeeId,
@@ -178,7 +180,7 @@ export function PayslipSection({ employerId }: Props) {
         })
 
         setSuccessMsg('Bulletin généré, téléchargé et sauvegardé dans l\'historique.')
-        await loadHistory()
+        await loadAllPayslips()
       } else {
         setSuccessMsg('Bulletin généré et téléchargé.')
       }
@@ -205,7 +207,7 @@ export function PayslipSection({ employerId }: Props) {
 
   const handleDelete = async (payslipId: string) => {
     await deletePayslipRecord(payslipId)
-    await loadHistory()
+    await loadAllPayslips()
   }
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
@@ -221,6 +223,109 @@ export function PayslipSection({ employerId }: Props) {
 
   return (
     <VStack gap={6} align="stretch">
+      {/* ── Tableau récapitulatif de tous les bulletins ── */}
+      <Box>
+        <HStack justify="space-between" mb={3}>
+          <Text fontWeight="semibold" fontSize="sm" color="gray.500">
+            Bulletins sauvegardés
+          </Text>
+          <Badge colorPalette="blue" variant="subtle">
+            {allPayslips.length} bulletin{allPayslips.length > 1 ? 's' : ''}
+          </Badge>
+        </HStack>
+
+        {isLoadingAll ? (
+          <Center py={6}>
+            <Spinner />
+          </Center>
+        ) : allPayslips.length === 0 ? (
+          <EmptyState.Root>
+            <EmptyState.Content>
+              <EmptyState.Title>Aucun bulletin</EmptyState.Title>
+              <EmptyState.Description>
+                Générez votre premier bulletin de paie avec le formulaire ci-dessous
+              </EmptyState.Description>
+            </EmptyState.Content>
+          </EmptyState.Root>
+        ) : (
+          <Box overflowX="auto">
+            <Table.Root size="sm">
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeader>Employé</Table.ColumnHeader>
+                  <Table.ColumnHeader>Période</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="right">Heures</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="right">Net à payer</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {allPayslips.map((p) => (
+                  <Table.Row key={p.id}>
+                    <Table.Cell>
+                      <Text fontWeight="medium" fontSize="sm">
+                        {getEmployeeName(p.employeeId)}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text fontSize="sm">{p.periodLabel}</Text>
+                    </Table.Cell>
+                    <Table.Cell textAlign="right">
+                      <Text fontSize="sm">
+                        {p.totalHours.toFixed(2).replace('.', ',')} h
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell textAlign="right">
+                      <Text fontWeight="bold" fontSize="sm">
+                        {p.netPay.toFixed(2).replace('.', ',')} €
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell textAlign="center">
+                      <Badge
+                        colorPalette={p.storagePath ? 'green' : 'orange'}
+                        variant="subtle"
+                        size="sm"
+                      >
+                        {p.storagePath ? 'Envoyé' : 'À envoyer'}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell textAlign="center">
+                      <HStack gap={1} justify="center">
+                        {p.storagePath && (
+                          <IconButton
+                            aria-label="Télécharger"
+                            size="xs"
+                            variant="ghost"
+                            colorPalette="brand"
+                            title="Télécharger le PDF"
+                            onClick={() => handleReDownload(p)}
+                          >
+                            ↓
+                          </IconButton>
+                        )}
+                        <IconButton
+                          aria-label="Supprimer"
+                          size="xs"
+                          variant="ghost"
+                          colorPalette="red"
+                          title="Supprimer ce bulletin"
+                          onClick={() => handleDelete(p.id)}
+                        >
+                          ✕
+                        </IconButton>
+                      </HStack>
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
+          </Box>
+        )}
+      </Box>
+
+      <Separator />
+
       {/* ── Formulaire de génération ── */}
       <Card.Root>
         <Card.Body>
@@ -352,95 +457,6 @@ export function PayslipSection({ employerId }: Props) {
               </Button>
             </HStack>
           </VStack>
-        </Card.Body>
-      </Card.Root>
-
-      {/* ── Historique ── */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Historique des bulletins</Card.Title>
-          <Card.Description>
-            Bulletins sauvegardés pour {selectedContract?.employee
-              ? `${selectedContract.employee.firstName} ${selectedContract.employee.lastName}`
-              : 'cet employé'}
-          </Card.Description>
-        </Card.Header>
-        <Card.Body>
-          {isLoadingHistory ? (
-            <Center py={6}>
-              <Spinner />
-            </Center>
-          ) : history.length === 0 ? (
-            <Text color="gray.500" textAlign="center" py={4}>
-              Aucun bulletin sauvegardé pour le moment
-            </Text>
-          ) : (
-            <Box overflowX="auto">
-              <Table.Root size="sm">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>Période</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="right">Brut</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="right">Net à payer</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="right">Heures</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="right">PAS</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="center">Généré le</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {history.map((p) => (
-                    <Table.Row key={p.id}>
-                      <Table.Cell>
-                        <Badge colorPalette="blue" variant="subtle">{p.periodLabel}</Badge>
-                      </Table.Cell>
-                      <Table.Cell textAlign="right" fontWeight="medium">
-                        {p.grossPay.toFixed(2).replace('.', ',')} €
-                      </Table.Cell>
-                      <Table.Cell textAlign="right" color="green.600" fontWeight="bold">
-                        {p.netPay.toFixed(2).replace('.', ',')} €
-                      </Table.Cell>
-                      <Table.Cell textAlign="right">
-                        {p.totalHours.toFixed(2).replace('.', ',')} h
-                      </Table.Cell>
-                      <Table.Cell textAlign="right">
-                        {(p.pasRate * 100).toFixed(2)} %
-                      </Table.Cell>
-                      <Table.Cell textAlign="center" fontSize="xs" color="gray.600">
-                        {p.generatedAt.toLocaleDateString('fr-FR')}
-                      </Table.Cell>
-                      <Table.Cell textAlign="center">
-                        <HStack gap={1} justify="center">
-                          {p.storagePath && (
-                            <IconButton
-                              aria-label="Télécharger"
-                              size="xs"
-                              variant="ghost"
-                              colorPalette="brand"
-                              title="Télécharger le PDF"
-                              onClick={() => handleReDownload(p)}
-                            >
-                              ↓
-                            </IconButton>
-                          )}
-                          <IconButton
-                            aria-label="Supprimer"
-                            size="xs"
-                            variant="ghost"
-                            colorPalette="red"
-                            title="Supprimer ce bulletin"
-                            onClick={() => handleDelete(p.id)}
-                          >
-                            ✕
-                          </IconButton>
-                        </HStack>
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table.Root>
-            </Box>
-          )}
         </Card.Body>
       </Card.Root>
     </VStack>
