@@ -157,23 +157,32 @@ export function DashboardLayout({ children, title = 'Tableau de bord' }: Dashboa
       {/* Development Banner */}
       <DevelopmentBanner onDismiss={() => setShowBanner(false)} />
 
-      {/* Skip link */}
-      <a
+      {/* Skip link — caché par défaut, visible au focus (Tab) */}
+      <Box
+        as="a"
         href="#main-content"
-        style={{
-          position: 'absolute',
-          top: '-40px',
-          left: 0,
-          background: '#0056E0',
-          color: 'white',
-          padding: '8px 16px',
-          zIndex: 9999,
+        position="absolute"
+        top="-100%"
+        left={4}
+        bg="brand.600"
+        color="white"
+        px={4}
+        py={2}
+        borderRadius="md"
+        fontSize="sm"
+        zIndex={9999}
+        transition="top 0.2s"
+        _focusVisible={{
+          top: showBanner ? 'calc(80px + 16px)' : '16px',
         }}
-        onFocus={(e) => (e.currentTarget.style.top = showBanner ? '80px' : '0')}
-        onBlur={(e) => (e.currentTarget.style.top = '-40px')}
+        css={{
+          '@media (prefers-reduced-motion: reduce)': {
+            transition: 'none',
+          },
+        }}
       >
         Aller au contenu principal
-      </a>
+      </Box>
 
       {/* ── Header (topbar) ── */}
       <Box
