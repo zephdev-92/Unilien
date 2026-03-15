@@ -70,8 +70,9 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
       <Field.Root invalid={isInvalid} required={required} disabled={disabled}>
         <Field.Label
           htmlFor={selectId}
-          fontWeight="medium"
-          fontSize="md"
+          fontWeight="semibold"
+          fontSize="sm"
+          color="text.default"
           srOnly={hideLabel}
         >
           {label}
@@ -87,17 +88,22 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
             onChange={onChange}
             onBlur={onBlur}
             css={{
-              minHeight: '56px',
-              fontSize: 'md',
-              borderWidth: '2px',
+              minHeight: '44px',
+              fontSize: 'var(--chakra-fontSizes-sm)',
+              borderWidth: '1.5px',
+              borderColor: 'var(--chakra-colors-border-default, #D8E3ED)',
+              background: 'var(--chakra-colors-bg-page, #F3F6F9)',
+              borderRadius: '10px',
               '&:focus': {
-                borderColor: 'var(--chakra-colors-blue-500)',
-                boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.3)',
+                borderColor: 'var(--chakra-colors-brand-500)',
+                boxShadow: '0 0 0 3px rgba(78,100,120,.12)',
+                background: 'var(--chakra-colors-bg-surface, #fff)',
               },
               '&[aria-invalid=true]': {
-                borderColor: 'var(--chakra-colors-red-500)',
-                boxShadow: '0 0 0 1px var(--chakra-colors-red-500)',
+                borderColor: 'var(--chakra-colors-danger-500, #991B1B)',
+                boxShadow: '0 0 0 3px rgba(220,38,38,.12)',
               },
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
             }}
           >
             {placeholder && (
@@ -119,13 +125,13 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
         </NativeSelect.Root>
 
         {helperText && !isInvalid && (
-          <Field.HelperText fontSize="sm" color="gray.600">
+          <Field.HelperText fontSize="xs" color="text.muted">
             {helperText}
           </Field.HelperText>
         )}
 
         {isInvalid && (
-          <Field.ErrorText fontSize="sm">
+          <Field.ErrorText fontSize="xs" fontWeight="semibold">
             {error}
           </Field.ErrorText>
         )}

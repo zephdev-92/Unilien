@@ -19,7 +19,7 @@ export function Dashboard() {
       <DashboardLayout title="Tableau de bord">
         <Center py={12}>
           <Box textAlign="center">
-            <Text fontSize="lg" color="gray.600" mb={4}>
+            <Text fontSize="lg" color="text.muted" mb={4}>
               Chargement du profil...
             </Text>
             <Spinner size="lg" color="brand.500" />

@@ -133,19 +133,19 @@ export function PushPermissionBanner({
 
   return (
     <Box
-      bg="blue.50"
-      borderRadius="lg"
+      bg="brand.50"
+      borderRadius="12px"
       p={4}
       mb={4}
       borderWidth="1px"
-      borderColor="blue.200"
+      borderColor="brand.200"
       role="alert"
       aria-live="polite"
     >
       <Flex align="flex-start" gap={3}>
         {/* Icon */}
         <Box
-          color="blue.500"
+          color="brand.500"
           mt={0.5}
           flexShrink={0}
         >
@@ -154,10 +154,10 @@ export function PushPermissionBanner({
 
         {/* Content */}
         <Box flex={1}>
-          <Text fontWeight="semibold" color="blue.800" mb={1}>
+          <Text fontWeight="semibold" color="brand.700" mb={1}>
             Activer les notifications
           </Text>
-          <Text fontSize="sm" color="blue.700" mb={3}>
+          <Text fontSize="sm" color="brand.700" mb={3}>
             Recevez des alertes en temps réel pour les nouvelles interventions,
             messages urgents et rappels importants.
           </Text>
@@ -173,7 +173,7 @@ export function PushPermissionBanner({
           <Flex gap={2} flexWrap="wrap">
             <Button
               size="sm"
-              colorPalette="blue"
+              colorPalette="brand"
               onClick={handleSubscribe}
               loading={isLoading}
               loadingText="Activation..."
@@ -184,7 +184,7 @@ export function PushPermissionBanner({
             <Button
               size="sm"
               variant="ghost"
-              colorPalette="blue"
+              colorPalette="brand"
               onClick={handleDismiss}
             >
               Plus tard
@@ -197,7 +197,7 @@ export function PushPermissionBanner({
           size="sm"
           onClick={handleDismiss}
           aria-label="Fermer"
-          color="blue.600"
+          color="brand.600"
         />
       </Flex>
     </Box>

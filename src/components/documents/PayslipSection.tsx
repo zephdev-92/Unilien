@@ -226,10 +226,10 @@ export function PayslipSection({ employerId }: Props) {
       {/* ── Tableau récapitulatif de tous les bulletins ── */}
       <Box>
         <HStack justify="space-between" mb={3}>
-          <Text fontWeight="semibold" fontSize="sm" color="gray.500">
+          <Text fontWeight="semibold" fontSize="sm" color="text.muted">
             Bulletins sauvegardés
           </Text>
-          <Badge colorPalette="blue" variant="subtle">
+          <Badge colorPalette="brand" variant="subtle">
             {allPayslips.length} bulletin{allPayslips.length > 1 ? 's' : ''}
           </Badge>
         </HStack>

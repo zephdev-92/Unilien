@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { format, subDays, startOfDay, endOfDay } from 'date-fns'
+import { format, subDays, startOfDay, endOfDay, isSameDay, differenceInDays } from 'date-fns'
 import { useAuth } from '@/hooks/useAuth'
 import { getShifts, updateShift } from '@/services/shiftService'
 import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
@@ -32,9 +32,11 @@ export function useClockIn(
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [allFetchedShifts, setAllFetchedShifts] = useState<Shift[]>([])
   const [historyShifts, setHistoryShifts] = useState<Shift[]>([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [historyDays, setHistoryDays] = useState(7)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   const loadAllShifts = useCallback(async () => {
     if (!profile) return
@@ -50,6 +52,7 @@ export function useClockIn(
       const shifts = await getShifts(profile.id, profile.role, historyStart, endOfDay(tomorrow))
 
       const todayStr = format(today, 'yyyy-MM-dd')
+      setAllFetchedShifts(shifts)
       setTodayShifts(shifts.filter((s) => format(new Date(s.date), 'yyyy-MM-dd') === todayStr))
       setHistoryShifts(
         shifts.filter(
@@ -70,13 +73,25 @@ export function useClockIn(
     loadAllShifts()
   }, [loadAllShifts])
 
+  const isSelectedDateToday = useMemo(
+    () => isSameDay(selectedDate, new Date()),
+    [selectedDate]
+  )
+
+  const selectedDateShifts = useMemo(() => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd')
+    return allFetchedShifts.filter(
+      (s) => format(new Date(s.date), 'yyyy-MM-dd') === dateStr
+    )
+  }, [allFetchedShifts, selectedDate])
+
   const plannedShifts = useMemo(
-    () => todayShifts.filter((s) => s.status === 'planned'),
-    [todayShifts]
+    () => selectedDateShifts.filter((s) => s.status === 'planned'),
+    [selectedDateShifts]
   )
   const completedShifts = useMemo(
-    () => todayShifts.filter((s) => s.status === 'completed'),
-    [todayShifts]
+    () => selectedDateShifts.filter((s) => s.status === 'completed'),
+    [selectedDateShifts]
   )
 
   const historyByDay = useMemo(() => {
@@ -222,6 +237,87 @@ export function useClockIn(
     }
   }
 
+  const handleRetroactiveValidation = useCallback(async (
+    shiftId: string,
+    startTime: string,
+    endTime: string
+  ) => {
+    if (!profile) return
+
+    const shift = allFetchedShifts.find((s) => s.id === shiftId)
+    if (!shift) {
+      setError('Intervention introuvable')
+      return
+    }
+
+    if (shift.status === 'completed') {
+      setError('Cette intervention est déjà validée')
+      return
+    }
+
+    const daysDiff = differenceInDays(new Date(), new Date(shift.date))
+    if (daysDiff > 7) {
+      setError('La saisie rétroactive est limitée à 7 jours')
+      return
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      await updateShift(shiftId, {
+        status: 'completed',
+        startTime,
+        endTime,
+        lateEntry: true,
+      })
+
+      // Compliance check
+      try {
+        const completedShift: ShiftForValidation = {
+          id: shiftId,
+          contractId: shift.contractId,
+          employeeId: profile.id,
+          date: new Date(shift.date),
+          startTime,
+          endTime,
+          breakDuration: shift.breakDuration,
+          hasNightAction: shift.hasNightAction,
+        }
+        const otherShifts: ShiftForValidation[] = allFetchedShifts
+          .filter((s) => s.id !== shiftId)
+          .map((s) => ({
+            id: s.id,
+            contractId: s.contractId,
+            employeeId: profile.id,
+            date: new Date(s.date),
+            startTime: s.startTime,
+            endTime: s.endTime,
+            breakDuration: s.breakDuration,
+            hasNightAction: s.hasNightAction,
+          }))
+
+        const result = checkCompliance(completedShift, otherShifts)
+        if (result.warnings.length > 0) {
+          const warns = result.warnings.map((w) => w.message).join(' ')
+          setSuccessMessage(`Horaires validés (rétroactif). ${warns}`)
+        } else {
+          setSuccessMessage('Horaires validés avec succès (saisie rétroactive)')
+        }
+      } catch (err) {
+        logger.error('Erreur validation conformité post rétroactif:', err)
+        setSuccessMessage('Horaires validés avec succès (saisie rétroactive)')
+      }
+
+      await loadAllShifts()
+    } catch (err) {
+      logger.error('Erreur validation rétroactive:', err)
+      setError(err instanceof Error ? err.message : 'Erreur lors de la validation rétroactive')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [profile, allFetchedShifts, loadAllShifts])
+
   const handleCancel = () => {
     setActiveShiftId(null)
     setClockInTime(null)
@@ -256,10 +352,16 @@ export function useClockIn(
     setHasNightAction,
     hasNightHours,
     nightHoursForActive,
+    // Date navigation
+    selectedDate,
+    setSelectedDate,
+    isSelectedDateToday,
+    selectedDateShifts,
     // Handlers
     handleClockIn,
     handleClockOut,
     handleCancel,
+    handleRetroactiveValidation,
     // Reload
     loadAllShifts,
     // Refs forwarding

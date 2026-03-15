@@ -59,7 +59,7 @@ function RuleCard({ icon, title, description, limit, type, examples }: RuleCardP
     <Box
       p={4}
       borderWidth="1px"
-      borderRadius="lg"
+      borderRadius="12px"
       borderColor={type === 'blocking' ? 'red.200' : 'orange.200'}
       bg={type === 'blocking' ? 'red.50' : 'orange.50'}
       _dark={{
@@ -81,7 +81,7 @@ function RuleCard({ icon, title, description, limit, type, examples }: RuleCardP
         Limite : {limit}
       </Text>
       {examples && examples.length > 0 && (
-        <Box mt={2} pl={3} borderLeftWidth="2px" borderColor="gray.300">
+        <Box mt={2} pl={3} borderLeftWidth="2px" borderColor="border.strong">
           {examples.map((example, i) => (
             <Text key={i} fontSize="xs" color="fg.muted">
               {example}
@@ -239,16 +239,16 @@ export function ComplianceHelp() {
             '11 novembre',
             '25 décembre',
           ].map((holiday) => (
-            <Badge key={holiday} variant="subtle" colorPalette="blue">
+            <Badge key={holiday} variant="subtle" colorPalette="brand">
               {holiday}
             </Badge>
           ))}
         </HStack>
       </Box>
 
-      <Box bg="blue.50" _dark={{ bg: 'blue.900/20' }} p={4} borderRadius="lg">
+      <Box bg="brand.50" _dark={{ bg: 'blue.900/20' }} p={4} borderRadius="12px">
         <HStack gap={2} mb={2}>
-          <Icon color="blue.500">
+          <Icon color="brand.500">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
               <path d="M12 16v-4M12 8h.01" />

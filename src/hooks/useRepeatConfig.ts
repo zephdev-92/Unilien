@@ -18,8 +18,8 @@ export interface RepeatConfigState {
   setEndDate: (d: string) => void
 }
 
-export function useRepeatConfig(baseDate?: Date): RepeatConfigState {
-  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false)
+export function useRepeatConfig(baseDate?: Date, initialEnabled = false): RepeatConfigState {
+  const [isRepeatEnabled, setIsRepeatEnabled] = useState(initialEnabled)
   const [frequency, setFrequency] = useState<RepeatFrequency>('weekly')
   const [intervalDays, setIntervalDays] = useState(7)
   const [repeatCount, setRepeatCount] = useState<number | undefined>(4)

@@ -1,24 +1,26 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import {
-  Dialog,
-  Portal,
   Box,
   Stack,
   Flex,
   Text,
   Textarea,
-  Checkbox,
+  SimpleGrid,
 } from '@chakra-ui/react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
-import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
+import { AccessibleInput, AccessibleButton } from '@/components/ui'
+import { PlanningModal } from './PlanningModal'
 import { logger } from '@/lib/logger'
 import { createAbsence, uploadJustification, validateJustificationFile } from '@/services/absenceService'
-import { getLeaveBalance } from '@/services/leaveBalanceService'
-import { countBusinessDays, getLeaveYear, FAMILY_EVENT_LABELS, FAMILY_EVENT_DAYS } from '@/lib/absence'
-import type { Absence, FamilyEventType, LeaveBalance } from '@/types'
+import { countBusinessDays, FAMILY_EVENT_LABELS, FAMILY_EVENT_DAYS } from '@/lib/absence'
+import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase/client'
+import type { FamilyEventType, LeaveBalance } from '@/types'
+
+// ── Schéma de validation ──
 
 const absenceSchema = z.object({
   absenceType: z.enum(['sick', 'vacation', 'family_event', 'training', 'unavailable', 'emergency'], {
@@ -33,36 +35,89 @@ const absenceSchema = z.object({
     if (!data.startDate || !data.endDate) return true
     return new Date(data.endDate) >= new Date(data.startDate)
   },
-  {
-    message: 'La date de fin ne peut pas être antérieure à la date de début',
-    path: ['endDate'],
-  }
+  { message: 'La date de fin ne peut pas être antérieure à la date de début', path: ['endDate'] }
 ).refine(
   (data) => {
     if (data.absenceType !== 'family_event') return true
     return !!data.familyEventType
   },
-  {
-    message: 'Veuillez sélectionner le type d\'événement familial',
-    path: ['familyEventType'],
-  }
+  { message: 'Veuillez sélectionner le type d\'événement familial', path: ['familyEventType'] }
 )
 
 type AbsenceFormData = z.infer<typeof absenceSchema>
 
-const absenceTypeOptions: { value: Absence['absenceType']; label: string }[] = [
-  { value: 'sick', label: 'Maladie' },
-  { value: 'vacation', label: 'Congé payé' },
-  { value: 'family_event', label: 'Événement familial' },
-  { value: 'training', label: 'Formation' },
-  { value: 'unavailable', label: 'Indisponibilité' },
-  { value: 'emergency', label: 'Urgence personnelle' },
+// ── Catégories d'absence (proto: onglets) ──
+
+type AbsenceCategory = 'conges' | 'medical' | 'familial' | 'autre'
+
+interface AbsenceTypeOption {
+  value: string
+  backendType: AbsenceFormData['absenceType']
+  label: string
+  sub: string
+  dot: string // couleur du dot
+  familyEventType?: FamilyEventType
+}
+
+const CATEGORIES: { key: AbsenceCategory; label: string }[] = [
+  { key: 'conges', label: 'Congés' },
+  { key: 'medical', label: 'Médical' },
+  { key: 'familial', label: 'Familial' },
+  { key: 'autre', label: 'Autre' },
 ]
 
-const familyEventOptions = Object.entries(FAMILY_EVENT_LABELS).map(([value, label]) => ({
-  value,
-  label: `${label} (${FAMILY_EVENT_DAYS[value as FamilyEventType]}j)`,
-}))
+const ABSENCE_OPTIONS: Record<AbsenceCategory, AbsenceTypeOption[]> = {
+  conges: [
+    { value: 'conge_paye', backendType: 'vacation', label: 'Congé payé (CP)', sub: '{days} dispo · Rémunéré · Art. L3141-1', dot: 'brand.500' },
+    { value: 'sans_solde', backendType: 'vacation', label: 'Congé sans solde', sub: 'Durée libre · Accord employeur · Non rémunéré', dot: 'brand.500' },
+    { value: 'formation', backendType: 'training', label: 'Congé formation (CPF)', sub: 'Variable · Financement CPF · Art. L6323-1', dot: 'brand.500' },
+  ],
+  medical: [
+    { value: 'maladie', backendType: 'sick', label: 'Arrêt maladie', sub: 'Justificatif CPAM sous 48h · Art. L1226-1', dot: '#EF4444' },
+    { value: 'accident_travail', backendType: 'sick', label: 'Accident du travail', sub: 'Déclaration obligatoire 48h · Art. L4121-1', dot: '#EF4444' },
+    { value: 'accident_trajet', backendType: 'sick', label: 'Accident de trajet', sub: 'Déclaration 48h · Art. L411-2 CSS', dot: '#EF4444' },
+    { value: 'maternite', backendType: 'sick', label: 'Congé maternité', sub: '16 semaines (1er enfant) · Art. L1225-17', dot: '#EF4444' },
+    { value: 'paternite', backendType: 'sick', label: 'Congé paternité / 2nd parent', sub: '25 jours · Art. L1225-35', dot: '#EF4444' },
+    { value: 'enfant_malade', backendType: 'sick', label: 'Enfant malade', sub: '3 j/an · Enfant < 16 ans · IDCC 3239 Art. 42', dot: '#EF4444' },
+  ],
+  familial: Object.entries(FAMILY_EVENT_LABELS).map(([key, label]) => ({
+    value: key,
+    backendType: 'family_event' as const,
+    label,
+    sub: `${FAMILY_EVENT_DAYS[key as FamilyEventType]}j ouvrés · IDCC 3239 Art. 51`,
+    dot: '#7C5CBF',
+    familyEventType: key as FamilyEventType,
+  })),
+  autre: [
+    { value: 'indisponibilite', backendType: 'unavailable', label: 'Indisponibilité', sub: 'Absence non programmée · Sans motif précis', dot: 'text.muted' },
+    { value: 'urgence_perso', backendType: 'emergency', label: 'Urgence personnelle', sub: 'Événement imprévu · Justificatif bienvenu', dot: 'text.muted' },
+  ],
+}
+
+// ── Info contextuelle par type sélectionné ──
+
+function getInfoText(
+  selected: AbsenceTypeOption | null,
+  leaveBalance: LeaveBalance | null,
+) {
+  if (!selected) return null
+  if (selected.value === 'conge_paye') {
+    if (!leaveBalance) return 'Congé payé · Rémunéré · Chargement du solde…'
+    const days = leaveBalance.remainingDays
+    if (days <= 0) return 'Congé payé · Rémunéré · Aucun jour de CP disponible. Votre solde sera recalculé selon votre ancienneté.'
+    return `Congé payé · Rémunéré · Il vous reste ${days.toFixed(0)} jour${days >= 2 ? 's' : ''} de CP disponibles.`
+  }
+  if (selected.value === 'sans_solde') return 'Congé sans solde · Non rémunéré · Nécessite l\'accord de votre employeur.'
+  if (selected.value === 'formation') return 'Congé formation · CPF · Financé via votre Compte Personnel de Formation.'
+  if (selected.backendType === 'sick') return `${selected.label} · Justificatif requis sous 48h.`
+  if (selected.backendType === 'family_event' && selected.familyEventType) {
+    const days = FAMILY_EVENT_DAYS[selected.familyEventType]
+    return `${selected.label} · ${days} jour(s) ouvré(s) · Convention IDCC 3239 Art. 51.`
+  }
+  return `${selected.label} · Votre demande sera transmise pour validation.`
+}
+
+// ── Composant ──
 
 interface AbsenceRequestModalProps {
   isOpen: boolean
@@ -81,26 +136,40 @@ export function AbsenceRequestModal({
   defaultDate,
   onSuccess,
 }: AbsenceRequestModalProps) {
+  const { profile } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [justificationFile, setJustificationFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
-  const [isSingleDay, setIsSingleDay] = useState(true)
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null)
+  const [employerName, setEmployerName] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Onglet + type sélectionné
+  const [activeCategory, setActiveCategory] = useState<AbsenceCategory>('conges')
+  const [selectedValue, setSelectedValue] = useState<string>('conge_paye')
+
+  const selectedOption = useMemo(() => {
+    for (const opts of Object.values(ABSENCE_OPTIONS)) {
+      const found = opts.find((o) => o.value === selectedValue)
+      if (found) return found
+    }
+    return null
+  }, [selectedValue])
+
+  const isSickLeave = selectedOption?.backendType === 'sick'
 
   const {
     register,
     handleSubmit,
     reset,
-    control,
-    setValue,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<AbsenceFormData>({
     resolver: zodResolver(absenceSchema),
     defaultValues: {
-      absenceType: undefined,
+      absenceType: 'vacation',
       startDate: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       endDate: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       reason: '',
@@ -108,14 +177,9 @@ export function AbsenceRequestModal({
     },
   })
 
-  const selectedAbsenceType = useWatch({ control, name: 'absenceType' })
-  const isSickLeave = selectedAbsenceType === 'sick'
-  const isFamilyEvent = selectedAbsenceType === 'family_event'
-  const isVacation = selectedAbsenceType === 'vacation'
   const startDateValue = watch('startDate')
   const endDateValue = watch('endDate')
 
-  // Calculer les jours ouvrables
   const businessDays = useMemo(() => {
     if (!startDateValue || !endDateValue) return 0
     const start = new Date(startDateValue)
@@ -124,38 +188,118 @@ export function AbsenceRequestModal({
     return countBusinessDays(start, end)
   }, [startDateValue, endDateValue])
 
-  // Charger le solde de congés
+  // Sync le form caché quand on change de type
   useEffect(() => {
-    if (!isOpen || !contractId || !isVacation || !startDateValue) {
+    if (!selectedOption) return
+    setValue('absenceType', selectedOption.backendType)
+    if (selectedOption.familyEventType) {
+      setValue('familyEventType', selectedOption.familyEventType)
+    } else {
+      setValue('familyEventType', '')
+    }
+  }, [selectedOption, setValue])
+
+  // Charger le solde congés (même approche que le dashboard — avec fallback ancienneté)
+  useEffect(() => {
+    if (!isOpen || !employeeId) {
       setLeaveBalance(null)
       return
     }
+    async function loadBalance() {
+      const [balancesRes, contractsRes] = await Promise.all([
+        supabase
+          .from('leave_balances')
+          .select('acquired_days, taken_days, adjustment_days')
+          .eq('employee_id', employeeId),
+        supabase
+          .from('contracts')
+          .select('start_date')
+          .eq('employee_id', employeeId)
+          .eq('status', 'active'),
+      ])
 
-    const leaveYear = getLeaveYear(new Date(startDateValue))
-    getLeaveBalance(contractId, leaveYear)
-      .then(setLeaveBalance)
-      .catch(() => setLeaveBalance(null))
-  }, [isOpen, contractId, isVacation, startDateValue])
+      const balances = balancesRes.data || []
+      let remaining: number
 
-  // Synchroniser la date de fin avec la date de début quand "Toute la journée" est coché
-  useEffect(() => {
-    if (isSingleDay && startDateValue) {
-      setValue('endDate', startDateValue, { shouldValidate: true })
+      if (balances.length > 0) {
+        remaining = balances.reduce(
+          (sum, b) => sum + (b.acquired_days || 0) - (b.taken_days || 0) + (b.adjustment_days || 0),
+          0,
+        )
+      } else {
+        // Fallback : calcul depuis l'ancienneté (2.5j / mois travaillé, IDCC 3239)
+        const contracts = contractsRes.data || []
+        const now = new Date()
+        let totalMonths = 0
+        for (const c of contracts) {
+          const start = new Date(c.start_date)
+          const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+          totalMonths += Math.max(0, months)
+        }
+        remaining = Math.round(totalMonths * 2.5 * 10) / 10
+      }
+
+      setLeaveBalance({
+        remainingDays: Math.round(remaining * 10) / 10,
+      } as LeaveBalance)
     }
-  }, [isSingleDay, startDateValue, setValue])
+    loadBalance()
+  }, [isOpen, employeeId])
+
+  // Charger le contractId + nom de l'employeur
+  useEffect(() => {
+    if (!isOpen || !profile) return
+    async function loadContractAndEmployer() {
+      const { data } = await supabase
+        .from('contracts')
+        .select('employer_id')
+        .eq('employee_id', employeeId)
+        .eq('status', 'active')
+        .limit(1)
+        .single()
+      if (data) {
+        if (data.employer_id) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', data.employer_id)
+            .single()
+          if (prof) setEmployerName(`${prof.first_name} ${prof.last_name}`)
+        }
+      }
+    }
+    loadContractAndEmployer()
+  }, [isOpen, employeeId, profile, contractId])
+
+  // Reset à l'ouverture
+  useEffect(() => {
+    if (isOpen) {
+      const date = defaultDate || new Date()
+      reset({
+        absenceType: 'vacation',
+        startDate: format(date, 'yyyy-MM-dd'),
+        endDate: format(date, 'yyyy-MM-dd'),
+        reason: '',
+        familyEventType: '',
+      })
+      setSubmitError(null)
+      setJustificationFile(null)
+      setFileError(null)
+      setActiveCategory('conges')
+      setSelectedValue('conge_paye')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }, [isOpen, defaultDate, reset])
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     setFileError(null)
-
     if (file) {
       const validation = validateJustificationFile(file)
       if (!validation.valid) {
         setFileError(validation.error || 'Fichier invalide')
         setJustificationFile(null)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
+        if (fileInputRef.current) fileInputRef.current.value = ''
         return
       }
       setJustificationFile(file)
@@ -167,34 +311,10 @@ export function AbsenceRequestModal({
   const handleRemoveFile = () => {
     setJustificationFile(null)
     setFileError(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  useEffect(() => {
-    if (isOpen) {
-      const date = defaultDate || new Date()
-      reset({
-        absenceType: undefined,
-        startDate: format(date, 'yyyy-MM-dd'),
-        endDate: format(date, 'yyyy-MM-dd'),
-        reason: '',
-        familyEventType: '',
-      })
-      setSubmitError(null)
-      setJustificationFile(null)
-      setFileError(null)
-      setIsSingleDay(true)
-      setLeaveBalance(null)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    }
-  }, [isOpen, defaultDate, reset])
-
   const onSubmit = async (data: AbsenceFormData) => {
-    // Validation: justificatif obligatoire pour les arrêts maladie
     if (data.absenceType === 'sick' && !justificationFile) {
       setFileError('L\'arrêt de travail est obligatoire pour une absence maladie')
       return
@@ -205,8 +325,6 @@ export function AbsenceRequestModal({
 
     try {
       let justificationUrl: string | undefined
-
-      // Upload du justificatif (obligatoire pour les arrêts maladie)
       if (justificationFile && data.absenceType === 'sick') {
         const uploadResult = await uploadJustification(employeeId, justificationFile, {
           absenceType: data.absenceType,
@@ -230,259 +348,278 @@ export function AbsenceRequestModal({
       onClose()
     } catch (error) {
       logger.error('Erreur création absence:', error)
-      setSubmitError(
-        error instanceof Error ? error.message : 'Une erreur est survenue'
-      )
+      setSubmitError(error instanceof Error ? error.message : 'Une erreur est survenue')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const infoText = getInfoText(selectedOption, leaveBalance)
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
-      <Portal>
-        <Dialog.Backdrop bg="blackAlpha.600" />
-        <Dialog.Positioner>
-          <Dialog.Content
-            bg="white"
-            borderRadius="xl"
-            maxW="500px"
-            w="95vw"
-            maxH="90vh"
-            overflow="auto"
-          >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Dialog.Title fontSize="xl" fontWeight="bold">
-                Déclarer une absence
-              </Dialog.Title>
-              <Dialog.CloseTrigger
-                position="absolute"
-                top={4}
-                right={4}
-                asChild
-              >
-                <AccessibleButton
-                  variant="ghost"
-                  size="sm"
-                  accessibleLabel="Fermer"
+    <PlanningModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Demander une absence"
+      large
+      footer={
+        <Flex gap={3} justify="flex-end">
+          <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose} disabled={isSubmitting}>
+            Annuler
+          </AccessibleButton>
+          <AccessibleButton type="submit" form="absence-request-form" bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} loading={isSubmitting}>
+            Envoyer la demande
+          </AccessibleButton>
+        </Flex>
+      }
+    >
+      <form id="absence-request-form" onSubmit={handleSubmit(onSubmit)}>
+        <Stack gap={4}>
+          {/* ── Catégorie tabs (proto: abs-cat-tabs) ── */}
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" color="text.default" mb={2}>
+              Type d&apos;absence <Text as="span" color="red.500">*</Text>
+            </Text>
+            <Flex
+              gap={1}
+              bg="bg.page"
+              borderRadius="10px"
+              p="3px"
+              mb={4}
+              role="tablist"
+              aria-label="Catégorie d'absence"
+            >
+              {CATEGORIES.map((cat) => (
+                <Flex
+                  key={cat.key}
+                  as="button"
+                  type="button"
+                  flex={1}
+                  justify="center"
+                  py={2}
+                  px={2}
+                  borderRadius="8px"
+                  border="none"
+                  fontSize="12px"
+                  fontWeight="600"
+                  cursor="pointer"
+                  transition="all 0.15s"
+                  whiteSpace="nowrap"
+                  bg={activeCategory === cat.key ? 'bg.surface' : 'transparent'}
+                  color={activeCategory === cat.key ? 'brand.500' : 'text.muted'}
+                  boxShadow={activeCategory === cat.key ? 'sm' : 'none'}
+                  _hover={{ color: activeCategory === cat.key ? 'brand.500' : 'text.default' }}
+                  onClick={() => {
+                    setActiveCategory(cat.key)
+                    // Sélectionner le premier item de la catégorie
+                    const firstOpt = ABSENCE_OPTIONS[cat.key][0]
+                    if (firstOpt) setSelectedValue(firstOpt.value)
+                  }}
+                  role="tab"
+                  aria-selected={activeCategory === cat.key}
                 >
-                  X
-                </AccessibleButton>
-              </Dialog.CloseTrigger>
-            </Dialog.Header>
+                  {cat.label}
+                </Flex>
+              ))}
+            </Flex>
 
-            <Dialog.Body p={6}>
-              <form id="absence-request-form" onSubmit={handleSubmit(onSubmit)}>
-                <Stack gap={4}>
-                  <AccessibleSelect
-                    label="Type d'absence"
-                    options={absenceTypeOptions}
-                    placeholder="Sélectionnez le type"
-                    error={errors.absenceType?.message}
-                    required
-                    {...register('absenceType')}
+            {/* ── Radio cards (proto: abs-type-panel) ── */}
+            <SimpleGrid columns={{ base: 1, sm: 2 }} gap={2}>
+              {ABSENCE_OPTIONS[activeCategory].map((opt) => (
+                <Flex
+                  key={opt.value}
+                  as="label"
+                  align="flex-start"
+                  gap={2}
+                  p={3}
+                  bg={selectedValue === opt.value ? 'brand.50' : 'bg.page'}
+                  borderWidth="2px"
+                  borderColor={selectedValue === opt.value ? 'brand.500' : 'border.default'}
+                  borderRadius="10px"
+                  cursor="pointer"
+                  transition="all 0.15s"
+                  _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+                  onClick={() => setSelectedValue(opt.value)}
+                >
+                  <input
+                    type="radio"
+                    name="abs-type"
+                    value={opt.value}
+                    checked={selectedValue === opt.value}
+                    onChange={() => setSelectedValue(opt.value)}
+                    style={{ display: 'none' }}
                   />
-
-                  {isFamilyEvent && (
-                    <AccessibleSelect
-                      label="Type d'événement"
-                      options={familyEventOptions}
-                      placeholder="Sélectionnez l'événement"
-                      error={errors.familyEventType?.message}
-                      required
-                      {...register('familyEventType')}
-                    />
-                  )}
-
-                  {isVacation && leaveBalance && (
-                    <Box p={3} bg="blue.50" borderRadius="md">
-                      <Text fontSize="sm" fontWeight="medium" color="blue.800">
-                        Solde de congés : {leaveBalance.remainingDays.toFixed(1)} jour(s) disponible(s)
-                      </Text>
-                      <Text fontSize="xs" color="blue.600">
-                        Acquis : {leaveBalance.acquiredDays.toFixed(1)}j |
-                        Pris : {leaveBalance.takenDays.toFixed(1)}j |
-                        Ajustement : {leaveBalance.adjustmentDays.toFixed(1)}j
-                      </Text>
-                    </Box>
-                  )}
-
+                  <Box
+                    w="10px"
+                    h="10px"
+                    borderRadius="full"
+                    flexShrink={0}
+                    mt="4px"
+                    bg={opt.dot}
+                  />
                   <Box>
-                    <Flex gap={4} mb={3}>
-                      <Box flex={1}>
-                        <AccessibleInput
-                          label={isSingleDay ? "Date" : "Date de début"}
-                          type="date"
-                          error={errors.startDate?.message}
-                          required
-                          {...register('startDate')}
-                        />
-                      </Box>
-                      {!isSingleDay && (
-                        <Box flex={1}>
-                          <AccessibleInput
-                            label="Date de fin"
-                            type="date"
-                            error={errors.endDate?.message}
-                            required
-                            {...register('endDate')}
-                          />
-                        </Box>
-                      )}
-                    </Flex>
-                    <Checkbox.Root
-                      checked={isSingleDay}
-                      onCheckedChange={(e) => setIsSingleDay(!!e.checked)}
-                      colorPalette="blue"
+                    <Text fontSize="sm" fontWeight="700" color="text.default">
+                      {opt.label}
+                    </Text>
+                    <Text fontSize="10px" color="text.muted" mt="1px">
+                      {opt.sub.replace('{days}', leaveBalance ? `${leaveBalance.remainingDays.toFixed(0)} j` : '— j')}
+                    </Text>
+                  </Box>
+                </Flex>
+              ))}
+            </SimpleGrid>
+          </Box>
+
+          {/* ── Champs hidden pour react-hook-form ── */}
+          <input type="hidden" {...register('absenceType')} />
+          <input type="hidden" {...register('familyEventType')} />
+
+          {/* ── Info contextuelle (proto: abs-info-box) ── */}
+          {infoText && (
+            <Flex
+              align="center"
+              gap={2}
+              p={3}
+              bg="#F0F5E6"
+              borderWidth="1px"
+              borderColor="#D4E2B6"
+              borderRadius="10px"
+              role="status"
+            >
+              <Box flexShrink={0} color="text.default">
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </Box>
+              <Text fontSize="sm" color="text.default">
+                {infoText}
+              </Text>
+            </Flex>
+          )}
+
+          {/* ── Justificatif (conditionnel: maladie) ── */}
+          {isSickLeave && (
+            <Box>
+              <Text fontWeight="medium" fontSize="md" mb={2}>
+                Justificatif <Text as="span" color="red.500">*</Text>
+              </Text>
+              <Box
+                borderWidth="2px"
+                borderStyle="dashed"
+                borderColor={fileError ? 'red.500' : justificationFile ? 'green.300' : 'border.default'}
+                borderRadius="12px"
+                p={4}
+                bg={fileError ? 'red.50' : justificationFile ? 'green.50' : 'bg.page'}
+                transition="all 0.2s"
+              >
+                {!justificationFile ? (
+                  <Flex direction="column" align="center" gap={2}>
+                    <Text fontSize="sm" color="text.muted" textAlign="center">
+                      Joignez votre arrêt de travail (PDF, JPG, PNG - max 5 Mo)
+                    </Text>
+                    <AccessibleButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      accessibleLabel="Sélectionner un fichier"
                     >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control>
-                        <Checkbox.Indicator />
-                      </Checkbox.Control>
-                      <Checkbox.Label>
-                        <Text fontSize="sm">Toute la journée (une seule date)</Text>
-                      </Checkbox.Label>
-                    </Checkbox.Root>
-                  </Box>
-
-                  {businessDays > 0 && (
-                    <Text fontSize="sm" color="gray.600">
-                      {businessDays} jour(s) ouvrable(s) demandé(s)
-                    </Text>
-                  )}
-
-                  <Box>
-                    <Text fontWeight="medium" fontSize="md" mb={2}>
-                      Motif (optionnel)
-                    </Text>
-                    <Textarea
-                      placeholder="Précisez le motif de votre absence..."
-                      rows={3}
-                      size="lg"
-                      borderWidth="2px"
-                      {...register('reason')}
+                      Parcourir...
+                    </AccessibleButton>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={handleFileChange}
+                      style={{ display: 'none' }}
+                      aria-label="Sélectionner un arrêt de travail"
                     />
-                  </Box>
-
-                  {isSickLeave && (
-                    <Box>
-                      <Text fontWeight="medium" fontSize="md" mb={2}>
-                        Arrêt de travail <Text as="span" color="red.500">*</Text>
-                      </Text>
-                      <Box
-                        borderWidth="2px"
-                        borderStyle="dashed"
-                        borderColor={fileError ? 'red.500' : justificationFile ? 'green.300' : 'gray.300'}
-                        borderRadius="lg"
-                        p={4}
-                        bg={fileError ? 'red.50' : justificationFile ? 'green.50' : 'gray.50'}
-                        transition="all 0.2s"
-                      >
-                        {!justificationFile ? (
-                          <Flex direction="column" align="center" gap={2}>
-                            <Text fontSize="sm" color="gray.600" textAlign="center">
-                              Joignez votre arrêt de travail (PDF, JPG, PNG - max 5 Mo)
-                            </Text>
-                            <AccessibleButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => fileInputRef.current?.click()}
-                              accessibleLabel="Sélectionner un fichier"
-                            >
-                              Parcourir...
-                            </AccessibleButton>
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png,.webp"
-                              onChange={handleFileChange}
-                              style={{ display: 'none' }}
-                              aria-label="Sélectionner un arrêt de travail"
-                            />
-                          </Flex>
-                        ) : (
-                          <Flex justify="space-between" align="center">
-                            <Flex align="center" gap={2}>
-                              <Box color="green.600">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                  <polyline points="14 2 14 8 20 8" />
-                                </svg>
-                              </Box>
-                              <Box>
-                                <Text fontSize="sm" fontWeight="medium" color="gray.800">
-                                  {justificationFile.name}
-                                </Text>
-                                <Text fontSize="xs" color="gray.500">
-                                  {(justificationFile.size / 1024 / 1024).toFixed(2)} Mo
-                                </Text>
-                              </Box>
-                            </Flex>
-                            <AccessibleButton
-                              variant="ghost"
-                              size="sm"
-                              colorPalette="red"
-                              onClick={handleRemoveFile}
-                              accessibleLabel="Supprimer le fichier"
-                            >
-                              Supprimer
-                            </AccessibleButton>
-                          </Flex>
-                        )}
+                  </Flex>
+                ) : (
+                  <Flex justify="space-between" align="center">
+                    <Flex align="center" gap={2}>
+                      <Box color="green.600">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
                       </Box>
-                      {fileError && (
-                        <Text fontSize="sm" color="red.600" mt={2}>
-                          {fileError}
-                        </Text>
-                      )}
-                      {!fileError && (
-                        <Text fontSize="xs" color="gray.500" mt={2}>
-                          Un justificatif (arrêt de travail) est obligatoire pour les absences maladie.
-                          Vous avez 48h pour le transmettre.
-                        </Text>
-                      )}
-                    </Box>
-                  )}
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" color="text.default">{justificationFile.name}</Text>
+                        <Text fontSize="xs" color="text.muted">{(justificationFile.size / 1024 / 1024).toFixed(2)} Mo</Text>
+                      </Box>
+                    </Flex>
+                    <AccessibleButton variant="ghost" size="sm" colorPalette="red" onClick={handleRemoveFile} accessibleLabel="Supprimer le fichier">
+                      Supprimer
+                    </AccessibleButton>
+                  </Flex>
+                )}
+              </Box>
+              {fileError && <Text fontSize="sm" color="red.600" mt={2}>{fileError}</Text>}
+              {!fileError && (
+                <Text fontSize="xs" color="text.muted" mt={2}>
+                  Document médical requis sous 48h.
+                </Text>
+              )}
+            </Box>
+          )}
 
-                  <Box p={4} bg="blue.50" borderRadius="md">
-                    <Text fontSize="sm" color="blue.700">
-                      Votre demande sera envoyée à votre employeur pour validation.
-                      Vous serez notifié de sa décision.
-                    </Text>
-                  </Box>
+          {/* ── Dates côte à côte (proto: form-grid) ── */}
+          <Flex gap={4}>
+            <Box flex={1}>
+              <AccessibleInput
+                label="Date de début"
+                type="date"
+                error={errors.startDate?.message}
+                required
+                {...register('startDate')}
+              />
+            </Box>
+            <Box flex={1}>
+              <AccessibleInput
+                label="Date de fin"
+                type="date"
+                error={errors.endDate?.message}
+                required
+                {...register('endDate')}
+              />
+            </Box>
+          </Flex>
 
-                  {submitError && (
-                    <Box p={4} bg="red.50" borderRadius="md">
-                      <Text color="red.700" whiteSpace="pre-line">{submitError}</Text>
-                    </Box>
-                  )}
-                </Stack>
-              </form>
-            </Dialog.Body>
+          {businessDays > 0 && (
+            <Text fontSize="xs" color="text.muted" mt={-2}>
+              {businessDays} jour(s) ouvrable(s) demandé(s)
+            </Text>
+          )}
 
-            <Dialog.Footer p={6} borderTopWidth="1px">
-              <Flex gap={3} justify="flex-end">
-                <AccessibleButton
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Annuler
-                </AccessibleButton>
-                <AccessibleButton
-                  type="submit"
-                  form="absence-request-form"
-                  colorPalette="blue"
-                  loading={isSubmitting}
-                >
-                  Envoyer la demande
-                </AccessibleButton>
-              </Flex>
-            </Dialog.Footer>
-          </Dialog.Content>
-        </Dialog.Positioner>
-      </Portal>
-    </Dialog.Root>
+          {/* ── Notes / motif ── */}
+          <Box>
+            <Text fontWeight="medium" fontSize="md" mb={2}>
+              Notes / motif
+            </Text>
+            <Textarea
+              placeholder="Précisez si nécessaire…"
+              rows={2}
+              size="lg"
+              borderWidth="2px"
+              {...register('reason')}
+            />
+          </Box>
+
+          {/* ── Message validation (proto: form-hint centré) ── */}
+          <Text fontSize="xs" color="text.muted" textAlign="center">
+            Votre demande sera transmise à{' '}
+            <Text as="span" fontWeight="bold">{employerName || 'votre employeur'}</Text>
+            {' '}pour validation.
+          </Text>
+
+          {submitError && (
+            <Box p={4} bg="red.50" borderRadius="10px">
+              <Text color="red.700" whiteSpace="pre-line">{submitError}</Text>
+            </Box>
+          )}
+        </Stack>
+      </form>
+    </PlanningModal>
   )
 }
 

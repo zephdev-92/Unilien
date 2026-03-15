@@ -96,18 +96,17 @@ describe('ComplianceDashboard', () => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
     })
 
-    it('affiche le titre "Conformité"', async () => {
+    it('affiche le sous-titre convention collective', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /conformité/i })).toBeInTheDocument()
+        expect(screen.getByText(/convention collective idcc 3239/i)).toBeInTheDocument()
       })
     })
 
-    it('affiche les boutons Aide et Actualiser', async () => {
+    it('affiche le sous-titre convention', async () => {
       renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /aide/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /actualiser/i })).toBeInTheDocument()
+        expect(screen.getByText(/convention collective idcc 3239/i)).toBeInTheDocument()
       })
     })
 
@@ -282,42 +281,38 @@ describe('ComplianceDashboard', () => {
     })
   })
 
-  describe('Bouton Aide', () => {
+  describe('Vue Aide', () => {
     beforeEach(() => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
     })
 
-    it('affiche la vue d\'aide au clic sur "Aide"', async () => {
-      const user = userEvent.setup()
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => screen.getByRole('button', { name: /aide/i }))
-
-      await user.click(screen.getByRole('button', { name: /aide/i }))
-      expect(screen.getByTestId('compliance-help')).toBeInTheDocument()
+    it('affiche la vue d\'aide quand showHelp=true', async () => {
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" showHelp={true} onShowHelp={() => {}} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('compliance-help')).toBeInTheDocument()
+      })
     })
 
     it('revient au dashboard en cliquant sur "Retour"', async () => {
       const user = userEvent.setup()
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => screen.getByRole('button', { name: /aide/i }))
-
-      await user.click(screen.getByRole('button', { name: /aide/i }))
-      expect(screen.getByTestId('compliance-help')).toBeInTheDocument()
+      const onShowHelp = vi.fn()
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" showHelp={true} onShowHelp={onShowHelp} />)
+      await waitFor(() => screen.getByTestId('compliance-help'))
 
       await user.click(screen.getByRole('button', { name: /retour au tableau de bord/i }))
-      expect(screen.queryByTestId('compliance-help')).not.toBeInTheDocument()
+      expect(onShowHelp).toHaveBeenCalledWith(false)
     })
   })
 
-  describe('Bouton Actualiser', () => {
-    it('recharge les données', async () => {
-      const user = userEvent.setup()
+  describe('Refresh via onRefreshRef', () => {
+    it('expose loadData via onRefreshRef', async () => {
       mockGetWeeklyComplianceOverview.mockResolvedValue(emptyOverview)
-      renderWithProviders(<ComplianceDashboard employerId="employer-1" />)
-      await waitFor(() => screen.getByRole('button', { name: /actualiser/i }))
+      const refreshRef = { current: null as (() => void) | null }
+      renderWithProviders(<ComplianceDashboard employerId="employer-1" onRefreshRef={refreshRef} />)
+      await waitFor(() => expect(refreshRef.current).toBeTruthy())
 
       const before = mockGetWeeklyComplianceOverview.mock.calls.length
-      await user.click(screen.getByRole('button', { name: /actualiser/i }))
+      refreshRef.current!()
 
       await waitFor(() => {
         expect(mockGetWeeklyComplianceOverview.mock.calls.length).toBeGreaterThan(before)

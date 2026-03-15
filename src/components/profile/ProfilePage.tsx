@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Box, Stack, Flex, Text, Center, Spinner, Avatar, Badge } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Center, Spinner, Avatar } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { DashboardLayout } from '@/components/dashboard'
@@ -69,7 +69,7 @@ export function ProfilePage() {
             <Text fontSize="xl" fontWeight="semibold" mb={2}>
               Profil incomplet
             </Text>
-            <Text color="gray.600">
+            <Text color="text.muted">
               Votre profil n'a pas ete trouve dans la base de donnees.
               Veuillez contacter le support ou vous reconnecter.
             </Text>
@@ -123,7 +123,7 @@ export function ProfilePage() {
   ]
 
   return (
-    <DashboardLayout title="Mon profil">
+    <DashboardLayout title="Profil">
       <Box maxW="900px">
         <Stack gap={6}>
           {/* Hero */}
@@ -138,6 +138,7 @@ export function ProfilePage() {
 
           {/* Section: Mon profil */}
           <Box id="section-profil" scrollMarginTop="140px">
+            <SectionTitle>Mon profil</SectionTitle>
             {isEditing ? (
               <PersonalInfoSection
                 profile={profile}
@@ -146,23 +147,25 @@ export function ProfilePage() {
               />
             ) : (
               <Box
-                bg="white"
-                borderRadius="lg"
+                bg="bg.surface"
+                borderRadius="12px"
                 borderWidth="1px"
-                borderColor="gray.200"
-                p={6}
+                borderColor="border.default"
+                overflow="hidden"
               >
-                <Flex justify="space-between" align="center" mb={4}>
-                  <Text fontSize="xl" fontWeight="semibold">Informations personnelles</Text>
+                <Flex justify="space-between" align="center" px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+                  <Text fontSize="md" fontWeight={700}>Informations personnelles</Text>
                 </Flex>
-                <ProfileViewList
-                  rows={[
-                    { label: 'Nom complet', value: `${profile.firstName} ${profile.lastName}` },
-                    { label: 'Email', value: profile.email },
-                    { label: 'Telephone', value: profile.phone },
-                    { label: 'Role', value: ROLE_LABELS[profile.role] || profile.role },
-                  ]}
-                />
+                <Box px={6} py={5}>
+                  <ProfileViewList
+                    rows={[
+                      { label: 'Nom complet', value: `${profile.firstName} ${profile.lastName}` },
+                      { label: 'Email', value: profile.email },
+                      { label: 'Téléphone', value: profile.phone },
+                      { label: 'Rôle', value: ROLE_LABELS[profile.role] || profile.role },
+                    ]}
+                  />
+                </Box>
               </Box>
             )}
           </Box>
@@ -171,6 +174,7 @@ export function ProfilePage() {
           {userRole === 'employer' && (
             <>
               <Box id="section-situation" scrollMarginTop="140px">
+                <SectionTitle>Ma situation</SectionTitle>
                 {isEditing ? (
                   isLoadingData ? (
                     <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
@@ -183,6 +187,7 @@ export function ProfilePage() {
               </Box>
 
               <Box id="section-urgence" scrollMarginTop="140px">
+                <SectionTitle>Contacts d&apos;urgence</SectionTitle>
                 {isEditing ? (
                   isLoadingData ? (
                     <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
@@ -199,6 +204,7 @@ export function ProfilePage() {
           {/* Section: Mon metier (employee) */}
           {userRole === 'employee' && (
             <Box id="section-metier" scrollMarginTop="140px">
+              <SectionTitle>Mon métier</SectionTitle>
               {isEditing ? (
                 isLoadingData ? (
                   <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
@@ -214,14 +220,16 @@ export function ProfilePage() {
           {/* Section: Mon profil aidant (caregiver) */}
           {userRole === 'caregiver' && (
             <Box id="section-aidant" scrollMarginTop="140px">
+              <SectionTitle>Mon profil aidant</SectionTitle>
               {isEditing ? (
                 <CaregiverSection profileId={profile.id} />
               ) : (
-                <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-                  <Text fontSize="xl" fontWeight="semibold" mb={4}>Mon profil aidant</Text>
-                  <Text color="gray.500" fontSize="sm">
-                    Cliquez sur "Modifier le profil" pour editer vos informations d'aidant.
-                  </Text>
+                <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+                  <Box px={6} py={5}>
+                    <Text color="text.muted" fontSize="sm">
+                      Cliquez sur &quot;Modifier le profil&quot; pour éditer vos informations d&apos;aidant.
+                    </Text>
+                  </Box>
                 </Box>
               )}
             </Box>
@@ -230,6 +238,17 @@ export function ProfilePage() {
         </Stack>
       </Box>
     </DashboardLayout>
+  )
+}
+
+// --- Shared sub-components ---
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <Flex align="center" gap={3} mb={4}>
+      <Text fontSize="md" fontWeight={700}>{children}</Text>
+      <Box flex={1} h="1px" bg="border.default" />
+    </Flex>
   )
 }
 
@@ -256,46 +275,57 @@ function EmployerSituationView({ employer, isLoading }: { employer: Employer | n
   return (
     <Stack gap={4}>
       {/* Adresse */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-        <Text fontSize="xl" fontWeight="semibold" mb={4}>Adresse</Text>
-        <ProfileViewList
-          rows={[
-            { label: 'Rue', value: employer?.address?.street },
-            { label: 'Ville', value: employer?.address?.city },
-            { label: 'Code postal', value: employer?.address?.postalCode },
-          ]}
-        />
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+          <Text fontSize="md" fontWeight={700}>Adresse</Text>
+        </Box>
+        <Box px={6} py={5}>
+          <ProfileViewList
+            rows={[
+              { label: 'Rue', value: employer?.address?.street },
+              { label: 'Ville', value: employer?.address?.city },
+              { label: 'Code postal', value: employer?.address?.postalCode },
+            ]}
+          />
+        </Box>
       </Box>
 
-      {/* Informations complementaires */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-        <Text fontSize="xl" fontWeight="semibold" mb={4}>Informations complementaires</Text>
-        <ProfileViewList
-          rows={[
-            { label: 'Type de handicap', value: handicapLabel },
-            { label: 'Precision', value: employer?.handicapName },
-            { label: 'Besoins specifiques', value: employer?.specificNeeds },
-            { label: 'Numero CESU', value: employer?.cesuNumber },
-          ]}
-        />
+      {/* Informations complémentaires */}
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Flex px={6} py={4} borderBottomWidth="1px" borderColor="border.default" justify="space-between" align="center">
+          <Text fontSize="md" fontWeight={700}>Informations complémentaires</Text>
+        </Flex>
+        <Box px={6} py={5}>
+          <ProfileViewList
+            rows={[
+              { label: 'Type de handicap', value: handicapLabel },
+              { label: 'Précision', value: employer?.handicapName },
+              { label: 'Besoins spécifiques', value: employer?.specificNeeds },
+              { label: 'Numéro CESU', value: employer?.cesuNumber },
+            ]}
+          />
 
-        {/* PCH */}
-        <Box mt={4} p={4} bg="gray.50" borderRadius="md">
-          <Flex justify="space-between" align="center" mb={2}>
-            <Text fontWeight="medium">PCH (Prestation de Compensation du Handicap)</Text>
-            <Badge colorPalette={employer?.pchBeneficiary ? 'green' : 'gray'} size="sm">
-              {employer?.pchBeneficiary ? 'Beneficiaire' : 'Non beneficiaire'}
-            </Badge>
-          </Flex>
-          {employer?.pchBeneficiary && (
-            <ProfileViewList
-              rows={[
-                { label: 'Montant mensuel', value: employer.pchMonthlyAmount ? `${employer.pchMonthlyAmount} EUR` : undefined },
-                { label: 'Heures allouees', value: employer.pchMonthlyHours ? `${employer.pchMonthlyHours}h / mois` : undefined },
-                { label: 'Type dispositif', value: employer.pchType || undefined },
-              ]}
-            />
-          )}
+          {/* PCH */}
+          <Box mt={4} p={4} bg="bg.page" borderRadius="10px" borderWidth="1px" borderColor="border.default">
+            <Flex justify="space-between" align="center" mb={2}>
+              <Text fontWeight={600} fontSize="sm">PCH (Prestation de Compensation du Handicap)</Text>
+              <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full"
+                bg={employer?.pchBeneficiary ? 'success.50' : 'bg.page'}
+                color={employer?.pchBeneficiary ? 'success.700' : 'text.muted'}
+              >
+                {employer?.pchBeneficiary ? 'Bénéficiaire' : 'Non bénéficiaire'}
+              </Box>
+            </Flex>
+            {employer?.pchBeneficiary && (
+              <ProfileViewList
+                rows={[
+                  { label: 'Montant mensuel', value: employer.pchMonthlyAmount ? `${employer.pchMonthlyAmount} €` : undefined },
+                  { label: 'Heures allouées', value: employer.pchMonthlyHours ? `${employer.pchMonthlyHours}h / mois` : undefined },
+                  { label: 'Type dispositif', value: employer.pchType || undefined },
+                ]}
+              />
+            )}
+          </Box>
         </Box>
       </Box>
     </Stack>
@@ -303,8 +333,7 @@ function EmployerSituationView({ employer, isLoading }: { employer: Employer | n
 }
 
 function EmployerSituationEdit({ employer, onSave }: { employer?: Employer; onSave: (data: Partial<Employer>) => Promise<void> }) {
-  // Reuse EmployerSection but without emergency contacts (they're in a separate section)
-  return <EmployerSection employer={employer} onSave={onSave} />
+  return <EmployerSection employer={employer} onSave={onSave} section="situation" />
 }
 
 function EmergencyContactsView({ employer, isLoading }: { employer: Employer | null; isLoading: boolean }) {
@@ -315,44 +344,47 @@ function EmergencyContactsView({ employer, isLoading }: { employer: Employer | n
   const contacts = employer?.emergencyContacts || []
 
   return (
-    <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-      <Text fontSize="xl" fontWeight="semibold" mb={4}>Contacts d'urgence</Text>
-      {contacts.length === 0 ? (
-        <Text color="gray.500" textAlign="center" py={4}>
-          Aucun contact d'urgence enregistre
-        </Text>
-      ) : (
-        <Stack gap={3}>
-          {contacts.map((contact, index) => (
-            <Flex
-              key={index}
-              p={4}
-              bg="gray.50"
-              borderRadius="md"
-              align="center"
-              gap={4}
-            >
-              <Avatar.Root size="sm">
-                <Avatar.Fallback name={contact.name} />
-              </Avatar.Root>
-              <Box flex={1}>
-                <Text fontWeight="medium" fontSize="sm">{contact.name}</Text>
-                <Text fontSize="xs" color="gray.500">{contact.relationship}</Text>
-              </Box>
-              <Text fontSize="sm" color="gray.600">{contact.phone}</Text>
-            </Flex>
-          ))}
-        </Stack>
-      )}
+    <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+      <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+        <Text fontSize="md" fontWeight={700}>Personnes à contacter lors des interventions</Text>
+      </Box>
+      <Box px={6} py={5}>
+        {contacts.length === 0 ? (
+          <Text color="text.muted" textAlign="center" py={4}>
+            Aucun contact d&apos;urgence enregistré
+          </Text>
+        ) : (
+          <Stack gap={3}>
+            {contacts.map((contact, index) => (
+              <Flex
+                key={index}
+                p={4}
+                bg="bg.page"
+                borderRadius="10px"
+                borderWidth="1px"
+                borderColor="border.default"
+                align="center"
+                gap={4}
+              >
+                <Avatar.Root size="sm">
+                  <Avatar.Fallback name={contact.name} bg="brand.500" color="white" />
+                </Avatar.Root>
+                <Box flex={1}>
+                  <Text fontWeight={600} fontSize="sm">{contact.name}</Text>
+                  <Text fontSize="xs" color="text.muted">{contact.relationship}</Text>
+                </Box>
+                <Text fontSize="sm" color="text.muted">{contact.phone}</Text>
+              </Flex>
+            ))}
+          </Stack>
+        )}
+      </Box>
     </Box>
   )
 }
 
 function EmergencyContactsEdit({ employer, onSave }: { employer?: Employer; onSave: (data: Partial<Employer>) => Promise<void> }) {
-  // The EmployerSection already has emergency contacts management
-  // For edit mode, we show just the emergency contacts part from EmployerSection
-  // Since EmployerSection includes everything, we'll reuse it — it handles its own save
-  return <EmployerSection employer={employer} onSave={onSave} />
+  return <EmployerSection employer={employer} onSave={onSave} section="emergency" />
 }
 
 function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; isLoading: boolean }) {
@@ -363,57 +395,69 @@ function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; 
   return (
     <Stack gap={4}>
       {/* Qualifications */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-        <Text fontSize="xl" fontWeight="semibold" mb={4}>Competences</Text>
-        {(employee?.qualifications?.length ?? 0) > 0 ? (
-          <Flex gap={2} flexWrap="wrap">
-            {employee?.qualifications.map((q) => (
-              <Badge key={q} colorPalette="blue" size="sm">{q}</Badge>
-            ))}
-          </Flex>
-        ) : (
-          <Text color="gray.500" fontSize="sm">Aucune qualification renseignee</Text>
-        )}
-
-        {(employee?.languages?.length ?? 0) > 0 && (
-          <Box mt={4}>
-            <Text fontSize="sm" fontWeight="medium" color="gray.600" mb={2}>Langues</Text>
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+          <Text fontSize="md" fontWeight={700}>Compétences</Text>
+        </Box>
+        <Box px={6} py={5}>
+          {(employee?.qualifications?.length ?? 0) > 0 ? (
             <Flex gap={2} flexWrap="wrap">
-              {employee?.languages.map((l) => (
-                <Badge key={l} variant="outline" size="sm">{l}</Badge>
+              {employee?.qualifications.map((q) => (
+                <Box key={q} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="brand.50" color="brand.500">{q}</Box>
               ))}
             </Flex>
-          </Box>
-        )}
+          ) : (
+            <Text color="text.muted" fontSize="sm">Aucune qualification renseignée</Text>
+          )}
+
+          {(employee?.languages?.length ?? 0) > 0 && (
+            <Box mt={4}>
+              <Text fontSize="sm" fontWeight={600} color="text.muted" mb={2}>Langues</Text>
+              <Flex gap={2} flexWrap="wrap">
+                {employee?.languages.map((l) => (
+                  <Box key={l} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" borderWidth="1px" borderColor="border.default" color="text.secondary">{l}</Box>
+                ))}
+              </Flex>
+            </Box>
+          )}
+        </Box>
       </Box>
 
-      {/* Adresse & deplacement */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-        <Text fontSize="xl" fontWeight="semibold" mb={4}>Adresse & deplacement</Text>
-        <ProfileViewList
-          rows={[
-            { label: 'Rue', value: employee?.address?.street },
-            { label: 'Ville', value: employee?.address?.city },
-            { label: 'Code postal', value: employee?.address?.postalCode },
-            { label: 'Distance max', value: employee?.maxDistanceKm ? `${employee.maxDistanceKm} km` : undefined },
-          ]}
-        />
+      {/* Adresse & déplacement */}
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+          <Text fontSize="md" fontWeight={700}>Adresse & déplacement</Text>
+        </Box>
+        <Box px={6} py={5}>
+          <ProfileViewList
+            rows={[
+              { label: 'Rue', value: employee?.address?.street },
+              { label: 'Ville', value: employee?.address?.city },
+              { label: 'Code postal', value: employee?.address?.postalCode },
+              { label: 'Distance max', value: employee?.maxDistanceKm ? `${employee.maxDistanceKm} km` : undefined },
+            ]}
+          />
+        </Box>
       </Box>
 
       {/* Permis */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
-        <Text fontSize="xl" fontWeight="semibold" mb={4}>Permis de conduire</Text>
-        <ProfileViewList
-          rows={[
-            { label: 'Permis', value: employee?.driversLicense?.hasLicense ? 'Oui' : 'Non' },
-            ...(employee?.driversLicense?.hasLicense
-              ? [
-                  { label: 'Type', value: employee.driversLicense.licenseType },
-                  { label: 'Vehicule personnel', value: employee.driversLicense.hasVehicle ? 'Oui' : 'Non' },
-                ]
-              : []),
-          ]}
-        />
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+          <Text fontSize="md" fontWeight={700}>Permis de conduire</Text>
+        </Box>
+        <Box px={6} py={5}>
+          <ProfileViewList
+            rows={[
+              { label: 'Permis', value: employee?.driversLicense?.hasLicense ? 'Oui' : 'Non' },
+              ...(employee?.driversLicense?.hasLicense
+                ? [
+                    { label: 'Type', value: employee.driversLicense.licenseType },
+                    { label: 'Véhicule personnel', value: employee.driversLicense.hasVehicle ? 'Oui' : 'Non' },
+                  ]
+                : []),
+            ]}
+          />
+        </Box>
       </Box>
     </Stack>
   )

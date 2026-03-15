@@ -1,14 +1,18 @@
-import { Box, Grid, GridItem, Text, Stack, Badge, Flex } from '@chakra-ui/react'
+import { useMemo, useRef, useState, useEffect } from 'react'
+import { Box, Flex, Text } from '@chakra-ui/react'
 import { addDays, format, isSameDay, isToday, isWithinInterval } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Shift, UserRole, Absence } from '@/types'
 import {
-  SHIFT_STATUS_COLORS as statusColors,
-  SHIFT_STATUS_LABELS as statusLabels,
-  ABSENCE_STATUS_COLORS as absenceStatusColors,
-  ABSENCE_STATUS_LABELS as absenceStatusLabels,
   ABSENCE_TYPE_LABELS as absenceTypeLabels,
 } from '@/lib/constants/statusMaps'
+
+// ── Config ──
+
+const DEFAULT_START_HOUR = 7
+const DEFAULT_END_HOUR = 20
+
+// ── Types ──
 
 interface WeekViewProps {
   weekStart: Date
@@ -19,20 +23,47 @@ interface WeekViewProps {
   onAbsenceClick?: (absence: Absence) => void
 }
 
+// ── Helpers ──
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
+}
+
+function formatTimeShort(time: string): string {
+  const [h, m] = time.split(':')
+  return `${parseInt(h)}h${m !== '00' ? m : '00'}`
+}
+
+/** Proto shift type → background & border colors */
+const SHIFT_BG: Record<string, { bg: string; border: string }> = {
+  effective: { bg: '#EDF1F5', border: '#3D5166' },
+  presence_day: { bg: '#EFF4DC', border: '#9BB23B' },
+  presence_night: { bg: '#EFF4DC', border: '#9BB23B' },
+  guard_24h: { bg: '#F2EDE5', border: '#5E5038' },
+}
+
+const ABSENCE_BG = { bg: '#FEF2F2', border: '#991B1B' }
+
+const SHIFT_TYPE_SHORT: Record<string, string> = {
+  effective: 'Travail effectif',
+  presence_day: 'Prés. jour',
+  presence_night: 'Prés. nuit',
+  guard_24h: 'Garde 24h',
+}
+
+// ── Composant principal ──
 
 export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftClick, onAbsenceClick }: WeekViewProps) {
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
 
-  // Détecte si une intervention déborde sur le jour suivant (passage minuit ou 24h)
+  // Détecte si une intervention déborde sur le jour suivant (passage minuit)
   const shiftSpansNextDay = (shift: Shift): boolean => {
-    const [startH, startM] = shift.startTime.split(':').map(Number)
-    const [endH, endM] = shift.endTime.split(':').map(Number)
-    return endH * 60 + endM <= startH * 60 + startM
+    return timeToMinutes(shift.endTime) <= timeToMinutes(shift.startTime)
   }
 
   const getShiftsForDay = (date: Date): Array<{ shift: Shift; isContinuation: boolean }> => {
     const entries: Array<{ shift: Shift; isContinuation: boolean }> = []
-
     for (const shift of shifts) {
       const shiftDate = new Date(shift.date)
       if (isSameDay(shiftDate, date)) {
@@ -41,7 +72,6 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
         entries.push({ shift, isContinuation: true })
       }
     }
-
     return entries
   }
 
@@ -49,7 +79,6 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
     return absences.filter((absence) => {
       const start = new Date(absence.startDate)
       const end = new Date(absence.endDate)
-      // Normaliser les dates pour comparer uniquement les jours
       start.setHours(0, 0, 0, 0)
       end.setHours(23, 59, 59, 999)
       const checkDate = new Date(date)
@@ -58,215 +87,284 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
     })
   }
 
+  // Calcule la plage horaire visible selon les shifts de la semaine
+  const { startHour, endHour } = useMemo(() => {
+    let minH = DEFAULT_START_HOUR
+    let maxH = DEFAULT_END_HOUR
+
+    for (const shift of shifts) {
+      const sH = Math.floor(timeToMinutes(shift.startTime) / 60)
+      const eH = Math.ceil(timeToMinutes(shift.endTime) / 60)
+      const spans = shiftSpansNextDay(shift)
+
+      if (!spans) {
+        if (sH < minH) minH = sH
+        if (eH > maxH) maxH = eH
+      } else {
+        // Shift de nuit : la continuation J+1 va de 0h à endTime
+        minH = 0
+        maxH = 24
+      }
+    }
+
+    return { startHour: minH, endHour: Math.min(maxH, 24) }
+  }, [shifts])
+
+  const totalHours = endHour - startHour
+
+  // Mesure la hauteur du body pour calculer pxPerHour
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [bodyH, setBodyH] = useState(0)
+
+  useEffect(() => {
+    const el = bodyRef.current
+    if (!el) return
+    const update = () => setBodyH(el.clientHeight)
+    update()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const pxPerHour = bodyH > 0 ? bodyH / totalHours : 30
+
+  const getBlockStyle = (startTime: string, endTime: string, isContinuation: boolean) => {
+    const startMin = timeToMinutes(startTime)
+    const endMin = timeToMinutes(endTime)
+    const spans = endMin <= startMin
+
+    let topMin: number
+    let durationMin: number
+
+    if (isContinuation) {
+      topMin = 0
+      durationMin = endMin
+    } else if (spans) {
+      topMin = startMin
+      durationMin = 24 * 60 - startMin
+    } else {
+      topMin = startMin
+      durationMin = endMin - startMin
+    }
+
+    const top = ((topMin / 60) - startHour) * pxPerHour + 2
+    const height = (durationMin / 60) * pxPerHour - 4
+
+    return { top: Math.max(top, 0), height: Math.max(height, 24) }
+  }
+
+  // Lignes horaires de fond
+  const hourLines = Array.from({ length: totalHours }, (_, i) => i)
+
+  const isEmployer = userRole === 'employer' || userRole === 'caregiver'
+
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       overflow="hidden"
+      boxShadow="sm"
+      h="100%"
+      display="flex"
+      flexDirection="column"
     >
-      {/* En-têtes des jours */}
-      <Grid templateColumns="repeat(7, 1fr)" borderBottomWidth="1px" borderColor="gray.200">
+      {/* ── En-têtes des jours ── */}
+      <Flex
+        borderBottomWidth="2px"
+        borderColor="border.default"
+        bg="bg.surface"
+        zIndex={10}
+        flexShrink={0}
+      >
         {days.map((day) => {
           const isCurrentDay = isToday(day)
           return (
-            <GridItem
+            <Flex
               key={day.toISOString()}
-              p={3}
-              textAlign="center"
-              bg={isCurrentDay ? 'brand.50' : 'gray.50'}
+              flex={1}
+              direction="column"
+              align="center"
+              py={3}
+              px={2}
               borderRightWidth="1px"
-              borderColor="gray.200"
+              borderColor="border.default"
+              minW="80px"
               _last={{ borderRightWidth: 0 }}
             >
               <Text
-                fontSize="xs"
-                fontWeight="medium"
-                color="gray.500"
+                fontSize="12px"
+                fontWeight="700"
+                color="text.muted"
                 textTransform="uppercase"
+                letterSpacing="0.06em"
               >
                 {format(day, 'EEE', { locale: fr })}
               </Text>
-              <Text
-                fontSize="xl"
-                fontWeight={isCurrentDay ? 'bold' : 'semibold'}
-                color={isCurrentDay ? 'brand.600' : 'gray.800'}
+              <Flex
+                align="center"
+                justify="center"
+                w="36px"
+                h="36px"
+                borderRadius="full"
+                mt="2px"
+                fontFamily="heading"
+                fontSize="18px"
+                fontWeight="800"
+                bg={isCurrentDay ? '#3D5166' : 'transparent'}
+                color={isCurrentDay ? 'white' : 'text.default'}
               >
                 {format(day, 'd')}
-              </Text>
-            </GridItem>
+              </Flex>
+            </Flex>
           )
         })}
-      </Grid>
+      </Flex>
 
-      {/* Contenu des jours */}
-      <Grid templateColumns="repeat(7, 1fr)" minH="400px">
+      {/* ── Corps : colonnes de jours avec grille temporelle ── */}
+      <Flex ref={bodyRef} position="relative" flex={1} minH={0}>
         {days.map((day) => {
           const dayShifts = getShiftsForDay(day)
           const dayAbsences = getAbsencesForDay(day)
           const isCurrentDay = isToday(day)
-          const hasContent = dayShifts.length > 0 || dayAbsences.length > 0
 
           return (
-            <GridItem
+            <Box
               key={day.toISOString()}
-              p={2}
+              flex={1}
+              position="relative"
               borderRightWidth="1px"
-              borderColor="gray.200"
-              bg={isCurrentDay ? 'brand.50' : 'white'}
+              borderColor="border.default"
+              minW="80px"
+              h="100%"
+              bg={isCurrentDay ? 'rgba(78,100,120,0.02)' : 'transparent'}
               _last={{ borderRightWidth: 0 }}
             >
-              <Stack gap={2}>
-                {/* Absences en premier */}
-                {dayAbsences.map((absence) => (
-                  <AbsenceCard
-                    key={absence.id}
-                    absence={absence}
-                    onClick={() => onAbsenceClick?.(absence)}
-                  />
-                ))}
+              {/* Lignes horaires de fond */}
+              {hourLines.map((i) => (
+                <Box
+                  key={i}
+                  position="absolute"
+                  top={`${i * pxPerHour}px`}
+                  left={0}
+                  right={0}
+                  h={`${pxPerHour}px`}
+                  borderBottomWidth="1px"
+                  borderColor="border.default"
+                  opacity={0.5}
+                />
+              ))}
 
-                {/* Shifts */}
-                {dayShifts.map(({ shift, isContinuation }) => (
-                  <ShiftCard
+              {/* Absences (pleine journée → bandeau en haut) */}
+              {dayAbsences.map((absence, idx) => (
+                <Box
+                  key={absence.id}
+                  position="absolute"
+                  left="4px"
+                  right="4px"
+                  top={`${idx * 44}px`}
+                  bg={ABSENCE_BG.bg}
+                  borderRadius="6px"
+                  borderLeftWidth="3px"
+                  borderLeftColor={ABSENCE_BG.border}
+                  px={2}
+                  py="2px"
+                  cursor="pointer"
+                  overflow="hidden"
+                  transition="opacity 0.15s, box-shadow 0.15s"
+                  _hover={{ opacity: 0.85, boxShadow: 'sm' }}
+                  minH="28px"
+                  zIndex={2}
+                  onClick={() => onAbsenceClick?.(absence)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbsenceClick?.(absence) }
+                  }}
+                >
+                  <Text fontSize="11px" fontWeight="700" color="text.default" lineClamp={1}>
+                    {absence.employeeName ?? absenceTypeLabels[absence.absenceType]} — Congé
+                  </Text>
+                  {absence.reason && (
+                    <Text fontSize="11px" color="text.muted" lineClamp={1}>
+                      {absence.reason}
+                    </Text>
+                  )}
+                </Box>
+              ))}
+
+              {/* Shift blocks positionnés en absolu */}
+              {dayShifts.map(({ shift, isContinuation }) => {
+                const style = getBlockStyle(shift.startTime, shift.endTime, isContinuation)
+                const colors = SHIFT_BG[shift.shiftType] ?? SHIFT_BG.effective
+
+                return (
+                  <Box
                     key={`${shift.id}${isContinuation ? '-cont' : ''}`}
-                    shift={shift}
-                    isContinuation={isContinuation}
-                    userRole={userRole}
+                    position="absolute"
+                    left="4px"
+                    right="4px"
+                    top={`${style.top}px`}
+                    h={`${style.height}px`}
+                    bg={colors.bg}
+                    borderRadius="6px"
+                    borderLeftWidth="3px"
+                    borderLeftColor={colors.border}
+                    borderLeftStyle={isContinuation ? 'dashed' : 'solid'}
+                    px={2}
+                    py="2px"
+                    cursor="pointer"
+                    overflow="hidden"
+                    transition="opacity 0.15s, box-shadow 0.15s"
+                    _hover={{ opacity: 0.85, boxShadow: 'sm' }}
+                    minH="28px"
+                    zIndex={2}
                     onClick={() => onShiftClick?.(shift)}
-                  />
-                ))}
-
-                {!hasContent && (
-                  <Text
-                    fontSize="xs"
-                    color="gray.400"
-                    textAlign="center"
-                    py={4}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onShiftClick?.(shift) }
+                    }}
                   >
+                    {isEmployer && shift.employeeName && !isContinuation && (
+                      <Text fontSize="11px" fontWeight="700" color="text.default" lineClamp={1}>
+                        {shift.employeeName}
+                      </Text>
+                    )}
+                    {!isContinuation && (
+                      <Text fontSize="10px" fontWeight="600" color="text.muted" lineClamp={1}>
+                        {SHIFT_TYPE_SHORT[shift.shiftType] ?? shift.shiftType}
+                      </Text>
+                    )}
+                    <Text fontSize="11px" opacity={0.75} lineClamp={1}>
+                      {isContinuation
+                        ? `...${formatTimeShort(shift.endTime)}`
+                        : `${formatTimeShort(shift.startTime)} – ${formatTimeShort(shift.endTime)}`}
+                    </Text>
+                  </Box>
+                )
+              })}
+
+              {/* Empty state discret */}
+              {dayShifts.length === 0 && dayAbsences.length === 0 && (
+                <Flex
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  zIndex={1}
+                >
+                  <Text fontSize="xs" color="text.muted" opacity={0.5}>
                     Aucune intervention
                   </Text>
-                )}
-              </Stack>
-            </GridItem>
+                </Flex>
+              )}
+            </Box>
           )
         })}
-      </Grid>
-    </Box>
-  )
-}
-
-interface ShiftCardProps {
-  shift: Shift
-  isContinuation?: boolean
-  userRole: UserRole
-  onClick?: () => void
-}
-
-function ShiftCard({ shift, isContinuation, userRole, onClick }: ShiftCardProps) {
-  const isEmployer = userRole === 'employer' || userRole === 'caregiver'
-  return (
-    <Box
-      p={2}
-      bg="white"
-      borderRadius="md"
-      borderLeftWidth="3px"
-      borderLeftColor={`${statusColors[shift.status]}.500`}
-      borderLeftStyle={isContinuation ? 'dashed' : 'solid'}
-      boxShadow="sm"
-      cursor="pointer"
-      transition="all 0.2s"
-      _hover={{
-        boxShadow: 'md',
-        transform: 'translateY(-1px)',
-      }}
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onClick?.()
-        }
-      }}
-    >
-      <Flex justify="space-between" align="start" mb={1}>
-        <Text fontSize="sm" fontWeight="semibold" color="gray.800">
-          {isContinuation ? `...${shift.endTime}` : `${shift.startTime} - ${shift.endTime}`}
-        </Text>
-        <Badge
-          size="sm"
-          colorPalette={isContinuation ? 'purple' : statusColors[shift.status]}
-          fontSize="2xs"
-        >
-          {isContinuation ? 'Suite' : statusLabels[shift.status]}
-        </Badge>
       </Flex>
-
-      {isEmployer && shift.employeeName && !isContinuation && (
-        <Text fontSize="xs" fontWeight="medium" color="blue.600" lineClamp={1}>
-          {shift.employeeName}
-        </Text>
-      )}
-
-      {!isContinuation && shift.tasks.length > 0 && (
-        <Text fontSize="xs" color="gray.600" lineClamp={2}>
-          {shift.tasks.slice(0, 2).join(', ')}
-          {shift.tasks.length > 2 && ` +${shift.tasks.length - 2}`}
-        </Text>
-      )}
-    </Box>
-  )
-}
-
-interface AbsenceCardProps {
-  absence: Absence
-  onClick?: () => void
-}
-
-function AbsenceCard({ absence, onClick }: AbsenceCardProps) {
-  return (
-    <Box
-      p={2}
-      bg={`${absenceStatusColors[absence.status]}.50`}
-      borderRadius="md"
-      borderLeftWidth="3px"
-      borderLeftColor={`${absenceStatusColors[absence.status]}.500`}
-      cursor="pointer"
-      transition="all 0.2s"
-      _hover={{
-        bg: `${absenceStatusColors[absence.status]}.100`,
-        transform: 'translateY(-1px)',
-      }}
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onClick?.()
-        }
-      }}
-    >
-      <Flex justify="space-between" align="start" mb={1}>
-        <Text fontSize="sm" fontWeight="semibold" color={`${absenceStatusColors[absence.status]}.700`}>
-          {absenceTypeLabels[absence.absenceType]}
-        </Text>
-        <Badge
-          size="sm"
-          colorPalette={absenceStatusColors[absence.status]}
-          fontSize="2xs"
-        >
-          {absenceStatusLabels[absence.status]}
-        </Badge>
-      </Flex>
-
-      {absence.reason && (
-        <Text fontSize="xs" color="gray.600" lineClamp={1}>
-          {absence.reason}
-        </Text>
-      )}
     </Box>
   )
 }

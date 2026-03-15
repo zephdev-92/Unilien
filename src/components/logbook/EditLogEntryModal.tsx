@@ -106,7 +106,7 @@ export function EditLogEntryModal({ entry, onClose, onSuccess }: EditLogEntryMod
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
+            bg="bg.surface"
             borderRadius="xl"
             maxW="500px"
             w="90vw"
@@ -162,8 +162,8 @@ export function EditLogEntryModal({ entry, onClose, onSuccess }: EditLogEntryMod
                       {...register('content')}
                       css={{
                         '&:focus': {
-                          borderColor: 'var(--chakra-colors-blue-500)',
-                          boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.3)',
+                          borderColor: 'var(--chakra-colors-brand-500)',
+                          boxShadow: '0 0 0 3px rgba(78, 100, 120, 0.15)',
                         },
                       }}
                     />
@@ -185,7 +185,7 @@ export function EditLogEntryModal({ entry, onClose, onSuccess }: EditLogEntryMod
                   </Box>
 
                   {submitError && (
-                    <Box p={4} bg="red.50" borderRadius="md">
+                    <Box p={4} bg="red.50" borderRadius="10px">
                       <Text color="red.700">{submitError}</Text>
                     </Box>
                   )}
@@ -205,7 +205,7 @@ export function EditLogEntryModal({ entry, onClose, onSuccess }: EditLogEntryMod
                 <AccessibleButton
                   type="submit"
                   form="edit-log-entry-form"
-                  colorPalette="blue"
+                  colorPalette="brand"
                   loading={isSubmitting}
                   loadingText="Enregistrement..."
                 >

@@ -153,7 +153,7 @@ export function VoiceInput({
       <Box
         p={3}
         bg="orange.50"
-        borderRadius="md"
+        borderRadius="10px"
         borderWidth="1px"
         borderColor="orange.200"
       >
@@ -233,13 +233,13 @@ export function VoiceInput({
       {/* Transcript preview */}
       {showPreview && isListening && transcript && (
         <Box
-          bg="gray.100"
-          borderRadius="md"
+          bg="bg.surface.hover"
+          borderRadius="10px"
           p={3}
           maxW="300px"
           w="full"
         >
-          <Text fontSize="sm" color="gray.700" fontStyle="italic">
+          <Text fontSize="sm" color="text.secondary" fontStyle="italic">
             "{transcript}"
           </Text>
         </Box>
@@ -249,7 +249,7 @@ export function VoiceInput({
       {error && (
         <Box
           bg="red.50"
-          borderRadius="md"
+          borderRadius="10px"
           p={3}
           maxW="300px"
           w="full"

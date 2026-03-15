@@ -83,33 +83,8 @@ describe('WeekView', () => {
     it('affiche un shift dans le bon jour (lundi)', () => {
       const shift = makeShiftOnDay(0, { startTime: '08:00', endTime: '16:00' })
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('08:00 - 16:00')).toBeInTheDocument()
-    })
-
-    it('affiche le badge de statut "Planifié"', () => {
-      const shift = makeShiftOnDay(0, { status: 'planned' })
-      renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('Planifié')).toBeInTheDocument()
-    })
-
-    it('affiche le badge "Terminé" pour un shift completed', () => {
-      const shift = makeShiftOnDay(0, { status: 'completed' })
-      renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('Terminé')).toBeInTheDocument()
-    })
-
-    it('affiche le badge "Annulé" pour un shift cancelled', () => {
-      const shift = makeShiftOnDay(0, { status: 'cancelled' })
-      renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('Annulé')).toBeInTheDocument()
-    })
-
-    it('affiche les tâches (max 2)', () => {
-      const shift = makeShiftOnDay(1, {
-        tasks: ['Aide au lever', 'Préparation repas', 'Toilette'],
-      })
-      renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText(/aide au lever, préparation repas \+1/i)).toBeInTheDocument()
+      // formatTimeShort: "8h00 – 16h00"
+      expect(screen.getByText(/8h00\s*[–-]\s*16h00/)).toBeInTheDocument()
     })
 
     it('réduit le texte "Aucune intervention" aux jours avec shift', () => {
@@ -126,46 +101,34 @@ describe('WeekView', () => {
       // Shift de nuit : 22:00 → 06:00 (passe minuit)
       const shift = makeShiftOnDay(0, { startTime: '22:00', endTime: '06:00' })
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('22:00 - 06:00')).toBeInTheDocument()
+      expect(screen.getByText(/22h00\s*[–-]\s*6h00/)).toBeInTheDocument()
     })
 
-    it('affiche "Suite" et "...HH:MM" sur le jour suivant', () => {
+    it('affiche "...HH:MM" sur le jour suivant pour un shift passant minuit', () => {
       const shift = makeShiftOnDay(0, { startTime: '22:00', endTime: '06:00' })
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('...06:00')).toBeInTheDocument()
-      expect(screen.getByText('Suite')).toBeInTheDocument()
+      expect(screen.getByText(/\.\.\.6h00/)).toBeInTheDocument()
     })
 
     it('ne crée pas de continuation pour un shift normal (fin > début)', () => {
       const shift = makeShiftOnDay(0, { startTime: '09:00', endTime: '17:00' })
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.queryByText('Suite')).not.toBeInTheDocument()
+      expect(screen.queryByText(/\.\.\./)).not.toBeInTheDocument()
     })
 
     it('crée une continuation pour un shift exactement 24h (09:00→09:00)', () => {
       const shift = makeShiftOnDay(0, { startTime: '09:00', endTime: '09:00' })
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      expect(screen.getByText('Suite')).toBeInTheDocument()
+      expect(screen.getByText(/\.\.\.9h00/)).toBeInTheDocument()
     })
   })
 
   describe('Absences', () => {
-    it('affiche le type d\'absence (Maladie)', () => {
+    it('affiche le type d\'absence suivi de "Congé"', () => {
       const absence = makeAbsence(1, { absenceType: 'sick' })
       renderWithProviders(<WeekView {...defaultProps} absences={[absence]} />)
-      expect(screen.getByText('Maladie')).toBeInTheDocument()
-    })
-
-    it('affiche le badge de statut de l\'absence (En attente)', () => {
-      const absence = makeAbsence(1, { status: 'pending' })
-      renderWithProviders(<WeekView {...defaultProps} absences={[absence]} />)
-      expect(screen.getByText('En attente')).toBeInTheDocument()
-    })
-
-    it('affiche "Approuvée" pour une absence approved', () => {
-      const absence = makeAbsence(1, { status: 'approved' })
-      renderWithProviders(<WeekView {...defaultProps} absences={[absence]} />)
-      expect(screen.getByText('Approuvée')).toBeInTheDocument()
+      // Le composant affiche "Maladie — Congé"
+      expect(screen.getByText(/Maladie/)).toBeInTheDocument()
     })
 
     it('affiche la raison si présente', () => {
@@ -181,7 +144,7 @@ describe('WeekView', () => {
       })
       renderWithProviders(<WeekView {...defaultProps} absences={[absence]} />)
       // "Maladie" apparaît 3 fois (mardi, mercredi, jeudi)
-      const labels = screen.getAllByText('Maladie')
+      const labels = screen.getAllByText(/Maladie/)
       expect(labels).toHaveLength(3)
     })
   })
@@ -193,7 +156,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} shifts={[shift]} onShiftClick={onShiftClick} />
       )
-      const card = screen.getByText('09:00 - 17:00').closest('[role="button"]')!
+      const card = screen.getByText(/9h00\s*[–-]\s*17h00/).closest('[role="button"]')!
       fireEvent.click(card)
       expect(onShiftClick).toHaveBeenCalledWith(shift)
     })
@@ -204,7 +167,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} shifts={[shift]} onShiftClick={onShiftClick} />
       )
-      const card = screen.getByText('09:00 - 17:00').closest('[role="button"]')!
+      const card = screen.getByText(/9h00\s*[–-]\s*17h00/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: 'Enter' })
       expect(onShiftClick).toHaveBeenCalledWith(shift)
     })
@@ -215,7 +178,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} shifts={[shift]} onShiftClick={onShiftClick} />
       )
-      const card = screen.getByText('09:00 - 17:00').closest('[role="button"]')!
+      const card = screen.getByText(/9h00\s*[–-]\s*17h00/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: ' ' })
       expect(onShiftClick).toHaveBeenCalledWith(shift)
     })
@@ -226,7 +189,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} shifts={[shift]} onShiftClick={onShiftClick} />
       )
-      const card = screen.getByText('09:00 - 17:00').closest('[role="button"]')!
+      const card = screen.getByText(/9h00\s*[–-]\s*17h00/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: 'Escape' })
       expect(onShiftClick).not.toHaveBeenCalled()
     })
@@ -237,7 +200,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      const card = screen.getByText(/Maladie/).closest('[role="button"]')!
       fireEvent.click(card)
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -248,7 +211,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      const card = screen.getByText(/Maladie/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: 'Enter' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -259,7 +222,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      const card = screen.getByText(/Maladie/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: ' ' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -267,7 +230,7 @@ describe('WeekView', () => {
     it("ne lève pas d'erreur si onShiftClick est absent", () => {
       const shift = makeShiftOnDay(0)
       renderWithProviders(<WeekView {...defaultProps} shifts={[shift]} />)
-      const card = screen.getByText('09:00 - 17:00').closest('[role="button"]')!
+      const card = screen.getByText(/9h00\s*[–-]\s*17h00/).closest('[role="button"]')!
       expect(() => fireEvent.click(card)).not.toThrow()
     })
   })

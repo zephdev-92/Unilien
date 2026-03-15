@@ -172,7 +172,7 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
     return (
       <Box
         bg="orange.50"
-        borderRadius="lg"
+        borderRadius="12px"
         borderWidth="1px"
         borderColor="orange.200"
         p={6}
@@ -192,15 +192,15 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
     <Stack gap={6}>
       {/* Info employeur associé */}
       <Box
-        bg="blue.50"
-        borderRadius="lg"
+        bg="brand.50"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="blue.200"
+        borderColor="brand.200"
         p={4}
       >
         <Flex align="center" gap={2}>
-          <Badge colorPalette="blue">Aidant actif</Badge>
-          <Text fontSize="sm" color="blue.700">
+          <Badge colorPalette="brand">Aidant actif</Badge>
+          <Text fontSize="sm" color="brand.700">
             Vous êtes lié à un employeur
           </Text>
         </Flex>
@@ -208,16 +208,16 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
 
       {/* Relation avec l'employeur */}
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Text fontSize="xl" fontWeight="semibold" mb={2}>
           Relation avec l'employeur
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={4}>
+        <Text fontSize="sm" color="text.muted" mb={4}>
           Décrivez votre lien avec la personne que vous aidez
         </Text>
 
@@ -241,16 +241,16 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
 
       {/* Statut juridique */}
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Text fontSize="xl" fontWeight="semibold" mb={2}>
           Statut juridique
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={4}>
+        <Text fontSize="sm" color="text.muted" mb={4}>
           Indiquez si vous avez un pouvoir légal sur la personne aidée
         </Text>
 
@@ -264,16 +264,16 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
 
       {/* Coordonnées */}
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Text fontSize="xl" fontWeight="semibold" mb={2}>
           Coordonnées
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={4}>
+        <Text fontSize="sm" color="text.muted" mb={4}>
           Votre adresse si différente de celle de l'employeur
         </Text>
 
@@ -313,16 +313,16 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
 
       {/* Disponibilités */}
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Text fontSize="xl" fontWeight="semibold" mb={2}>
           Disponibilités
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={4}>
+        <Text fontSize="sm" color="text.muted" mb={4}>
           Indiquez vos disponibilités générales pour aider
         </Text>
 
@@ -336,10 +336,10 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
 
           <Box
             p={4}
-            bg="gray.50"
-            borderRadius="md"
+            bg="bg.page"
+            borderRadius="10px"
             borderWidth="1px"
-            borderColor="gray.200"
+            borderColor="border.default"
           >
             <Checkbox.Root
               checked={canReplaceEmployer}
@@ -352,7 +352,7 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
                   <Text fontWeight="medium">
                     Je peux agir si l'employeur est indisponible
                   </Text>
-                  <Text fontSize="sm" color="gray.600">
+                  <Text fontSize="sm" color="text.muted">
                     En cas d'urgence ou d'indisponibilité de l'employeur, vous pourrez
                     être contacté pour prendre des décisions
                   </Text>
@@ -376,7 +376,7 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
           </Text>
         )}
         <AccessibleButton
-          colorPalette="blue"
+          colorPalette="brand"
           loading={isLoading}
           loadingText="Enregistrement..."
           onClick={handleSubmit(onSubmit)}

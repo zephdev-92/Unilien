@@ -4,11 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Box,
+  Flex,
   Stack,
   Heading,
   Text,
   Link,
   Alert,
+  Image,
 } from '@chakra-ui/react'
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { AccessibleInput, AccessibleButton, PasswordToggleButton } from '@/components/ui'
@@ -50,34 +52,57 @@ export function LoginForm() {
   return (
     <Box
       as="main"
-      maxW="md"
-      mx="auto"
-      mt={8}
-      p={8}
-      borderWidth="1px"
-      borderRadius="lg"
-      boxShadow="lg"
-      bg="white"
+      maxW="440px"
+      w="full"
+      p={10}
+      pb={8}
+      borderRadius="xl"
+      boxShadow="0 2px 8px rgba(78,100,120,.09)"
+      bg="bg.surface"
     >
-      {/* Skip link pour accessibilité */}
       <a href="#login-form" className="skip-link">
         Aller au formulaire de connexion
       </a>
 
-      <Stack gap={6} align="stretch">
-        {/* En-tête */}
-        <Box textAlign="center">
-          <Heading as="h1" size="xl" mb={2}>
-            Connexion
-          </Heading>
-          <Text color="gray.600" fontSize="md">
-            Accédez à votre espace Unilien
-          </Text>
+      <Stack gap={0} align="stretch">
+        {/* Logo */}
+        <Box mb={8}>
+          <Link asChild>
+            <RouterLink to="/" aria-label="Unilien — Retour à l'accueil">
+              <Image src="/Logo_Unilien.svg" alt="Unilien" h="40px" />
+            </RouterLink>
+          </Link>
         </Box>
+
+        {/* Badge sécurité */}
+        <Flex
+          align="center"
+          gap={2}
+          bg="accent.subtle"
+          borderRadius="md"
+          px={3}
+          py="10px"
+          mb={5}
+        >
+          <Box color="accent.fg" flexShrink={0}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={18} height={18} aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </Box>
+          <Text fontSize="sm" fontWeight="600" color="accent.fg">
+            Accès sécurisé — Convention IDCC 3239
+          </Text>
+        </Flex>
+
+        {/* En-tête */}
+        <Heading as="h1" fontFamily="heading" fontSize="2xl" fontWeight="800" mb={1} color="text.default">
+          Connexion
+        </Heading>
+        <Text color="text.muted" fontSize="sm" mb={6}>
+          Bienvenue. Entrez vos identifiants pour accéder à votre espace.
+        </Text>
 
         {/* Message post-inscription */}
         {justRegistered && (
-          <Alert.Root status="info" borderRadius="md">
+          <Alert.Root status="info" borderRadius="md" mb={4}>
             <Alert.Indicator />
             <Alert.Description>
               Votre compte a bien été créé. Veuillez vérifier votre boîte mail
@@ -88,7 +113,7 @@ export function LoginForm() {
 
         {/* Message d'erreur */}
         {error && (
-          <Alert.Root status="error" borderRadius="md">
+          <Alert.Root status="error" borderRadius="md" mb={4}>
             <Alert.Indicator />
             <Alert.Description>{error}</Alert.Description>
           </Alert.Root>
@@ -100,67 +125,84 @@ export function LoginForm() {
           id="login-form"
           onSubmit={handleSubmit(onSubmit)}
         >
-          <Stack gap={5}>
+          <Stack gap={4}>
             {/* Email */}
             <AccessibleInput
-              label="Adresse email"
+              label="Adresse e-mail"
               type="email"
               autoComplete="email"
-              placeholder="votre@email.fr"
+              placeholder="marie@exemple.fr"
+              helperText="L'adresse utilisée à l'inscription."
               error={errors.email?.message}
               required
               {...register('email')}
             />
 
-            {/* Mot de passe */}
-            <AccessibleInput
-              label="Mot de passe"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              placeholder="Votre mot de passe"
-              error={errors.password?.message}
-              required
-              rightElement={
-                <PasswordToggleButton
-                  visible={showPassword}
-                  onClick={() => setShowPassword(!showPassword)}
-                />
-              }
-              {...register('password')}
-            />
-
-            {/* Lien mot de passe oublié */}
-            <Box alignSelf="flex-end">
-              <Link
-                asChild
-                color="blue.500"
-                fontSize="sm"
-              >
-                <RouterLink to="/mot-de-passe-oublie">
-                  Mot de passe oublié ?
-                </RouterLink>
-              </Link>
+            {/* Mot de passe + lien oublié */}
+            <Box w="100%">
+              <Flex justify="space-between" align="center" mb="6px">
+                <Text as="label" fontSize="sm" fontWeight="600" color="text.default">
+                  Mot de passe <Text as="span" color="red.500" aria-label="champ obligatoire">*</Text>
+                </Text>
+                <Link
+                  asChild
+                  color="brand.500"
+                  fontSize="xs"
+                  fontWeight="600"
+                >
+                  <RouterLink to="/mot-de-passe-oublie">
+                    Mot de passe oublié ?
+                  </RouterLink>
+                </Link>
+              </Flex>
+              <AccessibleInput
+                label="Mot de passe"
+                hideLabel
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="••••••••••••"
+                error={errors.password?.message}
+                rightElement={
+                  <PasswordToggleButton
+                    visible={showPassword}
+                    onClick={() => setShowPassword(!showPassword)}
+                  />
+                }
+                {...register('password')}
+              />
             </Box>
 
             {/* Bouton de connexion */}
             <AccessibleButton
               type="submit"
-              colorPalette="blue"
+              bg="brand.500"
+              color="white"
+              _hover={{ bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
+              _active={{ transform: 'translateY(0)' }}
               width="full"
               loading={isLoading}
               loadingText="Connexion en cours..."
+              py="13px"
+              mt={2}
+              boxShadow="sm"
+              fontFamily="heading"
+              fontWeight="700"
+              fontSize="sm"
             >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={15} height={15} aria-hidden="true" style={{ flexShrink: 0 }}>
+                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+              </svg>
               Se connecter
             </AccessibleButton>
           </Stack>
         </Box>
 
         {/* Lien inscription */}
-        <Text textAlign="center" fontSize="md">
+        <Text textAlign="center" fontSize="sm" color="text.muted" mt={5}>
           Pas encore de compte ?{' '}
-          <Link asChild color="blue.500" fontWeight="medium">
+          <Link asChild color="brand.500" fontWeight="700" textDecoration="none" _hover={{ textDecoration: 'underline' }}>
             <RouterLink to="/inscription">
-              Créer un compte
+              Créer un compte gratuit
             </RouterLink>
           </Link>
         </Text>

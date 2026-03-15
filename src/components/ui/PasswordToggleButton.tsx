@@ -52,6 +52,9 @@ export function PasswordToggleButton({ visible, onClick }: PasswordToggleButtonP
       variant="ghost"
       size="sm"
       onClick={onClick}
+      color="brand.500"
+      borderRadius="10px"
+      _hover={{ bg: 'brand.50' }}
     >
       {visible ? <EyeOffIcon /> : <EyeIcon />}
     </IconButton>

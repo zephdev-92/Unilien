@@ -104,7 +104,7 @@ export function LogEntryCard({
           boxShadow="sm"
           flexShrink={0}
         />
-        <Box w="2px" flex={1} bg="gray.200" mt={1} />
+        <Box w="2px" flex={1} bg="border.default" mt={1} />
       </Flex>
 
       {/* Card */}
@@ -112,10 +112,10 @@ export function LogEntryCard({
         flex={1}
         p={4}
         mb={2}
-        bg={entry.importance === 'urgent' ? 'red.50' : isUnread ? 'blue.50' : 'white'}
-        borderRadius="lg"
+        bg={entry.importance === 'urgent' ? 'danger.50' : isUnread ? 'brand.50' : 'bg.surface'}
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor={entry.importance === 'urgent' ? 'red.200' : isUnread ? 'blue.200' : 'gray.200'}
+        borderColor={entry.importance === 'urgent' ? 'danger.100' : isUnread ? 'brand.100' : 'border.default'}
         onClick={handleClick}
         cursor={isUnread ? 'pointer' : 'default'}
         transition="all 0.2s"
@@ -135,12 +135,12 @@ export function LogEntryCard({
               </Badge>
             )}
             {isUnread && (
-              <Badge colorPalette="blue" size="sm" variant="outline">
+              <Badge colorPalette="brand" size="sm" variant="outline">
                 Non lu
               </Badge>
             )}
           </Flex>
-          <Text fontSize="xs" color="gray.500" whiteSpace="nowrap" ml={2}>
+          <Text fontSize="xs" color="text.muted" whiteSpace="nowrap" ml={2}>
             {formatTimeAgo(entry.createdAt)}
           </Text>
         </Flex>
@@ -151,7 +151,7 @@ export function LogEntryCard({
             p={3}
             mb={3}
             bg={entry.type === 'incident' ? 'red.100' : 'orange.100'}
-            borderRadius="md"
+            borderRadius="10px"
             borderLeftWidth="3px"
             borderLeftColor={entry.type === 'incident' ? 'red.500' : 'orange.500'}
           >
@@ -162,7 +162,7 @@ export function LogEntryCard({
         )}
 
         {/* Content */}
-        <Text fontSize="sm" color="gray.700" whiteSpace="pre-wrap">
+        <Text fontSize="sm" color="text.secondary" whiteSpace="pre-wrap">
           {displayContent}
         </Text>
 
@@ -183,16 +183,16 @@ export function LogEntryCard({
         )}
 
         {/* Footer: Author avatar + name + Actions */}
-        <Flex justify="space-between" align="center" mt={3} pt={3} borderTopWidth="1px" borderTopColor="gray.100">
+        <Flex justify="space-between" align="center" mt={3} pt={3} borderTopWidth="1px" borderTopColor="border.default">
           <Flex align="center" gap={2}>
             <Avatar.Root size="xs">
               <Avatar.Fallback name={authorName} />
             </Avatar.Root>
             <Box>
-              <Text fontSize="xs" fontWeight="medium" color="gray.700">
+              <Text fontSize="xs" fontWeight="medium" color="text.secondary">
                 {authorName}
               </Text>
-              <Text fontSize="xs" color="gray.400">
+              <Text fontSize="xs" color="text.muted">
                 {authorRoleLabels[entry.authorRole]}
               </Text>
             </Box>

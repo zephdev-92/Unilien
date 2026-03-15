@@ -1,97 +1,34 @@
 import { useMemo } from 'react'
 import { Box, SimpleGrid, Text, Flex } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
+import { NavIcon } from '@/components/ui'
 import type { UserRole, CaregiverPermissions } from '@/types'
 
 interface QuickAction {
   label: string
   icon: string
   href: string
-  description: string
   permissionKey?: keyof CaregiverPermissions
 }
 
 const actionsByRole: Record<UserRole, QuickAction[]> = {
   employer: [
-    {
-      label: 'Nouvelle note',
-      icon: '✏️',
-      href: '/logbook/new',
-      description: 'Ajouter une entrée au cahier',
-    },
-    {
-      label: 'Voir planning',
-      icon: '📅',
-      href: '/planning',
-      description: 'Consulter les interventions',
-    },
-    {
-      label: 'Mes auxiliaires',
-      icon: '👥',
-      href: '/equipe',
-      description: 'Gérer mon équipe',
-    },
-    {
-      label: 'Documents',
-      icon: '📄',
-      href: '/documents',
-      description: 'Export CESU/PAJEMPLOI',
-    },
+    { label: 'Intervention', icon: 'plus', href: '/planning' },
+    { label: 'Employé', icon: 'user-plus', href: '/equipe' },
+    { label: 'Bulletin', icon: 'monitor', href: '/documents' },
+    { label: 'Exporter', icon: 'download', href: '/documents' },
   ],
   employee: [
-    {
-      label: 'Pointer',
-      icon: '⏱️',
-      href: '/pointage',
-      description: 'Début/fin d\'intervention',
-    },
-    {
-      label: 'Nouvelle note',
-      icon: '✏️',
-      href: '/logbook/new',
-      description: 'Ajouter au cahier de liaison',
-    },
-    {
-      label: 'Mon planning',
-      icon: '📅',
-      href: '/planning',
-      description: 'Voir mes interventions',
-    },
-    {
-      label: 'Déclarer absence',
-      icon: '🏥',
-      href: '/planning?action=absence',
-      description: 'Signaler une indisponibilité',
-    },
+    { label: 'Pointer', icon: 'clock', href: '/suivi-des-heures' },
+    { label: 'Planning', icon: 'calendar', href: '/planning' },
+    { label: 'Cahier', icon: 'book', href: '/logbook/new' },
+    { label: 'Absence', icon: 'calendar', href: '/planning?action=absence' },
   ],
   caregiver: [
-    {
-      label: 'Cahier de liaison',
-      icon: '📖',
-      href: '/cahier-de-liaison',
-      description: 'Lire les dernières notes',
-      permissionKey: 'canViewLiaison',
-    },
-    {
-      label: 'Planning',
-      icon: '📅',
-      href: '/planning',
-      description: 'Voir les interventions',
-      permissionKey: 'canViewPlanning',
-    },
-    {
-      label: 'Ajouter une note',
-      icon: '✏️',
-      href: '/logbook/new',
-      description: 'Écrire dans le cahier',
-      permissionKey: 'canWriteLiaison',
-    },
-    {
-      label: 'Mon profil',
-      icon: '👤',
-      href: '/profile',
-      description: 'Mes informations',
-    },
+    { label: 'Cahier', icon: 'book', href: '/cahier-de-liaison', permissionKey: 'canViewLiaison' },
+    { label: 'Planning', icon: 'calendar', href: '/planning', permissionKey: 'canViewPlanning' },
+    { label: 'Note', icon: 'book', href: '/logbook/new', permissionKey: 'canWriteLiaison' },
+    { label: 'Profil', icon: 'user', href: '/profile' },
   ],
 }
 
@@ -122,58 +59,59 @@ export function QuickActionsWidget({ userRole, permissions }: QuickActionsWidget
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
-      p={6}
+      borderColor="border.default"
       boxShadow="sm"
+      overflow="hidden"
     >
-      <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={4}>
-        Actions rapides
-      </Text>
+      {/* card-header */}
+      <Box px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+        <Text fontSize="15px" fontWeight="700" color="text.default">
+          Actions rapides
+        </Text>
+      </Box>
 
-      <SimpleGrid columns={{ base: 2, md: 4 }} gap={3}>
+      {/* card-body — grid 2 colonnes */}
+      <SimpleGrid columns={2} gap={2} p={4}>
         {actions.map((action) => (
-          <RouterLink key={action.href} to={action.href}>
-            <Flex
-              direction="column"
-              align="center"
-              justify="center"
-              p={4}
-              bg="gray.50"
-              borderRadius="lg"
-              minH="100px"
-              textAlign="center"
-              transition="all 0.2s"
-              _hover={{
-                bg: 'brand.50',
-                transform: 'translateY(-2px)',
-                boxShadow: 'sm',
-              }}
-              _focusVisible={{
-                outline: '2px solid',
-                outlineColor: 'brand.500',
-                outlineOffset: '2px',
-              }}
-              css={{
-                '@media (prefers-reduced-motion: reduce)': {
-                  transition: 'none',
-                  transform: 'none !important',
-                },
-              }}
-            >
-              <Text fontSize="2xl" mb={2} aria-hidden="true">
-                {action.icon}
-              </Text>
-              <Text fontWeight="medium" fontSize="sm" color="gray.800">
-                {action.label}
-              </Text>
-              <Text fontSize="xs" color="gray.500" mt={1}>
-                {action.description}
-              </Text>
-            </Flex>
-          </RouterLink>
+          <Flex
+            key={action.href}
+            as={RouterLink}
+            to={action.href}
+            direction="column"
+            align="center"
+            justify="center"
+            h="64px"
+            gap="5px"
+            borderRadius="10px"
+            borderWidth="1.5px"
+            borderColor="border.default"
+            bg="bg.surface"
+            color="text.secondary"
+            fontSize="sm"
+            fontWeight="500"
+            textDecoration="none"
+            transition="all 0.15s ease"
+            _hover={{
+              bg: 'bg.page',
+              color: 'text.default',
+            }}
+            _focusVisible={{
+              outline: '2px solid',
+              outlineColor: 'brand.500',
+              outlineOffset: '2px',
+            }}
+            css={{
+              '@media (prefers-reduced-motion: reduce)': {
+                transition: 'none',
+              },
+            }}
+          >
+            <NavIcon name={action.icon} size={18} />
+            {action.label}
+          </Flex>
         ))}
       </SimpleGrid>
     </Box>

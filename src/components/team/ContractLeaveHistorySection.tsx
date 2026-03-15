@@ -26,16 +26,16 @@ export function ContractLeaveHistorySection({
 }: ContractLeaveHistorySectionProps) {
   return (
     <>
-      <Separator />
-      <Box p={4} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
-        <Text fontWeight="semibold" mb={1} color="blue.700">
+      <Separator borderColor="border.default" />
+      <Box p={4} bg="bg.page" borderRadius="10px" borderWidth="1px" borderColor="border.default">
+        <Text fontWeight={600} mb={1} color="brand.500">
           Reprise de l'historique congés
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={1}>
+        <Text fontSize="sm" color="text.muted" mb={1}>
           La date de début est antérieure à aujourd'hui. Renseignez l'historique pour un solde de
           congés correct.
         </Text>
-        <Text fontSize="xs" color="blue.600" mb={4}>
+        <Text fontSize="xs" color="brand.500" mb={4}>
           Année de congés en cours : {leaveYearInfo.startLabel} au {leaveYearInfo.endLabel}
         </Text>
 
@@ -64,28 +64,28 @@ export function ContractLeaveHistorySection({
           </Box>
         </Flex>
 
-        <Box mt={3} p={3} bg="white" borderRadius="md">
+        <Box mt={3} p={3} bg="bg.surface" borderRadius="10px" borderWidth="1px" borderColor="border.default">
           <Text fontSize="sm" fontWeight="medium" mb={2}>
             Solde de congés calculé :
           </Text>
           <Flex justify="space-between">
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="text.muted">
               Acquis : <Text as="span" fontWeight="bold">{leavePreview.acquired} j</Text>
             </Text>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="text.muted">
               Pris : <Text as="span" fontWeight="bold">{leavePreview.taken} j</Text>
             </Text>
             <Text
               fontSize="sm"
               fontWeight="bold"
-              color={leavePreview.balance >= 0 ? 'green.600' : 'red.600'}
+              color={leavePreview.balance >= 0 ? 'accent.700' : 'danger.500'}
             >
               Solde : {leavePreview.balance} j
             </Text>
           </Flex>
         </Box>
 
-        <Text fontSize="xs" color="gray.500" mt={3} fontStyle="italic">
+        <Text fontSize="xs" color="text.muted" mt={3} fontStyle="italic">
           Les informations saisies engagent votre responsabilité en tant qu'employeur. En cas de
           doute, référez-vous aux bulletins de salaire précédents.
         </Text>

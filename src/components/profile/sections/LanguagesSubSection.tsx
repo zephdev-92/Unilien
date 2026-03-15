@@ -20,9 +20,9 @@ interface Props {
 
 export function LanguagesSubSection({ languages, onAdd, onRemove }: Props) {
   return (
-    <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
+    <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6}>
       <Text fontSize="xl" fontWeight="semibold" mb={2}>Langues parlées</Text>
-      <Text fontSize="sm" color="gray.600" mb={4}>
+      <Text fontSize="sm" color="text.muted" mb={4}>
         Langues dans lesquelles vous pouvez communiquer
       </Text>
 
@@ -68,7 +68,7 @@ export function LanguagesSubSection({ languages, onAdd, onRemove }: Props) {
             py={1}
             borderRadius="full"
             cursor="pointer"
-            _hover={{ bg: 'gray.100' }}
+            _hover={{ bg: 'bg.surface.hover' }}
             onClick={() => onAdd(lang)}
           >
             + {lang}

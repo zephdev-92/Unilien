@@ -34,15 +34,27 @@ vi.mock('@/components/planning/AbsenceDetailModal', () => ({
   AbsenceDetailModal: () => null,
 }))
 
+vi.mock('@/components/planning/RepeatShiftModal', () => ({
+  RepeatShiftModal: () => null,
+}))
+
+vi.mock('@/components/planning/PlanningStatsBar', () => ({
+  PlanningStatsBar: () => null,
+  NextShiftChip: () => null,
+}))
+
 vi.mock('@/components/dashboard', () => ({
   DashboardLayout: ({
     children,
     title,
+    topbarRight,
   }: {
     children: React.ReactNode
     title: string
+    topbarRight?: React.ReactNode
   }) => (
     <div data-testid="layout" data-title={title}>
+      {topbarRight}
       {children}
     </div>
   ),
@@ -190,7 +202,7 @@ describe('PlanningPage', () => {
     })
 
     // Cliquer sur le bouton "Mois"
-    fireEvent.click(screen.getByRole('button', { name: /mois/i }))
+    fireEvent.click(screen.getByText('Mois'))
 
     await waitFor(() => {
       expect(screen.getByTestId('month-view')).toBeInTheDocument()
@@ -209,7 +221,7 @@ describe('PlanningPage', () => {
     })
 
     // Passer en vue mois
-    fireEvent.click(screen.getByRole('button', { name: /mois/i }))
+    fireEvent.click(screen.getByText('Mois'))
 
     await waitFor(() => {
       expect(screen.getByTestId('month-view')).toBeInTheDocument()
@@ -219,8 +231,8 @@ describe('PlanningPage', () => {
     const currentMonthAttr = screen.getByTestId('month-view').getAttribute('data-month')
     const currentMonth = parseInt(currentMonthAttr ?? '0', 10)
 
-    // Naviguer au mois précédent
-    fireEvent.click(screen.getByRole('button', { name: /précédent/i }))
+    // Naviguer au mois précédent (aria-label: "Mois précédent")
+    fireEvent.click(screen.getByRole('button', { name: /mois pr[ée]c[ée]dent/i }))
 
     await waitFor(() => {
       const newMonthAttr = screen.getByTestId('month-view').getAttribute('data-month')
@@ -241,7 +253,7 @@ describe('PlanningPage', () => {
     })
 
     // Passer en vue mois
-    fireEvent.click(screen.getByRole('button', { name: /mois/i }))
+    fireEvent.click(screen.getByText('Mois'))
 
     await waitFor(() => {
       expect(screen.getByTestId('month-view')).toBeInTheDocument()
@@ -251,8 +263,8 @@ describe('PlanningPage', () => {
     const currentMonthAttr = screen.getByTestId('month-view').getAttribute('data-month')
     const currentMonth = parseInt(currentMonthAttr ?? '0', 10)
 
-    // Naviguer au mois suivant
-    fireEvent.click(screen.getByRole('button', { name: /suivant/i }))
+    // Naviguer au mois suivant (aria-label: "Mois suivant")
+    fireEvent.click(screen.getByRole('button', { name: /mois suivant/i }))
 
     await waitFor(() => {
       const newMonthAttr = screen.getByTestId('month-view').getAttribute('data-month')
@@ -300,8 +312,8 @@ describe('PlanningPage', () => {
     })
   })
 
-  // 9. Pour role='employee' : pas de bouton "+ Nouvelle intervention"
-  it('ne montre pas le bouton "+ Nouvelle intervention" pour un employé', async () => {
+  // 9. Pour role='employee' : pas de bouton "Intervention"
+  it('ne montre pas le bouton "Intervention" pour un employé', async () => {
     setupEmployeeProfile()
 
     renderWithProviders(<PlanningPage />)
@@ -310,21 +322,17 @@ describe('PlanningPage', () => {
       expect(screen.getByTestId('week-view')).toBeInTheDocument()
     })
 
-    expect(
-      screen.queryByRole('button', { name: /nouvelle intervention/i })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/intervention/i)).not.toBeInTheDocument()
   })
 
-  // 10. Pour role='employer' : bouton "+ Nouvelle intervention" présent
-  it('affiche le bouton "+ Nouvelle intervention" pour un employeur', async () => {
+  // 10. Pour role='employer' : bouton "Intervention" présent
+  it('affiche le bouton "Intervention" pour un employeur', async () => {
     setupEmployerProfile()
 
     renderWithProviders(<PlanningPage />)
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /nouvelle intervention/i })
-      ).toBeInTheDocument()
+      expect(screen.getByText(/intervention/i)).toBeInTheDocument()
     })
   })
 
@@ -344,16 +352,14 @@ describe('PlanningPage', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  // 12. Le bouton "Déclarer absence" est présent pour un employé
-  it('affiche le bouton "+ Declarer absence" pour un employe', async () => {
+  // 12. Le bouton "Absence" est présent pour un employé
+  it('affiche le bouton "+ Absence" pour un employe', async () => {
     setupEmployeeProfile()
 
     renderWithProviders(<PlanningPage />)
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: /déclarer absence/i })
-      ).toBeInTheDocument()
+      expect(screen.getByText(/absence/i)).toBeInTheDocument()
     })
   })
 })

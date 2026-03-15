@@ -13,14 +13,18 @@ import { getContractsForEmployer } from '@/services/contractService'
 import { logger } from '@/lib/logger'
 import type { Shift } from '@/types'
 import { LiveClock } from './LiveClock'
+import { EmployeeClockWidget } from './EmployeeClockWidget'
 import { ClockInProgressSection } from './ClockInProgressSection'
 import { ClockInTodaySection } from './ClockInTodaySection'
 import { TodayTable } from './TodayTable'
 import { WeeklySummary } from './WeeklySummary'
 import { AnomaliesPanel } from './AnomaliesPanel'
 import { ManualEntryForm, type EmployeeOption } from './ManualEntryForm'
+import { EmployeeDaySchedule } from './EmployeeDaySchedule'
+import { MonthSummary } from './MonthSummary'
 import { ShiftEditModal } from './ShiftEditModal'
-import { HistorySection } from './ClockInHistorySection'
+import { DateNavigator } from './DateNavigator'
+import { RetroactiveEntryForm } from './RetroactiveEntryForm'
 
 export function ClockInPage() {
   const inProgressRef = useRef<HTMLDivElement>(null)
@@ -52,7 +56,12 @@ export function ClockInPage() {
     handleClockIn,
     handleClockOut,
     handleCancel,
+    handleRetroactiveValidation,
     loadAllShifts,
+    selectedDate,
+    setSelectedDate,
+    isSelectedDateToday,
+    selectedDateShifts,
   } = useClockIn(inProgressRef, idleSectionRef)
 
   const userRole = profile?.role ?? 'employee'
@@ -142,7 +151,7 @@ export function ClockInPage() {
 
   if (!profile) {
     return (
-      <DashboardLayout title="Pointage">
+      <DashboardLayout title="Suivi des heures">
         <Center minH="50vh" role="status" aria-label="Chargement en cours">
           <Spinner size="xl" />
         </Center>
@@ -150,8 +159,12 @@ export function ClockInPage() {
     )
   }
 
+  const profileName = profile
+    ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim()
+    : undefined
+
   return (
-    <DashboardLayout title={isEmployer ? 'Heures des auxiliaires' : 'Pointage'}>
+    <DashboardLayout title={isEmployer ? 'Suivi des heures' : 'Mes heures'}>
       <Flex
         gap={6}
         direction={{ base: 'column', lg: 'row' }}
@@ -159,35 +172,70 @@ export function ClockInPage() {
       >
         {/* Colonne principale */}
         <Stack gap={6} flex={1} minW={0}>
-          {/* Horloge digitale */}
-          <LiveClock />
+
+          {/* Employeur : horloge simple */}
+          {isEmployer && <LiveClock />}
+
+          {/* Employé : barre de navigation par date */}
+          {!isEmployer && (
+            <DateNavigator
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              shifts={[...todayShifts, ...historyShifts, ...selectedDateShifts]}
+            />
+          )}
+
+          {/* Employé : widget horloge (aujourd'hui) ou formulaire rétroactif (date passée) */}
+          {!isEmployer && isSelectedDateToday && (
+            <EmployeeClockWidget
+              step={step}
+              activeShift={activeShift}
+              clockInTime={clockInTime}
+              plannedShifts={plannedShifts}
+              isSubmitting={isSubmitting}
+              profileName={profileName}
+              onClockIn={handleClockIn}
+              onClockOut={handleClockOut}
+              onCancel={handleCancel}
+              containerRef={inProgressRef}
+            />
+          )}
+
+          {!isEmployer && !isSelectedDateToday && (
+            <RetroactiveEntryForm
+              shifts={selectedDateShifts}
+              selectedDate={selectedDate}
+              onValidate={handleRetroactiveValidation}
+              isSubmitting={isSubmitting}
+            />
+          )}
 
           {/* Employer: résumé rapide */}
           {isEmployer && !isLoadingShifts && (
             <Box
-              bg="white"
-              borderRadius="xl"
+              bg="bg.surface"
+              borderRadius="md"
               borderWidth="1px"
-              borderColor="gray.200"
+              borderColor="border.default"
               p={5}
-              boxShadow="sm"
+              boxShadow="0 2px 8px rgba(78,100,120,.09)"
             >
               <Flex justify="space-between" align="center">
                 <Box>
-                  <Text fontSize="sm" color="gray.500">Auxiliaires actifs</Text>
-                  <Text fontSize="2xl" fontWeight="bold" color="gray.900">
+                  <Text fontSize="sm" color="text.muted" fontWeight="500">Auxiliaires actifs</Text>
+                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="text.default">
                     {employeeNamesFromShifts}
                   </Text>
                 </Box>
                 <Box>
-                  <Text fontSize="sm" color="gray.500">À valider</Text>
-                  <Text fontSize="2xl" fontWeight="bold" color="orange.500">
+                  <Text fontSize="sm" color="text.muted" fontWeight="500">À valider</Text>
+                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="#4A3D2B">
                     {completedShifts.filter((s) => !s.validatedByEmployer).length}
                   </Text>
                 </Box>
                 <Box>
-                  <Text fontSize="sm" color="gray.500">Validées</Text>
-                  <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                  <Text fontSize="sm" color="text.muted" fontWeight="500">Validées</Text>
+                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="#3A5210">
                     {completedShifts.filter((s) => s.validatedByEmployer).length}
                   </Text>
                 </Box>
@@ -195,37 +243,29 @@ export function ClockInPage() {
             </Box>
           )}
 
-          {/* Message de succès */}
+          {/* Messages */}
           {successMessage && (
-            <Box
-              role="status"
-              aria-live="polite"
-              p={4}
-              bg="green.50"
-              borderRadius="lg"
-              borderWidth="1px"
-              borderColor="green.200"
-            >
-              <Text color="green.700" fontWeight="medium">{successMessage}</Text>
-            </Box>
+            <Flex role="status" aria-live="polite" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="#9BB23B" bg="#EFF4DC" color="text.default">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#3A5210" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <Text fontSize="sm" fontWeight="500">{successMessage}</Text>
+            </Flex>
           )}
 
-          {/* Message d'erreur */}
           {error && (
-            <Box role="alert" p={4} bg="red.50" borderRadius="lg" borderWidth="1px" borderColor="red.200">
-              <Text color="red.700">{error}</Text>
-            </Box>
+            <Flex role="alert" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="#991B1B" bg="#FEF2F2" color="#991B1B">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <Text fontSize="sm" fontWeight="500">{error}</Text>
+            </Flex>
           )}
 
-          {/* Chargement */}
           {isLoadingShifts && (
             <Center py={8} role="status" aria-label="Chargement des interventions">
               <Spinner size="lg" />
             </Center>
           )}
 
-          {/* Intervention en cours — employé/aidant uniquement */}
-          {!isEmployer && step === 'in-progress' && activeShift && (
+          {/* Employeur : intervention en cours (section séparée) */}
+          {isEmployer && step === 'in-progress' && activeShift && (
             <ClockInProgressSection
               activeShift={activeShift}
               clockInTime={clockInTime!}
@@ -248,6 +288,7 @@ export function ClockInPage() {
               activeShiftId={activeShiftId}
               clockInTime={clockInTime}
               userRole={userRole}
+              selectedDate={isSelectedDateToday ? undefined : selectedDate}
               onClockIn={handleClockIn}
               onValidate={handleValidate}
               onModify={handleModify}
@@ -266,14 +307,6 @@ export function ClockInPage() {
             </Box>
           )}
 
-          {/* Historique */}
-          <HistorySection
-            historyByDay={historyByDay}
-            historyStats={historyStats}
-            historyDays={historyDays}
-            setHistoryDays={setHistoryDays}
-            isLoading={isLoadingHistory}
-          />
         </Stack>
 
         {/* Sidebar */}
@@ -282,23 +315,36 @@ export function ClockInPage() {
           w={{ base: '100%', lg: '300px' }}
           flexShrink={0}
         >
-          {/* Résumé semaine */}
-          <WeeklySummary
-            todayShifts={todayShifts}
-            historyShifts={historyShifts}
-          />
-
-          {/* Anomalies détectées */}
-          <AnomaliesPanel
-            todayShifts={todayShifts}
-            historyShifts={historyShifts}
-          />
-
-          {/* Saisie manuelle */}
-          <ManualEntryForm
-            onSubmit={handleManualEntry}
-            employees={isEmployer ? employeeOptions : undefined}
-          />
+          {isEmployer ? (
+            <>
+              <WeeklySummary
+                todayShifts={todayShifts}
+                historyShifts={historyShifts}
+              />
+              <AnomaliesPanel
+                todayShifts={todayShifts}
+                historyShifts={historyShifts}
+              />
+              <ManualEntryForm
+                onSubmit={handleManualEntry}
+                employees={employeeOptions}
+              />
+            </>
+          ) : (
+            <>
+              <WeeklySummary
+                todayShifts={todayShifts}
+                historyShifts={historyShifts}
+                title="Ma semaine"
+                weeklyGoalHours={40}
+              />
+              <EmployeeDaySchedule todayShifts={todayShifts} />
+              <MonthSummary
+                todayShifts={todayShifts}
+                historyShifts={historyShifts}
+              />
+            </>
+          )}
         </Stack>
       </Flex>
 

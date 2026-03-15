@@ -80,10 +80,10 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
   if (loading) {
     return (
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
         boxShadow="sm"
       >
@@ -96,15 +96,15 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
       boxShadow="sm"
     >
       <Flex justify="space-between" align="center" mb={4}>
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+        <Text fontSize="lg" fontWeight="semibold" color="text.default">
           Cahier de liaison
         </Text>
         <AccessibleButton
@@ -118,7 +118,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
       </Flex>
 
       {logs.length === 0 ? (
-        <Text color="gray.500" py={4} textAlign="center">
+        <Text color="text.muted" py={4} textAlign="center">
           Aucune entrée récente
         </Text>
       ) : (
@@ -127,10 +127,10 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
             <Box
               key={log.id}
               p={4}
-              bg={log.importance === 'urgent' ? 'red.50' : 'gray.50'}
-              borderRadius="md"
+              bg={log.importance === 'urgent' ? 'danger.50' : 'bg.page'}
+              borderRadius="10px"
               borderLeftWidth="4px"
-              borderLeftColor={log.importance === 'urgent' ? 'red.500' : 'gray.300'}
+              borderLeftColor={log.importance === 'urgent' ? 'danger.500' : 'border.default'}
             >
               <Flex justify="space-between" align="start" mb={2}>
                 <Flex align="center" gap={2}>
@@ -141,14 +141,14 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
                     {typeLabels[log.type]}
                   </Badge>
                 </Flex>
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="text.muted">
                   {formatTimeAgo(log.createdAt)}
                 </Text>
               </Flex>
-              <Text fontSize="sm" color="gray.700" lineClamp={2}>
+              <Text fontSize="sm" color="text.secondary" lineClamp={2}>
                 {sanitizeText(log.content)}
               </Text>
-              <Text fontSize="xs" color="gray.500" mt={2}>
+              <Text fontSize="xs" color="text.muted" mt={2}>
                 Par {log.author ? `${log.author.firstName} ${log.author.lastName}` : authorRoleLabels[log.authorRole]}
               </Text>
             </Box>

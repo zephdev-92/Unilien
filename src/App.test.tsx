@@ -155,14 +155,14 @@ describe('App', () => {
       })
     })
 
-    it('affiche /pointage pour un employé', async () => {
+    it('affiche /suivi-des-heures pour un employé', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,
         isInitialized: true,
         userRole: 'employee',
       })
-      renderApp('/pointage')
+      renderApp('/suivi-des-heures')
       await waitFor(() => {
         expect(screen.getByTestId('clock-in-page')).toBeInTheDocument()
       })

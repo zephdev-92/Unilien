@@ -1,4 +1,5 @@
-import { Box, Flex, Text, Badge, Avatar, Tag } from '@chakra-ui/react'
+import { Box, Flex, Text, Avatar } from '@chakra-ui/react'
+import { AccessibleButton } from '@/components/ui'
 import type { AuxiliarySummary } from '@/services/auxiliaryService'
 
 interface AuxiliaryCardProps {
@@ -14,14 +15,34 @@ function formatDate(date: Date): string {
   })
 }
 
-function MetaRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function MetaRow({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
-    <Flex align="center" gap={2} fontSize="sm" color="gray.600">
-      <Box flexShrink={0} color="gray.400">
+    <Flex align="center" gap="8px" fontSize="xs" color="text.muted">
+      <Flex align="center" gap="5px" color="text.muted" fontWeight={600} minW="60px" flexShrink={0}>
         {icon}
-      </Box>
-      <Text truncate>{children}</Text>
+        <Text>{label}</Text>
+      </Flex>
+      <Text truncate color="text.secondary">{children}</Text>
     </Flex>
+  )
+}
+
+function StatusPill({ status, isOnLeave }: { status: string; isOnLeave: boolean }) {
+  if (isOnLeave) {
+    return (
+      <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="warning.50" color="warning.500">
+        En congé
+      </Box>
+    )
+  }
+  const isActive = status === 'active'
+  return (
+    <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full"
+      bg={isActive ? 'success.50' : 'gray.100'}
+      color={isActive ? 'success.700' : 'gray.500'}
+    >
+      {isActive ? 'Actif' : 'Inactif'}
+    </Box>
   )
 }
 
@@ -30,106 +51,120 @@ export function AuxiliaryCard({ auxiliary, onClick }: AuxiliaryCardProps) {
 
   return (
     <Box
-      as="button"
-      onClick={onClick}
-      bg="white"
-      borderRadius="lg"
+      as="article"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor={isActive ? 'gray.200' : 'gray.300'}
-      p={5}
+      borderColor="border.default"
       boxShadow="sm"
-      textAlign="left"
-      transition="all 0.2s"
-      opacity={isActive ? 1 : 0.7}
-      _hover={{
-        borderColor: 'brand.300',
-        boxShadow: 'md',
-        transform: 'translateY(-2px)',
-      }}
-      _focusVisible={{
-        outline: '2px solid',
-        outlineColor: 'brand.500',
-        outlineOffset: '2px',
-      }}
+      overflow="hidden"
+      transition="box-shadow 0.2s, transform 0.2s"
+      opacity={isActive || auxiliary.isOnLeave ? 1 : 0.7}
+      _hover={{ boxShadow: 'md', transform: 'translateY(-2px)' }}
       css={{
         '@media (prefers-reduced-motion: reduce)': {
           transition: 'none',
           transform: 'none !important',
         },
       }}
-      w="full"
     >
-      {/* Top: Avatar + Badge */}
-      <Flex justify="space-between" align="flex-start" mb={3}>
+      {/* Card top */}
+      <Flex px={4} pt={4} pb={3} bg="bg.page" justify="space-between" align="flex-start">
         <Avatar.Root size="lg">
-          <Avatar.Fallback name={`${auxiliary.firstName} ${auxiliary.lastName}`} />
+          <Avatar.Fallback
+            name={`${auxiliary.firstName} ${auxiliary.lastName}`}
+            bg="brand.500"
+            color="white"
+          />
           {auxiliary.avatarUrl && <Avatar.Image src={auxiliary.avatarUrl} />}
         </Avatar.Root>
-        {auxiliary.isOnLeave ? (
-          <Badge colorPalette="orange" size="sm">En conge</Badge>
-        ) : (
-          <Badge colorPalette={isActive ? 'green' : 'gray'} size="sm">
-            {isActive ? 'Actif' : 'Inactif'}
-          </Badge>
-        )}
+        <StatusPill status={auxiliary.contractStatus} isOnLeave={auxiliary.isOnLeave} />
       </Flex>
 
-      {/* Name + role */}
-      <Text fontWeight="semibold" fontSize="lg" truncate mb={1}>
-        {auxiliary.firstName} {auxiliary.lastName}
-      </Text>
-      <Text fontSize="sm" color="gray.500" mb={3}>
-        {auxiliary.contractType === 'CDI' ? 'CDI' : 'CDD'} — {auxiliary.qualifications[0] || 'Auxiliaire de vie'}
-      </Text>
+      {/* Card body */}
+      <Box px={4} pb={3}>
+        <Text fontWeight={800} fontSize="md" mt={3} mb="2px" lineHeight="short">
+          {auxiliary.firstName} {auxiliary.lastName}
+        </Text>
+        <Text fontSize="xs" color="text.muted" fontWeight={500} mb={3}>
+          {auxiliary.contractType === 'CDI' ? 'CDI' : 'CDD'} — {auxiliary.qualifications[0] || 'Auxiliaire de vie'}
+        </Text>
 
-      {/* Meta rows */}
-      <Flex direction="column" gap={2} mb={3}>
-        <MetaRow
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          }
-        >
-          {formatDate(auxiliary.contractStartDate)}
-        </MetaRow>
-        <MetaRow
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          }
-        >
-          {auxiliary.weeklyHours}h / semaine
-        </MetaRow>
-        {auxiliary.email && (
+        <Flex direction="column" gap={2}>
           <MetaRow
+            label="Début"
             icon={
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
             }
           >
-            {auxiliary.email}
+            {formatDate(auxiliary.contractStartDate)}
           </MetaRow>
-        )}
-      </Flex>
+          <MetaRow
+            label="Heures"
+            icon={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            }
+          >
+            {auxiliary.weeklyHours}h / semaine
+          </MetaRow>
+          {auxiliary.email && (
+            <MetaRow
+              label="Email"
+              icon={
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              }
+            >
+              {auxiliary.email}
+            </MetaRow>
+          )}
+        </Flex>
+      </Box>
 
-      {/* Tags */}
-      <Flex gap={2} flexWrap="wrap">
-        <Tag.Root size="sm" variant="subtle">
-          <Tag.Label>{auxiliary.hourlyRate}€/h</Tag.Label>
-        </Tag.Root>
-        {auxiliary.qualifications.slice(0, 2).map((qual) => (
-          <Tag.Root key={qual} size="sm" variant="outline">
-            <Tag.Label>{qual}</Tag.Label>
-          </Tag.Root>
-        ))}
+      {/* Card footer — proto: .employee-card-footer bg #F3F6F9 */}
+      <Flex gap={2} px={4} py={2} borderTopWidth="1px" borderColor="border.default" bg="bg.page">
+        <AccessibleButton
+          variant="outline"
+          size="sm"
+          onClick={onClick}
+          flex={1}
+          borderWidth="1.5px"
+          borderColor="border.default"
+          color="text.secondary"
+          bg="transparent"
+          fontSize="xs"
+          borderRadius="6px"
+          py="7px"
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+        >
+          Voir le profil
+        </AccessibleButton>
+        <AccessibleButton
+          variant="outline"
+          size="sm"
+          onClick={onClick}
+          flex={1}
+          borderWidth="1.5px"
+          borderColor="border.default"
+          color="text.secondary"
+          bg="transparent"
+          fontSize="xs"
+          borderRadius="6px"
+          py="7px"
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+        >
+          Planning
+        </AccessibleButton>
       </Flex>
     </Box>
   )

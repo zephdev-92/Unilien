@@ -41,12 +41,12 @@ export function ClockInProgressSection({
     <Box
       ref={containerRef}
       tabIndex={-1}
-      bg="white"
+      bg="bg.surface"
       borderRadius="xl"
       borderWidth="2px"
       borderColor="blue.400"
       p={6}
-      boxShadow="md"
+      boxShadow="0 4px 16px rgba(78,100,120,.12)"
       _focus={{ outline: '2px solid', outlineColor: 'blue.400', outlineOffset: '2px' }}
     >
       <Flex role="status" aria-live="polite" align="center" gap={2} mb={4}>
@@ -68,22 +68,22 @@ export function ClockInProgressSection({
             },
           }}
         />
-        <Text fontWeight="bold" color="blue.700" fontSize="lg">
+        <Text fontWeight="bold" color="brand.700" fontSize="lg">
           Intervention en cours
         </Text>
       </Flex>
 
       <Stack gap={3}>
         <Flex justify="space-between" align="center">
-          <Text color="gray.600">Début prévu</Text>
+          <Text color="text.muted">Début prévu</Text>
           <Text fontWeight="semibold">{formatTime(activeShift.startTime)}</Text>
         </Flex>
         <Flex justify="space-between" align="center">
-          <Text color="gray.600">Fin prévue</Text>
+          <Text color="text.muted">Fin prévue</Text>
           <Text fontWeight="semibold">{formatTime(activeShift.endTime)}</Text>
         </Flex>
         <Flex justify="space-between" align="center">
-          <Text color="gray.600">Pointé à</Text>
+          <Text color="text.muted">Pointé à</Text>
           <Badge colorPalette="green" size="lg">{clockInTime}</Badge>
         </Flex>
 
@@ -91,7 +91,7 @@ export function ClockInProgressSection({
           <>
             <Separator />
             <Box>
-              <Text fontSize="sm" color="gray.500" mb={2}>
+              <Text fontSize="sm" color="text.muted" mb={2}>
                 Tâches prévues
               </Text>
               <Stack gap={1}>
@@ -109,7 +109,7 @@ export function ClockInProgressSection({
         {hasNightHours && (
           <>
             <Separator />
-            <Box p={4} bg="purple.50" borderRadius="lg" borderWidth="1px" borderColor="purple.200">
+            <Box p={4} bg="purple.50" borderRadius="12px" borderWidth="1px" borderColor="purple.200">
               <Text fontWeight="medium" color="purple.800" mb={1}>
                 <span aria-hidden="true">🌙 </span>
                 Heures de nuit : {nightHoursForActive.toFixed(1)}h
@@ -124,11 +124,11 @@ export function ClockInProgressSection({
                 justify="space-between"
                 align="center"
                 p={3}
-                bg="white"
-                borderRadius="md"
+                bg="bg.surface"
+                borderRadius="10px"
                 cursor="pointer"
               >
-                <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                <Text fontSize="sm" fontWeight="medium" color="text.secondary">
                   J'effectue un acte cette nuit
                 </Text>
                 <Switch.Root

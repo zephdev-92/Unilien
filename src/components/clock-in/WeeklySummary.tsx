@@ -10,9 +10,11 @@ const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 interface WeeklySummaryProps {
   todayShifts: Shift[]
   historyShifts: Shift[]
+  title?: string
+  weeklyGoalHours?: number
 }
 
-export function WeeklySummary({ todayShifts, historyShifts }: WeeklySummaryProps) {
+export function WeeklySummary({ todayShifts, historyShifts, title, weeklyGoalHours }: WeeklySummaryProps) {
   const weekData = useMemo(() => {
     const allShifts = [...todayShifts, ...historyShifts].filter(
       (s) => s.status === 'completed'
@@ -40,68 +42,81 @@ export function WeeklySummary({ todayShifts, historyShifts }: WeeklySummaryProps
 
   return (
     <Box
-      bg="white"
-      borderRadius="xl"
+      bg="bg.surface"
+      borderRadius="md"
       borderWidth="1px"
-      borderColor="gray.200"
-      p={5}
-      boxShadow="sm"
+      borderColor="border.default"
+      boxShadow="0 2px 8px rgba(78,100,120,.09)"
+      overflow="hidden"
     >
-      <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={4}>
-        Semaine en cours
-      </Text>
-
-      <Flex direction="column" gap={2.5}>
-        {weekData.days.map((day) => (
-          <Flex key={day.label} align="center" gap={3}>
-            <Text
-              fontSize="xs"
-              fontWeight={day.isToday ? 'bold' : 'medium'}
-              color={day.isToday ? 'blue.600' : 'gray.500'}
-              w="28px"
-              flexShrink={0}
-            >
-              {day.label}
-            </Text>
-            <Box flex={1} bg="gray.100" borderRadius="full" h="8px" overflow="hidden">
-              {day.hours > 0 && (
-                <Box
-                  h="100%"
-                  borderRadius="full"
-                  bg={day.isToday ? 'blue.400' : 'blue.300'}
-                  w={`${Math.max((day.hours / weekData.maxHours) * 100, 4)}%`}
-                  transition="width 0.3s"
-                  aria-label={`${day.label} : ${formatHours(day.hours)}`}
-                />
-              )}
-            </Box>
-            <Text
-              fontSize="xs"
-              fontWeight={day.isToday ? 'semibold' : 'normal'}
-              color={day.hours > 0 ? 'gray.700' : 'gray.400'}
-              w="36px"
-              textAlign="right"
-              flexShrink={0}
-            >
-              {day.hours > 0 ? formatHours(day.hours) : '—'}
-            </Text>
+      <Flex px={4} py={3} borderBottomWidth="1px" borderColor="border.default" align="center" justify="space-between">
+        <Text fontFamily="heading" fontSize="md" fontWeight="700">{title || 'Semaine en cours'}</Text>
+        {weeklyGoalHours != null && (
+          <Flex
+            as="span"
+            px={3}
+            py="4px"
+            borderRadius="sm"
+            fontSize="xs"
+            fontWeight="600"
+            bg="#EDF1F5"
+            color="#3D5166"
+          >
+            {formatHours(weekData.totalHours)} / ~{weeklyGoalHours}h
           </Flex>
-        ))}
+        )}
       </Flex>
+      <Box p={4}>
+        <Flex direction="column" gap={2} mb={4}>
+          {weekData.days.map((day) => (
+            <Flex key={day.label} align="center" gap={2}>
+              <Text
+                fontSize="xs"
+                fontWeight="700"
+                color={day.isToday ? '#3D5166' : 'text.muted'}
+                w="28px"
+                flexShrink={0}
+              >
+                {day.label}
+              </Text>
+              <Box flex={1} bg="#D8E3ED" borderRadius="full" h="8px">
+                {day.hours > 0 && (
+                  <Box
+                    h="100%"
+                    borderRadius="full"
+                    bg={day.isToday ? '#9BB23B' : '#3D5166'}
+                    w={`${Math.max((day.hours / weekData.maxHours) * 100, 4)}%`}
+                    maxW="100%"
+                    transition="width 0.3s"
+                    aria-label={`${day.label} : ${formatHours(day.hours)}`}
+                  />
+                )}
+              </Box>
+              <Text
+                fontSize="xs"
+                fontWeight="700"
+                color="text.secondary"
+                minW="28px"
+                textAlign="right"
+                flexShrink={0}
+              >
+                {day.hours > 0 ? formatHours(day.hours) : '—'}
+              </Text>
+            </Flex>
+          ))}
+        </Flex>
 
-      <Flex
-        justify="space-between"
-        align="center"
-        mt={4}
-        pt={3}
-        borderTopWidth="1px"
-        borderColor="gray.100"
-      >
-        <Text fontSize="sm" color="gray.600">Total semaine</Text>
-        <Text fontSize="sm" fontWeight="bold" color="gray.900">
-          {formatHours(weekData.totalHours)}
-        </Text>
-      </Flex>
+        <Flex
+          justify="space-between"
+          align="center"
+          pt={3}
+          borderTopWidth="1px"
+          borderColor="border.default"
+        >
+          <Text fontSize="sm" color="text.muted">Total semaine</Text>
+          <Text fontSize="sm" fontWeight="700">{formatHours(weekData.totalHours)}</Text>
+        </Flex>
+      </Box>
     </Box>
   )
 }

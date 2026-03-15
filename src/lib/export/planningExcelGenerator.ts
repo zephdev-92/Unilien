@@ -42,7 +42,7 @@ function buildSummarySheet(data: PlanningExportData): XLSX.WorkSheet {
     [`Employeur : ${data.employerFirstName} ${data.employerLastName}`],
     [`Généré le : ${format(data.generatedAt, "d MMMM yyyy 'à' HH:mm", { locale: fr })}`],
     [],
-    ['Employé', 'Contrat', 'Heures/sem.', 'Taux horaire', 'Interventions', 'Heures totales', 'Total brut (€)'],
+    ['Employé', 'Contrat', 'Heures/sem.', 'Interventions', 'Heures totales'],
   ]
 
   for (const e of data.employees) {
@@ -50,10 +50,8 @@ function buildSummarySheet(data: PlanningExportData): XLSX.WorkSheet {
       `${e.firstName} ${e.lastName}`,
       e.contractType,
       e.weeklyHours,
-      e.hourlyRate,
       e.totalShifts,
       e.totalHours,
-      e.totalPay,
     ])
   }
 
@@ -62,16 +60,14 @@ function buildSummarySheet(data: PlanningExportData): XLSX.WorkSheet {
     'TOTAUX',
     '',
     '',
-    '',
     data.totalShifts,
     data.totalHours,
-    data.employees.reduce((s, e) => s + e.totalPay, 0),
   ])
 
   const ws = XLSX.utils.aoa_to_sheet(rows)
   // Largeurs colonnes
   ws['!cols'] = [
-    { wch: 25 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 15 }, { wch: 15 },
+    { wch: 25 }, { wch: 8 }, { wch: 12 }, { wch: 14 }, { wch: 15 },
   ]
   return ws
 }
@@ -81,9 +77,9 @@ function buildSummarySheet(data: PlanningExportData): XLSX.WorkSheet {
 function buildEmployeeSheet(employee: EmployeePlanningData): XLSX.WorkSheet {
   const rows: (string | number | boolean)[][] = [
     [`${employee.firstName} ${employee.lastName} — ${employee.contractType}`],
-    [`Taux horaire : ${employee.hourlyRate} € | Heures/sem. : ${employee.weeklyHours}h`],
+    [`Heures/sem. : ${employee.weeklyHours}h`],
     [],
-    ['Date', 'Jour', 'Début', 'Fin', 'Pause (min)', 'Type', 'Statut', 'Heures', 'Dimanche', 'Férié', 'Montant (€)'],
+    ['Date', 'Jour', 'Début', 'Fin', 'Pause (min)', 'Type', 'Statut', 'Heures', 'Dimanche', 'Férié'],
   ]
 
   for (const s of employee.shifts) {
@@ -98,7 +94,6 @@ function buildEmployeeSheet(employee: EmployeePlanningData): XLSX.WorkSheet {
       s.effectiveHours,
       s.isSunday ? 'Oui' : 'Non',
       s.isHoliday ? 'Oui' : 'Non',
-      s.totalPay,
     ])
   }
 
@@ -119,12 +114,11 @@ function buildEmployeeSheet(employee: EmployeePlanningData): XLSX.WorkSheet {
   rows.push([])
   rows.push(['Total interventions', employee.totalShifts])
   rows.push(['Total heures', employee.totalHours])
-  rows.push(['Total brut (€)', employee.totalPay])
 
   const ws = XLSX.utils.aoa_to_sheet(rows)
   ws['!cols'] = [
     { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 12 },
-    { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 8 }, { wch: 14 },
+    { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 8 },
   ]
   return ws
 }

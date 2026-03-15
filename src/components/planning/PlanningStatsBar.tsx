@@ -1,104 +1,305 @@
-import { useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Box, Flex, Text } from '@chakra-ui/react'
 import { format, isToday, isFuture } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { calculateShiftDuration } from '@/lib/compliance'
-import type { Shift, Absence, Contract } from '@/types'
+import { supabase } from '@/lib/supabase/client'
+import type { Shift, Absence } from '@/types'
+
+// --- Icônes SVG inline (même que proto) ---
+
+const ClockIcon = () => (
+  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+)
+
+const ActivityIcon = () => (
+  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+)
+
+const CalendarIcon = () => (
+  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+)
+
+const FileIcon = () => (
+  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+)
+
+const ShieldIcon = () => (
+  <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+)
+
+// --- Couleurs icônes (proto: blue, green, warn) ---
+
+const iconColors = {
+  blue: { bg: 'brand.50', color: 'brand.500' },
+  green: { bg: 'green.50', color: 'green.600' },
+  warn: { bg: 'orange.50', color: 'orange.500' },
+} as const
+
+type IconColor = keyof typeof iconColors
+
+// --- Composant stat unitaire (proto align) ---
+
+function StatIcon({ color, children }: { color: IconColor; children: React.ReactNode }) {
+  return (
+    <Flex
+      align="center"
+      justify="center"
+      w="36px"
+      h="36px"
+      borderRadius="8px"
+      flexShrink={0}
+      bg={iconColors[color].bg}
+      color={iconColors[color].color}
+    >
+      {children}
+    </Flex>
+  )
+}
+
+function StatItem({
+  icon,
+  iconColor,
+  value,
+  label,
+}: {
+  icon: React.ReactNode
+  iconColor: IconColor
+  value: string
+  label: string
+}) {
+  return (
+    <Flex
+      align="center"
+      gap={3}
+      py={2}
+      px={3}
+      flex="1"
+      minW="0"
+    >
+      <StatIcon color={iconColor}>{icon}</StatIcon>
+      <Box minW="0">
+        <Text
+          fontFamily="heading"
+          fontSize={{ base: '16px', sm: '18px' }}
+          fontWeight="800"
+          color="text.default"
+          lineHeight="1.1"
+        >
+          {value}
+        </Text>
+        <Text
+          fontSize="11px"
+          color="text.muted"
+          fontWeight="500"
+          mt="1px"
+          whiteSpace="nowrap"
+          overflow="hidden"
+          textOverflow="ellipsis"
+        >
+          {label}
+        </Text>
+      </Box>
+    </Flex>
+  )
+}
+
+// --- Séparateur vertical (desktop only) ---
+
+function StatDivider() {
+  return (
+    <Box
+      display={{ base: 'none', sm: 'block' }}
+      w="1px"
+      alignSelf="stretch"
+      bg="border.default"
+    />
+  )
+}
+
+// --- Stats Bar Employé ---
 
 interface PlanningStatsBarProps {
   shifts: Shift[]
   absences: Absence[]
-  contract?: Contract | null
+  role: 'employee' | 'employer' | 'caregiver'
+  pchMonthlyHours?: number
+  employeeId?: string
 }
 
-export function PlanningStatsBar({ shifts, absences, contract }: PlanningStatsBarProps) {
+export function PlanningStatsBar({ shifts, absences, role, pchMonthlyHours, employeeId }: PlanningStatsBarProps) {
+  const [acquiredDays, setAcquiredDays] = useState<number | null>(null)
+  const [weeklyHours, setWeeklyHours] = useState<number>(0)
+
+  // Charger solde congés + heures contractuelles depuis Supabase
+  useEffect(() => {
+    if (role !== 'employee' || !employeeId) return
+    let cancelled = false
+
+    async function loadEmployeeData() {
+      const [balancesRes, contractsRes] = await Promise.all([
+        supabase
+          .from('leave_balances')
+          .select('acquired_days, taken_days, adjustment_days')
+          .eq('employee_id', employeeId!),
+        supabase
+          .from('contracts')
+          .select('id, start_date, weekly_hours')
+          .eq('employee_id', employeeId!)
+          .eq('status', 'active'),
+      ])
+
+      if (cancelled) return
+
+      // Heures contractuelles hebdo (proto: affiche weekly_hours brut)
+      const contracts = contractsRes.data || []
+      const totalWeekly = contracts.reduce((sum, c) => sum + (c.weekly_hours || 0), 0)
+      setWeeklyHours(totalWeekly)
+
+      // Congés acquis
+      const balances = balancesRes.data || []
+      if (balances.length > 0) {
+        const days = balances.reduce(
+          (sum, b) => sum + (b.acquired_days || 0) - (b.taken_days || 0) + (b.adjustment_days || 0),
+          0
+        )
+        setAcquiredDays(Math.round(days * 10) / 10)
+      } else {
+        // Fallback : calcul depuis ancienneté (2.5j / mois, IDCC 3239)
+        const now = new Date()
+        let totalMonths = 0
+        for (const c of contracts) {
+          const start = new Date(c.start_date)
+          const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+          totalMonths += Math.max(0, months)
+        }
+        setAcquiredDays(Math.round(totalMonths * 2.5 * 10) / 10)
+      }
+    }
+
+    loadEmployeeData()
+    return () => { cancelled = true }
+  }, [role, employeeId])
+
   const stats = useMemo(() => {
     const completed = shifts.filter((s) => s.status === 'completed')
     const totalMinutes = completed.reduce(
       (acc, s) => acc + calculateShiftDuration(s.startTime, s.endTime, s.breakDuration),
       0
     )
-    const totalHours = totalMinutes / 60
-    const weeklyHours = contract?.weeklyHours || 0
+    const totalHours = Math.round(totalMinutes / 60 * 10) / 10
+    const shiftCount = shifts.length
 
-    const approvedAbsences = absences.filter((a) => a.status === 'approved').length
+    return { totalHours, weeklyHours, shiftCount, acquiredDays: acquiredDays ?? 0 }
+  }, [shifts, weeklyHours, acquiredDays])
 
-    return {
-      totalHours,
-      weeklyHours,
-      shiftCount: shifts.length,
-      completedCount: completed.length,
-      absenceCount: approvedAbsences,
-    }
-  }, [shifts, absences, contract])
+  const items = role === 'caregiver'
+    ? getCaregiverItems(stats, pchMonthlyHours)
+    : getEmployeeItems(stats)
 
   return (
     <Flex
-      bg="white"
-      borderRadius="lg"
+      bg="bg.page"
       borderWidth="1px"
-      borderColor="gray.200"
-      p={4}
-      gap={6}
+      borderColor="border.default"
+      borderRadius="12px"
+      p={{ base: 3, sm: '12px 20px' }}
+      gap={{ base: 2, sm: 3 }}
       flexWrap="wrap"
-      justify="space-around"
+      role="region"
+      aria-label={role === 'caregiver' ? 'Récapitulatif mensuel PCH' : 'Récapitulatif mensuel'}
     >
-      <StatItem
-        label="Heures effectuées"
-        value={`${stats.totalHours.toFixed(1)}h`}
-        sub={stats.weeklyHours > 0 ? `/ ${stats.weeklyHours}h contrat` : undefined}
-        progress={stats.weeklyHours > 0 ? stats.totalHours / stats.weeklyHours : undefined}
-      />
-      <StatItem
-        label="Interventions"
-        value={String(stats.shiftCount)}
-        sub={`${stats.completedCount} terminée${stats.completedCount > 1 ? 's' : ''}`}
-      />
-      <StatItem
-        label="Congés"
-        value={String(stats.absenceCount)}
-        sub="approuvé(s)"
-      />
+      {items.map((item, i) => (
+        <React.Fragment key={item.label}>
+          {i > 0 && <StatDivider />}
+          <Box flex={{ base: '1 0 calc(50% - 8px)', sm: '1' }} minW="0">
+            <StatItem
+              icon={item.icon}
+              iconColor={item.iconColor}
+              value={item.value}
+              label={item.label}
+            />
+          </Box>
+        </React.Fragment>
+      ))}
     </Flex>
   )
 }
 
-function StatItem({
-  label,
-  value,
-  sub,
-  progress,
-}: {
-  label: string
-  value: string
-  sub?: string
-  progress?: number
-}) {
-  return (
-    <Box textAlign="center" minW="100px">
-      <Text fontSize="xs" color="gray.500" fontWeight="medium">
-        {label}
-      </Text>
-      <Text fontSize="xl" fontWeight="bold" color="gray.900">
-        {value}
-      </Text>
-      {sub && (
-        <Text fontSize="xs" color="gray.500">
-          {sub}
-        </Text>
-      )}
-      {progress !== undefined && (
-        <Box mt={1} bg="gray.100" borderRadius="full" h="4px" overflow="hidden">
-          <Box
-            h="100%"
-            borderRadius="full"
-            bg={progress > 1 ? 'red.400' : progress > 0.8 ? 'orange.400' : 'blue.400'}
-            w={`${Math.min(progress * 100, 100)}%`}
-          />
-        </Box>
-      )}
-    </Box>
-  )
+// --- Config stats par rôle ---
+
+function getEmployeeItems(stats: { totalHours: number; weeklyHours: number; shiftCount: number; acquiredDays: number }) {
+  return [
+    {
+      icon: <ClockIcon />,
+      iconColor: 'blue' as IconColor,
+      value: `${stats.totalHours}h`,
+      label: 'Heures effectuées',
+    },
+    {
+      icon: <ActivityIcon />,
+      iconColor: 'green' as IconColor,
+      value: stats.weeklyHours > 0 ? `${stats.weeklyHours}h` : '—',
+      label: 'Heures contractuelles',
+    },
+    {
+      icon: <CalendarIcon />,
+      iconColor: 'blue' as IconColor,
+      value: String(stats.shiftCount),
+      label: 'Interventions ce mois',
+    },
+    {
+      icon: <FileIcon />,
+      iconColor: 'warn' as IconColor,
+      value: `${stats.acquiredDays}j`,
+      label: 'Congés payés acquis',
+    },
+  ]
+}
+
+function getCaregiverItems(
+  stats: { totalHours: number; shiftCount: number },
+  pchMonthlyHours?: number
+) {
+  const quota = pchMonthlyHours || 0
+  const remaining = Math.max(0, quota - stats.totalHours)
+
+  return [
+    {
+      icon: <ClockIcon />,
+      iconColor: 'blue' as IconColor,
+      value: `${stats.totalHours}h`,
+      label: 'Heures effectuées',
+    },
+    {
+      icon: <ShieldIcon />,
+      iconColor: 'warn' as IconColor,
+      value: quota > 0 ? `${quota}h` : '—',
+      label: 'Quota PCH mensuel',
+    },
+    {
+      icon: <ActivityIcon />,
+      iconColor: 'green' as IconColor,
+      value: quota > 0 ? `${remaining}h` : '—',
+      label: 'Restant ce mois',
+    },
+    {
+      icon: <CalendarIcon />,
+      iconColor: 'blue' as IconColor,
+      value: String(stats.shiftCount),
+      label: "Temps d'aide ce mois",
+    },
+  ]
 }
 
 /** Chip "Prochaine intervention" pour la barre de navigation */
@@ -141,12 +342,12 @@ export function NextShiftChip({ shifts }: { shifts: Shift[] }) {
       gap={2}
       px={3}
       py={1.5}
-      bg="blue.50"
+      bg="brand.50"
       borderRadius="full"
       borderWidth="1px"
-      borderColor="blue.200"
+      borderColor="brand.200"
     >
-      <Text fontSize="xs" color="blue.600" fontWeight="medium">
+      <Text fontSize="xs" color="brand.600" fontWeight="medium">
         Prochaine : {dateLabel} à {nextShift.startTime.slice(0, 5)}
       </Text>
     </Flex>

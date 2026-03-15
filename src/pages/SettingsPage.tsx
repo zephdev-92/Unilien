@@ -7,7 +7,7 @@
  *  Avancé : Données
  */
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   VStack,
@@ -27,8 +27,8 @@ import {
   Center,
 } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard'
-import { AccessibilitySection } from '@/components/profile/sections'
 import { useAuth } from '@/hooks/useAuth'
+import { useAccessibilityStore } from '@/stores/authStore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,6 +46,7 @@ type PanelId =
 interface NavItem {
   id: PanelId
   label: string
+  icon: React.ReactNode
   roles?: string[]
 }
 
@@ -54,28 +55,36 @@ interface NavSection {
   items: NavItem[]
 }
 
+function NavIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}>
+      {children}
+    </svg>
+  )
+}
+
 const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Compte',
     items: [
-      { id: 'profil', label: 'Informations' },
-      { id: 'securite', label: 'Sécurité' },
-      { id: 'abonnement', label: 'Abonnement', roles: ['employer'] },
+      { id: 'profil', label: 'Informations', icon: <NavIcon><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></NavIcon> },
+      { id: 'securite', label: 'Sécurité', icon: <NavIcon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></NavIcon> },
+      { id: 'abonnement', label: 'Abonnement', icon: <NavIcon><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></NavIcon>, roles: ['employer'] },
     ],
   },
   {
     label: 'Application',
     items: [
-      { id: 'notifications', label: 'Notifications' },
-      { id: 'convention', label: 'Convention', roles: ['employer'] },
-      { id: 'pch', label: 'PCH', roles: ['caregiver'] },
-      { id: 'apparence', label: 'Apparence' },
-      { id: 'accessibilite', label: 'Accessibilité' },
+      { id: 'notifications', label: 'Notifications', icon: <NavIcon><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></NavIcon> },
+      { id: 'convention', label: 'Convention', icon: <NavIcon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></NavIcon>, roles: ['employer'] },
+      { id: 'pch', label: 'PCH', icon: <NavIcon><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></NavIcon>, roles: ['caregiver'] },
+      { id: 'apparence', label: 'Apparence', icon: <NavIcon><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></NavIcon> },
+      { id: 'accessibilite', label: 'Accessibilité', icon: <NavIcon><circle cx="12" cy="7" r="4" /><path d="M1 21v-2a7 7 0 0114 0v2" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></NavIcon> },
     ],
   },
   {
     label: 'Avancé',
-    items: [{ id: 'donnees', label: 'Données' }],
+    items: [{ id: 'donnees', label: 'Données', icon: <NavIcon><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></NavIcon> }],
   },
 ]
 
@@ -102,43 +111,72 @@ export function SettingsPage() {
 
   return (
     <DashboardLayout title="Paramètres">
-      <HStack align="start" gap={6} flexDirection={{ base: 'column', md: 'row' }}>
+      <Box
+        position="relative"
+        css={{ margin: 'calc(var(--chakra-spacing-6) * -1)' }}
+        minH={{ md: 'calc(100vh - 60px)' }}
+      >
         {/* Navigation latérale */}
         <Box
-          minW={{ md: '200px' }}
-          w={{ base: '100%', md: '200px' }}
+          minW={{ md: '210px' }}
+          w={{ base: '100%', md: '210px' }}
           flexShrink={0}
+          borderRightWidth={{ base: '0', md: '1px' }}
+          borderBottomWidth={{ base: '1px', md: '0' }}
+          borderColor="border.default"
+          bg="bg.surface"
+          py={{ base: 0, md: 3 }}
+          position={{ base: 'relative', md: 'absolute' }}
+          top={{ md: '0' }}
+          left={{ md: '0' }}
+          bottom={{ md: '0' }}
+          overflowY={{ md: 'auto' }}
         >
           <Box
             overflowX={{ base: 'auto', md: 'visible' }}
             display={{ base: 'flex', md: 'block' }}
-            gap={1}
-            pb={{ base: 2, md: 0 }}
+            gap={0}
+            pb={{ base: 0, md: 0 }}
+            css={{ '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }}
           >
             {visibleSections.map((section) => (
-              <Box key={section.label} mb={{ md: 4 }}>
+              <Box key={section.label} mb={{ md: 4 }} display={{ base: 'flex', md: 'block' }} flexShrink={0}>
                 <Text
                   fontSize="xs"
-                  fontWeight="bold"
+                  fontWeight="700"
                   textTransform="uppercase"
-                  color="gray.500"
-                  mb={1}
+                  letterSpacing="0.06em"
+                  color="text.muted"
+                  px={5}
+                  pb={2}
                   display={{ base: 'none', md: 'block' }}
                 >
                   {section.label}
                 </Text>
-                <VStack gap={0.5} align="stretch" display={{ base: 'flex', md: 'flex' }} flexDirection={{ base: 'row', md: 'column' }}>
+                <VStack gap={0} align="stretch" display={{ base: 'flex', md: 'flex' }} flexDirection={{ base: 'row', md: 'column' }}>
                   {section.items.map((item) => (
                     <Button
                       key={item.id}
-                      variant={activePanel === item.id ? 'subtle' : 'ghost'}
-                      colorPalette={activePanel === item.id ? 'brand' : undefined}
+                      variant="ghost"
                       size="sm"
                       justifyContent="flex-start"
-                      fontWeight={activePanel === item.id ? 'semibold' : 'normal'}
+                      fontWeight={activePanel === item.id ? '700' : '500'}
+                      color={activePanel === item.id ? 'brand.500' : 'text.muted'}
+                      bg={activePanel === item.id ? 'brand.subtle' : 'transparent'}
                       onClick={() => setActivePanel(item.id)}
                       whiteSpace="nowrap"
+                      gap={2}
+                      borderRadius="6px"
+                      fontSize="sm"
+                      px={5}
+                      py="9px"
+                      h="auto"
+                      mx="5px"
+                      w={{ md: 'calc(100% - 10px)' }}
+                      _hover={{ bg: 'brand.subtle', color: 'text.default' }}
+                      transition="background 0.15s ease, color 0.15s ease"
                     >
+                      {item.icon}
                       {item.label}
                     </Button>
                   ))}
@@ -149,7 +187,7 @@ export function SettingsPage() {
         </Box>
 
         {/* Contenu */}
-        <Box flex={1} minW={0} maxW="800px">
+        <Box ml={{ base: 0, md: '210px' }} minW={0} p={6}>
           {activePanel === 'profil' && <ProfilPanel profile={profile} />}
           {activePanel === 'securite' && <SecuritePanel />}
           {activePanel === 'abonnement' && <AbonnementPanel />}
@@ -160,7 +198,7 @@ export function SettingsPage() {
           {activePanel === 'accessibilite' && <AccessibilitePanel />}
           {activePanel === 'donnees' && <DonneesPanel />}
         </Box>
-      </HStack>
+      </Box>
     </DashboardLayout>
   )
 }
@@ -170,8 +208,8 @@ export function SettingsPage() {
 function PanelHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <Box mb={6}>
-      <Text fontSize="2xl" fontWeight="bold" mb={1}>{title}</Text>
-      <Text color="gray.600" fontSize="sm">{subtitle}</Text>
+      <Text fontFamily="heading" fontSize="2xl" fontWeight="800" mb={1}>{title}</Text>
+      <Text color="text.muted" fontSize="md" lineHeight="1.6">{subtitle}</Text>
     </Box>
   )
 }
@@ -194,13 +232,13 @@ function ToggleRow({
   badge?: string
 }) {
   return (
-    <HStack justify="space-between" align="start" py={3} borderBottomWidth="1px" borderColor="gray.100">
+    <HStack justify="space-between" align="start" py={3} borderBottomWidth="1px" borderColor="border.default">
       <Box flex={1} pr={4}>
         <HStack gap={2} mb={0.5}>
           <Text fontWeight="medium" fontSize="sm">{label}</Text>
           {badge && <Badge variant="subtle" size="sm">{badge}</Badge>}
         </HStack>
-        <Text fontSize="xs" color="gray.500">{description}</Text>
+        <Text fontSize="xs" color="text.muted">{description}</Text>
       </Box>
       <Switch.Root
         checked={checked}
@@ -208,7 +246,14 @@ function ToggleRow({
         disabled={disabled}
       >
         <Switch.HiddenInput aria-label={label} />
-        <Switch.Control>
+        <Switch.Control
+          borderRadius="full"
+          bg={checked ? '#9BB23B' : '#D8E3ED'}
+          css={{
+            '&[data-state=checked]': { background: '#9BB23B' },
+            '&[data-state=unchecked]': { background: '#D8E3ED' },
+          }}
+        >
           <Switch.Thumb />
         </Switch.Control>
       </Switch.Root>
@@ -238,12 +283,39 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
         subtitle="Gérez vos informations personnelles et les détails de votre compte."
       />
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Informations personnelles</Card.Title>
-          <Text fontSize="sm" color="gray.500">Ces informations apparaissent sur vos documents exportés.</Text>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Informations personnelles</Card.Title>
+          <Text fontSize="xs" color="text.muted" mt="3px">Ces informations apparaissent sur vos documents exportés.</Text>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
+          {/* Avatar */}
+          <HStack gap={4} mb={6}>
+            <Box
+              w="72px"
+              h="72px"
+              borderRadius="full"
+              bg="brand.500"
+              color="white"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              fontSize="1.6rem"
+              fontWeight="800"
+              flexShrink={0}
+              aria-label={`Avatar ${firstName} ${lastName}`}
+            >
+              {firstName.charAt(0)}{lastName.charAt(0)}
+            </Box>
+            <VStack gap={2} align="start">
+              <Button variant="ghost" size="sm" borderWidth="1.5px" borderColor="border.default">
+                Changer la photo
+              </Button>
+              <Button variant="ghost" size="sm" color="red.600" borderWidth="1.5px" borderColor="red.200" _hover={{ bg: 'red.50', borderColor: 'red.500' }}>
+                Supprimer
+              </Button>
+            </VStack>
+          </HStack>
           <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
             <Field.Root>
               <Field.Label>Prénom</Field.Label>
@@ -267,18 +339,18 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
               <Field.HelperText>Utilisée pour les bulletins de paie.</Field.HelperText>
             </Field.Root>
           </Grid>
-          <HStack mt={4} gap={3} justify="flex-end">
-            <Button variant="ghost" size="sm">Annuler</Button>
-            <Button colorPalette="brand" size="sm">Enregistrer</Button>
+          <HStack mt={5} gap={3} justify="flex-end">
+            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md">Annuler</Button>
+            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Enregistrer</Button>
           </HStack>
         </Card.Body>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Langue et format</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Langue et format</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
             <Field.Root>
               <Field.Label>Langue de l'interface</Field.Label>
@@ -301,8 +373,8 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
               </NativeSelect.Root>
             </Field.Root>
           </Grid>
-          <HStack mt={4} justify="flex-end">
-            <Button colorPalette="brand" size="sm">Enregistrer</Button>
+          <HStack mt={5} justify="flex-end">
+            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Enregistrer</Button>
           </HStack>
         </Card.Body>
       </Card.Root>
@@ -325,11 +397,11 @@ function SecuritePanel() {
       />
 
       {/* Mot de passe */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Changer le mot de passe</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Changer le mot de passe</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={4} align="stretch">
             <Field.Root>
               <Field.Label>Mot de passe actuel</Field.Label>
@@ -347,18 +419,18 @@ function SecuritePanel() {
               </Field.Root>
             </Grid>
             <HStack justify="flex-end">
-              <Button colorPalette="brand" size="sm">Mettre à jour</Button>
+              <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Mettre à jour</Button>
             </HStack>
           </VStack>
         </Card.Body>
       </Card.Root>
 
       {/* 2FA */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Double authentification (2FA)</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Double authentification (2FA)</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <ToggleRow
             label="Activer la 2FA"
             description="Protégez votre compte avec Google Authenticator, Authy ou tout autre app d'authentification."
@@ -369,16 +441,16 @@ function SecuritePanel() {
       </Card.Root>
 
       {/* Zone de danger */}
-      <Card.Root borderColor="red.200">
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="red.200" boxShadow="sm">
         <Card.Header bg="red.50" borderBottomWidth="1px" borderColor="red.200">
-          <Card.Title color="red.600">Zone de danger</Card.Title>
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700" color="red.600">Zone de danger</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={4} align="stretch">
             <HStack justify="space-between" align="start">
               <Box>
                 <Text fontWeight="medium" fontSize="sm">Supprimer toutes les données</Text>
-                <Text fontSize="xs" color="gray.500">Efface définitivement les interventions et données employés.</Text>
+                <Text fontSize="xs" color="text.muted">Efface définitivement les interventions et données employés.</Text>
               </Box>
               <Button
                 colorPalette="red"
@@ -390,7 +462,7 @@ function SecuritePanel() {
               </Button>
             </HStack>
             {showDeleteConfirm && (
-              <Box p={4} bg="red.50" borderRadius="md">
+              <Box p={4} bg="red.50" borderRadius="10px">
                 <Text fontSize="sm" mb={2}>
                   Tapez <strong>SUPPRIMER</strong> pour confirmer
                 </Text>
@@ -423,7 +495,7 @@ function SecuritePanel() {
             <HStack justify="space-between" align="start">
               <Box>
                 <Text fontWeight="medium" fontSize="sm">Désactiver le compte</Text>
-                <Text fontSize="xs" color="gray.500">Votre compte sera suspendu. Les données restent 30 jours.</Text>
+                <Text fontSize="xs" color="text.muted">Votre compte sera suspendu. Les données restent 30 jours.</Text>
               </Box>
               <Button colorPalette="red" size="xs" variant="outline">
                 Désactiver
@@ -487,19 +559,19 @@ function AbonnementPanel() {
       />
 
       {/* Plan actuel */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Plan actuel</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Plan actuel</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <HStack justify="space-between" mb={4} flexWrap="wrap" gap={3}>
             <Box>
               <HStack gap={2} mb={1}>
                 <Text fontWeight="bold" fontSize="lg">{currentPlan}</Text>
                 <Badge colorPalette="green" size="sm">Actif</Badge>
               </HStack>
-              <Text fontWeight="bold" fontSize="2xl">9,90 €<Text as="span" fontSize="sm" fontWeight="normal" color="gray.500"> / mois</Text></Text>
-              <Text fontSize="sm" color="gray.500" mt={1}>
+              <Text fontWeight="bold" fontSize="2xl">9,90 €<Text as="span" fontSize="sm" fontWeight="normal" color="text.muted"> / mois</Text></Text>
+              <Text fontSize="sm" color="text.muted" mt={1}>
                 Prochain renouvellement le <strong>1 avril 2026</strong> — Visa ····&nbsp;4242
               </Text>
             </Box>
@@ -515,37 +587,37 @@ function AbonnementPanel() {
       </Card.Root>
 
       {/* Plans disponibles */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Plans disponibles</Card.Title>
-          <Text fontSize="sm" color="gray.500">Changez de plan à tout moment, sans engagement.</Text>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Plans disponibles</Card.Title>
+          <Text fontSize="sm" color="text.muted">Changez de plan à tout moment, sans engagement.</Text>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap={4}>
             {plans.map((plan) => (
               <Box
                 key={plan.name}
                 borderWidth="2px"
                 borderColor={plan.isCurrent ? 'brand.500' : 'gray.200'}
-                borderRadius="lg"
+                borderRadius="12px"
                 p={5}
                 position="relative"
               >
                 <HStack justify="space-between" mb={2}>
                   <Text fontWeight="bold">{plan.name}</Text>
                   {plan.isCurrent && <Badge colorPalette="green" size="sm">Plan actuel</Badge>}
-                  {plan.recommended && <Badge colorPalette="blue" size="sm">Recommandé</Badge>}
+                  {plan.recommended && <Badge colorPalette="brand" size="sm">Recommandé</Badge>}
                 </HStack>
                 <Text fontWeight="bold" fontSize="xl" mb={1}>
-                  {plan.price}<Text as="span" fontSize="sm" fontWeight="normal" color="gray.500"> / mois</Text>
+                  {plan.price}<Text as="span" fontSize="sm" fontWeight="normal" color="text.muted"> / mois</Text>
                 </Text>
-                <Text fontSize="sm" color="gray.500" mb={3}>{plan.desc}</Text>
+                <Text fontSize="sm" color="text.muted" mb={3}>{plan.desc}</Text>
                 <VStack align="start" gap={1.5} mb={4}>
                   {plan.features.map((f) => (
                     <Text key={f} fontSize="sm">✓ {f}</Text>
                   ))}
                   {plan.disabled.map((f) => (
-                    <Text key={f} fontSize="sm" color="gray.400" textDecoration="line-through">✗ {f}</Text>
+                    <Text key={f} fontSize="sm" color="text.muted" textDecoration="line-through">✗ {f}</Text>
                   ))}
                 </VStack>
                 <Button
@@ -564,15 +636,15 @@ function AbonnementPanel() {
       </Card.Root>
 
       {/* Moyen de paiement */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Moyen de paiement</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Moyen de paiement</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <HStack justify="space-between">
             <Box>
               <Text fontWeight="medium" fontSize="sm">Visa ····&nbsp;4242</Text>
-              <Text fontSize="xs" color="gray.500">Expire le 03/2028</Text>
+              <Text fontSize="xs" color="text.muted">Expire le 03/2028</Text>
             </Box>
             <Button variant="ghost" size="sm">Modifier</Button>
           </HStack>
@@ -580,9 +652,9 @@ function AbonnementPanel() {
       </Card.Root>
 
       {/* Historique de facturation */}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Historique de facturation</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Historique de facturation</Card.Title>
         </Card.Header>
         <Card.Body p={0}>
           <Box overflowX="auto">
@@ -623,10 +695,10 @@ function UsageBar({ label, value, percent }: { label: string; value: string; per
   return (
     <Box>
       <HStack justify="space-between" mb={1}>
-        <Text fontSize="sm" color="gray.600">{label}</Text>
+        <Text fontSize="sm" color="text.muted">{label}</Text>
         <Text fontSize="sm" fontWeight="medium">{value}</Text>
       </HStack>
-      <Box bg="gray.100" borderRadius="full" h="6px">
+      <Box bg="bg.surface.hover" borderRadius="full" h="6px">
         <Box
           bg={percent >= 90 ? 'red.400' : 'brand.500'}
           h="100%"
@@ -657,12 +729,12 @@ function NotificationsPanel() {
         subtitle="Choisissez comment et quand vous souhaitez être notifié."
       />
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Notifications push</Card.Title>
-          <Text fontSize="sm" color="gray.500">Reçues directement sur votre appareil.</Text>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Notifications push</Card.Title>
+          <Text fontSize="sm" color="text.muted">Reçues directement sur votre appareil.</Text>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={0} align="stretch">
             <ToggleRow label="Rappels d'intervention" description="30 minutes avant le début d'une intervention." checked={pushReminders} onChange={setPushReminders} />
             <ToggleRow label="Alertes de conformité" description="Notifications immédiates en cas de non-conformité détectée." checked={pushCompliance} onChange={setPushCompliance} />
@@ -672,11 +744,11 @@ function NotificationsPanel() {
         </Card.Body>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Notifications e-mail</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Notifications e-mail</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={0} align="stretch">
             <ToggleRow label="Bulletins de paie générés" description="Envoi automatique par e-mail après génération." checked={emailPayslips} onChange={setEmailPayslips} />
             <ToggleRow label="Alertes de sécurité" description="Connexion depuis un nouvel appareil ou une nouvelle localisation." checked={emailSecurity} onChange={setEmailSecurity} />
@@ -708,11 +780,11 @@ function ConventionPanel() {
         subtitle="Paramètres de conformité liés à l'IDCC 3239 — Particuliers employeurs et emploi à domicile."
       />
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Règles de validation</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Règles de validation</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={0} align="stretch">
             <ToggleRow label="Pause obligatoire (Art. L3121-16)" description="Alerte si aucune pause de 20 min pour une intervention supérieure à 6h." checked={ruleBreak} onChange={setRuleBreak} />
             <ToggleRow label="Durée maximale journalière" description="Avertissement si le total dépasse 10h par jour." checked={ruleDailyMax} onChange={setRuleDailyMax} />
@@ -722,12 +794,12 @@ function ConventionPanel() {
         </Card.Body>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Majorations par défaut</Card.Title>
-          <Text fontSize="sm" color="gray.500">Modifiables par employé dans la fiche contrat.</Text>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Majorations par défaut</Card.Title>
+          <Text fontSize="sm" color="text.muted">Modifiables par employé dans la fiche contrat.</Text>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
             <Field.Root>
               <Field.Label>Majoration dimanche (%)</Field.Label>
@@ -746,9 +818,9 @@ function ConventionPanel() {
               <Input type="number" min={0} max={100} value={majSupp} onChange={(e) => setMajSupp(e.target.value)} />
             </Field.Root>
           </Grid>
-          <HStack mt={4} gap={3} justify="flex-end">
-            <Button variant="ghost" size="sm">Réinitialiser</Button>
-            <Button colorPalette="brand" size="sm">Enregistrer</Button>
+          <HStack mt={5} gap={3} justify="flex-end">
+            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md">Réinitialiser</Button>
+            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Enregistrer</Button>
           </HStack>
         </Card.Body>
       </Card.Root>
@@ -771,11 +843,11 @@ function PchPanel() {
         subtitle="Configurez vos alertes liées au quota PCH et vos coordonnées bancaires de versement."
       />
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Alertes PCH</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Alertes PCH</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={0} align="stretch">
             <ToggleRow label="Quota atteint à 90 %" description="Alerte quand vous approchez du plafond mensuel PCH (55h36 sur 62h)." checked={alertQuota} onChange={setAlertQuota} />
             <ToggleRow label="Rappel renouvellement PCH" description="Notification 3 mois avant l'expiration de votre accord MDPH." checked={alertRenewal} onChange={setAlertRenewal} />
@@ -785,19 +857,19 @@ function PchPanel() {
         </Card.Body>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>IBAN de versement</Card.Title>
-          <Text fontSize="sm" color="gray.500">Coordonnées bancaires pour le versement de la PCH par le CDAPH.</Text>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">IBAN de versement</Card.Title>
+          <Text fontSize="sm" color="text.muted">Coordonnées bancaires pour le versement de la PCH par le CDAPH.</Text>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <Field.Root>
             <Field.Label>IBAN</Field.Label>
             <Input
               value="FR76 1234 5678 9012 3456 7890 123"
               readOnly
               fontFamily="mono"
-              bg="gray.50"
+              bg="bg.page"
             />
             <Field.HelperText>
               Pour modifier votre IBAN, rendez-vous dans votre profil aidant.
@@ -822,11 +894,11 @@ function ApparencePanel() {
         subtitle="Personnalisez l'interface selon vos préférences visuelles."
       />
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Thème</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Thème</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <ToggleRow
             label="Mode sombre"
             description="Réduit la fatigue visuelle en environnement peu éclairé."
@@ -836,11 +908,11 @@ function ApparencePanel() {
         </Card.Body>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Densité de l'interface</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Densité de l'interface</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <HStack gap={4}>
             {(['comfortable', 'compact'] as const).map((d) => (
               <Box
@@ -848,7 +920,7 @@ function ApparencePanel() {
                 flex={1}
                 borderWidth="2px"
                 borderColor={density === d ? 'brand.500' : 'gray.200'}
-                borderRadius="md"
+                borderRadius="10px"
                 p={4}
                 cursor="pointer"
                 onClick={() => setDensity(d)}
@@ -858,7 +930,7 @@ function ApparencePanel() {
                 <Text fontWeight="medium" fontSize="sm" mb={1}>
                   {d === 'comfortable' ? 'Confortable' : 'Compact'}
                 </Text>
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="text.muted">
                   {d === 'comfortable'
                     ? "Plus d'espace entre les éléments"
                     : "Interface plus dense, plus d'informations visibles"}
@@ -875,13 +947,97 @@ function ApparencePanel() {
 // ── Accessibilité ─────────────────────────────────────────────────────────────
 
 function AccessibilitePanel() {
+  const { settings, updateSettings } = useAccessibilityStore()
+
+  const handleToggle = (key: keyof Omit<import('@/types').AccessibilitySettings, 'textScale'>) => {
+    updateSettings({ [key]: !settings[key] })
+  }
+
   return (
     <VStack gap={6} align="stretch">
       <PanelHeader
         title="Accessibilité"
         subtitle="Adaptez l'interface à vos besoins pour une meilleure expérience d'utilisation."
       />
-      <AccessibilitySection />
+
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Affichage</Card.Title>
+        </Card.Header>
+        <Card.Body p={4}>
+          <VStack gap={0} align="stretch">
+            <ToggleRow
+              label="Contraste élevé"
+              description="Renforce le contraste des couleurs pour améliorer la lisibilité."
+              checked={settings.highContrast}
+              onChange={() => handleToggle('highContrast')}
+            />
+            <ToggleRow
+              label="Texte agrandi"
+              description="Augmente la taille du texte dans l'ensemble de l'application."
+              checked={settings.largeText}
+              onChange={() => handleToggle('largeText')}
+            />
+            {settings.largeText && (
+              <Box py={3} borderBottomWidth="1px" borderColor="border.default">
+                <HStack justify="space-between" mb={2}>
+                  <Text fontSize="sm" color="text.muted">Taille du texte</Text>
+                  <Text fontSize="sm" fontWeight="600" color="#3D5166">{settings.textScale}%</Text>
+                </HStack>
+                <input
+                  type="range"
+                  min={80}
+                  max={150}
+                  step={5}
+                  value={settings.textScale}
+                  onChange={(e) => updateSettings({ textScale: Number(e.target.value) })}
+                  aria-label="Taille du texte en pourcentage"
+                  style={{ width: '100%', accentColor: '#3D5166' }}
+                />
+                <HStack justify="space-between" mt={1}>
+                  <Text fontSize="xs" color="text.muted">80%</Text>
+                  <Text fontSize="xs" color="text.muted">150%</Text>
+                </HStack>
+              </Box>
+            )}
+            <ToggleRow
+              label="Réduire les animations"
+              description="Limite les transitions et effets animés pour réduire la fatigue visuelle."
+              checked={settings.reducedMotion}
+              onChange={() => handleToggle('reducedMotion')}
+            />
+          </VStack>
+        </Card.Body>
+      </Card.Root>
+
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Assistance</Card.Title>
+        </Card.Header>
+        <Card.Body p={4}>
+          <VStack gap={0} align="stretch">
+            <ToggleRow
+              label="Optimisé lecteur d'écran"
+              description="Améliore la compatibilité avec les technologies d'assistance (NVDA, VoiceOver…)."
+              checked={settings.screenReaderOptimized}
+              onChange={() => handleToggle('screenReaderOptimized')}
+            />
+            <ToggleRow
+              label="Contrôle vocal"
+              description="Naviguez dans l'application par commandes vocales."
+              checked={settings.voiceControlEnabled}
+              onChange={() => handleToggle('voiceControlEnabled')}
+              disabled
+              badge="Bientôt disponible"
+            />
+          </VStack>
+        </Card.Body>
+      </Card.Root>
+
+      <HStack gap={2} align="center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14} aria-hidden="true" style={{ flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+        <Text fontSize="sm" color="text.muted">Ces paramètres sont enregistrés localement sur votre appareil.</Text>
+      </HStack>
     </VStack>
   )
 }
@@ -899,30 +1055,51 @@ function DonneesPanel() {
         subtitle="Export, import et gestion de vos données personnelles."
       />
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Export des données</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Export des données</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={3} align="start">
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost" size="sm" w="fit-content"
+              borderWidth="1.5px" borderColor="border.default" borderRadius="md"
+              color="text.secondary" fontWeight="600"
+              _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
+              gap={2}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Exporter toutes les données (JSON)
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost" size="sm" w="fit-content"
+              borderWidth="1.5px" borderColor="border.default" borderRadius="md"
+              color="text.secondary" fontWeight="600"
+              _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
+              gap={2}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Exporter le planning (CSV)
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button
+              variant="ghost" size="sm" w="fit-content"
+              borderWidth="1.5px" borderColor="border.default" borderRadius="md"
+              color="text.secondary" fontWeight="600"
+              _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
+              gap={2}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Exporter les bulletins de paie (ZIP)
             </Button>
           </VStack>
         </Card.Body>
       </Card.Root>
 
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Confidentialité</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Confidentialité</Card.Title>
         </Card.Header>
-        <Card.Body>
+        <Card.Body p={4}>
           <VStack gap={0} align="stretch">
             <ToggleRow
               label="Analyses anonymisées"

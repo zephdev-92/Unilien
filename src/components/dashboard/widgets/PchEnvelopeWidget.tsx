@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Box, Stack, Flex, Text, Skeleton, Progress } from '@chakra-ui/react'
+import { Box, Stack, SimpleGrid, Flex, Text, Skeleton, Progress } from '@chakra-ui/react'
 import { getEmployer } from '@/services/profileService'
 import { getEmployerStats, getEmployerBudgetForecast } from '@/services/statsService'
 import { calcEnveloppePch, getPchElementRate, PCH_TYPE_LABELS } from '@/lib/pch/pchTariffs'
@@ -88,7 +88,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
 
   if (isLoading) {
     return (
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6} boxShadow="sm">
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6} boxShadow="sm">
         <Skeleton height="20px" width="60%" mb={4} />
         <Skeleton height="12px" mb={3} />
         <Skeleton height="8px" borderRadius="full" mb={4} />
@@ -111,132 +111,121 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
   const isOver = consumed > envelopePch
   const tarif = getPchElementRate(pchType)
 
-  const progressColor = isOver ? 'red' : isWarning ? 'orange' : 'green'
+  const progressColor = isOver ? 'red' : 'green'
+
+  const monthLabel = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  const capitalMonth = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+
+  const fmt = (v: number) => v.toLocaleString('fr-FR', { maximumFractionDigits: 0 })
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor={isOver ? 'red.300' : isWarning ? 'orange.300' : 'gray.200'}
-      p={6}
+      borderColor="border.default"
       boxShadow="sm"
+      overflow="hidden"
     >
-      <Flex justify="space-between" align="flex-start" mb={4}>
+      {/* Card header */}
+      <Flex justify="space-between" align="center" px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
         <Box>
-          <Text fontSize="lg" fontWeight="semibold" color="gray.900">
-            Enveloppe PCH
+          <Text fontSize="15px" fontWeight="700" color="text.default">
+            Enveloppe PCH — {capitalMonth}
           </Text>
-          <Text fontSize="sm" color="gray.500">
-            {PCH_TYPE_LABELS[pchType]} · {pchMonthlyHours}h/mois
+          <Text fontSize="xs" color="text.muted">
+            {PCH_TYPE_LABELS[pchType]} · {pchMonthlyHours}h/mois · Tarif {tarif.toFixed(2).replace('.', ',')} €/h
           </Text>
         </Box>
         {isOver && (
-          <Box
-            px={2}
-            py={1}
-            bg="red.50"
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="red.200"
+          <Flex
+            px={3} py="4px" borderRadius="full" fontSize="12px" fontWeight="700"
+            bg="#FEF2F2" color="#991B1B" borderWidth="1px" borderColor="#FCA5A5"
           >
-            <Text fontSize="xs" fontWeight="medium" color="red.700">
-              Dépassement
-            </Text>
-          </Box>
+            Dépassement
+          </Flex>
         )}
         {isWarning && !isOver && (
-          <Box
-            px={2}
-            py={1}
-            bg="orange.50"
-            borderRadius="md"
-            borderWidth="1px"
-            borderColor="orange.200"
+          <Flex
+            px={3} py="4px" borderRadius="10px" fontSize="12px" fontWeight="700"
+            bg="#FEF9C3" color="#B45309"
           >
-            <Text fontSize="xs" fontWeight="medium" color="orange.700">
-              Proche du plafond
-            </Text>
-          </Box>
+            Proche du plafond
+          </Flex>
         )}
       </Flex>
 
-      {/* Barre de progression */}
-      <Box mb={2}>
-        <Flex justify="space-between" mb={1}>
-          <Text fontSize="xs" color="gray.500">
-            Consommé
-          </Text>
-          <Text fontSize="xs" fontWeight="medium" color={isOver ? 'red.600' : 'gray.700'}>
-            {ratioPercent}%
-          </Text>
-        </Flex>
-        <Progress.Root value={ratioPercent} colorPalette={progressColor} size="md">
-          <Progress.Track borderRadius="full">
-            <Progress.Range />
-          </Progress.Track>
-        </Progress.Root>
-      </Box>
+      {/* Card body */}
+      <Box p={4}>
+        {/* Barre de progression */}
+        <Box mb={3}>
+          <Flex justify="space-between" mb={1}>
+            <Text fontSize="xs" color="text.muted">Consommé</Text>
+            <Text fontSize="xs" fontWeight="700" color={isOver ? 'red.600' : 'text.default'}>
+              {ratioPercent}%
+            </Text>
+          </Flex>
+          <Progress.Root value={ratioPercent} colorPalette={progressColor} size="md">
+            <Progress.Track borderRadius="full">
+              <Progress.Range />
+            </Progress.Track>
+          </Progress.Root>
+        </Box>
 
-      {/* Heures du mois */}
-      {projectedHours > 0 && (
-        <Stack gap={1} mt={3}>
+        {/* Heures du mois */}
+        <Stack gap={1} mb={4}>
           <Flex justify="space-between">
-            <Text fontSize="sm" color="gray.600">Heures effectuées</Text>
-            <Text fontSize="sm" fontWeight="medium">{completedHours}h</Text>
+            <Text fontSize="sm" color="text.muted">Heures effectuées</Text>
+            <Text fontSize="sm" fontWeight="500" color="text.default">{completedHours}h</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text fontSize="sm" color="gray.600">Heures planifiées</Text>
-            <Text fontSize="sm" fontWeight="medium">{plannedHours}h</Text>
+            <Text fontSize="sm" color="text.muted">Heures planifiées</Text>
+            <Text fontSize="sm" fontWeight="500" color="text.default">{plannedHours}h</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text fontSize="sm" fontWeight="semibold" color="gray.800">Total projeté</Text>
-            <Text fontSize="sm" fontWeight="bold" color="brand.600">{projectedHours}h</Text>
+            <Text fontSize="sm" fontWeight="700" color="#3D5166">Total projeté</Text>
+            <Text fontSize="sm" fontWeight="700" color="#3D5166">{projectedHours}h</Text>
           </Flex>
         </Stack>
-      )}
 
-      {/* Lignes détail */}
-      <Stack gap={2} mt={4}>
-        <Flex justify="space-between">
-          <Text fontSize="sm" color="gray.600">
-            Enveloppe allouée
-          </Text>
-          <Text fontSize="sm" fontWeight="medium" color="green.700">
-            {envelopePch.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
-          </Text>
-        </Flex>
-
-        <Flex justify="space-between">
-          <Text fontSize="sm" color="gray.600">
-            Coût mensuel estimé
-          </Text>
-          <Text fontSize="sm" fontWeight="medium" color={isOver ? 'red.600' : 'gray.900'}>
-            {consumed.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
-          </Text>
-        </Flex>
-
-        <Box borderTopWidth="1px" borderColor="gray.100" pt={2}>
-          <Flex justify="space-between">
-            <Text fontSize="sm" fontWeight="medium" color="gray.700">
-              Reste à charge
+        {/* 3 cartes montants */}
+        <SimpleGrid columns={3} gap={3} mb={3}>
+          <Box
+            textAlign="center" py={3} px={2}
+            borderRadius="10px" borderWidth="1px" borderColor="border.default"
+            bg="#F3F6F9"
+          >
+            <Text fontSize="lg" fontWeight="800" color="#3D5166">
+              {fmt(envelopePch)} €
             </Text>
-            <Text
-              fontSize="sm"
-              fontWeight="bold"
-              color={resteACharge > 0 ? 'red.600' : 'green.600'}
-            >
-              {resteACharge > 0
-                ? resteACharge.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
-                : 'Couvert'}
+            <Text fontSize="xs" color="text.muted">Enveloppe allouée</Text>
+          </Box>
+          <Box
+            textAlign="center" py={3} px={2}
+            borderRadius="10px" borderWidth="1px" borderColor="border.default"
+            bg="#F3F6F9"
+          >
+            <Text fontSize="lg" fontWeight="800" color="#5E5038">
+              {fmt(consumed)} €
             </Text>
-          </Flex>
-        </Box>
-      </Stack>
+            <Text fontSize="xs" color="text.muted">Coût mensuel estimé</Text>
+          </Box>
+          <Box
+            textAlign="center" py={3} px={2}
+            borderRadius="10px" borderWidth="1px" borderColor="border.default"
+            bg={resteACharge > 0 ? '#FEF2F2' : '#EFF4DC'}
+          >
+            <Text fontSize="lg" fontWeight="800" color={resteACharge > 0 ? '#991B1B' : '#3A5210'}>
+              {resteACharge > 0 ? `${fmt(resteACharge)} €` : 'Couvert'}
+            </Text>
+            <Text fontSize="xs" color="text.muted">Reste à charge</Text>
+          </Box>
+        </SimpleGrid>
 
-      <Text fontSize="xs" color="gray.400" mt={3}>
-        Tarif PCH {tarif.toFixed(2).replace('.', ',')} €/h · Charges ~42% incluses
-      </Text>
+        <Text fontSize="xs" color="text.muted">
+          Tarif PCH {tarif.toFixed(2).replace('.', ',')} €/h · Charges ~42% incluses
+        </Text>
+      </Box>
     </Box>
   )
 }

@@ -34,7 +34,7 @@ export function ComplianceAlert({
     <Box
       role="alert"
       aria-live="polite"
-      borderRadius="lg"
+      borderRadius="12px"
       overflow="hidden"
     >
       {/* Erreurs bloquantes */}
@@ -119,8 +119,8 @@ function ErrorItem({ error }: { error: ComplianceError }) {
           w="full"
           textAlign="left"
           p={3}
-          bg="white"
-          borderRadius="md"
+          bg="bg.surface"
+          borderRadius="10px"
           borderWidth="1px"
           borderColor="red.200"
           _hover={{ borderColor: 'red.400' }}
@@ -142,7 +142,7 @@ function ErrorItem({ error }: { error: ComplianceError }) {
         <Box
           p={3}
           bg="red.100"
-          borderRadius="md"
+          borderRadius="10px"
           borderTopRadius={0}
           mt={-1}
         >
@@ -165,8 +165,8 @@ function WarningItem({ warning }: { warning: ComplianceWarning }) {
           w="full"
           textAlign="left"
           p={3}
-          bg="white"
-          borderRadius="md"
+          bg="bg.surface"
+          borderRadius="10px"
           borderWidth="1px"
           borderColor="orange.200"
           _hover={{ borderColor: 'orange.400' }}
@@ -188,7 +188,7 @@ function WarningItem({ warning }: { warning: ComplianceWarning }) {
         <Box
           p={3}
           bg="orange.100"
-          borderRadius="md"
+          borderRadius="10px"
           borderTopRadius={0}
           mt={-1}
         >

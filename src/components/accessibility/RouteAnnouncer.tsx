@@ -13,7 +13,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/cahier-de-liaison': 'Cahier de liaison',
   '/messagerie': 'Messagerie',
   '/parametres': 'Paramètres',
-  '/pointage': 'Pointage',
+  '/suivi-des-heures': 'Suivi des heures',
   '/conformite': 'Conformité',
   '/documents': 'Documents',
   '/contact': 'Contact',

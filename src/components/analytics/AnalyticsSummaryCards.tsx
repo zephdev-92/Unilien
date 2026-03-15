@@ -77,10 +77,10 @@ export function AnalyticsSummaryCards({ data, isEmployer }: AnalyticsSummaryCard
       {cards.map((card) => (
         <Box
           key={card.label}
-          bg="white"
-          borderRadius="lg"
+          bg="bg.surface"
+          borderRadius="12px"
           borderWidth="1px"
-          borderColor="gray.200"
+          borderColor="border.default"
           p={4}
           boxShadow="sm"
           transition="all 0.2s"
@@ -98,7 +98,7 @@ export function AnalyticsSummaryCards({ data, isEmployer }: AnalyticsSummaryCard
               justify="center"
               w={10}
               h={10}
-              borderRadius="lg"
+              borderRadius="12px"
               bg={card.iconBg}
               flexShrink={0}
             >
@@ -110,10 +110,10 @@ export function AnalyticsSummaryCards({ data, isEmployer }: AnalyticsSummaryCard
           <Text fontSize="2xl" fontWeight="bold" color="brand.600">
             {card.value}
           </Text>
-          <Text fontSize="sm" fontWeight="medium" color="gray.700">
+          <Text fontSize="sm" fontWeight="medium" color="text.secondary">
             {card.label}
           </Text>
-          <Text fontSize="xs" color="gray.500" mt={1}>
+          <Text fontSize="xs" color="text.muted" mt={1}>
             {card.sub}
           </Text>
         </Box>

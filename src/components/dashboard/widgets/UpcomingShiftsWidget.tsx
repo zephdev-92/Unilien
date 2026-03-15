@@ -38,16 +38,16 @@ export function UpcomingShiftsWidget({
   if (loading) {
     return (
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
         boxShadow="sm"
       >
         <Center py={4}>
           <Spinner size="md" color="brand.500" mr={3} />
-          <Text color="gray.500">Chargement du planning...</Text>
+          <Text color="text.muted">Chargement du planning...</Text>
         </Center>
       </Box>
     )
@@ -55,15 +55,15 @@ export function UpcomingShiftsWidget({
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
       boxShadow="sm"
     >
       <Flex justify="space-between" align="center" mb={4}>
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+        <Text fontSize="lg" fontWeight="semibold" color="text.default">
           {title}
         </Text>
         <AccessibleButton
@@ -77,7 +77,7 @@ export function UpcomingShiftsWidget({
       </Flex>
 
       {shifts.length === 0 ? (
-        <Text color="gray.500" py={4} textAlign="center">
+        <Text color="text.muted" py={4} textAlign="center">
           Aucune intervention prévue
         </Text>
       ) : (
@@ -86,14 +86,14 @@ export function UpcomingShiftsWidget({
             <Box
               key={shift.id}
               p={4}
-              bg="gray.50"
-              borderRadius="md"
+              bg="bg.page"
+              borderRadius="10px"
               borderLeftWidth="4px"
               borderLeftColor="brand.500"
             >
               <Flex justify="space-between" align="start" mb={2}>
                 <Box>
-                  <Text fontWeight="medium" color="gray.900">
+                  <Text fontWeight="medium" color="text.default">
                     {formatDate(shift.date)}
                   </Text>
                   <Text fontSize="lg" fontWeight="semibold" color="brand.600">
@@ -104,7 +104,7 @@ export function UpcomingShiftsWidget({
                   {statusLabels[shift.status]}
                 </Badge>
               </Flex>
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color="text.muted">
                 {shift.tasks.slice(0, 2).join(', ')}
                 {shift.tasks.length > 2 && ` +${shift.tasks.length - 2}`}
               </Text>

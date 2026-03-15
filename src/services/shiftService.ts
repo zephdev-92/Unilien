@@ -28,7 +28,8 @@ export async function getShifts(
         employee:employees!employee_id(
           profile:profiles!profile_id(
             first_name,
-            last_name
+            last_name,
+            avatar_url
           )
         )
       )
@@ -69,7 +70,7 @@ export async function getShifts(
     // Extraire l'employeeId et employeeName du JOIN contract
     const contractJoin = (row as Record<string, unknown>).contract as {
       employee_id?: string
-      employee?: { profile?: { first_name?: string; last_name?: string } | null } | null
+      employee?: { profile?: { first_name?: string; last_name?: string; avatar_url?: string } | null } | null
     } | null
     if (contractJoin?.employee_id) {
       shift.employeeId = contractJoin.employee_id
@@ -77,6 +78,7 @@ export async function getShifts(
     if (contractJoin?.employee?.profile) {
       const p = contractJoin.employee.profile
       shift.employeeName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || undefined
+      shift.employeeAvatarUrl = p.avatar_url || undefined
     }
     return shift
   })
@@ -188,6 +190,7 @@ export async function updateShift(
     effectiveHours: number
     guardSegments: GuardSegment[]
     status: Shift['status']
+    lateEntry: boolean
   }>
 ): Promise<void> {
   const payload: Record<string, unknown> = {
@@ -212,6 +215,7 @@ export async function updateShift(
       seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
   }
   if (updates.status) payload.status = updates.status
+  if (updates.lateEntry !== undefined) payload.late_entry = updates.lateEntry
 
   const { error } = await supabase
     .from('shifts')
@@ -412,6 +416,7 @@ function mapShiftFromDb(data: ShiftDbRow): Shift {
     effectiveHours: data.effective_hours ?? undefined,
     guardSegments: data.guard_segments ?? undefined,
     status: data.status,
+    lateEntry: data.late_entry ?? false,
     computedPay: data.computed_pay || {
       basePay: 0,
       sundayMajoration: 0,

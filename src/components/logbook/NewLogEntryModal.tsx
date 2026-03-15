@@ -114,7 +114,7 @@ export function NewLogEntryModal({
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
+            bg="bg.surface"
             borderRadius="xl"
             maxW="500px"
             w="90vw"
@@ -174,8 +174,8 @@ export function NewLogEntryModal({
                       {...register('content')}
                       css={{
                         '&:focus': {
-                          borderColor: 'var(--chakra-colors-blue-500)',
-                          boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.3)',
+                          borderColor: 'var(--chakra-colors-brand-500)',
+                          boxShadow: '0 0 0 3px rgba(78, 100, 120, 0.15)',
                         },
                       }}
                     />
@@ -185,7 +185,7 @@ export function NewLogEntryModal({
                           {errors.content.message}
                         </Text>
                       ) : (
-                        <Text fontSize="sm" color="gray.600">
+                        <Text fontSize="sm" color="text.muted">
                           Décrivez l'information à partager
                         </Text>
                       )}
@@ -200,7 +200,7 @@ export function NewLogEntryModal({
 
                   {/* Error message */}
                   {submitError && (
-                    <Box p={4} bg="red.50" borderRadius="md">
+                    <Box p={4} bg="red.50" borderRadius="10px">
                       <Text color="red.700">{submitError}</Text>
                     </Box>
                   )}
@@ -220,7 +220,7 @@ export function NewLogEntryModal({
                 <AccessibleButton
                   type="submit"
                   form="new-log-entry-form"
-                  colorPalette="blue"
+                  colorPalette="brand"
                   loading={isSubmitting}
                   loadingText="Enregistrement..."
                 >

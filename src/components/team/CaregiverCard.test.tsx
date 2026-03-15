@@ -93,67 +93,56 @@ describe('CaregiverCard', () => {
   })
 
   describe('Permissions', () => {
-    it('affiche le tag "Planning" si canViewPlanning=true', () => {
+    it('affiche le compteur de permissions quand des permissions sont actives', () => {
       const caregiver = makeCaregiver({
-        permissions: makePermissions({ canViewPlanning: true }),
+        permissions: makePermissions({ canViewPlanning: true, canViewLiaison: true }),
       })
       renderWithProviders(
         <CaregiverCard caregiver={caregiver} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.getByText('Planning')).toBeInTheDocument()
+      expect(screen.getByText(/2\s*permissions/)).toBeInTheDocument()
     })
 
-    it('affiche le tag "Liaison" si canViewLiaison=true', () => {
-      const caregiver = makeCaregiver({
-        permissions: makePermissions({ canViewLiaison: true }),
-      })
+    it('affiche "0 permission" si aucune permission active', () => {
       renderWithProviders(
-        <CaregiverCard caregiver={caregiver} onEdit={vi.fn()} onRemove={vi.fn()} />
+        <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.getByText('Liaison')).toBeInTheDocument()
+      expect(screen.getByText(/0\s*permission$/)).toBeInTheDocument()
     })
 
-    it('affiche le tag "Export" si canExportData=true', () => {
+    it('affiche "1 permission" (singulier) si une seule permission active', () => {
       const caregiver = makeCaregiver({
         permissions: makePermissions({ canExportData: true }),
       })
       renderWithProviders(
         <CaregiverCard caregiver={caregiver} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.getByText('Export')).toBeInTheDocument()
-    })
-
-    it('n\'affiche aucun tag si aucune permission active', () => {
-      renderWithProviders(
-        <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
-      )
-      expect(screen.queryByText('Planning')).not.toBeInTheDocument()
-      expect(screen.queryByText('Liaison')).not.toBeInTheDocument()
+      expect(screen.getByText(/1\s*permission$/)).toBeInTheDocument()
     })
   })
 
   describe('Actions', () => {
-    it('affiche le bouton "Modifier les permissions"', () => {
+    it('affiche le bouton "Permissions"', () => {
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.getByRole('button', { name: /modifier les permissions/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^permissions$/i })).toBeInTheDocument()
     })
 
-    it('affiche le bouton "Retirer l\'aidant"', () => {
+    it('affiche le bouton "Retirer"', () => {
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.getByRole('button', { name: /retirer l'aidant/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^retirer$/i })).toBeInTheDocument()
     })
 
-    it('appelle onEdit au clic sur Modifier', async () => {
+    it('appelle onEdit au clic sur Permissions', async () => {
       const user = userEvent.setup()
       const onEdit = vi.fn()
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={onEdit} onRemove={vi.fn()} />
       )
-      await user.click(screen.getByRole('button', { name: /modifier les permissions/i }))
+      await user.click(screen.getByRole('button', { name: /^permissions$/i }))
       expect(onEdit).toHaveBeenCalledOnce()
     })
 
@@ -163,7 +152,7 @@ describe('CaregiverCard', () => {
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={onRemove} />
       )
-      await user.click(screen.getByRole('button', { name: /retirer l'aidant/i }))
+      await user.click(screen.getByRole('button', { name: /^retirer$/i }))
       expect(onRemove).toHaveBeenCalledOnce()
     })
   })

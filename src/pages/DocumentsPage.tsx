@@ -69,7 +69,7 @@ export function DocumentsPage() {
 
   if (!profile || isLoadingCaregiver) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Documents">
         <Center py={12}>
           <Spinner size="xl" color="brand.500" />
         </Center>
@@ -152,7 +152,7 @@ export function DocumentsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Documents">
       <Container maxW="container.xl" py={6}>
         <VStack gap={6} align="stretch">
           {/* En-tête */}
@@ -160,7 +160,7 @@ export function DocumentsPage() {
             <Heading size="xl" mb={2}>
               Documents et Déclarations
             </Heading>
-            <Text color="gray.600">
+            <Text color="text.muted">
               Gérez vos documents et générez les fichiers pour vos déclarations CESU
             </Text>
           </Box>
@@ -200,7 +200,7 @@ export function DocumentsPage() {
                         <HStack gap={4}>
                           {/* Mois */}
                           <Box flex={2}>
-                            <Text fontSize="sm" color="gray.600" mb={2}>
+                            <Text fontSize="sm" color="text.muted" mb={2}>
                               Mois
                             </Text>
                             <HStack gap={2} flexWrap="wrap">
@@ -233,7 +233,7 @@ export function DocumentsPage() {
 
                           {/* Année */}
                           <Box flex={1}>
-                            <Text fontSize="sm" color="gray.600" mb={2}>
+                            <Text fontSize="sm" color="text.muted" mb={2}>
                               Année
                             </Text>
                             <VStack gap={2}>
@@ -301,18 +301,18 @@ export function DocumentsPage() {
                     <Card.Body>
                       <VStack gap={6} align="stretch">
                         {/* Résumé employeur */}
-                        <Box p={4} bg="gray.50" borderRadius="md">
+                        <Box p={4} bg="bg.page" borderRadius="10px">
                           <Text fontWeight="semibold" mb={2}>
                             Employeur
                           </Text>
                           <Text>
                             {previewData.employerFirstName} {previewData.employerLastName}
                           </Text>
-                          <Text fontSize="sm" color="gray.600">
+                          <Text fontSize="sm" color="text.muted">
                             {previewData.employerAddress}
                           </Text>
                           {previewData.cesuNumber && (
-                            <Text fontSize="sm" color="gray.600">
+                            <Text fontSize="sm" color="text.muted">
                               N° CESU: {previewData.cesuNumber}
                             </Text>
                           )}
@@ -339,24 +339,24 @@ export function DocumentsPage() {
                                     </HStack>
 
                                     <Grid templateColumns="1fr 1fr" gap={2} fontSize="sm">
-                                      <Text color="gray.600">Heures totales:</Text>
+                                      <Text color="text.muted">Heures totales:</Text>
                                       <Text fontWeight="medium" textAlign="right">
                                         {employee.totalHours.toFixed(2).replace('.', ',')} h
                                       </Text>
 
-                                      <Text color="gray.600">Interventions:</Text>
+                                      <Text color="text.muted">Interventions:</Text>
                                       <Text fontWeight="medium" textAlign="right">
                                         {employee.shiftsCount}
                                       </Text>
 
-                                      <Text color="gray.600">Salaire de base:</Text>
+                                      <Text color="text.muted">Salaire de base:</Text>
                                       <Text fontWeight="medium" textAlign="right">
                                         {employee.basePay.toFixed(2).replace('.', ',')} €
                                       </Text>
 
                                       {totalMajorations > 0 && (
                                         <>
-                                          <Text color="gray.600">Majorations:</Text>
+                                          <Text color="text.muted">Majorations:</Text>
                                           <Text fontWeight="medium" textAlign="right">
                                             {totalMajorations.toFixed(2).replace('.', ',')} €
                                           </Text>
@@ -378,11 +378,11 @@ export function DocumentsPage() {
                         </Box>
 
                         {/* Total général */}
-                        <Box p={4} bg="brand.50" borderRadius="md">
+                        <Box p={4} bg="brand.50" borderRadius="10px">
                           <HStack justify="space-between">
                             <Box>
                               <Text fontWeight="semibold">Total général</Text>
-                              <Text fontSize="sm" color="gray.600">
+                              <Text fontSize="sm" color="text.muted">
                                 {previewData.totalHours.toFixed(2).replace('.', ',')} heures travaillées
                               </Text>
                             </Box>

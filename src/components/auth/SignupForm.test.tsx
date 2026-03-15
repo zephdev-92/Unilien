@@ -49,32 +49,26 @@ describe('SignupForm', () => {
     it('devrait afficher le sélecteur de type de compte', () => {
       renderWithProviders(<SignupForm />)
 
-      expect(screen.getByText(/sélectionnez votre profil/i)).toBeInTheDocument()
+      expect(screen.getByText(/vous êtes…/i)).toBeInTheDocument()
     })
 
     it('devrait afficher les champs prénom et nom', () => {
       renderWithProviders(<SignupForm />)
 
-      expect(screen.getByPlaceholderText(/votre prénom/i)).toBeInTheDocument()
-      expect(screen.getByPlaceholderText(/votre nom/i)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Marie')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Fontaine')).toBeInTheDocument()
     })
 
     it('devrait afficher le champ email', () => {
       renderWithProviders(<SignupForm />)
 
-      expect(screen.getByPlaceholderText(/votre@email.fr/i)).toBeInTheDocument()
-    })
-
-    it('devrait afficher le champ téléphone (optionnel)', () => {
-      renderWithProviders(<SignupForm />)
-
-      expect(screen.getByPlaceholderText(/06 12 34 56 78/i)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/marie@exemple\.fr/i)).toBeInTheDocument()
     })
 
     it('devrait afficher les champs mot de passe', () => {
       renderWithProviders(<SignupForm />)
 
-      expect(screen.getByPlaceholderText(/créez un mot de passe sécurisé/i)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/minimum 12 caractères/i)).toBeInTheDocument()
       expect(screen.getByPlaceholderText(/confirmez votre mot de passe/i)).toBeInTheDocument()
     })
 
@@ -102,10 +96,9 @@ describe('SignupForm', () => {
     it('devrait avoir les bons attributs autocomplete sur les champs', () => {
       renderWithProviders(<SignupForm />)
 
-      expect(screen.getByPlaceholderText(/votre prénom/i)).toHaveAttribute('autocomplete', 'given-name')
-      expect(screen.getByPlaceholderText(/votre nom/i)).toHaveAttribute('autocomplete', 'family-name')
-      expect(screen.getByPlaceholderText(/votre@email.fr/i)).toHaveAttribute('autocomplete', 'email')
-      expect(screen.getByPlaceholderText(/06 12 34 56 78/i)).toHaveAttribute('autocomplete', 'tel')
+      expect(screen.getByPlaceholderText('Marie')).toHaveAttribute('autocomplete', 'given-name')
+      expect(screen.getByPlaceholderText('Fontaine')).toHaveAttribute('autocomplete', 'family-name')
+      expect(screen.getByPlaceholderText(/marie@exemple\.fr/i)).toHaveAttribute('autocomplete', 'email')
     })
   })
 

@@ -75,17 +75,57 @@ export function TeamPage() {
 
   const canViewAuxiliaries = isEmployer || !!currentCaregiver?.permissions?.canManageTeam
 
+  // Bouton "+ Ajouter" dans le header (topbar-right) comme le proto
+  // Bouton "+ Ajouter" topbar — même style que btn "Nouveau" messagerie
+  const topbarAddButton = isEmployer ? (
+    <AccessibleButton
+      bg="brand.500"
+      color="white"
+      fontWeight={600}
+      borderRadius="6px"
+      _hover={{ bg: 'brand.600' }}
+      onClick={() => setIsNewContractOpen(true)}
+      aria-label="Ajouter un employé"
+      display="inline-flex"
+      alignItems="center"
+      gap={2}
+      px={3}
+      py={2}
+      size="sm"
+      minH="auto"
+      minW="auto"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={16} height={16} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      <Text as="span" display={{ base: 'none', sm: 'inline' }}>Ajouter</Text>
+    </AccessibleButton>
+  ) : undefined
+
   return (
-    <DashboardLayout title="Mon équipe">
+    <DashboardLayout title="Équipe" topbarRight={topbarAddButton}>
       <Stack gap={6}>
         <Tabs.Root value={activeTab} onValueChange={(e) => setActiveTab(e.value)}>
-          <Tabs.List>
+          <Tabs.List borderBottomWidth="1px" borderColor="border.default">
             {canViewAuxiliaries && (
-              <Tabs.Trigger value="auxiliaries">
+              <Tabs.Trigger
+                value="auxiliaries"
+                fontWeight={600}
+                fontSize="sm"
+                _selected={{ color: 'brand.500', borderBottomColor: 'brand.500' }}
+                py={3}
+              >
                 Auxiliaires de vie ({auxiliaries.length})
               </Tabs.Trigger>
             )}
-            <Tabs.Trigger value="caregivers">
+            <Tabs.Trigger
+              value="caregivers"
+              fontWeight={600}
+              fontSize="sm"
+              _selected={{ color: 'brand.500', borderBottomColor: 'brand.500' }}
+              py={3}
+            >
               Aidants familiaux ({caregivers.length})
             </Tabs.Trigger>
           </Tabs.List>
@@ -161,13 +201,13 @@ export function TeamPage() {
         onOpenChange={(e) => { if (!e.open) cancelRemoveCaregiver() }}
       >
         <Portal>
-          <Dialog.Backdrop />
+          <Dialog.Backdrop bg="blackAlpha.600" />
           <Dialog.Positioner>
-            <Dialog.Content maxW="420px">
-              <Dialog.Header>
-                <Dialog.Title>Retirer un aidant</Dialog.Title>
+            <Dialog.Content maxW="420px" borderRadius="12px" bg="bg.surface">
+              <Dialog.Header p={6} borderBottomWidth="1px" borderColor="border.default">
+                <Dialog.Title fontSize="lg" fontWeight={700} color="brand.500">Retirer un aidant</Dialog.Title>
               </Dialog.Header>
-              <Dialog.Body>
+              <Dialog.Body p={6}>
                 <Text>
                   Êtes-vous sûr de vouloir retirer{' '}
                   <Text as="span" fontWeight="semibold">
@@ -176,20 +216,12 @@ export function TeamPage() {
                   de votre équipe ?
                 </Text>
               </Dialog.Body>
-              <Dialog.Footer>
+              <Dialog.Footer p={6} borderTopWidth="1px" borderColor="border.default">
                 <Flex gap={3} justify="flex-end">
-                  <AccessibleButton
-                    variant="outline"
-                    onClick={cancelRemoveCaregiver}
-                    disabled={isRemoving}
-                  >
+                  <AccessibleButton variant="ghost" onClick={cancelRemoveCaregiver} disabled={isRemoving} color="brand.500">
                     Annuler
                   </AccessibleButton>
-                  <AccessibleButton
-                    colorPalette="red"
-                    onClick={confirmRemoveCaregiver}
-                    loading={isRemoving}
-                  >
+                  <AccessibleButton bg="danger.500" color="white" _hover={{ bg: 'danger.600' }} onClick={confirmRemoveCaregiver} loading={isRemoving}>
                     Retirer
                   </AccessibleButton>
                 </Flex>

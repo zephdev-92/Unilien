@@ -31,9 +31,9 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
 
   return (
     <Box
-      bg="orange.50"
+      bg="warm.50"
       borderBottomWidth="1px"
-      borderColor="orange.200"
+      borderColor="warm.200"
       py={3}
       px={4}
       position="fixed"
@@ -54,20 +54,20 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
             ⚠️
           </Text>
           <Box flex={1}>
-            <Text fontSize="sm" fontWeight="medium" color="orange.900">
+            <Text fontSize="sm" fontWeight="semibold" color="warm.700">
               Application en cours de développement
             </Text>
-            <Text fontSize="sm" color="orange.800">
+            <Text fontSize="sm" color="warm.600">
               Nous travaillons activement sur Unilien. Vos retours sont précieux !{' '}
               <Link
                 href="https://airtable.com/apphPLBwuWxsAq75J/pag4GuwcKDs4nw1C6/form"
                 target="_blank"
                 rel="noopener noreferrer"
-                color="orange.700"
+                color="warm.500"
                 fontWeight="semibold"
                 textDecoration="underline"
                 _hover={{
-                  color: 'orange.900',
+                  color: 'warm.700',
                 }}
               >
                 Donnez votre avis ici
@@ -80,9 +80,10 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
           variant="ghost"
           size="sm"
           onClick={handleDismiss}
-          color="orange.700"
+          color="warm.600"
+          borderRadius="10px"
           _hover={{
-            bg: 'orange.100',
+            bg: 'warm.100',
           }}
         >
           ✕

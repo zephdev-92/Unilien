@@ -92,9 +92,11 @@ describe('TodayPlanningWidget', () => {
           contract: {
             employer_id: 'emp-123',
             employee: {
-              first_name: 'Amara',
-              last_name: 'Diallo',
-              avatar_url: null,
+              profile: {
+                first_name: 'Amara',
+                last_name: 'Diallo',
+                avatar_url: null,
+              },
             },
           },
         },
@@ -107,9 +109,11 @@ describe('TodayPlanningWidget', () => {
           contract: {
             employer_id: 'emp-123',
             employee: {
-              first_name: 'Sofia',
-              last_name: 'Reyes',
-              avatar_url: null,
+              profile: {
+                first_name: 'Sofia',
+                last_name: 'Reyes',
+                avatar_url: null,
+              },
             },
           },
         },
@@ -124,8 +128,8 @@ describe('TodayPlanningWidget', () => {
       expect(screen.getByText('Sofia Reyes')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('08:00 - 12:00')).toBeInTheDocument()
-    expect(screen.getByText('14:00 - 18:00')).toBeInTheDocument()
+    expect(screen.getByText(/08:00/)).toBeInTheDocument()
+    expect(screen.getByText(/14:00/)).toBeInTheDocument()
     expect(screen.getByText('Travail effectif')).toBeInTheDocument()
     expect(screen.getByText('Garde 24h')).toBeInTheDocument()
     expect(screen.getByText('Planifié')).toBeInTheDocument()

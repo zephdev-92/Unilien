@@ -55,46 +55,45 @@ export function ComplianceWidget({ employerId }: ComplianceWidgetProps) {
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
-      p={6}
+      borderColor="border.default"
       boxShadow="sm"
+      overflow="hidden"
     >
-      <Flex justify="space-between" align="center" mb={4}>
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900">
-          Conformité
+      {/* Card header */}
+      <Flex justify="space-between" align="center" px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+        <Text fontSize="15px" fontWeight="700" color="text.default">
+          Alertes conformité
         </Text>
-        <RouterLink to="/conformite">
-          <AccessibleButton size="sm" variant="ghost" colorPalette="blue">
-            Tout voir
-          </AccessibleButton>
-        </RouterLink>
+        <AccessibleButton size="sm" variant="outline" asChild accessibleLabel="Voir toute la conformité">
+          <RouterLink to="/conformite">Tout voir</RouterLink>
+        </AccessibleButton>
       </Flex>
 
-      {isLoading ? (
-        <Center py={8}>
-          <Spinner size="lg" color="brand.500" />
-        </Center>
-      ) : !overview || overview.employees.length === 0 ? (
-        <Box textAlign="center" py={8}>
-          <Text fontSize="3xl" mb={2}>
-            📊
-          </Text>
-          <Text color="gray.600">Aucun auxiliaire actif</Text>
-        </Box>
-      ) : (
-        <Stack gap={4}>
-          {/* Liste d'alertes */}
-          <AlertSummaryList employees={overview.employees} />
-
-          {/* Semaine en cours */}
-          <Text fontSize="xs" color="gray.500" textAlign="center">
-            {overview.weekLabel}
-          </Text>
-        </Stack>
-      )}
+      {/* Card body */}
+      <Box p={4}>
+        {isLoading ? (
+          <Center py={8}>
+            <Spinner size="lg" color="brand.500" />
+          </Center>
+        ) : !overview || overview.employees.length === 0 ? (
+          <Box textAlign="center" py={8}>
+            <Text fontSize="3xl" mb={2}>
+              📊
+            </Text>
+            <Text color="text.muted">Aucun auxiliaire actif</Text>
+          </Box>
+        ) : (
+          <Stack gap={4}>
+            <AlertSummaryList employees={overview.employees} />
+            <Text fontSize="xs" color="text.muted" textAlign="center">
+              {overview.weekLabel}
+            </Text>
+          </Stack>
+        )}
+      </Box>
     </Box>
   )
 }
@@ -125,7 +124,7 @@ function AlertSummaryList({ employees }: { employees: EmployeeComplianceStatus[]
         gap={3}
         p={3}
         bg="green.50"
-        borderRadius="md"
+        borderRadius="10px"
         borderLeftWidth={3}
         borderLeftColor="green.400"
         role="status"
@@ -158,7 +157,7 @@ function AlertSummaryList({ employees }: { employees: EmployeeComplianceStatus[]
             gap={3}
             p={3}
             bg={colors.bg}
-            borderRadius="md"
+            borderRadius="10px"
             borderLeftWidth={3}
             borderLeftColor={colors.border}
             role="alert"
@@ -179,10 +178,10 @@ function AlertSummaryList({ employees }: { employees: EmployeeComplianceStatus[]
               )}
             </Box>
             <Box minW={0}>
-              <Text fontSize="sm" fontWeight="semibold" color="gray.900" truncate>
+              <Text fontSize="sm" fontWeight="semibold" color="text.default" truncate>
                 {alert.message}
               </Text>
-              <Text fontSize="xs" color="gray.600">
+              <Text fontSize="xs" color="text.muted">
                 {alert.employeeName}
               </Text>
             </Box>

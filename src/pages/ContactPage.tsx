@@ -50,7 +50,7 @@ function ContactInfo({
         w={12}
         h={12}
         bg="brand.100"
-        borderRadius="lg"
+        borderRadius="12px"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -59,10 +59,10 @@ function ContactInfo({
         <Text fontSize="xl">{icon}</Text>
       </Box>
       <Box>
-        <Text fontWeight="semibold" color="gray.800" mb={1}>
+        <Text fontWeight="semibold" color="text.default" mb={1}>
           {title}
         </Text>
-        <Text color="gray.600">{content}</Text>
+        <Text color="text.muted">{content}</Text>
       </Box>
     </Flex>
   )
@@ -102,9 +102,9 @@ export function ContactPage() {
         top={0}
         left={0}
         right={0}
-        bg="white"
+        bg="bg.surface"
         borderBottomWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         zIndex={100}
       >
         <Container maxW="container.xl">
@@ -117,13 +117,13 @@ export function ContactPage() {
               </RouterLink>
             </Link>
             <Flex gap={4} align="center">
-              <Link asChild color="gray.600" _hover={{ color: 'brand.500' }}>
+              <Link asChild color="text.muted" _hover={{ color: 'brand.500' }}>
                 <RouterLink to="/">Accueil</RouterLink>
               </Link>
-              <Link asChild color="gray.600" _hover={{ color: 'brand.500' }}>
+              <Link asChild color="text.muted" _hover={{ color: 'brand.500' }}>
                 <RouterLink to="/connexion">Connexion</RouterLink>
               </Link>
-              <AccessibleButton asChild colorPalette="blue" size="sm">
+              <AccessibleButton asChild colorPalette="brand" size="sm">
                 <RouterLink to="/inscription">S'inscrire</RouterLink>
               </AccessibleButton>
             </Flex>
@@ -132,13 +132,13 @@ export function ContactPage() {
       </Box>
 
       {/* Hero */}
-      <Box pt="120px" pb="60px" bg="gray.50">
+      <Box pt="120px" pb="60px" bg="bg.page">
         <Container maxW="container.xl">
           <Stack gap={4} textAlign="center" maxW="600px" mx="auto">
-            <Text fontSize="4xl" fontWeight="bold" color="gray.900">
+            <Text fontSize="4xl" fontWeight="bold" color="text.default">
               Contactez-nous
             </Text>
-            <Text fontSize="lg" color="gray.600">
+            <Text fontSize="lg" color="text.muted">
               Une question ? Une suggestion ? Notre équipe est là pour vous aider.
             </Text>
           </Stack>
@@ -151,14 +151,14 @@ export function ContactPage() {
           <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={12}>
             {/* Form */}
             <GridItem>
-              <Box bg="white" p={8} borderRadius="xl" boxShadow="md">
+              <Box bg="bg.surface" p={8} borderRadius="xl" boxShadow="0 4px 16px rgba(78,100,120,.12)">
                 {isSubmitted ? (
                   <Stack gap={6} textAlign="center" py={8}>
                     <Text fontSize="4xl">✅</Text>
-                    <Text fontSize="xl" fontWeight="bold" color="gray.800">
+                    <Text fontSize="xl" fontWeight="bold" color="text.default">
                       Message envoyé !
                     </Text>
-                    <Text color="gray.600">
+                    <Text color="text.muted">
                       Merci pour votre message. Notre équipe vous répondra dans les plus brefs délais.
                     </Text>
                     <AccessibleButton onClick={() => setIsSubmitted(false)}>
@@ -168,7 +168,7 @@ export function ContactPage() {
                 ) : (
                   <form onSubmit={handleSubmit(onSubmit)}>
                     <Stack gap={5}>
-                      <Text fontSize="xl" fontWeight="bold" color="gray.800">
+                      <Text fontSize="xl" fontWeight="bold" color="text.default">
                         Envoyez-nous un message
                       </Text>
 
@@ -220,7 +220,7 @@ export function ContactPage() {
 
                       <AccessibleButton
                         type="submit"
-                        colorPalette="blue"
+                        colorPalette="brand"
                         size="lg"
                         loading={isSubmitting}
                         loadingText="Envoi en cours..."
@@ -237,7 +237,7 @@ export function ContactPage() {
             <GridItem>
               <Stack gap={8}>
                 <Box>
-                  <Text fontSize="xl" fontWeight="bold" color="gray.800" mb={6}>
+                  <Text fontSize="xl" fontWeight="bold" color="text.default" mb={6}>
                     Autres moyens de nous contacter
                   </Text>
                   <Stack gap={6}>
@@ -260,21 +260,21 @@ export function ContactPage() {
                 </Box>
 
                 {/* FAQ Shortcut */}
-                <Box bg="blue.50" p={6} borderRadius="xl">
-                  <Text fontWeight="bold" color="blue.800" mb={2}>
+                <Box bg="brand.50" p={6} borderRadius="xl">
+                  <Text fontWeight="bold" color="brand.700" mb={2}>
                     Questions fréquentes
                   </Text>
-                  <Text color="blue.700" fontSize="sm" mb={4}>
+                  <Text color="brand.700" fontSize="sm" mb={4}>
                     Consultez notre FAQ pour trouver rapidement des réponses à vos questions.
                   </Text>
                   <Stack gap={2}>
-                    <Text color="blue.600" fontSize="sm">
+                    <Text color="brand.600" fontSize="sm">
                       • Comment créer un compte ?
                     </Text>
-                    <Text color="blue.600" fontSize="sm">
+                    <Text color="brand.600" fontSize="sm">
                       • Comment ajouter un auxiliaire ?
                     </Text>
-                    <Text color="blue.600" fontSize="sm">
+                    <Text color="brand.600" fontSize="sm">
                       • Comment générer une déclaration CESU ?
                     </Text>
                   </Stack>
@@ -299,20 +299,20 @@ export function ContactPage() {
       </Box>
 
       {/* Footer */}
-      <Box py={8} bg="gray.100" borderTopWidth="1px" borderColor="gray.200">
+      <Box py={8} bg="bg.surface.hover" borderTopWidth="1px" borderColor="border.default">
         <Container maxW="container.xl">
           <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
-            <Text color="gray.600" fontSize="sm">
+            <Text color="text.muted" fontSize="sm">
               © {new Date().getFullYear()} Unilien. Tous droits réservés.
             </Text>
             <Flex gap={6}>
-              <Link asChild color="gray.600" fontSize="sm" _hover={{ color: 'brand.500' }}>
+              <Link asChild color="text.muted" fontSize="sm" _hover={{ color: 'brand.500' }}>
                 <RouterLink to="/">Accueil</RouterLink>
               </Link>
-              <Link asChild color="gray.600" fontSize="sm" _hover={{ color: 'brand.500' }}>
+              <Link asChild color="text.muted" fontSize="sm" _hover={{ color: 'brand.500' }}>
                 <RouterLink to="/connexion">Connexion</RouterLink>
               </Link>
-              <Link asChild color="gray.600" fontSize="sm" _hover={{ color: 'brand.500' }}>
+              <Link asChild color="text.muted" fontSize="sm" _hover={{ color: 'brand.500' }}>
                 <RouterLink to="/inscription">S'inscrire</RouterLink>
               </Link>
             </Flex>

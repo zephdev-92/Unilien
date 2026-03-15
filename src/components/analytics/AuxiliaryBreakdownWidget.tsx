@@ -17,17 +17,17 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
   if (data.length === 0) {
     return (
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
         boxShadow="sm"
       >
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={4}>
+        <Text fontSize="lg" fontWeight="semibold" color="text.default" mb={4}>
           Repartition par auxiliaire
         </Text>
-        <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
+        <Text fontSize="sm" color="text.muted" textAlign="center" py={4}>
           Aucune donnee ce mois
         </Text>
       </Box>
@@ -39,24 +39,24 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
       boxShadow="sm"
     >
       <Flex justify="space-between" align="center" mb={4}>
         <Box>
-          <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+          <Text fontSize="lg" fontWeight="semibold" color="text.default">
             Repartition par auxiliaire
           </Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="sm" color="text.muted">
             Mois en cours
           </Text>
         </Box>
         <Box
-          color="blue.600"
+          color="brand.600"
           flexShrink={0}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
@@ -67,7 +67,7 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
         </Box>
       </Flex>
 
-      <Stack gap={0} divideY="1px" divideColor="gray.100">
+      <Stack gap={0} divideY="1px" divideColor="border.default">
         {data.map((aux) => {
           const pct = totalHours > 0 ? (aux.hours / totalHours) * 100 : 0
 
@@ -79,35 +79,35 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
                     w={8}
                     h={8}
                     borderRadius="full"
-                    bg="blue.50"
+                    bg="brand.50"
                     align="center"
                     justify="center"
                     flexShrink={0}
                   >
-                    <Text fontSize="xs" fontWeight="bold" color="blue.600">
+                    <Text fontSize="xs" fontWeight="bold" color="brand.600">
                       {aux.employeeName.split(' ').map(n => n[0]).join('')}
                     </Text>
                   </Flex>
                   <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.800">
+                    <Text fontSize="sm" fontWeight="medium" color="text.default">
                       {aux.employeeName}
                     </Text>
-                    <Text fontSize="xs" color="gray.500">
+                    <Text fontSize="xs" color="text.muted">
                       {aux.shiftsCount} intervention{aux.shiftsCount > 1 ? 's' : ''}
                     </Text>
                   </Box>
                 </Flex>
                 <Box textAlign="right">
-                  <Text fontSize="sm" fontWeight="bold" color="gray.900">
+                  <Text fontSize="sm" fontWeight="bold" color="text.default">
                     {aux.hours}h
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="text.muted">
                     {formatCurrency(aux.cost)}
                   </Text>
                 </Box>
               </Flex>
-              <Box h="6px" bg="gray.100" borderRadius="full" overflow="hidden">
-                <Box h="100%" w={`${pct}%`} bg="blue.500" borderRadius="full" />
+              <Box h="6px" bg="bg.surface.hover" borderRadius="full" overflow="hidden">
+                <Box h="100%" w={`${pct}%`} bg="brand.500" borderRadius="full" />
               </Box>
             </Box>
           )
@@ -115,16 +115,16 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
       </Stack>
 
       {/* Total */}
-      <Box borderTopWidth="2px" borderColor="gray.200" pt={3} mt={1}>
+      <Box borderTopWidth="2px" borderColor="border.default" pt={3} mt={1}>
         <Flex justify="space-between">
-          <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+          <Text fontSize="sm" fontWeight="semibold" color="text.secondary">
             Total
           </Text>
           <Box textAlign="right">
             <Text fontSize="sm" fontWeight="bold" color="brand.600">
               {Math.round(totalHours * 10) / 10}h
             </Text>
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color="text.muted">
               {formatCurrency(totalCost)}
             </Text>
           </Box>

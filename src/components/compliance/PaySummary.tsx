@@ -41,8 +41,8 @@ export function PaySummary({
 
   if (compact) {
     return (
-      <Flex justify="space-between" align="center" p={2} bg="gray.50" borderRadius="md">
-        <Text fontSize="sm" color="gray.600">
+      <Flex justify="space-between" align="center" p={2} bg="bg.page" borderRadius="10px">
+        <Text fontSize="sm" color="text.muted">
           {durationHours.toFixed(1)}h × {formatCurrency(hourlyRate)}
           {hasMajorations && ' + majorations'}
         </Text>
@@ -58,23 +58,23 @@ export function PaySummary({
 
   return (
     <Box
-      bg="gray.50"
-      borderRadius="lg"
+      bg="bg.page"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       overflow="hidden"
     >
       {/* En-tête avec total */}
       <Box p={4} bg="brand.50" borderBottomWidth="1px" borderColor="brand.100">
         <Flex justify="space-between" align="center">
-          <Text fontWeight="medium" color="gray.700">
+          <Text fontWeight="medium" color="text.secondary">
             Rémunération estimée
           </Text>
           <Text fontSize="xl" fontWeight="bold" color="brand.600">
             {formatCurrency(pay.totalPay)}
           </Text>
         </Flex>
-        <Text fontSize="sm" color="gray.500" mt={1}>
+        <Text fontSize="sm" color="text.muted" mt={1}>
           {isGuard24h
             ? `Garde 24h — ${durationHours.toFixed(1)}h × ${formatCurrency(hourlyRate)}/h (selon segments)`
             : `${durationHours.toFixed(1)} heures × ${formatCurrency(hourlyRate)}/h`}
@@ -91,8 +91,8 @@ export function PaySummary({
               p={3}
               textAlign="left"
               borderBottomWidth="1px"
-              borderColor="gray.200"
-              _hover={{ bg: 'gray.100' }}
+              borderColor="border.default"
+              _hover={{ bg: 'bg.surface.hover' }}
               _focusVisible={{
                 outline: '2px solid',
                 outlineColor: 'brand.500',
@@ -100,7 +100,7 @@ export function PaySummary({
               }}
             >
               <Flex justify="space-between" align="center">
-                <Text fontSize="sm" fontWeight="medium" color="gray.600">
+                <Text fontSize="sm" fontWeight="medium" color="text.muted">
                   {isGuard24h ? 'Détail de la rémunération' : 'Détail des majorations'}
                 </Text>
                 {!isGuard24h && (
@@ -126,7 +126,7 @@ export function PaySummary({
               <Separator my={2} />
 
               <Flex justify="space-between" align="center" pt={1}>
-                <Text fontWeight="bold" color="gray.800">
+                <Text fontWeight="bold" color="text.default">
                   Total brut
                 </Text>
                 <Text fontWeight="bold" color="brand.600">
@@ -141,7 +141,7 @@ export function PaySummary({
       {/* Message si pas de majorations */}
       {showDetails && !hasMajorations && (
         <Box p={4}>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="sm" color="text.muted">
             Pas de majoration applicable pour cette intervention.
           </Text>
         </Box>
@@ -167,7 +167,7 @@ function PayLineItem({
       <Text fontSize="sm" color={isBase ? 'gray.700' : 'gray.600'}>
         {label}
         {percentage !== undefined && (
-          <Text as="span" color="gray.400" ml={1}>
+          <Text as="span" color="text.muted" ml={1}>
             (+{percentage}%)
           </Text>
         )}

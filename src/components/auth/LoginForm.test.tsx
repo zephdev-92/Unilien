@@ -49,13 +49,13 @@ describe('LoginForm', () => {
     it('devrait afficher le champ email', () => {
       renderWithProviders(<LoginForm />)
 
-      expect(screen.getByPlaceholderText(/votre@email.fr/i)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/marie@exemple\.fr/i)).toBeInTheDocument()
     })
 
     it('devrait afficher le champ mot de passe', () => {
       renderWithProviders(<LoginForm />)
 
-      expect(screen.getByPlaceholderText(/votre mot de passe/i)).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/••••••••••••/)).toBeInTheDocument()
     })
 
     it('devrait afficher le bouton de connexion', () => {
@@ -82,8 +82,8 @@ describe('LoginForm', () => {
       const user = userEvent.setup()
       renderWithProviders(<LoginForm />)
 
-      const emailInput = screen.getByPlaceholderText(/votre@email.fr/i)
-      const passwordInput = screen.getByPlaceholderText(/votre mot de passe/i)
+      const emailInput = screen.getByPlaceholderText(/marie@exemple\.fr/i)
+      const passwordInput = screen.getByPlaceholderText(/••••••••••••/)
       const submitButton = screen.getByRole('button', { name: /se connecter/i })
 
       await user.type(emailInput, 'test@example.com')
@@ -129,8 +129,8 @@ describe('LoginForm', () => {
     it('devrait avoir des champs avec autocomplete approprié', () => {
       renderWithProviders(<LoginForm />)
 
-      const emailInput = screen.getByPlaceholderText(/votre@email.fr/i)
-      const passwordInput = screen.getByPlaceholderText(/votre mot de passe/i)
+      const emailInput = screen.getByPlaceholderText(/marie@exemple\.fr/i)
+      const passwordInput = screen.getByPlaceholderText(/••••••••••••/)
 
       expect(emailInput).toHaveAttribute('autocomplete', 'email')
       expect(passwordInput).toHaveAttribute('autocomplete', 'current-password')
@@ -142,7 +142,7 @@ describe('LoginForm', () => {
 
       renderWithProviders(<LoginForm />)
 
-      const passwordInput = screen.getByPlaceholderText(/votre mot de passe/i)
+      const passwordInput = screen.getByPlaceholderText(/••••••••••••/)
       expect(passwordInput).toHaveAttribute('type', 'password')
 
       // Trouver le bouton de toggle (aria-label contient "Afficher" ou "Masquer")

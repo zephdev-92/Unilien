@@ -26,7 +26,7 @@ export function NightActionToggle(props: Props) {
   if (props.mode === 'view') {
     const { nightHoursCount, hasNightAction } = props
     return (
-      <Box p={3} bg="purple.50" borderRadius="md">
+      <Box p={3} bg="purple.50" borderRadius="10px">
         <Flex align="center" gap={2}>
           <Box>
             <Text fontSize="sm" fontWeight="medium" color="purple.800">
@@ -44,7 +44,7 @@ export function NightActionToggle(props: Props) {
 
   const { nightHoursCount, hasNightAction, onToggle } = props
   return (
-    <Box p={4} bg="purple.50" borderRadius="lg" borderWidth="1px" borderColor="purple.200">
+    <Box p={4} bg="purple.50" borderRadius="12px" borderWidth="1px" borderColor="purple.200">
       <Flex justify="space-between" align="center" mb={2}>
         <Box flex={1}>
           <Text fontWeight="medium" color="purple.800">
@@ -57,8 +57,8 @@ export function NightActionToggle(props: Props) {
           </Text>
         </Box>
       </Flex>
-      <Flex justify="space-between" align="center" mt={3} p={3} bg="white" borderRadius="md">
-        <Text fontSize="sm" fontWeight="medium" color="gray.700">
+      <Flex justify="space-between" align="center" mt={3} p={3} bg="bg.surface" borderRadius="10px">
+        <Text fontSize="sm" fontWeight="medium" color="text.secondary">
           Acte effectué pendant la nuit
         </Text>
         <Switch.Root
@@ -77,7 +77,7 @@ export function NightActionToggle(props: Props) {
         </Text>
       )}
       {!hasNightAction && (
-        <Text fontSize="xs" color="gray.500" mt={2}>
+        <Text fontSize="xs" color="text.muted" mt={2}>
           Pas de majoration — présence de nuit uniquement
         </Text>
       )}

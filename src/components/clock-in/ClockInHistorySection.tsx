@@ -14,10 +14,10 @@ function StatItem({ label, value, icon }: { label: string; value: string; icon: 
     <Flex align="center" gap={2} minW="120px">
       <Text fontSize="lg" aria-hidden="true">{icon}</Text>
       <Box>
-        <Text fontSize="lg" fontWeight="bold" color="blue.800" lineHeight="1.2">
+        <Text fontSize="lg" fontWeight="bold" color="brand.700" lineHeight="1.2">
           {value}
         </Text>
-        <Text fontSize="xs" color="blue.600">
+        <Text fontSize="xs" color="brand.600">
           {label}
         </Text>
       </Box>
@@ -41,10 +41,10 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
   return (
     <Flex
       p={3}
-      bg="gray.50"
-      borderRadius="md"
+      bg="bg.page"
+      borderRadius="10px"
       borderWidth="1px"
-      borderColor="gray.100"
+      borderColor="border.default"
       justify="space-between"
       align="center"
     >
@@ -57,11 +57,11 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
           flexShrink={0}
         />
         <Box>
-          <Text fontSize="sm" fontWeight="semibold" color="gray.800">
+          <Text fontSize="sm" fontWeight="semibold" color="text.default">
             {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
           </Text>
           <Flex align="center" gap={2} mt={0.5}>
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color="text.muted">
               {formatHours(durationMin / 60)}
               {shift.breakDuration > 0 && ` (pause ${shift.breakDuration}min)`}
             </Text>
@@ -79,7 +79,7 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
         </Box>
       </Flex>
       {shift.tasks.length > 0 && (
-        <Text fontSize="xs" color="gray.400" maxW="120px" truncate textAlign="right">
+        <Text fontSize="xs" color="text.muted" maxW="120px" truncate textAlign="right">
           {shift.tasks.slice(0, 2).map(sanitizeText).join(', ')}
         </Text>
       )}
@@ -110,18 +110,18 @@ export function HistorySection({
 }) {
   return (
     <Box
-      bg="white"
+      bg="bg.surface"
       borderRadius="xl"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
-      boxShadow="sm"
+      boxShadow="0 2px 8px rgba(78,100,120,.09)"
     >
       {/* En-tête historique */}
       <Flex justify="space-between" align="center" mb={4}>
         <Flex align="center" gap={2}>
           <Text fontSize="lg" aria-hidden="true">📊</Text>
-          <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+          <Text fontSize="lg" fontWeight="semibold" color="text.default">
             Historique des heures
           </Text>
         </Flex>
@@ -146,8 +146,8 @@ export function HistorySection({
       {!isLoading && historyStats.shiftCount > 0 && (
         <Box
           p={4}
-          bg="blue.50"
-          borderRadius="lg"
+          bg="brand.50"
+          borderRadius="12px"
           borderWidth="1px"
           borderColor="blue.100"
           mb={4}
@@ -192,7 +192,7 @@ export function HistorySection({
       {!isLoading && historyStats.shiftCount === 0 && (
         <Box p={6} textAlign="center">
           <Text fontSize="3xl" mb={2} aria-hidden="true">📭</Text>
-          <Text color="gray.500">
+          <Text color="text.muted">
             Aucune intervention terminée sur les {historyDays} derniers jours
           </Text>
         </Box>
@@ -212,7 +212,7 @@ export function HistorySection({
                   <Text
                     fontSize="sm"
                     fontWeight="semibold"
-                    color="gray.600"
+                    color="text.muted"
                     textTransform="capitalize"
                   >
                     {formatDayLabel(date)}

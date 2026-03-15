@@ -67,11 +67,11 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
     return (
       <Stack gap={6}>
         <WelcomeCard profile={profile} />
-        <Box p={6} bg="orange.50" borderRadius="lg" borderWidth="1px" borderColor="orange.200">
-          <Text fontWeight="medium" color="orange.800" mb={2}>
+        <Box p={6} bg="warm.50" borderRadius="12px" borderWidth="1px" borderColor="warm.200">
+          <Text fontWeight="medium" color="warm.700" mb={2}>
             Profil aidant non configuré
           </Text>
-          <Text color="orange.700">
+          <Text color="warm.500">
             Votre profil aidant n'est pas encore associé à un employeur.
             Veuillez contacter la personne que vous accompagnez pour qu'elle vous ajoute
             comme aidant depuis son espace Unilien.
@@ -101,11 +101,11 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
 
       {/* Message si aucune permission */}
       {!hasAnyViewPermission && !hasAdvancedPermissions && (
-        <Box p={6} bg="blue.50" borderRadius="lg" borderWidth="1px" borderColor="blue.200">
-          <Text fontWeight="medium" color="blue.800" mb={2}>
+        <Box p={6} bg="brand.50" borderRadius="12px" borderWidth="1px" borderColor="brand.200">
+          <Text fontWeight="medium" color="brand.700" mb={2}>
             Accès limité
           </Text>
-          <Text color="blue.700">
+          <Text color="brand.500">
             Vous êtes enregistré comme aidant mais vous n'avez pas encore de permissions
             pour accéder au planning ou au cahier de liaison. Contactez votre proche
             pour qu'il vous accorde les accès nécessaires.
@@ -145,7 +145,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
 
       {/* Message d'erreur si présent */}
       {error && (
-        <Box p={4} bg="red.50" borderRadius="md">
+        <Box p={4} bg="red.50" borderRadius="10px">
           <Text color="red.700">{error}</Text>
         </Box>
       )}

@@ -35,17 +35,16 @@ describe('QuickActionsWidget', () => {
 
     it('affiche les 4 actions employeur', () => {
       renderWithProviders(<QuickActionsWidget userRole="employer" />)
-      expect(screen.getByText('Nouvelle note')).toBeInTheDocument()
-      expect(screen.getByText('Voir planning')).toBeInTheDocument()
-      expect(screen.getByText('Mes auxiliaires')).toBeInTheDocument()
-      expect(screen.getByText('Documents')).toBeInTheDocument()
+      expect(screen.getByText('Intervention')).toBeInTheDocument()
+      expect(screen.getByText('Employé')).toBeInTheDocument()
+      expect(screen.getByText('Bulletin')).toBeInTheDocument()
+      expect(screen.getByText('Exporter')).toBeInTheDocument()
     })
 
     it('les actions employeur pointent vers les bonnes routes', () => {
       renderWithProviders(<QuickActionsWidget userRole="employer" />)
       const links = screen.getAllByRole('link')
       const hrefs = links.map((l) => l.getAttribute('href'))
-      expect(hrefs).toContain('/logbook/new')
       expect(hrefs).toContain('/planning')
       expect(hrefs).toContain('/equipe')
       expect(hrefs).toContain('/documents')
@@ -56,16 +55,16 @@ describe('QuickActionsWidget', () => {
     it('affiche les 4 actions employee', () => {
       renderWithProviders(<QuickActionsWidget userRole="employee" />)
       expect(screen.getByText('Pointer')).toBeInTheDocument()
-      expect(screen.getByText('Nouvelle note')).toBeInTheDocument()
-      expect(screen.getByText('Mon planning')).toBeInTheDocument()
-      expect(screen.getByText('Déclarer absence')).toBeInTheDocument()
+      expect(screen.getByText('Planning')).toBeInTheDocument()
+      expect(screen.getByText('Cahier')).toBeInTheDocument()
+      expect(screen.getByText('Absence')).toBeInTheDocument()
     })
 
-    it("le lien 'Pointer' pointe vers /pointage", () => {
+    it("le lien 'Pointer' pointe vers /suivi-des-heures", () => {
       renderWithProviders(<QuickActionsWidget userRole="employee" />)
       const links = screen.getAllByRole('link')
       const hrefs = links.map((l) => l.getAttribute('href'))
-      expect(hrefs).toContain('/pointage')
+      expect(hrefs).toContain('/suivi-des-heures')
     })
   })
 
@@ -74,27 +73,27 @@ describe('QuickActionsWidget', () => {
       renderWithProviders(
         <QuickActionsWidget userRole="caregiver" permissions={fullPermissions} />
       )
-      expect(screen.getByText('Cahier de liaison')).toBeInTheDocument()
+      expect(screen.getByText('Cahier')).toBeInTheDocument()
       expect(screen.getByText('Planning')).toBeInTheDocument()
-      expect(screen.getByText('Ajouter une note')).toBeInTheDocument()
-      expect(screen.getByText('Mon profil')).toBeInTheDocument()
+      expect(screen.getByText('Note')).toBeInTheDocument()
+      expect(screen.getByText('Profil')).toBeInTheDocument()
     })
 
-    it("filtre les actions selon les permissions (aucune permission → seul 'Mon profil')", () => {
+    it("filtre les actions selon les permissions (aucune permission → seul 'Profil')", () => {
       renderWithProviders(
         <QuickActionsWidget userRole="caregiver" permissions={restrictedPermissions} />
       )
-      expect(screen.queryByText('Cahier de liaison')).not.toBeInTheDocument()
+      expect(screen.queryByText('Cahier')).not.toBeInTheDocument()
       expect(screen.queryByText('Planning')).not.toBeInTheDocument()
-      expect(screen.queryByText('Ajouter une note')).not.toBeInTheDocument()
-      // Mon profil n'a pas de permissionKey → toujours affiché
-      expect(screen.getByText('Mon profil')).toBeInTheDocument()
+      expect(screen.queryByText('Note')).not.toBeInTheDocument()
+      // Profil n'a pas de permissionKey → toujours affiché
+      expect(screen.getByText('Profil')).toBeInTheDocument()
     })
 
     it('affiche les actions sans filtre si permissions non fournies', () => {
       renderWithProviders(<QuickActionsWidget userRole="caregiver" />)
       // Sans permissions, toutes les actions du rôle sont affichées (comportement par défaut)
-      expect(screen.getByText('Mon profil')).toBeInTheDocument()
+      expect(screen.getByText('Profil')).toBeInTheDocument()
     })
 
     it('retourne null si aucune action disponible', () => {
@@ -102,18 +101,8 @@ describe('QuickActionsWidget', () => {
       const { container } = renderWithProviders(
         <QuickActionsWidget userRole="caregiver" permissions={restrictedPermissions} />
       )
-      // Seul "Mon profil" est visible — le composant ne retourne pas null dans ce cas
+      // Seul "Profil" est visible — le composant ne retourne pas null dans ce cas
       expect(container).not.toBeEmptyDOMElement()
-    })
-  })
-
-  describe('Descriptions des actions', () => {
-    it('affiche la description de chaque action employer', () => {
-      renderWithProviders(<QuickActionsWidget userRole="employer" />)
-      expect(screen.getByText("Ajouter une entrée au cahier")).toBeInTheDocument()
-      expect(screen.getByText('Consulter les interventions')).toBeInTheDocument()
-      expect(screen.getByText('Gérer mon équipe')).toBeInTheDocument()
-      expect(screen.getByText('Export CESU/PAJEMPLOI')).toBeInTheDocument()
     })
   })
 })

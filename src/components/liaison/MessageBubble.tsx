@@ -4,7 +4,6 @@ import {
   Flex,
   Text,
   Avatar,
-  Badge,
   IconButton,
   Image,
   Link,
@@ -15,7 +14,7 @@ import { format, isToday, isYesterday } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { sanitizeText } from '@/lib/sanitize'
 import { formatSize } from '@/services/attachmentService'
-import type { Attachment, LiaisonMessageWithSender, UserRole } from '@/types'
+import type { Attachment, LiaisonMessageWithSender } from '@/types'
 
 // ============================================
 // PROPS
@@ -26,22 +25,6 @@ export interface MessageBubbleProps {
   isOwnMessage: boolean
   onEdit?: (messageId: string) => void
   onDelete?: (messageId: string) => void
-}
-
-// ============================================
-// ROLE BADGE COLORS
-// ============================================
-
-const roleBadgeColors: Record<UserRole, string> = {
-  employer: 'purple',
-  employee: 'blue',
-  caregiver: 'green',
-}
-
-const roleLabels: Record<UserRole, string> = {
-  employer: 'Employeur',
-  employee: 'Auxiliaire',
-  caregiver: 'Aidant',
 }
 
 // ============================================
@@ -91,9 +74,6 @@ export const MessageBubble = memo(function MessageBubble({
     ? `${message.sender.firstName} ${message.sender.lastName}`
     : 'Utilisateur'
 
-  const isRead = message.readBy.length > 1 ||
-    (message.readBy.length === 1 && message.readBy[0] !== message.senderId)
-
   return (
     <Flex
       justify={isOwnMessage ? 'flex-end' : 'flex-start'}
@@ -118,43 +98,28 @@ export const MessageBubble = memo(function MessageBubble({
           </Avatar.Root>
         )}
 
-        {/* Message content */}
+        {/* Message content — prototype: msg-bubble avec msg-time DANS la bulle */}
         <Box>
-          {/* Sender info (for others' messages) */}
-          {!isOwnMessage && (
-            <Flex align="center" gap={2} mb={1} px={1}>
-              <Text fontSize="xs" fontWeight="medium" color="gray.600">
-                {senderName}
-              </Text>
-              <Badge
-                colorPalette={roleBadgeColors[message.senderRole]}
-                size="sm"
-                fontSize="2xs"
-              >
-                {roleLabels[message.senderRole]}
-              </Badge>
-            </Flex>
-          )}
-
-          {/* Bubble */}
+          {/* Bubble — prototype: msg-bubble-in / msg-bubble-out, fontSize sm */}
           <Box
-            bg={isOwnMessage ? 'blue.500' : 'gray.100'}
-            color={isOwnMessage ? 'white' : 'gray.900'}
-            borderRadius="2xl"
-            borderTopRightRadius={isOwnMessage ? 'sm' : '2xl'}
-            borderTopLeftRadius={isOwnMessage ? '2xl' : 'sm'}
+            bg={isOwnMessage ? 'brand.500' : 'bg.page'}
+            color={isOwnMessage ? 'white' : 'text.default'}
+            borderWidth={isOwnMessage ? 0 : '1px'}
+            borderColor={isOwnMessage ? undefined : 'border.default'}
+            borderRadius="12px"
+            borderBottomRightRadius={isOwnMessage ? '4px' : '12px'}
+            borderBottomLeftRadius={isOwnMessage ? '12px' : '4px'}
             px={4}
-            py={2}
+            py={3}
             position="relative"
             css={{
-              // Ensure proper text wrapping
               wordBreak: 'break-word',
               overflowWrap: 'anywhere',
             }}
           >
-            {/* Message text */}
+            {/* Message text — prototype: var(--fs-sm) */}
             {message.content && (
-              <Text fontSize="md" whiteSpace="pre-wrap">
+              <Text as="p" fontSize="sm" lineHeight="1.6" whiteSpace="pre-wrap">
                 {sanitizeText(message.content)}
               </Text>
             )}
@@ -173,33 +138,25 @@ export const MessageBubble = memo(function MessageBubble({
               <Text
                 as="span"
                 fontSize="xs"
-                color={isOwnMessage ? 'blue.100' : 'gray.500'}
+                color={isOwnMessage ? 'rgba(255,255,255,0.8)' : 'text.muted'}
                 ml={1}
               >
                 (modifié)
               </Text>
             )}
-          </Box>
 
-          {/* Timestamp and status */}
-          <Flex
-            justify={isOwnMessage ? 'flex-end' : 'flex-start'}
-            align="center"
-            gap={1}
-            mt={1}
-            px={1}
-          >
-            <Text fontSize="xs" color="gray.500">
+            {/* Timestamp — prototype: msg-time DANS la bulle */}
+            <Text
+              as="time"
+              fontSize="xs"
+              color={isOwnMessage ? 'rgba(255,255,255,0.6)' : 'text.muted'}
+              display="block"
+              mt={1}
+              dateTime={message.createdAt.toISOString()}
+            >
               {formatMessageDate(message.createdAt)}
             </Text>
-
-            {/* Read indicator for own messages */}
-            {isOwnMessage && (
-              <Text fontSize="xs" color={isRead ? 'blue.500' : 'gray.400'}>
-                {isRead ? '✓✓' : '✓'}
-              </Text>
-            )}
-          </Flex>
+          </Box>
         </Box>
 
         {/* Actions menu (own messages only) */}
@@ -234,7 +191,7 @@ export const MessageBubble = memo(function MessageBubble({
                     <Menu.Item
                       value="delete"
                       onClick={() => onDelete(message.id)}
-                      color="red.600"
+                      color="danger.500"
                     >
                       Supprimer
                     </Menu.Item>
@@ -262,7 +219,7 @@ function AttachmentPreview({ attachment, isOwnMessage }: { attachment: Attachmen
           alt={attachment.name}
           maxH="200px"
           maxW="300px"
-          borderRadius="md"
+          borderRadius="10px"
           objectFit="cover"
           cursor="pointer"
           _hover={{ opacity: 0.9 }}
@@ -281,8 +238,8 @@ function AttachmentPreview({ attachment, isOwnMessage }: { attachment: Attachmen
       <Flex
         align="center"
         gap={2}
-        bg={isOwnMessage ? 'blue.500' : 'gray.100'}
-        borderRadius="md"
+        bg={isOwnMessage ? 'brand.600' : 'bg.page'}
+        borderRadius="10px"
         px={3}
         py={2}
         _hover={{ opacity: 0.85 }}
@@ -295,12 +252,12 @@ function AttachmentPreview({ attachment, isOwnMessage }: { attachment: Attachmen
           <Text
             fontSize="sm"
             fontWeight="medium"
-            color={isOwnMessage ? 'white' : 'gray.700'}
+            color={isOwnMessage ? 'white' : 'text.default'}
             truncate
           >
             {attachment.name}
           </Text>
-          <Text fontSize="xs" color={isOwnMessage ? 'blue.100' : 'gray.500'}>
+          <Text fontSize="xs" color={isOwnMessage ? 'whiteAlpha.700' : 'text.muted'}>
             {formatSize(attachment.size)}
           </Text>
         </Box>

@@ -94,9 +94,9 @@ export function ContractsSection({ employerId }: Props) {
           key={contract.id}
           p={4}
           borderWidth="1px"
-          borderColor="gray.200"
-          borderRadius="lg"
-          _hover={{ bg: 'gray.50' }}
+          borderColor="border.default"
+          borderRadius="12px"
+          _hover={{ bg: 'bg.page' }}
         >
           <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
             <HStack gap={3} flex={1} minW="200px">
@@ -104,9 +104,9 @@ export function ContractsSection({ employerId }: Props) {
               <Box
                 w="40px"
                 h="40px"
-                borderRadius="md"
-                bg="blue.50"
-                color="blue.600"
+                borderRadius="10px"
+                bg="brand.50"
+                color="brand.600"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -122,7 +122,7 @@ export function ContractsSection({ employerId }: Props) {
                   Contrat {contract.contractType}
                   {contract.employee && ` — ${contract.employee.firstName} ${contract.employee.lastName}`}
                 </Text>
-                <Text fontSize="xs" color="gray.500">
+                <Text fontSize="xs" color="text.muted">
                   {contract.weeklyHours}h/semaine · Depuis le{' '}
                   {format(contract.startDate, 'd MMMM yyyy', { locale: fr })}
                   {contract.endDate && ` · Fin le ${format(contract.endDate, 'd MMMM yyyy', { locale: fr })}`}

@@ -28,24 +28,24 @@ export function PresenceResponsibleNightSection(props: Props) {
   if (props.mode === 'view') {
     const { displayDuration, nightInterventionsCount, isRequalified } = props
     return (
-      <Box p={3} bg="purple.50" borderRadius="md">
+      <Box p={3} bg="purple.50" borderRadius="10px">
         <Text fontSize="sm" fontWeight="medium" color="purple.800" mb={2}>
           Présence responsable de nuit
         </Text>
         {nightInterventionsCount != null && nightInterventionsCount > 0 && (
-          <Text fontSize="sm" color="gray.700" mb={1}>
+          <Text fontSize="sm" color="text.secondary" mb={1}>
             {nightInterventionsCount} intervention{nightInterventionsCount > 1 ? 's' : ''} pendant la nuit
           </Text>
         )}
         {isRequalified && (
-          <Box p={2} bg="orange.100" borderRadius="md" mt={1} mb={2}>
+          <Box p={2} bg="orange.100" borderRadius="10px" mt={1} mb={2}>
             <Text fontSize="xs" fontWeight="bold" color="orange.800">
               Requalifié en travail effectif (Art. 148 IDCC 3239)
             </Text>
           </Box>
         )}
         <Flex justify="space-between" align="center">
-          <Text fontSize="sm" color="gray.600">
+          <Text fontSize="sm" color="text.muted">
             {isRequalified ? 'Rémunération (100%)' : 'Indemnité forfaitaire (×1/4)'}
           </Text>
           <Text fontSize="sm" fontWeight="bold" color={isRequalified ? 'orange.700' : 'purple.700'}>
@@ -61,7 +61,7 @@ export function PresenceResponsibleNightSection(props: Props) {
 
   const { durationHours, nightInterventionsCount, isRequalified, onInterventionCountChange } = props
   return (
-    <Box p={4} bg="purple.50" borderRadius="lg" borderWidth="1px" borderColor="purple.200">
+    <Box p={4} bg="purple.50" borderRadius="12px" borderWidth="1px" borderColor="purple.200">
       <Text fontWeight="medium" color="purple.800" mb={2}>
         Présence responsable de nuit
       </Text>
@@ -79,7 +79,7 @@ export function PresenceResponsibleNightSection(props: Props) {
         />
       </Box>
       {isRequalified && (
-        <Box p={3} bg="orange.100" borderRadius="md" borderWidth="1px" borderColor="orange.300" mb={3}>
+        <Box p={3} bg="orange.100" borderRadius="10px" borderWidth="1px" borderColor="orange.300" mb={3}>
           <Text fontWeight="bold" color="orange.800" fontSize="sm">
             Requalification en travail effectif
           </Text>
@@ -91,13 +91,13 @@ export function PresenceResponsibleNightSection(props: Props) {
         </Box>
       )}
       {durationHours > 0 && (
-        <Box p={3} bg="white" borderRadius="md">
+        <Box p={3} bg="bg.surface" borderRadius="10px">
           <Flex justify="space-between" align="center">
-            <Text fontSize="sm" color="gray.600">Durée de présence</Text>
+            <Text fontSize="sm" color="text.muted">Durée de présence</Text>
             <Text fontSize="sm" fontWeight="medium">{durationHours.toFixed(1)}h</Text>
           </Flex>
           <Flex justify="space-between" align="center" mt={1}>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="text.muted">
               {isRequalified ? 'Rémunération (100% — requalifié)' : 'Indemnité forfaitaire (×1/4)'}
             </Text>
             <Text fontSize="sm" fontWeight="bold" color={isRequalified ? 'orange.700' : 'purple.700'}>
@@ -108,7 +108,7 @@ export function PresenceResponsibleNightSection(props: Props) {
             </Text>
           </Flex>
           {nightInterventionsCount > 0 && !isRequalified && (
-            <Text fontSize="xs" color="gray.500" mt={2}>
+            <Text fontSize="xs" color="text.muted" mt={2}>
               {nightInterventionsCount} intervention{nightInterventionsCount > 1 ? 's' : ''} — les interventions sont rémunérées en travail effectif avec majoration nuit (+20%)
             </Text>
           )}

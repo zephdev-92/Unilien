@@ -70,7 +70,7 @@ export async function getEmployerAnalytics(
   // Récupérer les contrats actifs avec infos employé
   const { data: contracts } = await supabase
     .from('contracts')
-    .select('id, hourly_rate, employee_id, profiles!contracts_employee_id_fkey(first_name, last_name)')
+    .select(`id, hourly_rate, employee_id, employee_profile:employees!employee_id(profile:profiles!profile_id(first_name, last_name))`)
     .eq('employer_id', employerId)
     .eq('status', 'active')
 
@@ -164,7 +164,8 @@ export async function getEmployerAnalytics(
   const auxiliaryBreakdown: AuxiliaryBreakdown[] = (contracts || []).map(contract => {
     const contractShifts = currentShifts.filter(s => s.contract_id === contract.id)
     const hours = calculateTotalHours(contractShifts)
-    const profile = contract.profiles as { first_name: string; last_name: string } | null
+    const empProfile = (contract as Record<string, unknown>).employee_profile as { profile?: { first_name: string; last_name: string } | null } | null
+    const profile = empProfile?.profile
 
     return {
       contractId: contract.id,
@@ -205,7 +206,7 @@ export async function getEmployeeAnalytics(
 
   const { data: contracts } = await supabase
     .from('contracts')
-    .select('id, hourly_rate, employer_id, profiles!contracts_employer_id_fkey(first_name, last_name)')
+    .select(`id, hourly_rate, employer_id, status, employer_profile:employers!employer_id(profile:profiles!profile_id(first_name, last_name))`)
     .eq('employee_id', employeeId)
     .eq('status', 'active')
 

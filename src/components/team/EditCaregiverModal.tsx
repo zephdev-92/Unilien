@@ -107,20 +107,20 @@ export function EditCaregiverModal({
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
-            borderRadius="xl"
+            bg="bg.surface"
+            borderRadius="12px"
             maxW="500px"
             w="90vw"
             maxH="90vh"
             overflow="auto"
           >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Dialog.Title fontSize="xl" fontWeight="bold">
+            <Dialog.Header p={6} borderBottomWidth="1px" borderColor="border.default">
+              <Dialog.Title fontSize="lg" fontWeight={700} color="brand.500">
                 Modifier {caregiver.profile.firstName} {caregiver.profile.lastName}
               </Dialog.Title>
               <Dialog.CloseTrigger position="absolute" top={4} right={4} asChild>
-                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer">
-                  ✕
+                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer" color="brand.500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </AccessibleButton>
               </Dialog.CloseTrigger>
             </Dialog.Header>
@@ -133,7 +133,7 @@ export function EditCaregiverModal({
                     bg="red.50"
                     borderWidth="1px"
                     borderColor="red.200"
-                    borderRadius="md"
+                    borderRadius="10px"
                     p={3}
                   >
                     <Text color="red.700" fontSize="sm">
@@ -148,14 +148,14 @@ export function EditCaregiverModal({
                     bg={permissionsLocked ? 'blue.50' : 'gray.50'}
                     borderWidth="1px"
                     borderColor={permissionsLocked ? 'blue.200' : 'gray.200'}
-                    borderRadius="md"
+                    borderRadius="10px"
                     p={4}
                   >
                     <Text color={permissionsLocked ? 'blue.700' : 'gray.700'} fontSize="sm" fontWeight="medium">
                       Statut juridique : {legalStatusLabels[legalStatus]}
                     </Text>
                     {permissionsLocked && (
-                      <Text color="blue.600" fontSize="xs" mt={1}>
+                      <Text color="brand.600" fontSize="xs" mt={1}>
                         Les permissions de cet aidant sont verrouillées en raison de son statut juridique (tuteur/curateur).
                         Elles ne peuvent pas être modifiées.
                       </Text>
@@ -179,7 +179,7 @@ export function EditCaregiverModal({
                       <Checkbox.Label>
                         <Box>
                           <Text>Voir le planning</Text>
-                          <Text fontSize="xs" color="gray.500">
+                          <Text fontSize="xs" color="text.muted">
                             Consulter les interventions prévues
                           </Text>
                         </Box>
@@ -196,7 +196,7 @@ export function EditCaregiverModal({
                       <Checkbox.Label>
                         <Box>
                           <Text>Modifier le planning</Text>
-                          <Text fontSize="xs" color="gray.500">
+                          <Text fontSize="xs" color="text.muted">
                             Ajouter ou modifier des interventions
                           </Text>
                         </Box>
@@ -213,7 +213,7 @@ export function EditCaregiverModal({
                       <Checkbox.Label>
                         <Box>
                           <Text>Voir le cahier de liaison</Text>
-                          <Text fontSize="xs" color="gray.500">
+                          <Text fontSize="xs" color="text.muted">
                             Lire les messages et notes
                           </Text>
                         </Box>
@@ -230,7 +230,7 @@ export function EditCaregiverModal({
                       <Checkbox.Label>
                         <Box>
                           <Text>Écrire dans le cahier de liaison</Text>
-                          <Text fontSize="xs" color="gray.500">
+                          <Text fontSize="xs" color="text.muted">
                             Ajouter des messages et notes
                           </Text>
                         </Box>
@@ -247,7 +247,7 @@ export function EditCaregiverModal({
                       <Checkbox.Label>
                         <Box>
                           <Text>Gérer l'équipe</Text>
-                          <Text fontSize="xs" color="gray.500">
+                          <Text fontSize="xs" color="text.muted">
                             Ajouter ou retirer des membres de l'équipe
                           </Text>
                         </Box>
@@ -264,7 +264,7 @@ export function EditCaregiverModal({
                       <Checkbox.Label>
                         <Box>
                           <Text>Exporter les données</Text>
-                          <Text fontSize="xs" color="gray.500">
+                          <Text fontSize="xs" color="text.muted">
                             Télécharger les rapports et documents
                           </Text>
                         </Box>
@@ -275,13 +275,15 @@ export function EditCaregiverModal({
               </Stack>
             </Dialog.Body>
 
-            <Dialog.Footer p={6} borderTopWidth="1px">
+            <Dialog.Footer p={6} borderTopWidth="1px" borderColor="border.default">
               <Flex gap={3} justify="flex-end">
-                <AccessibleButton variant="ghost" onClick={handleClose}>
+                <AccessibleButton variant="ghost" onClick={handleClose} color="brand.500">
                   Annuler
                 </AccessibleButton>
                 <AccessibleButton
-                  colorPalette="blue"
+                  bg="brand.500"
+                  color="white"
+                  _hover={{ bg: 'brand.600' }}
                   onClick={handleSubmit}
                   loading={isSubmitting}
                   loadingText="Enregistrement..."

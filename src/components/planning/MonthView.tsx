@@ -86,28 +86,31 @@ export function MonthView({
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       overflow="hidden"
+      h="100%"
+      display="flex"
+      flexDirection="column"
     >
       {/* En-têtes des jours de la semaine */}
-      <Grid templateColumns="repeat(7, 1fr)" borderBottomWidth="1px" borderColor="gray.200">
+      <Grid templateColumns="repeat(7, 1fr)" borderBottomWidth="1px" borderColor="border.default">
         {weekDays.map((dayName) => (
           <GridItem
             key={dayName}
             p={3}
             textAlign="center"
-            bg="gray.50"
+            bg="bg.page"
             borderRightWidth="1px"
-            borderColor="gray.200"
+            borderColor="border.default"
             _last={{ borderRightWidth: 0 }}
           >
             <Text
               fontSize="xs"
               fontWeight="medium"
-              color="gray.500"
+              color="text.muted"
               textTransform="uppercase"
             >
               {dayName}
@@ -117,7 +120,7 @@ export function MonthView({
       </Grid>
 
       {/* Grille du calendrier */}
-      <Grid templateColumns="repeat(7, 1fr)">
+      <Grid templateColumns="repeat(7, 1fr)" flex={1} overflowY="auto">
         {days.map((dayDate) => {
           const dayShifts = getShiftsForDay(dayDate)
           const dayAbsences = getAbsencesForDay(dayDate)
@@ -131,7 +134,7 @@ export function MonthView({
               p={2}
               borderRightWidth="1px"
               borderBottomWidth="1px"
-              borderColor="gray.200"
+              borderColor="border.default"
               bg={isCurrentDay ? 'brand.50' : isCurrentMonth ? 'white' : 'gray.50'}
               minH="100px"
               _last={{ borderRightWidth: 0 }}
@@ -169,13 +172,13 @@ export function MonthView({
 
                 {/* Indicateur de plus d'éléments */}
                 {(dayShifts.length + dayAbsences.length) > 2 && (
-                  <Text fontSize="2xs" color="gray.500" textAlign="center">
+                  <Text fontSize="2xs" color="text.muted" textAlign="center">
                     +{dayShifts.length + dayAbsences.length - 2} autres
                   </Text>
                 )}
 
                 {!hasContent && isCurrentMonth && (
-                  <Text fontSize="2xs" color="gray.300" textAlign="center">
+                  <Text fontSize="2xs" color="text.muted" textAlign="center">
                     -
                   </Text>
                 )}

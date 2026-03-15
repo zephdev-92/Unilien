@@ -252,7 +252,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
                               <Button
                                 size="xs"
                                 variant="ghost"
-                                colorPalette="blue"
+                                colorPalette="brand"
                                 onClick={() => openJustification(absence.justificationUrl!)}
                               >
                                 Justificatif
@@ -282,7 +282,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
                               </>
                             )}
                             {!isPending && !absence.justificationUrl && (
-                              <Text fontSize="xs" color="gray.400">—</Text>
+                              <Text fontSize="xs" color="text.muted">—</Text>
                             )}
                           </HStack>
                         </Table.Cell>
@@ -317,7 +317,7 @@ function StatCard({ label, value, colorScheme }: StatCardProps) {
           <Text fontSize="2xl" fontWeight="bold" color={`${colorScheme}.600`}>
             {value}
           </Text>
-          <Text fontSize="sm" color="gray.600">
+          <Text fontSize="sm" color="text.muted">
             {label}
           </Text>
         </VStack>

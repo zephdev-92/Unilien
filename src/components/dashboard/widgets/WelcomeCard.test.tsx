@@ -77,37 +77,20 @@ describe('WelcomeCard', () => {
     })
   })
 
-  describe('Labels de rôle', () => {
-    it('affiche "Employeur" pour le rôle employer', () => {
-      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'employer' })} />)
-      expect(screen.getByText(/Employeur/)).toBeInTheDocument()
+  describe('Greeting pour différents rôles', () => {
+    it('affiche le greeting pour le rôle employer', () => {
+      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'employer', firstName: 'Pierre' })} />)
+      expect(screen.getByText(/Pierre/)).toBeInTheDocument()
     })
 
-    it('affiche "Auxiliaire de vie" pour le rôle employee', () => {
-      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'employee' })} />)
-      expect(screen.getByText(/Auxiliaire de vie/)).toBeInTheDocument()
+    it('affiche le greeting pour le rôle employee', () => {
+      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'employee', firstName: 'Marie' })} />)
+      expect(screen.getByText(/Marie/)).toBeInTheDocument()
     })
 
-    it('affiche "Aidant familial" pour le rôle caregiver', () => {
-      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'caregiver' })} />)
-      expect(screen.getByText(/Aidant familial/)).toBeInTheDocument()
-    })
-  })
-
-  describe('Descriptions de rôle', () => {
-    it('affiche la description employeur', () => {
-      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'employer' })} />)
-      expect(screen.getByText(/Gérez vos auxiliaires/)).toBeInTheDocument()
-    })
-
-    it('affiche la description auxiliaire', () => {
-      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'employee' })} />)
-      expect(screen.getByText(/Consultez votre planning/)).toBeInTheDocument()
-    })
-
-    it('affiche la description aidant', () => {
-      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'caregiver' })} />)
-      expect(screen.getByText(/Suivez les soins/)).toBeInTheDocument()
+    it('affiche le greeting pour le rôle caregiver', () => {
+      renderWithProviders(<WelcomeCard profile={createMockProfile({ role: 'caregiver', firstName: 'Luc' })} />)
+      expect(screen.getByText(/Luc/)).toBeInTheDocument()
     })
   })
 
@@ -144,32 +127,25 @@ describe('WelcomeCard', () => {
       expect(screen.getByText(/Demain à 09:00/)).toBeInTheDocument()
     })
 
-    it('affiche le badge alertes conformité quand complianceAlertCount > 0', () => {
+    it('affiche le badge anomalies quand complianceAlertCount > 0', () => {
       renderWithProviders(
         <WelcomeCard profile={createMockProfile()} complianceAlertCount={3} />
       )
-      expect(screen.getByText(/3 alertes conformité/)).toBeInTheDocument()
+      expect(screen.getByText(/3 anomalies détectées/)).toBeInTheDocument()
     })
 
-    it('n\'affiche pas le badge alertes si complianceAlertCount est 0', () => {
+    it('n\'affiche pas le badge anomalies si complianceAlertCount est 0', () => {
       renderWithProviders(
         <WelcomeCard profile={createMockProfile()} complianceAlertCount={0} />
       )
-      expect(screen.queryByText(/alertes conformité/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/anomalie/)).not.toBeInTheDocument()
     })
+  })
 
-    it('affiche le lien "Voir le planning" quand il y a des chips', () => {
-      const shift = createMockShift({ startTime: '08:00' })
-      renderWithProviders(
-        <WelcomeCard profile={createMockProfile()} nextShift={shift} />
-      )
-      expect(screen.getByText('Voir le planning')).toBeInTheDocument()
-    })
-
-    it('n\'affiche pas les chips quand aucune donnée contextuelle', () => {
+  describe('CTA Planning', () => {
+    it('affiche le lien "Voir le planning du jour" en permanence', () => {
       renderWithProviders(<WelcomeCard profile={createMockProfile()} />)
-      expect(screen.queryByText('Voir le planning')).not.toBeInTheDocument()
-      expect(screen.queryByText(/alertes conformité/)).not.toBeInTheDocument()
+      expect(screen.getByText(/Voir le planning du jour/)).toBeInTheDocument()
     })
   })
 

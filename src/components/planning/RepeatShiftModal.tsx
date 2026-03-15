@@ -42,7 +42,7 @@ export function RepeatShiftModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const repeatConfig = useRepeatConfig(shift.date)
+  const repeatConfig = useRepeatConfig(shift.date, true)
 
   const baseShiftSummary = buildSummary(shift)
 
@@ -107,7 +107,7 @@ export function RepeatShiftModal({
           <Dialog.Backdrop bg="blackAlpha.600" />
           <Dialog.Positioner>
             <Dialog.Content
-              bg="white"
+              bg="bg.surface"
               borderRadius="xl"
               maxW="500px"
               w="95vw"
@@ -127,11 +127,11 @@ export function RepeatShiftModal({
 
               <Dialog.Body p={6}>
                 <Stack gap={4}>
-                  <Box p={3} bg="gray.50" borderRadius="md">
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                  <Box p={3} bg="bg.page" borderRadius="10px">
+                    <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>
                       Intervention source
                     </Text>
-                    <Text fontSize="sm" color="gray.600">{baseShiftSummary}</Text>
+                    <Text fontSize="sm" color="text.muted">{baseShiftSummary}</Text>
                   </Box>
 
                   <Separator />
@@ -145,7 +145,7 @@ export function RepeatShiftModal({
                   />
 
                   {submitError && (
-                    <Box p={4} bg="red.50" borderRadius="md">
+                    <Box p={4} bg="red.50" borderRadius="10px">
                       <Text color="red.700">{submitError}</Text>
                     </Box>
                   )}
@@ -154,11 +154,11 @@ export function RepeatShiftModal({
 
               <Dialog.Footer p={6} borderTopWidth="1px">
                 <Flex gap={3} justify="flex-end" w="full">
-                  <AccessibleButton variant="outline" onClick={onClose}>
+                  <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose}>
                     Annuler
                   </AccessibleButton>
                   <AccessibleButton
-                    colorPalette="blue"
+                    bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
                     disabled={repeatConfig.generatedDates.length === 0}
                     onClick={handleOpenPreview}
                   >

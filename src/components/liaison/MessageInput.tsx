@@ -103,7 +103,7 @@ export function MessageInput({
   onSend,
   onTyping,
   disabled = false,
-  placeholder = 'Écrivez un message...',
+  placeholder = 'Écrire un message…',
 }: MessageInputProps) {
   const [content, setContent] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -261,16 +261,16 @@ export function MessageInput({
 
   return (
     <Box
-      bg="white"
+      bg="bg.surface"
       borderTopWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={4}
     >
       {/* Voice error banner */}
       {voiceError && (
         <Box
           bg="red.50"
-          borderRadius="md"
+          borderRadius="10px"
           p={2}
           mb={3}
           borderWidth="1px"
@@ -286,7 +286,7 @@ export function MessageInput({
       {fileError && (
         <Box
           bg="orange.50"
-          borderRadius="md"
+          borderRadius="10px"
           p={2}
           mb={3}
           borderWidth="1px"
@@ -306,21 +306,21 @@ export function MessageInput({
               key={`${file.name}-${index}`}
               align="center"
               gap={2}
-              bg="gray.50"
+              bg="bg.page"
               borderWidth="1px"
-              borderColor="gray.200"
-              borderRadius="md"
+              borderColor="border.default"
+              borderRadius="10px"
               px={3}
               py={1.5}
               fontSize="sm"
             >
-              <Text color="gray.500" flexShrink={0}>
+              <Text color="text.muted" flexShrink={0}>
                 {getAttachmentType(file) === 'image' ? '🖼' : '📄'}
               </Text>
-              <Text color="gray.700" truncate maxW="150px">
+              <Text color="text.secondary" truncate maxW="150px">
                 {file.name}
               </Text>
-              <Text color="gray.400" fontSize="xs" flexShrink={0}>
+              <Text color="text.muted" fontSize="xs" flexShrink={0}>
                 {formatSize(file.size)}
               </Text>
               <IconButton
@@ -350,16 +350,22 @@ export function MessageInput({
         aria-label="Sélectionner des fichiers"
       />
 
-      <Flex gap={3} align="flex-end">
-        {/* Attach file button */}
+      <Flex gap={3} align="center">
+        {/* Attach file button — prototype: 38x38 */}
         <IconButton
           aria-label="Joindre un fichier"
           variant="ghost"
-          colorPalette="gray"
+          color="text.muted"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isSending}
-          minW="44px"
-          minH="44px"
+          w="38px"
+          h="38px"
+          minW="38px"
+          minH="38px"
+          p={0}
+          borderRadius="full"
+          flexShrink={0}
+          _hover={{ bg: 'bg.page', color: 'brand.500' }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </IconButton>
@@ -379,8 +385,12 @@ export function MessageInput({
             colorPalette={isListening ? 'red' : 'blue'}
             onClick={handleVoiceToggle}
             disabled={disabled || isSending}
-            minW="44px"
-            minH="44px"
+            w="38px"
+            h="38px"
+            minW="38px"
+            minH="38px"
+            p={0}
+            flexShrink={0}
             css={{
               ...(isListening && {
                 animation: 'voicePulse 1.5s ease-in-out infinite',
@@ -429,11 +439,11 @@ export function MessageInput({
             borderRadius="xl"
             py={3}
             px={4}
-            bg={isListening ? 'red.50' : 'gray.50'}
-            borderColor={isListening ? 'red.300' : 'gray.200'}
+            bg={isListening ? 'red.50' : 'bg.page'}
+            borderColor={isListening ? 'red.300' : 'border.default'}
             _focus={{
-              bg: 'white',
-              borderColor: isListening ? 'red.500' : 'blue.500',
+              bg: 'bg.surface',
+              borderColor: isListening ? 'red.500' : 'brand.500',
               boxShadow: `0 0 0 1px var(--chakra-colors-${isListening ? 'red' : 'blue'}-500)`,
             }}
             css={{
@@ -441,7 +451,7 @@ export function MessageInput({
                 width: '6px',
               },
               '&::-webkit-scrollbar-thumb': {
-                backgroundColor: 'var(--chakra-colors-gray-300)',
+                backgroundColor: 'var(--chakra-colors-border-default)',
                 borderRadius: '3px',
               },
               ...(isListening && {
@@ -457,31 +467,34 @@ export function MessageInput({
               bottom={1}
               right={2}
               fontSize="xs"
-              color={content.length > 2000 ? 'red.500' : 'gray.400'}
+              color={content.length > 2000 ? 'danger.500' : 'text.muted'}
             >
               {content.length}/2000
             </Text>
           )}
         </Box>
 
-        {/* Send button */}
+        {/* Send button — prototype: 40x40, brand.500 */}
         <IconButton
           aria-label="Envoyer le message"
-          colorPalette="blue"
+          bg="brand.500"
+          color="white"
           variant="solid"
           onClick={handleSend}
           disabled={!canSend}
           loading={isSending}
-          minW="44px"
-          minH="44px"
+          w="40px"
+          h="40px"
+          minW="40px"
+          minH="40px"
+          p={0}
           borderRadius="full"
+          flexShrink={0}
+          _hover={canSend ? { bg: 'brand.600' } : undefined}
           css={{
             transition: 'all 0.2s',
-            ...(canSend && {
-              transform: 'scale(1.05)',
-            }),
             '&:focus-visible': {
-              boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.6)',
+              boxShadow: '0 0 0 3px rgba(78,100,120,0.3)',
             },
           }}
         >
@@ -490,7 +503,7 @@ export function MessageInput({
       </Flex>
 
       {/* Keyboard hint */}
-      <Text fontSize="xs" color="gray.400" mt={2} textAlign="center">
+      <Text fontSize="xs" color="text.muted" mt={2} textAlign="center">
         {isListening
           ? 'Parlez... Le texte apparaît en temps réel. Cliquez sur le micro pour arrêter.'
           : 'Entrée pour envoyer, Maj+Entrée pour nouvelle ligne'}

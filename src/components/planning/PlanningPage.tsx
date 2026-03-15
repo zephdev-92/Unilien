@@ -25,12 +25,20 @@ import { ShiftDetailModal } from './ShiftDetailModal'
 import { RepeatShiftModal } from './RepeatShiftModal'
 import { AbsenceRequestModal } from './AbsenceRequestModal'
 import { AbsenceDetailModal } from './AbsenceDetailModal'
-import { PlanningSidebar } from './PlanningSidebar'
+// PlanningSidebar remplacé par des dropdowns inline
 import { PlanningStatsBar, NextShiftChip } from './PlanningStatsBar'
 import { getShifts } from '@/services/shiftService'
 import { getAbsencesForEmployee, getAbsencesForEmployer } from '@/services/absenceService'
 import { getCaregiver, getShiftsForCaregiver } from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
+import {
+  getPlanningExportData,
+  getPlanningExportDataForEmployee,
+  generatePlanningPdf,
+  generatePlanningExcel,
+  generatePlanningIcal,
+  downloadExport,
+} from '@/lib/export'
 import type { Shift, Absence, Caregiver, ShiftType } from '@/types'
 
 type ViewMode = 'week' | 'month'
@@ -51,6 +59,9 @@ export function PlanningPage() {
   const [repeatShift, setRepeatShift] = useState<Shift | null>(null)
   const [selectedAbsence, setSelectedAbsence] = useState<Absence | null>(null)
   const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
+
+  // Menu télécharger
+  const [isDlMenuOpen, setIsDlMenuOpen] = useState(false)
 
   // Filtres sidebar
   const [statusFilter, setStatusFilter] = useState<ShiftStatusFilter>('all')
@@ -225,179 +236,330 @@ export function PlanningPage() {
     : format(currentDate, 'MMMM yyyy', { locale: fr })
 
   const isEmployee = profile.role === 'employee'
-  const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all' || employeeFilter !== null
+  const isEmployer = profile.role === 'employer' || profile.role === 'caregiver'
+
+  // Extract unique employees for dropdown filter
+  const employees = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of shifts) {
+      if (s.employeeId && s.employeeName) {
+        map.set(s.employeeId, s.employeeName)
+      }
+    }
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [shifts])
+
+  // Télécharger le planning
+  const handleDownload = useCallback(async (fmt: 'pdf' | 'excel' | 'ical') => {
+    if (!profile) return
+    setIsDlMenuOpen(false)
+    try {
+      const options = { month: currentDate.getMonth() + 1, year: currentDate.getFullYear() }
+      const data = isEmployee
+        ? await getPlanningExportDataForEmployee(profile.id, options)
+        : await getPlanningExportData(profile.id, options)
+
+      if (!data) return
+
+      const result = fmt === 'pdf'
+        ? generatePlanningPdf(data)
+        : fmt === 'excel'
+        ? generatePlanningExcel(data)
+        : generatePlanningIcal(data)
+
+      downloadExport(result)
+    } catch (error) {
+      logger.error('Erreur export planning:', error)
+    }
+  }, [profile, currentDate, isEmployee])
+
+  // Header actions — proto: topbar-right = toggle + actions
+  const btnRadius = '6px'
+
+  const topbarRight = (
+    <Flex align="center" gap={2}>
+      {/* Vue toggle — proto: view-toggle (section 34) */}
+      <Flex
+        display={{ base: 'none', md: 'flex' }}
+        gap="2px"
+        bg="#F3F6F9"
+        borderWidth="1.5px"
+        borderColor="#D8E3ED"
+        borderRadius="10px"
+        p="3px"
+      >
+        <Box
+          as="button"
+          px={{ base: 2, lg: 4 }}
+          py="5px"
+          borderRadius="6px"
+          fontSize="14px"
+          fontWeight="600"
+          bg={viewMode === 'week' ? 'white' : 'transparent'}
+          color={viewMode === 'week' ? '#3D5166' : '#6B7A8D'}
+          boxShadow={viewMode === 'week' ? '0 1px 2px rgba(78,100,120,.06)' : 'none'}
+          transition="background 0.15s, color 0.15s"
+          cursor="pointer"
+          onClick={() => setViewMode('week')}
+        >
+          Semaine
+        </Box>
+        <Box
+          as="button"
+          px={{ base: 2, lg: 4 }}
+          py="5px"
+          borderRadius="6px"
+          fontSize="14px"
+          fontWeight="600"
+          bg={viewMode === 'month' ? 'white' : 'transparent'}
+          color={viewMode === 'month' ? '#3D5166' : '#6B7A8D'}
+          boxShadow={viewMode === 'month' ? '0 1px 2px rgba(78,100,120,.06)' : 'none'}
+          transition="background 0.15s, color 0.15s"
+          cursor="pointer"
+          onClick={() => setViewMode('month')}
+        >
+          Mois
+        </Box>
+      </Flex>
+
+      {/* Bouton Télécharger — hidden on mobile */}
+      <Box position="relative" display={{ base: 'none', md: 'block' }}>
+        <Flex
+          as="button"
+          align="center"
+          gap={1}
+          px={3} py="5px"
+          borderWidth="1.5px" borderColor="border.default"
+          borderRadius={btnRadius}
+          fontSize="13px" fontWeight="600" color="brand.500"
+          bg="transparent"
+          _hover={{ bg: 'bg.page' }}
+          onClick={() => setIsDlMenuOpen(!isDlMenuOpen)}
+          aria-haspopup="true"
+          aria-expanded={isDlMenuOpen}
+          aria-label="Télécharger le planning"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width={14} height={14} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <Box as="span" display={{ base: 'none', sm: 'inline' }}>Télécharger</Box>
+        </Flex>
+        {isDlMenuOpen && (
+          <>
+            <Box position="fixed" inset={0} zIndex={99} onClick={() => setIsDlMenuOpen(false)} />
+            <Box
+              position="absolute"
+              top="calc(100% + 4px)"
+              right={0}
+              zIndex={100}
+              bg="bg.surface"
+              borderWidth="1px"
+              borderColor="border.default"
+              borderRadius="8px"
+              boxShadow="md"
+              py={1}
+              minW="200px"
+            >
+              <Text fontSize="xs" fontWeight="700" color="text.muted" px={3} py={1.5} textTransform="uppercase" letterSpacing="0.05em">
+                Format d&apos;export
+              </Text>
+              {[
+                { key: 'pdf' as const, label: 'PDF', sub: 'Calendrier mensuel imprimable' },
+                { key: 'excel' as const, label: 'Excel', sub: 'Tableau des interventions' },
+                { key: 'ical' as const, label: 'iCal', sub: 'Synchronisation calendrier' },
+              ].map((item) => (
+                <Flex
+                  key={item.key}
+                  as="button"
+                  w="100%"
+                  align="center"
+                  gap={3}
+                  px={3} py={2}
+                  _hover={{ bg: 'bg.page' }}
+                  onClick={() => handleDownload(item.key)}
+                  role="menuitem"
+                >
+                  <Box>
+                    <Text fontSize="sm" fontWeight="600" color="text.default">{item.label}</Text>
+                    <Text fontSize="xs" color="text.muted">{item.sub}</Text>
+                  </Box>
+                </Flex>
+              ))}
+            </Box>
+          </>
+        )}
+      </Box>
+
+      {isEmployee && (
+        <Flex
+          as="button"
+          align="center"
+          gap={1}
+          px={4} py="6px"
+          bg="brand.500" color="white"
+          borderRadius={btnRadius}
+          fontSize="13px" fontWeight="700"
+          _hover={{ bg: 'brand.600' }}
+          onClick={() => setIsAbsenceRequestModalOpen(true)}
+        >
+          +<Box as="span" display={{ base: 'none', sm: 'inline' }}> Absence</Box>
+        </Flex>
+      )}
+      {canEditPlanning && (
+        <Flex
+          as="button"
+          align="center"
+          gap={1}
+          px={4} py="6px"
+          bg="brand.500" color="white"
+          borderRadius={btnRadius}
+          fontSize="13px" fontWeight="700"
+          _hover={{ bg: 'brand.600' }}
+          onClick={() => setIsNewShiftModalOpen(true)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={14} height={14} aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <Box as="span" display={{ base: 'none', sm: 'inline' }}>Intervention</Box>
+        </Flex>
+      )}
+    </Flex>
+  )
 
   return (
-    <DashboardLayout title="Planning">
-      <Flex gap={6} direction={{ base: 'column', xl: 'row' }} align="flex-start">
-        {/* Colonne principale */}
-        <Box flex={1} minW={0}>
-          {/* Stats bar (employee view) */}
-          {isEmployee && (
-            <Box mb={4}>
+    <DashboardLayout title="Planning" topbarRight={topbarRight} fillHeight>
+      <Flex direction="column" flex={1} minH={0}>
+          {/* Stats bar (employee + caregiver views — proto align) */}
+          {(isEmployee || profile.role === 'caregiver') && (
+            <Box mb={4} flexShrink={0}>
               <PlanningStatsBar
                 shifts={shifts}
                 absences={absences}
+                role={profile.role as 'employee' | 'caregiver'}
+                employeeId={profile.role === 'employee' ? profile.id : undefined}
+                pchMonthlyHours={profile.pchMonthlyHours}
               />
             </Box>
           )}
 
-          {/* Navigation */}
+          {/* Navigation — date + arrows + today + filters */}
           <Flex
             justify="space-between"
             align="center"
-            mb={6}
-            p={4}
-            bg="white"
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor="gray.200"
+            mb={3}
             flexWrap="wrap"
+            flexShrink={0}
             gap={3}
           >
-            <Flex gap={2}>
-              <AccessibleButton
-                variant="outline"
-                size="sm"
-                onClick={goToPrevious}
-                accessibleLabel={viewMode === 'week' ? 'Semaine précédente' : 'Mois précédent'}
-              >
-                ← Précédent
-              </AccessibleButton>
-              <AccessibleButton
-                variant="outline"
-                size="sm"
-                onClick={goToToday}
-              >
-                Aujourd'hui
-              </AccessibleButton>
-              <AccessibleButton
-                variant="outline"
-                size="sm"
-                onClick={goToNext}
-                accessibleLabel={viewMode === 'week' ? 'Semaine suivante' : 'Mois suivant'}
-              >
-                Suivant →
-              </AccessibleButton>
-            </Flex>
-
-            {/* Sélecteur de vue */}
-            <Flex gap={1} bg="gray.100" p={1} borderRadius="md">
-              <AccessibleButton
-                size="sm"
-                variant={viewMode === 'week' ? 'solid' : 'ghost'}
-                colorPalette={viewMode === 'week' ? 'blue' : undefined}
-                onClick={() => setViewMode('week')}
-              >
-                Semaine
-              </AccessibleButton>
-              <AccessibleButton
-                size="sm"
-                variant={viewMode === 'month' ? 'solid' : 'ghost'}
-                colorPalette={viewMode === 'month' ? 'blue' : undefined}
-                onClick={() => setViewMode('month')}
-              >
-                Mois
-              </AccessibleButton>
-            </Flex>
-
             <Flex align="center" gap={3}>
-              <Text fontSize="lg" fontWeight="semibold" color="gray.800" textTransform="capitalize">
+              <Flex
+                as="button" align="center" justify="center"
+                px="7px" py="7px"
+                borderRadius="6px"
+                borderWidth="1.5px" borderColor="border.default"
+                bg="transparent" color="#3D5166"
+                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+                onClick={goToPrevious}
+                aria-label={viewMode === 'week' ? 'Semaine précédente' : 'Mois précédent'}
+              >
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+              </Flex>
+              <Text fontSize="16px" fontWeight="700" color="text.default" textTransform="capitalize">
                 {dateLabel}
               </Text>
-              {/* Chip prochaine intervention (employee) */}
+              <Flex
+                as="button" align="center" justify="center"
+                px="7px" py="7px"
+                borderRadius="6px"
+                borderWidth="1.5px" borderColor="border.default"
+                bg="transparent" color="#3D5166"
+                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+                onClick={goToNext}
+                aria-label={viewMode === 'week' ? 'Semaine suivante' : 'Mois suivant'}
+              >
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+              </Flex>
+              <Flex
+                as="button"
+                px={4} py="7px"
+                borderWidth="1.5px" borderColor="border.default" borderRadius="6px"
+                fontSize="13px" fontWeight="600" color="#3D5166"
+                bg="transparent"
+                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+                onClick={goToToday}
+              >
+                Aujourd&apos;hui
+              </Flex>
               {isEmployee && <NextShiftChip shifts={shifts} />}
             </Flex>
 
-            <Flex gap={2}>
-              {isEmployee && (
-                <AccessibleButton
-                  colorPalette="orange"
-                  size="sm"
-                  onClick={() => setIsAbsenceRequestModalOpen(true)}
+            {/* Dropdown filters (employer/caregiver) */}
+            {isEmployer && (
+              <Flex gap={3} align="center">
+                <Box
+                  as="select"
+                  px={3} py="7px"
+                  borderWidth="1.5px" borderColor="border.default" borderRadius="10px"
+                  fontSize="14px" fontWeight="500" color="brand.500"
+                  bg="bg.surface" cursor="pointer"
+                  _hover={{ borderColor: 'brand.100' }}
+                  value={employeeFilter ?? ''}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setEmployeeFilter(e.target.value || null)
+                  }
                 >
-                  + Déclarer absence
-                </AccessibleButton>
-              )}
-              {canEditPlanning && (
-                <AccessibleButton
-                  colorPalette="blue"
-                  size="sm"
-                  onClick={() => setIsNewShiftModalOpen(true)}
+                  <option value="">Tous les employés</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </Box>
+                <Box
+                  as="select"
+                  px={3} py="7px"
+                  borderWidth="1.5px" borderColor="border.default" borderRadius="10px"
+                  fontSize="14px" fontWeight="500" color="brand.500"
+                  bg="bg.surface" cursor="pointer"
+                  _hover={{ borderColor: 'brand.100' }}
+                  value={typeFilter}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setTypeFilter(e.target.value as ShiftTypeFilter)
+                  }
                 >
-                  + Nouvelle intervention
-                </AccessibleButton>
-              )}
-            </Flex>
+                  <option value="all">Tous les types</option>
+                  <option value="effective">Travail effectif</option>
+                  <option value="presence_day">Présence jour</option>
+                  <option value="presence_night">Présence nuit</option>
+                  <option value="guard_24h">Garde 24h</option>
+                </Box>
+              </Flex>
+            )}
           </Flex>
 
-          {/* Indicateur filtres actifs */}
-          {hasActiveFilters && (
-            <Flex mb={3} gap={2} align="center">
-              <Text fontSize="sm" color="gray.500">
-                {filteredShifts.length} intervention{filteredShifts.length !== 1 ? 's' : ''} affichée{filteredShifts.length !== 1 ? 's' : ''}
-              </Text>
-              <Box
-                as="button"
-                type="button"
-                fontSize="xs"
-                color="blue.600"
-                cursor="pointer"
-                _hover={{ textDecoration: 'underline' }}
-                onClick={() => {
-                  setStatusFilter('all')
-                  setTypeFilter('all')
-                  setEmployeeFilter(null)
-                }}
-              >
-                Effacer les filtres
-              </Box>
-            </Flex>
-          )}
 
-          {/* Vue planning */}
-          {isLoadingShifts ? (
-            <Center py={12}>
-              <Spinner size="lg" color="brand.500" />
-            </Center>
-          ) : viewMode === 'week' ? (
-            <WeekView
-              weekStart={weekStart}
-              shifts={filteredShifts}
-              absences={absences}
-              userRole={profile.role}
-              onShiftClick={(shift) => setSelectedShift(shift)}
-              onAbsenceClick={(absence) => setSelectedAbsence(absence)}
-            />
-          ) : (
-            <MonthView
-              currentDate={currentDate}
-              shifts={filteredShifts}
-              absences={absences}
-              userRole={profile.role}
-              onShiftClick={(shift) => setSelectedShift(shift)}
-              onAbsenceClick={(absence) => setSelectedAbsence(absence)}
-            />
-          )}
-        </Box>
-
-        {/* Sidebar filtres */}
-        <Box
-          w={{ base: '100%', xl: '260px' }}
-          flexShrink={0}
-          display={{ base: 'none', xl: 'block' }}
-        >
-          <PlanningSidebar
-            shifts={shifts}
-            userRole={profile.role}
-            statusFilter={statusFilter}
-            typeFilter={typeFilter}
-            employeeFilter={employeeFilter}
-            onStatusFilterChange={setStatusFilter}
-            onTypeFilterChange={setTypeFilter}
-            onEmployeeFilterChange={setEmployeeFilter}
-          />
-        </Box>
+          {/* Vue planning — remplit l'espace restant */}
+          <Box flex={1} minH={0}>
+            {isLoadingShifts ? (
+              <Center py={12}>
+                <Spinner size="lg" color="brand.500" />
+              </Center>
+            ) : viewMode === 'week' ? (
+              <WeekView
+                weekStart={weekStart}
+                shifts={filteredShifts}
+                absences={absences}
+                userRole={profile.role}
+                onShiftClick={(shift) => setSelectedShift(shift)}
+                onAbsenceClick={(absence) => setSelectedAbsence(absence)}
+              />
+            ) : (
+              <MonthView
+                currentDate={currentDate}
+                shifts={filteredShifts}
+                absences={absences}
+                userRole={profile.role}
+                onShiftClick={(shift) => setSelectedShift(shift)}
+                onAbsenceClick={(absence) => setSelectedAbsence(absence)}
+              />
+            )}
+          </Box>
       </Flex>
 
       {canEditPlanning && employerIdForShifts && (
