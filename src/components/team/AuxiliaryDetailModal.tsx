@@ -140,20 +140,20 @@ export function AuxiliaryDetailModal({
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
-            borderRadius="xl"
+            bg="bg.surface"
+            borderRadius="12px"
             maxW="600px"
             w="95vw"
             maxH="90vh"
             overflow="auto"
           >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Dialog.Title fontSize="xl" fontWeight="bold">
+            <Dialog.Header p={6} borderBottomWidth="1px" borderColor="border.default">
+              <Dialog.Title fontSize="lg" fontWeight={700} color="brand.500">
                 Détails de l'auxiliaire
               </Dialog.Title>
               <Dialog.CloseTrigger position="absolute" top={4} right={4} asChild>
-                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer">
-                  X
+                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer" color="brand.500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </AccessibleButton>
               </Dialog.CloseTrigger>
             </Dialog.Header>
@@ -165,16 +165,18 @@ export function AuxiliaryDetailModal({
                 </Center>
               ) : !details ? (
                 <Center py={12}>
-                  <Text color="gray.500">Impossible de charger les détails</Text>
+                  <Text color="text.muted">Impossible de charger les détails</Text>
                 </Center>
               ) : (
                 <>
                   {/* En-tête profil */}
-                  <Box p={6} bg="gray.50">
+                  <Box p={6} bg="bg.page">
                     <Flex gap={4} align="center">
                       <Avatar.Root size="xl">
                         <Avatar.Fallback
                           name={`${details.profile.firstName} ${details.profile.lastName}`}
+                          bg="brand.500"
+                          color="white"
                         />
                         {details.profile.avatarUrl && (
                           <Avatar.Image src={details.profile.avatarUrl} />
@@ -183,7 +185,7 @@ export function AuxiliaryDetailModal({
 
                       <Box flex={1}>
                         <Flex align="center" gap={2} mb={1}>
-                          <Text fontSize="xl" fontWeight="bold">
+                          <Text fontSize="xl" fontWeight={800} color="brand.500">
                             {details.profile.firstName} {details.profile.lastName}
                           </Text>
                           <Badge colorPalette={isActive ? 'green' : isSuspended ? 'orange' : 'gray'}>
@@ -191,7 +193,7 @@ export function AuxiliaryDetailModal({
                           </Badge>
                         </Flex>
 
-                        <Flex gap={4} flexWrap="wrap" color="gray.600" fontSize="sm">
+                        <Flex gap={4} flexWrap="wrap" color="text.muted" fontSize="sm">
                           {details.profile.phone && (
                             <Text>{details.profile.phone}</Text>
                           )}
@@ -199,7 +201,7 @@ export function AuxiliaryDetailModal({
                         </Flex>
 
                         <Flex gap={2} mt={2}>
-                          <Tag.Root colorPalette="blue" size="sm">
+                          <Tag.Root colorPalette="brand" size="sm">
                             <Tag.Label>{details.contract.contractType}</Tag.Label>
                           </Tag.Root>
                           <Tag.Root size="sm">
@@ -213,7 +215,7 @@ export function AuxiliaryDetailModal({
                     </Flex>
 
                     {/* Statistiques */}
-                    <Flex gap={6} mt={4} pt={4} borderTopWidth="1px" borderColor="gray.200">
+                    <Flex gap={6} mt={4} pt={4} borderTopWidth="1px" borderColor="border.default">
                       <StatItem label="Total interventions" value={details.stats.totalShifts} />
                       <StatItem label="À venir" value={details.stats.upcomingShifts} />
                       <StatItem
@@ -228,14 +230,14 @@ export function AuxiliaryDetailModal({
                     value={activeTab}
                     onValueChange={(e) => setActiveTab(e.value)}
                   >
-                    <Tabs.List px={6} borderBottomWidth="1px">
-                      <Tabs.Trigger value="info" py={4}>
+                    <Tabs.List px={6} borderBottomWidth="1px" borderColor="border.default">
+                      <Tabs.Trigger value="info" py={4} fontWeight={600} fontSize="sm" _selected={{ color: 'brand.500', borderBottomColor: 'brand.500' }}>
                         Informations
                       </Tabs.Trigger>
-                      <Tabs.Trigger value="contract" py={4}>
+                      <Tabs.Trigger value="contract" py={4} fontWeight={600} fontSize="sm" _selected={{ color: 'brand.500', borderBottomColor: 'brand.500' }}>
                         Contrat
                       </Tabs.Trigger>
-                      <Tabs.Trigger value="qualifications" py={4}>
+                      <Tabs.Trigger value="qualifications" py={4} fontWeight={600} fontSize="sm" _selected={{ color: 'brand.500', borderBottomColor: 'brand.500' }}>
                         Compétences
                       </Tabs.Trigger>
                     </Tabs.List>
@@ -299,7 +301,8 @@ export function AuxiliaryDetailModal({
                               <Flex gap={3}>
                                 <AccessibleButton
                                   flex={1}
-                                  variant="outline"
+                                  variant="ghost"
+                                  color="brand.500"
                                   onClick={() => {
                                     setIsEditing(false)
                                     setWeeklyHours(details.contract.weeklyHours)
@@ -311,7 +314,9 @@ export function AuxiliaryDetailModal({
                                 </AccessibleButton>
                                 <AccessibleButton
                                   flex={1}
-                                  colorPalette="blue"
+                                  bg="brand.500"
+                                  color="white"
+                                  _hover={{ bg: 'brand.600' }}
                                   onClick={handleSave}
                                   loading={isSaving}
                                 >
@@ -345,6 +350,9 @@ export function AuxiliaryDetailModal({
                               {isActive && (
                                 <AccessibleButton
                                   variant="outline"
+                                  borderColor="border.default"
+                                  color="brand.500"
+                                  _hover={{ bg: 'bg.page' }}
                                   onClick={() => setIsEditing(true)}
                                 >
                                   Modifier le contrat
@@ -362,13 +370,13 @@ export function AuxiliaryDetailModal({
                           {details.employee.qualifications.length > 0 ? (
                             <Flex gap={2} flexWrap="wrap">
                               {details.employee.qualifications.map((qual) => (
-                                <Tag.Root key={qual} colorPalette="blue">
+                                <Tag.Root key={qual} colorPalette="brand">
                                   <Tag.Label>{qual}</Tag.Label>
                                 </Tag.Root>
                               ))}
                             </Flex>
                           ) : (
-                            <Text color="gray.500">Aucune qualification renseignée</Text>
+                            <Text color="text.muted">Aucune qualification renseignée</Text>
                           )}
 
                           <Separator />
@@ -383,7 +391,7 @@ export function AuxiliaryDetailModal({
                               ))}
                             </Flex>
                           ) : (
-                            <Text color="gray.500">Aucune langue renseignée</Text>
+                            <Text color="text.muted">Aucune langue renseignée</Text>
                           )}
                         </Stack>
                       </Tabs.Content>
@@ -395,14 +403,14 @@ export function AuxiliaryDetailModal({
 
             {/* Footer avec actions */}
             {details && (isActive || isSuspended) && (
-              <Dialog.Footer p={6} borderTopWidth="1px">
+              <Dialog.Footer p={6} borderTopWidth="1px" borderColor="border.default">
                 {confirmTerminate ? (
                   <Stack gap={3} w="full">
-                    <Box p={4} bg="red.50" borderRadius="md">
-                      <Text color="red.700" fontWeight="medium">
+                    <Box p={4} bg="danger.50" borderRadius="10px" borderWidth="1px" borderColor="danger.100">
+                      <Text color="danger.500" fontWeight={600} fontSize="sm">
                         Êtes-vous sûr de vouloir mettre fin à ce contrat ?
                       </Text>
-                      <Text color="red.600" fontSize="sm" mt={1}>
+                      <Text color="danger.600" fontSize="xs" mt={1}>
                         Cette action marquera le contrat comme terminé à la date
                         d'aujourd'hui.
                       </Text>
@@ -410,15 +418,18 @@ export function AuxiliaryDetailModal({
                     <Flex gap={3}>
                       <AccessibleButton
                         flex={1}
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => setConfirmTerminate(false)}
                         disabled={isTerminating}
+                        color="brand.500"
                       >
                         Annuler
                       </AccessibleButton>
                       <AccessibleButton
                         flex={1}
-                        colorPalette="red"
+                        bg="danger.500"
+                        color="white"
+                        _hover={{ bg: 'danger.600' }}
                         onClick={handleTerminate}
                         loading={isTerminating}
                       >
@@ -431,7 +442,9 @@ export function AuxiliaryDetailModal({
                     <Flex gap={2}>
                       <AccessibleButton
                         variant="outline"
-                        colorPalette="red"
+                        borderColor="danger.500"
+                        color="danger.500"
+                        _hover={{ bg: 'danger.50' }}
                         onClick={() => setConfirmTerminate(true)}
                       >
                         Mettre fin au contrat
@@ -439,7 +452,9 @@ export function AuxiliaryDetailModal({
                       {isActive && (
                         <AccessibleButton
                           variant="outline"
-                          colorPalette="orange"
+                          borderColor="warning.500"
+                          color="warning.500"
+                          _hover={{ bg: 'warning.50' }}
                           onClick={handleSuspend}
                           loading={isSuspending}
                         >
@@ -449,7 +464,9 @@ export function AuxiliaryDetailModal({
                       {isSuspended && (
                         <AccessibleButton
                           variant="outline"
-                          colorPalette="green"
+                          borderColor="accent.700"
+                          color="accent.700"
+                          _hover={{ bg: 'success.50' }}
                           onClick={handleResume}
                           loading={isResuming}
                         >
@@ -458,7 +475,9 @@ export function AuxiliaryDetailModal({
                       )}
                     </Flex>
                     <AccessibleButton
-                      colorPalette="blue"
+                      bg="brand.500"
+                      color="white"
+                      _hover={{ bg: 'brand.600' }}
                       onClick={onClose}
                     >
                       Fermer
@@ -478,10 +497,10 @@ export function AuxiliaryDetailModal({
 function StatItem({ label, value }: { label: string; value: string | number }) {
   return (
     <Box textAlign="center">
-      <Text fontSize="2xl" fontWeight="bold" color="brand.600">
+      <Text fontSize="2xl" fontWeight="bold" color="brand.500">
         {value}
       </Text>
-      <Text fontSize="xs" color="gray.500">
+      <Text fontSize="xs" color="text.muted">
         {label}
       </Text>
     </Box>
@@ -491,9 +510,9 @@ function StatItem({ label, value }: { label: string; value: string | number }) {
 // Composant ligne d'info
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <Flex justify="space-between" align="center" py={2}>
-      <Text color="gray.600">{label}</Text>
-      <Text fontWeight="medium">{value}</Text>
+    <Flex justify="space-between" align="center" py={2} borderBottomWidth="1px" borderColor="bg.page">
+      <Text fontSize="sm" color="text.muted">{label}</Text>
+      <Text fontSize="sm" fontWeight={600} color="brand.500">{value}</Text>
     </Flex>
   )
 }

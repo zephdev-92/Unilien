@@ -5,11 +5,12 @@ import {
   Text,
   Center,
   Spinner,
-  Badge,
   VisuallyHidden,
   IconButton,
+  Button,
 } from '@chakra-ui/react'
 
+import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useEmployerResolution } from '@/hooks/useEmployerResolution'
 import { DashboardLayout } from '@/components/dashboard'
@@ -55,7 +56,7 @@ function TypingIndicator({ users }: { users: TypingUser[] }) {
               key={i}
               w="6px"
               h="6px"
-              bg="gray.400"
+              bg="border.strong"
               borderRadius="full"
               css={{
                 animation: `bounce 1.4s ease-in-out ${i * 0.2}s infinite`,
@@ -67,7 +68,7 @@ function TypingIndicator({ users }: { users: TypingUser[] }) {
             />
           ))}
         </Flex>
-        <Text fontSize="sm" color="gray.500" fontStyle="italic">
+        <Text fontSize="sm" color="text.muted" fontStyle="italic">
           {text}
         </Text>
       </Flex>
@@ -98,17 +99,20 @@ function DateSeparator({ date }: { date: Date }) {
   }
 
   return (
-    <Flex justify="center" my={4}>
-      <Badge
-        colorPalette="gray"
-        variant="subtle"
+    <Flex justify="center" my={3} role="separator" aria-hidden="true">
+      <Text
         fontSize="xs"
-        px={3}
-        py={1}
+        fontWeight="700"
+        color="text.muted"
+        bg="bg.surface"
+        px={4}
+        py="3px"
         borderRadius="full"
+        borderWidth="1px"
+        borderColor="border.default"
       >
         {label}
-      </Badge>
+      </Text>
     </Flex>
   )
 }
@@ -146,6 +150,55 @@ export function LiaisonPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const typingControlRef = useRef<{ setTyping: (v: boolean) => void; unsubscribe: () => void } | null>(null)
   const unsubscribeMessagesRef = useRef<(() => void) | null>(null)
+  const selectedConvRef = useRef<string | null>(null)
+
+  // Garder selectedConvRef à jour
+  useEffect(() => {
+    selectedConvRef.current = selectedConv?.id ?? null
+  }, [selectedConv?.id])
+
+  // ---- Realtime: écouter les nouveaux messages pour TOUTES les conversations ----
+  useEffect(() => {
+    if (!resolvedEmployerId || !profile) return
+
+    const channel = supabase
+      .channel(`unread-${resolvedEmployerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'liaison_messages',
+          filter: `employer_id=eq.${resolvedEmployerId}`,
+        },
+        (payload) => {
+          const msg = payload.new as { conversation_id: string; sender_id: string; content?: string; created_at?: string }
+          // Ignorer ses propres messages
+          if (msg.sender_id === profile.id) return
+          // Si c'est la conv ouverte, ne pas incrémenter (on la lit en direct)
+          if (msg.conversation_id === selectedConvRef.current) return
+
+          // Incrémenter unreadCount + mettre à jour lastMessage/updatedAt
+          setConversations(prev =>
+            prev.map(c =>
+              c.id === msg.conversation_id
+                ? {
+                    ...c,
+                    unreadCount: c.unreadCount + 1,
+                    lastMessage: msg.content || c.lastMessage,
+                    updatedAt: msg.created_at ? new Date(msg.created_at) : new Date(),
+                  }
+                : c
+            )
+          )
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [resolvedEmployerId, profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Charger les conversations au mount ----
   useEffect(() => {
@@ -205,6 +258,10 @@ export function LiaisonPage() {
         setMessages(result.messages)
         setHasMore(result.hasMore)
         await markAllMessagesAsRead(selectedConv.id, profile.id)
+        // Mettre à jour le compteur non lu localement
+        setConversations(prev =>
+          prev.map(c => c.id === selectedConv.id ? { ...c, unreadCount: 0 } : c)
+        )
 
         // Scroll to bottom
         setTimeout(() => {
@@ -273,22 +330,53 @@ export function LiaisonPage() {
     setShowConvList(false) // mobile: passer au thread
   }, [])
 
-  // ---- Nouvelle conversation privée ----
-  const handleNewConversationSelect = useCallback(async (memberId: string) => {
-    if (!profile || !resolvedEmployerId) return
+  // ---- Envoyer depuis la modale Nouveau message ----
+  const handleSendFromModal = useCallback(
+    async (
+      recipient: { type: 'team' } | { type: 'member'; memberId: string },
+      content: string
+    ) => {
+      if (!profile || !resolvedEmployerId) return
 
-    const conv = await getOrCreatePrivateConversation(resolvedEmployerId, profile.id, memberId)
-    if (!conv) return
+      let conv: Conversation | null = null
 
-    // Ajouter ou mettre à jour dans la liste
-    setConversations(prev => {
-      const exists = prev.find(c => c.id === conv.id)
-      if (exists) return prev
-      return [...prev, conv]
-    })
-    setSelectedConv(conv)
-    setShowConvList(false)
-  }, [profile, resolvedEmployerId])
+      if (recipient.type === 'team') {
+        const team = conversations.find(c => c.type === 'team')
+        if (!team) return
+        conv = team
+      } else {
+        conv = await getOrCreatePrivateConversation(
+          resolvedEmployerId,
+          profile.id,
+          recipient.memberId
+        )
+        if (conv) {
+          setConversations(prev => {
+            const exists = prev.find(c => c.id === conv!.id)
+            if (exists) return prev
+            return [...prev, conv!]
+          })
+        }
+      }
+
+      if (!conv) return
+
+      await createLiaisonMessage(
+        resolvedEmployerId,
+        conv.id,
+        profile.id,
+        profile.role,
+        content,
+        undefined,
+        undefined
+      )
+
+      setSelectedConv(conv)
+      setShowConvList(false)
+      setIsNewConvOpen(false)
+    },
+    [profile, resolvedEmployerId, conversations]
+  )
 
   // ---- Charger messages plus anciens ----
   const handleLoadMore = useCallback(async () => {
@@ -372,7 +460,7 @@ export function LiaisonPage() {
   // ---- États d'erreur / chargement global ----
   if (!profile || isResolvingEmployer) {
     return (
-      <DashboardLayout title="Liaison">
+      <DashboardLayout title="Messagerie">
         <Center py={12}>
           <Spinner size="xl" color="brand.500" />
         </Center>
@@ -382,10 +470,10 @@ export function LiaisonPage() {
 
   if (accessDenied) {
     return (
-      <DashboardLayout title="Liaison">
+      <DashboardLayout title="Messagerie">
         <Box
           bg="orange.50"
-          borderRadius="lg"
+          borderRadius="12px"
           borderWidth="1px"
           borderColor="orange.200"
           p={8}
@@ -409,47 +497,74 @@ export function LiaisonPage() {
     profile.role === 'employee' ||
     (profile.role === 'caregiver' && caregiverPermissions?.canWriteLiaison === true)
 
-  // IDs des membres déjà en conv privée
-  const existingPrivateMemberIds = conversations
-    .filter(c => c.type === 'private' && c.otherParticipant)
-    .map(c => c.otherParticipant!.id)
-
-  // Titre de la conversation sélectionnée
+  // Titre et sous-titre de la conversation sélectionnée (prototype)
   const convTitle = selectedConv?.type === 'team'
     ? 'Équipe'
     : selectedConv?.otherParticipant
       ? `${selectedConv.otherParticipant.firstName} ${selectedConv.otherParticipant.lastName}`
       : 'Conversation'
+  const convSubtitle = selectedConv?.type === 'team'
+    ? (selectedConv.participantIds.length > 0
+        ? `${selectedConv.participantIds.length} participants`
+        : 'Conversation d\u2019équipe')
+    : 'Conversation privée'
+
+  const topbarRight = canWrite ? (
+    <Button
+      size="sm"
+      bg="brand.500"
+      color="white"
+      fontWeight="600"
+      borderRadius="6px"
+      _hover={{ bg: 'brand.600' }}
+      onClick={() => setIsNewConvOpen(true)}
+      aria-label="Nouveau message"
+      display="inline-flex"
+      alignItems="center"
+      gap={2}
+      px={3}
+      py={2}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={16} height={16} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      <Box as="span" display={{ base: 'none', sm: 'inline' }}>Nouveau</Box>
+    </Button>
+  ) : undefined
 
   return (
-    <DashboardLayout title="Liaison">
+    <DashboardLayout title="Messagerie" topbarRight={topbarRight}>
       <Flex
-        h="calc(100vh - 200px)"
-        minH="400px"
-        bg="white"
-        borderRadius="lg"
-        borderWidth="1px"
-        borderColor="gray.200"
+        direction={{ base: 'column', md: 'row' }}
+        flex={1}
+        minH={0}
+        mx={-6}
+        mt={-6}
+        mb={-6}
+        bg="bg.surface"
+        borderTopWidth="0"
+        borderColor="border.default"
         overflow="hidden"
       >
         {/* ===== LISTE CONVERSATIONS ===== */}
         {/* Desktop : toujours visible | Mobile : togglé par showConvList */}
         <Box
-          w={{ base: '100%', md: '280px' }}
+          w={{ base: '100%', md: '340px' }}
+          flex={{ base: 1, md: '0 0 auto' }}
           display={{ base: showConvList ? 'flex' : 'none', md: 'flex' }}
           flexDirection="column"
           flexShrink={0}
+          minH={0}
         >
           {isLoadingConvs ? (
             <Center flex={1}>
-              <Spinner size="md" color="blue.500" />
+              <Spinner size="md" color="brand.500" />
             </Center>
           ) : (
             <ConversationList
               conversations={conversations}
               selectedId={selectedConv?.id ?? null}
               onSelect={handleSelectConv}
-              onNewPrivate={() => setIsNewConvOpen(true)}
               currentUserId={profile.id}
             />
           )}
@@ -462,17 +577,18 @@ export function LiaisonPage() {
           minW={0}
           display={{ base: showConvList ? 'none' : 'flex', md: 'flex' }}
           borderLeftWidth={{ md: '1px' }}
-          borderLeftColor={{ md: 'gray.200' }}
+          borderLeftColor={{ md: 'border.default' }}
         >
-          {/* Header conversation */}
+          {/* Header conversation — prototype: conv-thread-header + avatar 32px + sous-titre */}
           <Flex
             align="center"
             gap={3}
             px={4}
             py={3}
             borderBottomWidth="1px"
-            borderColor="gray.200"
-            bg="gray.50"
+            borderColor="border.default"
+            bg="bg.surface"
+            flexShrink={0}
           >
             {/* Bouton retour (mobile) */}
             <IconButton
@@ -480,18 +596,55 @@ export function LiaisonPage() {
               variant="ghost"
               size="sm"
               display={{ base: 'flex', md: 'none' }}
+              w="34px"
+              h="34px"
+              minW="34px"
+              minH="34px"
+              borderRadius="10px"
+              color="text.muted"
+              _hover={{ bg: 'bg.page', color: 'text.default' }}
               onClick={() => setShowConvList(true)}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </IconButton>
 
-            <Box>
-              <Text fontWeight="semibold" fontSize="md">
+            {/* Avatar 32px — prototype conv-avatar-sm */}
+            {selectedConv && (
+              <Flex
+                w="32px"
+                h="32px"
+                borderRadius="full"
+                bg={selectedConv.type === 'team' ? 'brand.500' : 'brand.500'}
+                color="white"
+                align="center"
+                justify="center"
+                flexShrink={0}
+                fontSize="xs"
+                fontWeight="800"
+                fontFamily="heading"
+                overflow="hidden"
+              >
+                {selectedConv.type === 'team' ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width={16} height={16}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                ) : selectedConv.otherParticipant?.avatarUrl ? (
+                  <Box as="img" src={selectedConv.otherParticipant.avatarUrl} alt="" w="100%" h="100%" objectFit="cover" />
+                ) : (
+                  <span>
+                    {selectedConv.otherParticipant
+                      ? `${selectedConv.otherParticipant.firstName[0] || ''}${selectedConv.otherParticipant.lastName[0] || ''}`.toUpperCase()
+                      : '?'}
+                  </span>
+                )}
+              </Flex>
+            )}
+
+            <Box flex={1} minW={0}>
+              <Text fontWeight="700" fontSize="md">
                 {selectedConv ? convTitle : 'Messagerie'}
               </Text>
-              {selectedConv?.type === 'team' && (
-                <Text fontSize="xs" color="gray.500">
-                  Conversation d'équipe
+              {selectedConv && (
+                <Text fontSize="xs" color="text.muted" mt="1px">
+                  {convSubtitle}
                 </Text>
               )}
             </Box>
@@ -501,10 +654,10 @@ export function LiaisonPage() {
           {!selectedConv ? (
             <Center flex={1}>
               <Box textAlign="center">
-                <Box color="gray.300" mb={4} mx="auto" w="fit-content">
+                <Box color="text.muted" mb={4} mx="auto" w="fit-content">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="48" height="48"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 </Box>
-                <Text color="gray.400" fontSize="sm">
+                <Text color="text.muted" fontSize="sm">
                   Sélectionnez une conversation
                 </Text>
               </Box>
@@ -520,14 +673,14 @@ export function LiaisonPage() {
                 css={{
                   '&::-webkit-scrollbar': { width: '8px' },
                   '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: 'var(--chakra-colors-gray-300)',
+                    backgroundColor: 'var(--chakra-colors-border-default)',
                     borderRadius: '4px',
                   },
                 }}
               >
                 {isLoadingMore && (
                   <Center py={4}>
-                    <Spinner size="sm" color="blue.500" />
+                    <Spinner size="sm" color="brand.500" />
                   </Center>
                 )}
 
@@ -536,7 +689,7 @@ export function LiaisonPage() {
                     <Text
                       as="button"
                       fontSize="sm"
-                      color="blue.500"
+                      color="brand.500"
                       onClick={handleLoadMore}
                       _hover={{ textDecoration: 'underline' }}
                     >
@@ -547,15 +700,15 @@ export function LiaisonPage() {
 
                 {isLoadingMessages ? (
                   <Center py={12}>
-                    <Spinner size="lg" color="blue.500" />
+                    <Spinner size="lg" color="brand.500" />
                   </Center>
                 ) : messages.length === 0 ? (
                   <Center py={12}>
                     <Box textAlign="center">
-                      <Text fontSize="lg" color="gray.500" mb={2}>
+                      <Text fontSize="lg" color="text.muted" mb={2}>
                         Aucun message
                       </Text>
-                      <Text fontSize="sm" color="gray.400">
+                      <Text fontSize="sm" color="text.muted">
                         Commencez la conversation !
                       </Text>
                     </Box>
@@ -585,12 +738,12 @@ export function LiaisonPage() {
               ) : (
                 <Box
                   p={4}
-                  bg="gray.50"
+                  bg="bg.page"
                   borderTopWidth="1px"
-                  borderColor="gray.200"
+                  borderColor="border.default"
                   textAlign="center"
                 >
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color="text.muted">
                     Vous n'avez pas la permission d'envoyer des messages.
                   </Text>
                 </Box>
@@ -600,14 +753,14 @@ export function LiaisonPage() {
         </Flex>
       </Flex>
 
-      {/* Modal nouvelle conversation */}
+      {/* Modal nouveau message — prototype: destinataire + message + Envoyer */}
       <NewConversationModal
         isOpen={isNewConvOpen}
         onClose={() => setIsNewConvOpen(false)}
         employerId={resolvedEmployerId}
         currentUserId={profile.id}
-        existingConversationMemberIds={existingPrivateMemberIds}
-        onSelect={handleNewConversationSelect}
+        teamConversationId={conversations.find(c => c.type === 'team')?.id ?? null}
+        onSend={handleSendFromModal}
       />
 
       {/* Screen reader announcements */}

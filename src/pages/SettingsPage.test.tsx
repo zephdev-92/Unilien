@@ -14,9 +14,7 @@ vi.mock('@/components/dashboard', () => ({
   ),
 }))
 
-vi.mock('@/components/profile/sections', () => ({
-  AccessibilitySection: () => <div data-testid="accessibility-section" />,
-}))
+// AccessibilitySection n'est plus importée par SettingsPage (panel inline)
 
 import { useAuth } from '@/hooks/useAuth'
 
@@ -261,10 +259,11 @@ describe('SettingsPage', () => {
       mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
     })
 
-    it('rend le composant AccessibilitySection', () => {
+    it('rend le panneau Accessibilité inline', () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Accessibilité'))
-      expect(screen.getByTestId('accessibility-section')).toBeInTheDocument()
+      expect(screen.getByText('Contraste élevé')).toBeInTheDocument()
+      expect(screen.getByText('Texte agrandi')).toBeInTheDocument()
     })
   })
 

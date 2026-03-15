@@ -134,6 +134,9 @@ export interface ShiftDbRow {
   guard_segments: GuardSegmentDb[] | null // Garde 24h : N segments libres [{startTime, type, breakMinutes?}]
   computed_pay: ComputedPay | null
   status: 'planned' | 'completed' | 'cancelled' | 'absent'
+  validated_by_employer: boolean
+  validated_by_employee: boolean
+  late_entry: boolean | null
   created_at: string
   updated_at: string
 }

@@ -32,10 +32,14 @@ const employeeStats: EmployeeStats = {
   hoursThisMonth: 80,
   hoursLastMonth: 80,
   hoursDiff: 0,
+  contractualHours: 104,
   estimatedRevenue: 960,
   activeEmployers: 2,
   shiftsThisMonth: 10,
+  shiftsToday: 2,
+  activeShiftsNow: 1,
   upcomingShifts: 3,
+  presenceRate: 95,
 }
 
 const caregiverStats: CaregiverStats = {
@@ -53,21 +57,22 @@ describe('StatsWidget', () => {
   })
 
   describe('État loading', () => {
-    it('affiche 4 squelettes pour employer', () => {
+    it('affiche des skeletons pour employer', () => {
       mockGetEmployerStats.mockReturnValue(new Promise(() => {}))
-      renderWithProviders(
+      const { container } = renderWithProviders(
         <StatsWidget userRole="employer" profileId="employer-1" />
       )
-      // Le widget affiche le titre "Résumé" pendant le chargement
-      expect(screen.getByText('Résumé')).toBeInTheDocument()
+      const skeletons = container.querySelectorAll('[class*="chakra-skeleton"], [data-status]')
+      expect(skeletons.length).toBeGreaterThan(0)
     })
 
-    it('affiche 2 squelettes pour caregiver sans employerId', () => {
+    it('affiche des skeletons pour caregiver sans employerId', () => {
       mockGetCaregiverStats.mockReturnValue(new Promise(() => {}))
-      renderWithProviders(
+      const { container } = renderWithProviders(
         <StatsWidget userRole="caregiver" profileId="caregiver-1" />
       )
-      expect(screen.getByText('Résumé')).toBeInTheDocument()
+      const skeletons = container.querySelectorAll('[class*="chakra-skeleton"], [data-status]')
+      expect(skeletons.length).toBeGreaterThan(0)
     })
   })
 
@@ -154,30 +159,42 @@ describe('StatsWidget', () => {
       })
     })
 
-    it('affiche les revenus estimés', async () => {
-      renderWithProviders(
-        <StatsWidget userRole="employee" profileId="employee-1" />
-      )
-      await waitFor(() => {
-        expect(screen.getByText('960 €')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche "= mois dernier" si hoursDiff = 0', async () => {
-      renderWithProviders(
-        <StatsWidget userRole="employee" profileId="employee-1" />
-      )
-      await waitFor(() => {
-        expect(screen.getByText('= mois dernier')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche le nombre d\'employeurs actifs', async () => {
+    it('affiche les interventions aujourd\'hui', async () => {
       renderWithProviders(
         <StatsWidget userRole="employee" profileId="employee-1" />
       )
       await waitFor(() => {
         expect(screen.getByText('2')).toBeInTheDocument()
+        expect(screen.getByText('1 en cours')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche le taux de présence', async () => {
+      renderWithProviders(
+        <StatsWidget userRole="employee" profileId="employee-1" />
+      )
+      await waitFor(() => {
+        expect(screen.getByText('95%')).toBeInTheDocument()
+        expect(screen.getByText('Excellent')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les interventions ce mois avec à venir', async () => {
+      renderWithProviders(
+        <StatsWidget userRole="employee" profileId="employee-1" />
+      )
+      await waitFor(() => {
+        expect(screen.getByText('10')).toBeInTheDocument()
+        expect(screen.getByText('3 à venir')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les heures contractuelles', async () => {
+      renderWithProviders(
+        <StatsWidget userRole="employee" profileId="employee-1" />
+      )
+      await waitFor(() => {
+        expect(screen.getByText('sur 104h contractuelles')).toBeInTheDocument()
       })
     })
   })

@@ -1,4 +1,4 @@
-/* Styles de base pour Unilien */
+/* Styles de base pour Unilien — alignes sur le prototype */
 
 /* Reset et base */
 *,
@@ -10,6 +10,7 @@
 html {
   font-size: 100%;
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -19,21 +20,25 @@ body {
     Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
-  background-color: #f7fafc;
+  line-height: 1.6;
+  color: #323538;
+  background-color: #F3F6F9;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Accessibilité : focus visible */
+/* Accessibilite : focus visible — double anneau comme le prototype */
 :focus-visible {
-  outline: 2px solid #0056e0;
+  outline: none;
+  box-shadow: 0 0 0 2px #fff;
+  outline: 2px solid #3D5166;
   outline-offset: 2px;
+  transition: none;
 }
 
-/* Accessibilité : préférence mouvement réduit */
+/* Accessibilite : preference mouvement reduit */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -48,29 +53,32 @@ body {
 /* Skip link pour navigation clavier */
 .skip-link {
   position: absolute;
-  top: -40px;
-  left: 0;
-  background: #0056e0;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  background: #3D5166;
   color: white;
   padding: 8px 16px;
-  z-index: 9999;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
   text-decoration: none;
-  font-weight: 500;
+  transition: top 0.15s ease;
 }
 
 .skip-link:focus {
-  top: 0;
+  top: 16px;
 }
 
-/* Amélioration de la lisibilité */
+/* Amelioration de la lisibilite */
 p,
 li {
   max-width: 70ch;
 }
 
-/* ===== Accessibilité : modes activés via data-attributes ===== */
+/* ===== Accessibilite : modes actives via data-attributes ===== */
 
-/* Contraste élevé */
+/* Contraste eleve */
 [data-high-contrast] body {
   background-color: #000 !important;
   color: #fff !important;
@@ -83,7 +91,7 @@ li {
   border: 2px solid currentColor !important;
 }
 
-/* Mouvement réduit (priorité utilisateur > préférence OS) */
+/* Mouvement reduit (priorite utilisateur > preference OS) */
 [data-reduced-motion] *,
 [data-reduced-motion] *::before,
 [data-reduced-motion] *::after {
@@ -93,15 +101,15 @@ li {
   scroll-behavior: auto !important;
 }
 
-/* Optimisation lecteur d'écran : focus bien visible sur tous les éléments */
+/* Optimisation lecteur d'ecran : focus bien visible sur tous les elements */
 [data-screen-reader] :focus,
 [data-screen-reader] :focus-visible {
-  outline: 3px solid #0056e0 !important;
+  outline: 3px solid #3D5166 !important;
   outline-offset: 4px !important;
   border-radius: 2px;
 }
 [data-screen-reader] :focus:not(:focus-visible) {
-  outline: 3px solid #0056e0 !important;
+  outline: 3px solid #3D5166 !important;
 }
 
 /* Masquer visuellement mais garder accessible */

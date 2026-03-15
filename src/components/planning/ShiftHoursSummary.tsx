@@ -27,23 +27,23 @@ export function ShiftHoursSummary({
   return (
     <Box
       p={4}
-      bg="gray.50"
-      borderRadius="lg"
+      bg="bg.page"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
     >
-      <Text fontWeight="medium" color="gray.700" mb={2} fontSize="sm">
+      <Text fontWeight="medium" color="text.secondary" mb={2} fontSize="sm">
         Récapitulatif heures
       </Text>
       <Stack gap={1}>
         {shiftType === 'presence_day' && (
           <>
             <Flex justify="space-between">
-              <Text fontSize="sm" color="gray.600">Présence responsable</Text>
+              <Text fontSize="sm" color="text.muted">Présence responsable</Text>
               <Text fontSize="sm">{durationHours.toFixed(1)}h</Text>
             </Flex>
             <Flex justify="space-between">
-              <Text fontSize="sm" color="gray.600">Équivalent travail (×2/3)</Text>
+              <Text fontSize="sm" color="text.muted">Équivalent travail (×2/3)</Text>
               <Text fontSize="sm" fontWeight="medium">{effectiveHoursComputed?.toFixed(1) ?? '—'}h</Text>
             </Flex>
           </>
@@ -51,7 +51,7 @@ export function ShiftHoursSummary({
         {shiftType === 'presence_night' && (
           <>
             <Flex justify="space-between">
-              <Text fontSize="sm" color="gray.600">Présence de nuit</Text>
+              <Text fontSize="sm" color="text.muted">Présence de nuit</Text>
               <Text fontSize="sm">{durationHours.toFixed(1)}h</Text>
             </Flex>
             {isRequalified && (
@@ -62,7 +62,7 @@ export function ShiftHoursSummary({
             )}
             {nightInterventionsCount > 0 && hasNightHours && (
               <Flex justify="space-between">
-                <Text fontSize="sm" color="gray.600">Majoration nuit (+20%)</Text>
+                <Text fontSize="sm" color="text.muted">Majoration nuit (+20%)</Text>
                 <Text fontSize="sm">{nightHoursCount.toFixed(1)}h</Text>
               </Flex>
             )}
@@ -70,8 +70,8 @@ export function ShiftHoursSummary({
         )}
         <Separator my={1} />
         <Flex justify="space-between">
-          <Text fontSize="sm" fontWeight="bold" color="gray.800">Total travail effectif</Text>
-          <Text fontSize="sm" fontWeight="bold" color="gray.800">
+          <Text fontSize="sm" fontWeight="bold" color="text.default">Total travail effectif</Text>
+          <Text fontSize="sm" fontWeight="bold" color="text.default">
             {shiftType === 'presence_day'
               ? `${effectiveHoursComputed?.toFixed(1) ?? '—'}h`
               : isRequalified

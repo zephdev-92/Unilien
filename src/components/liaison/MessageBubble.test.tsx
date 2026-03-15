@@ -59,69 +59,20 @@ describe('MessageBubble', () => {
   })
 
   describe('Message d\'un autre utilisateur', () => {
-    it('affiche le nom de l\'expéditeur', () => {
+    it('affiche l\'avatar avec l\'initiale de l\'expéditeur', () => {
       renderWithProviders(
         <MessageBubble message={makeMessage()} isOwnMessage={false} />
       )
-      expect(screen.getByText('Jean Martin')).toBeInTheDocument()
-    })
-
-    it('affiche le badge "Auxiliaire" pour le rôle employee', () => {
-      renderWithProviders(
-        <MessageBubble message={makeMessage({ senderRole: 'employee' })} isOwnMessage={false} />
-      )
-      expect(screen.getByText('Auxiliaire')).toBeInTheDocument()
-    })
-
-    it('affiche le badge "Employeur" pour le rôle employer', () => {
-      renderWithProviders(
-        <MessageBubble message={makeMessage({ senderRole: 'employer' })} isOwnMessage={false} />
-      )
-      expect(screen.getByText('Employeur')).toBeInTheDocument()
-    })
-
-    it('affiche le badge "Aidant" pour le rôle caregiver', () => {
-      renderWithProviders(
-        <MessageBubble message={makeMessage({ senderRole: 'caregiver' })} isOwnMessage={false} />
-      )
-      expect(screen.getByText('Aidant')).toBeInTheDocument()
-    })
-
-    it('affiche "Utilisateur" si sender absent', () => {
-      renderWithProviders(
-        <MessageBubble message={makeMessage({ sender: undefined })} isOwnMessage={false} />
-      )
-      expect(screen.getByText('Utilisateur')).toBeInTheDocument()
+      expect(screen.getByText('J')).toBeInTheDocument()
     })
   })
 
   describe('Message propre (isOwnMessage=true)', () => {
-    it('n\'affiche pas le nom de l\'expéditeur', () => {
+    it('n\'affiche pas l\'avatar pour les messages envoyés', () => {
       renderWithProviders(
         <MessageBubble message={makeMessage()} isOwnMessage={true} />
       )
-      expect(screen.queryByText('Jean Martin')).not.toBeInTheDocument()
-    })
-
-    it('affiche "✓" si non lu (readBy contient seulement l\'expéditeur)', () => {
-      renderWithProviders(
-        <MessageBubble
-          message={makeMessage({ senderId: 'user-1', readBy: ['user-1'] })}
-          isOwnMessage={true}
-        />
-      )
-      // Seul "✓" affiché (pas "✓✓" pour non-lu)
-      expect(screen.getByText('✓')).toBeInTheDocument()
-    })
-
-    it('affiche "✓✓" si lu (readBy contient d\'autres utilisateurs)', () => {
-      renderWithProviders(
-        <MessageBubble
-          message={makeMessage({ senderId: 'user-1', readBy: ['user-1', 'user-2'] })}
-          isOwnMessage={true}
-        />
-      )
-      expect(screen.getByText('✓✓')).toBeInTheDocument()
+      expect(screen.queryByText('J')).not.toBeInTheDocument()
     })
   })
 

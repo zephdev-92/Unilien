@@ -57,7 +57,7 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
 
   if (isLoading) {
     return (
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6} boxShadow="sm">
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6} boxShadow="sm">
         <Skeleton height="18px" width="50%" mb={4} />
         <Stack gap={3}>
           <Skeleton height="14px" />
@@ -87,8 +87,8 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
       borderColor={isOverBudget ? 'red.200' : 'gray.200'}
       p={6}
@@ -96,10 +96,10 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
     >
       <Flex justify="space-between" align="center" mb={4}>
         <Box>
-          <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+          <Text fontSize="lg" fontWeight="semibold" color="text.default">
             Projection budget
           </Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="sm" color="text.muted">
             {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
           </Text>
         </Box>
@@ -116,17 +116,17 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
 
       <Stack gap={3}>
         <Flex justify="space-between">
-          <Text fontSize="sm" color="gray.600">Heures effectuees</Text>
+          <Text fontSize="sm" color="text.muted">Heures effectuees</Text>
           <Text fontSize="sm" fontWeight="medium">{forecast.completedHours}h</Text>
         </Flex>
         <Flex justify="space-between">
-          <Text fontSize="sm" color="gray.600">Heures planifiees</Text>
+          <Text fontSize="sm" color="text.muted">Heures planifiees</Text>
           <Text fontSize="sm" fontWeight="medium">{forecast.plannedHours}h</Text>
         </Flex>
 
-        <Box borderTopWidth="1px" borderColor="gray.100" pt={3}>
+        <Box borderTopWidth="1px" borderColor="border.default" pt={3}>
           <Flex justify="space-between" mb={1}>
-            <Text fontSize="sm" fontWeight="semibold" color="gray.800">
+            <Text fontSize="sm" fontWeight="semibold" color="text.default">
               Total projete
             </Text>
             <Text fontSize="sm" fontWeight="bold" color="brand.600">
@@ -134,7 +134,7 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
             </Text>
           </Flex>
           <Flex justify="space-between">
-            <Text fontSize="sm" color="gray.600">Cout projete (charges incl.)</Text>
+            <Text fontSize="sm" color="text.muted">Cout projete (charges incl.)</Text>
             <Text fontSize="sm" fontWeight="bold" color={isOverBudget ? 'red.600' : 'gray.900'}>
               {formatCurrency(forecast.projectedCostWithCharges)}
             </Text>
@@ -142,9 +142,9 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
         </Box>
 
         {pchEnvelope !== null && pchPercent !== null && (
-          <Box borderTopWidth="1px" borderColor="gray.100" pt={3}>
+          <Box borderTopWidth="1px" borderColor="border.default" pt={3}>
             <Flex justify="space-between" mb={2}>
-              <Text fontSize="xs" color="gray.500">vs enveloppe PCH</Text>
+              <Text fontSize="xs" color="text.muted">vs enveloppe PCH</Text>
               <Text fontSize="xs" fontWeight="medium" color={isOverBudget ? 'red.600' : 'gray.600'}>
                 {pchPercent}%
               </Text>
@@ -155,7 +155,7 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
               </Progress.Track>
             </Progress.Root>
             <Flex justify="space-between" mt={2}>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700">
+              <Text fontSize="sm" fontWeight="medium" color="text.secondary">
                 {isOverBudget ? 'Depassement estime' : 'Marge restante'}
               </Text>
               <Text

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Box, Stack, Flex, Text, Avatar, Badge } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Avatar } from '@chakra-ui/react'
 import type { Shift, UserRole, ShiftType } from '@/types'
 
 type ShiftStatusFilter = 'all' | 'planned' | 'completed' | 'cancelled'
@@ -67,14 +67,14 @@ export function PlanningSidebar({
     <Stack gap={5}>
       {/* Filtre par statut */}
       <Box
-        bg="white"
+        bg="bg.surface"
         borderRadius="xl"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={4}
-        boxShadow="sm"
+        boxShadow="0 2px 8px rgba(78,100,120,.09)"
       >
-        <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={3}>
+        <Text fontSize="sm" fontWeight="semibold" color="text.secondary" mb={3}>
           Statut
         </Text>
         <Flex gap={2} flexWrap="wrap">
@@ -102,14 +102,14 @@ export function PlanningSidebar({
 
       {/* Filtre par type */}
       <Box
-        bg="white"
+        bg="bg.surface"
         borderRadius="xl"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={4}
-        boxShadow="sm"
+        boxShadow="0 2px 8px rgba(78,100,120,.09)"
       >
-        <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={3}>
+        <Text fontSize="sm" fontWeight="semibold" color="text.secondary" mb={3}>
           Type d'intervention
         </Text>
         <Stack gap={1.5}>
@@ -120,7 +120,7 @@ export function PlanningSidebar({
               type="button"
               px={3}
               py={2}
-              borderRadius="md"
+              borderRadius="10px"
               fontSize="xs"
               fontWeight="medium"
               textAlign="left"
@@ -139,14 +139,14 @@ export function PlanningSidebar({
       {/* Liste des employés (employer/caregiver uniquement) */}
       {isEmployer && employees.length > 0 && (
         <Box
-          bg="white"
+          bg="bg.surface"
           borderRadius="xl"
           borderWidth="1px"
-          borderColor="gray.200"
+          borderColor="border.default"
           p={4}
-          boxShadow="sm"
+          boxShadow="0 2px 8px rgba(78,100,120,.09)"
         >
-          <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={3}>
+          <Text fontSize="sm" fontWeight="semibold" color="text.secondary" mb={3}>
             Auxiliaires
           </Text>
           <Stack gap={1}>
@@ -155,7 +155,7 @@ export function PlanningSidebar({
               type="button"
               px={3}
               py={2}
-              borderRadius="md"
+              borderRadius="10px"
               fontSize="xs"
               fontWeight="medium"
               textAlign="left"
@@ -176,7 +176,7 @@ export function PlanningSidebar({
                 gap={2}
                 px={3}
                 py={2}
-                borderRadius="md"
+                borderRadius="10px"
                 bg={employeeFilter === emp.id ? 'blue.50' : 'transparent'}
                 cursor="pointer"
                 _hover={{ bg: employeeFilter === emp.id ? 'blue.100' : 'gray.50' }}
@@ -194,9 +194,17 @@ export function PlanningSidebar({
                 >
                   {emp.name}
                 </Text>
-                <Badge size="sm" variant="subtle" colorPalette="gray">
+                <Text
+                  fontSize="xs"
+                  fontWeight="700"
+                  px="8px"
+                  py="2px"
+                  borderRadius="8px"
+                  bg="#F3F6F9"
+                  color="#6B7A8D"
+                >
                   {emp.shiftCount}
-                </Badge>
+                </Text>
               </Flex>
             ))}
           </Stack>

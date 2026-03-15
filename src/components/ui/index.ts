@@ -5,3 +5,5 @@ export { AccessibleSelect, type AccessibleSelectProps, type SelectOption } from 
 export { VoiceInput, type VoiceInputProps } from './VoiceInput'
 export { DevelopmentBanner } from './DevelopmentBanner'
 export { ErrorBoundary } from './ErrorBoundary'
+export { NavIcon } from './NavIcon'
+export { StatusPill } from './StatusPill'

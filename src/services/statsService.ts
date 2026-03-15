@@ -22,10 +22,14 @@ export interface EmployeeStats {
   hoursThisMonth: number
   hoursLastMonth: number
   hoursDiff: number
+  contractualHours: number
   estimatedRevenue: number
   activeEmployers: number
   shiftsThisMonth: number
+  shiftsToday: number
+  activeShiftsNow: number
   upcomingShifts: number
+  presenceRate: number
 }
 
 export interface CaregiverStats {
@@ -128,7 +132,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
   // Récupérer les contrats actifs de l'employé
   const { data: contracts } = await supabase
     .from('contracts')
-    .select('id, hourly_rate, employer_id')
+    .select('id, hourly_rate, weekly_hours, employer_id')
     .eq('employee_id', employeeId)
     .eq('status', 'active')
 
@@ -140,17 +144,23 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
       hoursThisMonth: 0,
       hoursLastMonth: 0,
       hoursDiff: 0,
+      contractualHours: 0,
       estimatedRevenue: 0,
       activeEmployers: 0,
       shiftsThisMonth: 0,
+      shiftsToday: 0,
+      activeShiftsNow: 0,
       upcomingShifts: 0,
+      presenceRate: 0,
     }
   }
+
+  const todayStr = format(now, 'yyyy-MM-dd')
 
   // Récupérer les shifts de ce mois
   const { data: shiftsThisMonth } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status, contract_id')
+    .select('start_time, end_time, break_duration, status, contract_id, date')
     .in('contract_id', contractIds)
     .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
@@ -170,7 +180,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
     .from('shifts')
     .select('id')
     .in('contract_id', contractIds)
-    .gte('date', format(now, 'yyyy-MM-dd'))
+    .gte('date', todayStr)
     .eq('status', 'planned')
 
   // Calculer les heures
@@ -178,8 +188,29 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
   const hoursLastMonth = calculateTotalHours(shiftsLastMonth || [])
   const hoursDiff = hoursThisMonth - hoursLastMonth
 
+  // Heures contractuelles mensuelles
+  const totalWeekly = (contracts || []).reduce((sum, c) => sum + (c.weekly_hours || 0), 0)
+  const contractualHours = Math.round(totalWeekly * 4.33)
+
+  // Shifts aujourd'hui
+  const todayShifts = (shiftsThisMonth || []).filter(s => s.date === todayStr)
+  const shiftsToday = todayShifts.length
+
+  // Shift en cours
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const activeShiftsNow = todayShifts.filter(s => {
+    const [sh, sm] = s.start_time.split(':').map(Number)
+    const [eh, em] = s.end_time.split(':').map(Number)
+    return nowMinutes >= sh * 60 + sm && nowMinutes <= eh * 60 + em
+  }).length
+
+  // Taux de présence : completed / (completed + cancelled)
+  const allStatuses = (shiftsThisMonth || [])
+  const completedCount = allStatuses.filter(s => s.status === 'completed').length
+  const totalForRate = allStatuses.length
+  const presenceRate = totalForRate > 0 ? Math.round((completedCount / totalForRate) * 100) : 100
+
   // Calculer les revenus estimés (brut)
-  // On utilise le taux horaire de chaque contrat pour plus de précision
   let estimatedRevenue = 0
   for (const shift of (shiftsThisMonth || [])) {
     const contract = contracts?.find(c => c.id === shift.contract_id)
@@ -193,10 +224,14 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
     hoursThisMonth: Math.round(hoursThisMonth * 10) / 10,
     hoursLastMonth: Math.round(hoursLastMonth * 10) / 10,
     hoursDiff: Math.round(hoursDiff * 10) / 10,
+    contractualHours,
     estimatedRevenue: Math.round(estimatedRevenue),
     activeEmployers,
     shiftsThisMonth: shiftsThisMonth?.length || 0,
+    shiftsToday,
+    activeShiftsNow,
     upcomingShifts: upcomingShiftsData?.length || 0,
+    presenceRate,
   }
 }
 

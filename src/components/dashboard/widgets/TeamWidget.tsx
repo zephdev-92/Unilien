@@ -51,19 +51,19 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
       boxShadow="sm"
     >
       <Flex justify="space-between" align="center" mb={4}>
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+        <Text fontSize="lg" fontWeight="semibold" color="text.default">
           Mon équipe
         </Text>
         <RouterLink to="/equipe">
-          <AccessibleButton size="sm" variant="ghost" colorPalette="blue">
+          <AccessibleButton size="sm" variant="ghost" colorPalette="brand">
             Voir tout
           </AccessibleButton>
         </RouterLink>
@@ -78,11 +78,11 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
           <Text fontSize="3xl" mb={2}>
             👥
           </Text>
-          <Text color="gray.600" mb={4}>
+          <Text color="text.muted" mb={4}>
             Aucun auxiliaire actif
           </Text>
           <RouterLink to="/equipe">
-            <AccessibleButton size="sm" colorPalette="blue">
+            <AccessibleButton size="sm" colorPalette="brand">
               Ajouter un auxiliaire
             </AccessibleButton>
           </RouterLink>
@@ -94,7 +94,7 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
           ))}
 
           {auxiliaries.length > 4 && (
-            <Text fontSize="sm" color="gray.500" textAlign="center" pt={2}>
+            <Text fontSize="sm" color="text.muted" textAlign="center" pt={2}>
               +{auxiliaries.length - 4} autre{auxiliaries.length - 4 > 1 ? 's' : ''}
             </Text>
           )}
@@ -110,10 +110,10 @@ function AuxiliaryRow({ auxiliary }: { auxiliary: AuxiliarySummary }) {
       align="center"
       gap={3}
       p={3}
-      bg="gray.50"
-      borderRadius="md"
+      bg="bg.page"
+      borderRadius="10px"
       transition="background 0.2s"
-      _hover={{ bg: 'gray.100' }}
+      _hover={{ bg: 'bg.surface.hover' }}
     >
       <Avatar.Root size="sm">
         <Avatar.Fallback name={`${auxiliary.firstName} ${auxiliary.lastName}`} />
@@ -125,7 +125,7 @@ function AuxiliaryRow({ auxiliary }: { auxiliary: AuxiliarySummary }) {
           {auxiliary.firstName} {auxiliary.lastName}
         </Text>
         <Flex gap={1} mt={0.5}>
-          <Tag.Root size="sm" colorPalette="blue" variant="subtle">
+          <Tag.Root size="sm" colorPalette="brand" variant="subtle">
             <Tag.Label>{auxiliary.contractType}</Tag.Label>
           </Tag.Root>
           <Tag.Root size="sm" variant="subtle">
@@ -135,7 +135,7 @@ function AuxiliaryRow({ auxiliary }: { auxiliary: AuxiliarySummary }) {
       </Box>
 
       {auxiliary.phone && (
-        <Text fontSize="xs" color="gray.500" display={{ base: 'none', sm: 'block' }}>
+        <Text fontSize="xs" color="text.muted" display={{ base: 'none', sm: 'block' }}>
           {auxiliary.phone}
         </Text>
       )}

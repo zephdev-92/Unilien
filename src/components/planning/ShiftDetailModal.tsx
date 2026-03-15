@@ -1,11 +1,7 @@
 import { useReducer, useMemo, useCallback } from 'react'
 import {
-  Dialog,
-  Portal,
-  Box,
   Flex,
   Text,
-  Badge,
 } from '@chakra-ui/react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
@@ -13,12 +9,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { shiftDetailSchema as shiftSchema, type ShiftDetailFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, StatusPill } from '@/components/ui'
 import { ComplianceBadge } from '@/components/compliance'
+import { PlanningModal } from './PlanningModal'
 import { updateShift, deleteShift, validateShift } from '@/services/shiftService'
 import { logger } from '@/lib/logger'
 import type { Shift, UserRole } from '@/types'
-import { SHIFT_STATUS_COLORS as statusColors, SHIFT_STATUS_LABELS as statusLabels } from '@/lib/constants/statusMaps'
+import { SHIFT_STATUS_VARIANTS as statusVariants, SHIFT_STATUS_LABELS as statusLabels } from '@/lib/constants/statusMaps'
 import { useShiftDetailData } from '@/hooks/useShiftDetailData'
 import { useShiftEditLogic } from '@/hooks/useShiftEditLogic'
 import { ShiftEditForm } from './ShiftEditForm'
@@ -364,194 +361,142 @@ export function ShiftDetailModal({
 
   const formattedDate = format(new Date(shift.date), 'EEEE d MMMM yyyy', { locale: fr })
 
+  const modalTitleRight = isEditing
+    ? (complianceResult && !isCheckingCompliance ? <ComplianceBadge result={complianceResult} size="sm" /> : undefined)
+    : (
+      <StatusPill variant={statusVariants[shift.status]}>
+        {statusLabels[shift.status]}
+      </StatusPill>
+    )
+
+  const footerContent = isEditing ? (
+    <Flex gap={3} justify="space-between" w="full" align="center">
+      {isCheckingCompliance && (
+        <Text fontSize="sm" color="text.muted">Validation en cours...</Text>
+      )}
+      <Flex gap={3} ml="auto">
+        <AccessibleButton
+          variant="outline"
+          onClick={handleCancelEdit}
+          disabled={isSubmitting}
+          bg="transparent"
+          color="#3D5166"
+          borderWidth="1.5px"
+          borderColor="border.default"
+          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+        >
+          Annuler
+        </AccessibleButton>
+        <AccessibleButton
+          type="submit"
+          form="edit-shift-form"
+          bg={hasErrors ? 'gray.400' : '#3D5166'}
+          color="white"
+          _hover={{ bg: hasErrors ? 'gray.400' : '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }}
+          _active={{ transform: 'translateY(0)' }}
+          loading={isSubmitting}
+          disabled={!isDirty || hasErrors || isCheckingCompliance || (hasWarnings && !acknowledgeWarnings)}
+        >
+          {hasErrors ? 'Non conforme' : hasWarnings && !acknowledgeWarnings ? 'Vérifiez les avertissements' : 'Enregistrer'}
+        </AccessibleButton>
+      </Flex>
+    </Flex>
+  ) : (
+    <Flex gap={3} justify="space-between" w="full" flexWrap="wrap">
+      <Flex gap={2}>
+        {canDelete && !showDeleteConfirm && (
+          <AccessibleButton variant="outline" colorPalette="red" size="sm" onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}>
+            Supprimer
+          </AccessibleButton>
+        )}
+      </Flex>
+      <Flex gap={3}>
+        {canValidate && !hasValidated && (
+          <AccessibleButton bg="#16a34a" color="white" _hover={{ bg: '#15803d', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={handleValidate} loading={isValidating}>
+            {"Valider l'intervention"}
+          </AccessibleButton>
+        )}
+        {canValidate && hasValidated && (
+          <Text fontSize="sm" color="green.600" alignSelf="center">Vous avez validé cette intervention</Text>
+        )}
+        {userRole === 'employee' && shift && shift.status === 'planned' && (
+          <AccessibleButton bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={() => navigate('/suivi-des-heures')} accessibleLabel="Aller au pointage pour cette intervention">
+            Pointer
+          </AccessibleButton>
+        )}
+        {canEdit && onRepeat && shift && shift.status === 'planned' && (
+          <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={() => onRepeat(shift)}>
+            Répéter
+          </AccessibleButton>
+        )}
+        {canEdit && (
+          <AccessibleButton bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={() => dispatch({ type: 'START_EDITING' })}>
+            Modifier
+          </AccessibleButton>
+        )}
+        <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose}>
+          Fermer
+        </AccessibleButton>
+      </Flex>
+    </Flex>
+  )
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
-      <Portal>
-        <Dialog.Backdrop bg="blackAlpha.600" />
-        <Dialog.Positioner>
-          <Dialog.Content
-            bg="white"
-            borderRadius="xl"
-            maxW="600px"
-            w="95vw"
-            maxH="90vh"
-            overflow="auto"
-          >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Flex justify="space-between" align="center" pr={8}>
-                <Box>
-                  <Dialog.Title fontSize="xl" fontWeight="bold">
-                    {isEditing ? "Modifier l'intervention" : "Détail de l'intervention"}
-                  </Dialog.Title>
-                  <Text fontSize="sm" color="gray.600" mt={1} textTransform="capitalize">
-                    {formattedDate}
-                  </Text>
-                </Box>
-                {!isEditing && (
-                  <Badge colorPalette={statusColors[shift.status]} size="lg">
-                    {statusLabels[shift.status]}
-                  </Badge>
-                )}
-                {isEditing && complianceResult && !isCheckingCompliance && (
-                  <ComplianceBadge result={complianceResult} size="sm" />
-                )}
-              </Flex>
-              <Dialog.CloseTrigger position="absolute" top={4} right={4} asChild>
-                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer">
-                  X
-                </AccessibleButton>
-              </Dialog.CloseTrigger>
-            </Dialog.Header>
-
-            <Dialog.Body p={6}>
-              {isEditing ? (
-                <ShiftEditForm
-                  register={register}
-                  errors={errors}
-                  watchedBreakDuration={watchedValues.breakDuration}
-                  onSubmit={handleSubmit(onSubmit)}
-                  shiftType={shiftType}
-                  hasNightAction={hasNightAction}
-                  nightInterventionsCount={nightInterventionsCount}
-                  acknowledgeWarnings={acknowledgeWarnings}
-                  durationHours={durationHours}
-                  nightHoursCount={nightHoursCount}
-                  hasNightHours={hasNightHours}
-                  isRequalified={isRequalified}
-                  effectiveHoursComputed={effectiveHoursComputed}
-                  complianceResult={complianceResult}
-                  computedPay={computedPay}
-                  hasErrors={hasErrors}
-                  hasWarnings={hasWarnings}
-                  isCheckingCompliance={isCheckingCompliance}
-                  contract={contract}
-                  submitError={submitError}
-                  onShiftTypeChange={(t) => dispatch({ type: 'SET_SHIFT_TYPE', shiftType: t })}
-                  onNightActionChange={(v) => dispatch({ type: 'SET_HAS_NIGHT_ACTION', value: v })}
-                  onNightInterventionsChange={(n) =>
-                    dispatch({ type: 'SET_NIGHT_INTERVENTIONS', count: n })
-                  }
-                  onAcknowledgeWarnings={() => dispatch({ type: 'ACKNOWLEDGE_WARNINGS' })}
-                />
-              ) : (
-                <ShiftDetailView
-                  shift={shift}
-                  contract={contract}
-                  isLoadingContract={isLoadingContract}
-                  displayDuration={displayDuration}
-                  nightHoursCount={nightHoursCount}
-                  hasNightHours={hasNightHours}
-                  showDeleteConfirm={showDeleteConfirm}
-                  isDeleting={isDeleting}
-                  submitError={submitError}
-                  onHideDeleteConfirm={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}
-                  onDelete={handleDelete}
-                />
-              )}
-            </Dialog.Body>
-
-            <Dialog.Footer p={6} borderTopWidth="1px">
-              {isEditing ? (
-                <Flex gap={3} justify="space-between" w="full" align="center">
-                  {isCheckingCompliance && (
-                    <Text fontSize="sm" color="gray.500">
-                      Validation en cours...
-                    </Text>
-                  )}
-                  <Flex gap={3} ml="auto">
-                    <AccessibleButton
-                      variant="outline"
-                      onClick={handleCancelEdit}
-                      disabled={isSubmitting}
-                    >
-                      Annuler
-                    </AccessibleButton>
-                    <AccessibleButton
-                      type="submit"
-                      form="edit-shift-form"
-                      colorPalette={hasErrors ? 'gray' : 'blue'}
-                      loading={isSubmitting}
-                      disabled={
-                        !isDirty ||
-                        hasErrors ||
-                        isCheckingCompliance ||
-                        (hasWarnings && !acknowledgeWarnings)
-                      }
-                    >
-                      {hasErrors
-                        ? 'Non conforme'
-                        : hasWarnings && !acknowledgeWarnings
-                          ? 'Vérifiez les avertissements'
-                          : 'Enregistrer'}
-                    </AccessibleButton>
-                  </Flex>
-                </Flex>
-              ) : (
-                <Flex gap={3} justify="space-between" w="full" flexWrap="wrap">
-                  <Flex gap={2}>
-                    {canDelete && !showDeleteConfirm && (
-                      <AccessibleButton
-                        variant="outline"
-                        colorPalette="red"
-                        size="sm"
-                        onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}
-                      >
-                        Supprimer
-                      </AccessibleButton>
-                    )}
-                  </Flex>
-                  <Flex gap={3}>
-                    {canValidate && !hasValidated && (
-                      <AccessibleButton
-                        colorPalette="green"
-                        onClick={handleValidate}
-                        loading={isValidating}
-                      >
-                        {"Valider l'intervention"}
-                      </AccessibleButton>
-                    )}
-                    {canValidate && hasValidated && (
-                      <Text fontSize="sm" color="green.600" alignSelf="center">
-                        Vous avez validé cette intervention
-                      </Text>
-                    )}
-                    {userRole === 'employee' && shift && shift.status === 'planned' && (
-                      <AccessibleButton
-                        colorPalette="teal"
-                        onClick={() => navigate('/pointage')}
-                        accessibleLabel="Aller au pointage pour cette intervention"
-                      >
-                        Pointer
-                      </AccessibleButton>
-                    )}
-                    {canEdit && onRepeat && shift && shift.status === 'planned' && (
-                      <AccessibleButton
-                        variant="outline"
-                        colorPalette="blue"
-                        onClick={() => onRepeat(shift)}
-                      >
-                        Répéter
-                      </AccessibleButton>
-                    )}
-                    {canEdit && (
-                      <AccessibleButton
-                        colorPalette="blue"
-                        onClick={() => dispatch({ type: 'START_EDITING' })}
-                      >
-                        Modifier
-                      </AccessibleButton>
-                    )}
-                    <AccessibleButton variant="outline" onClick={onClose}>
-                      Fermer
-                    </AccessibleButton>
-                  </Flex>
-                </Flex>
-              )}
-            </Dialog.Footer>
-          </Dialog.Content>
-        </Dialog.Positioner>
-      </Portal>
-    </Dialog.Root>
+    <PlanningModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditing ? "Modifier l'intervention" : "Détail de l'intervention"}
+      subtitle={
+        <Text fontSize="sm" color="text.muted" mt={1} textTransform="capitalize">
+          {formattedDate}
+        </Text>
+      }
+      titleRight={modalTitleRight}
+      footer={footerContent}
+    >
+      {isEditing ? (
+        <ShiftEditForm
+          register={register}
+          errors={errors}
+          watchedBreakDuration={watchedValues.breakDuration}
+          onSubmit={handleSubmit(onSubmit)}
+          shiftType={shiftType}
+          hasNightAction={hasNightAction}
+          nightInterventionsCount={nightInterventionsCount}
+          acknowledgeWarnings={acknowledgeWarnings}
+          durationHours={durationHours}
+          nightHoursCount={nightHoursCount}
+          hasNightHours={hasNightHours}
+          isRequalified={isRequalified}
+          effectiveHoursComputed={effectiveHoursComputed}
+          complianceResult={complianceResult}
+          computedPay={computedPay}
+          hasErrors={hasErrors}
+          hasWarnings={hasWarnings}
+          isCheckingCompliance={isCheckingCompliance}
+          contract={contract}
+          submitError={submitError}
+          onShiftTypeChange={(t) => dispatch({ type: 'SET_SHIFT_TYPE', shiftType: t })}
+          onNightActionChange={(v) => dispatch({ type: 'SET_HAS_NIGHT_ACTION', value: v })}
+          onNightInterventionsChange={(n) => dispatch({ type: 'SET_NIGHT_INTERVENTIONS', count: n })}
+          onAcknowledgeWarnings={() => dispatch({ type: 'ACKNOWLEDGE_WARNINGS' })}
+        />
+      ) : (
+        <ShiftDetailView
+          shift={shift}
+          contract={contract}
+          isLoadingContract={isLoadingContract}
+          displayDuration={displayDuration}
+          nightHoursCount={nightHoursCount}
+          hasNightHours={hasNightHours}
+          showDeleteConfirm={showDeleteConfirm}
+          isDeleting={isDeleting}
+          submitError={submitError}
+          onHideDeleteConfirm={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}
+          onDelete={handleDelete}
+        />
+      )}
+    </PlanningModal>
   )
 }
 

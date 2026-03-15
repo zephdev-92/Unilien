@@ -51,7 +51,7 @@ export function ShiftEditModal({ shift, onSave, onClose }: ShiftEditModalProps) 
         aria-hidden="true"
       />
       <Box
-        bg="white"
+        bg="bg.surface"
         borderRadius="xl"
         p={6}
         maxW="400px"
@@ -63,11 +63,11 @@ export function ShiftEditModal({ shift, onSave, onClose }: ShiftEditModalProps) 
         aria-modal="true"
         aria-label="Modifier les heures"
       >
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={1}>
+        <Text fontSize="lg" fontWeight="semibold" color="text.default" mb={1}>
           Modifier les heures
         </Text>
         {shift.employeeName && (
-          <Text fontSize="sm" color="gray.500" mb={4}>
+          <Text fontSize="sm" color="text.muted" mb={4}>
             {shift.employeeName}
           </Text>
         )}
@@ -75,7 +75,7 @@ export function ShiftEditModal({ shift, onSave, onClose }: ShiftEditModalProps) 
         <Stack gap={3}>
           <Flex gap={3}>
             <Box flex={1}>
-              <Text as="label" htmlFor="edit-start" fontSize="sm" color="gray.600" mb={1}>
+              <Text as="label" htmlFor="edit-start" fontSize="sm" color="text.muted" mb={1}>
                 Début
               </Text>
               <Input
@@ -87,7 +87,7 @@ export function ShiftEditModal({ shift, onSave, onClose }: ShiftEditModalProps) 
               />
             </Box>
             <Box flex={1}>
-              <Text as="label" htmlFor="edit-end" fontSize="sm" color="gray.600" mb={1}>
+              <Text as="label" htmlFor="edit-end" fontSize="sm" color="text.muted" mb={1}>
                 Fin
               </Text>
               <Input
@@ -107,7 +107,7 @@ export function ShiftEditModal({ shift, onSave, onClose }: ShiftEditModalProps) 
           <Flex gap={3} mt={2}>
             <AccessibleButton
               flex={1}
-              colorPalette="blue"
+              colorPalette="brand"
               onClick={handleSave}
               disabled={!canSubmit}
               loading={isSubmitting}

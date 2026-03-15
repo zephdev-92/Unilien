@@ -34,7 +34,7 @@ export function ShiftCard({
     <Box
       p={4}
       bg={completed ? 'gray.50' : 'white'}
-      borderRadius="lg"
+      borderRadius="12px"
       borderWidth="1px"
       borderColor={completed ? 'gray.200' : 'blue.200'}
       borderLeftWidth="4px"
@@ -46,7 +46,7 @@ export function ShiftCard({
             {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
           </Text>
           {shift.tasks.length > 0 && (
-            <Text fontSize="sm" color="gray.500" mt={1}>
+            <Text fontSize="sm" color="text.muted" mt={1}>
               {shift.tasks.slice(0, 2).map(sanitizeText).join(', ')}
               {shift.tasks.length > 2 && ` +${shift.tasks.length - 2}`}
             </Text>
@@ -67,7 +67,7 @@ export function ShiftCard({
           ) : (
             onClockIn && (
               <AccessibleButton
-                colorPalette="blue"
+                colorPalette="brand"
                 size="sm"
                 onClick={onClockIn}
               >

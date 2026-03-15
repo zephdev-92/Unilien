@@ -11,11 +11,8 @@ import {
   Image,
   Link,
   Heading,
-  Badge,
-  Separator,
+  Button,
 } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
-
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function FeatureCard({
@@ -34,18 +31,18 @@ function FeatureCard({
   return (
     <Box
       p={6}
-      bg="white"
-      borderRadius="xl"
-      boxShadow="md"
+      bg="bg.surface"
+      borderRadius="md"
+      boxShadow="none"
       borderWidth="1px"
-      borderColor="gray.100"
+      borderColor="border.default"
       transition="all 0.2s"
-      _hover={{ transform: 'translateY(-4px)', boxShadow: 'lg' }}
+      _hover={{ transform: 'translateY(-2px)', boxShadow: 'md' }}
     >
       <Flex
         w="48px"
         h="48px"
-        borderRadius="lg"
+        borderRadius="12px"
         bg={iconBg || 'blue.50'}
         color={iconColor || 'blue.600'}
         align="center"
@@ -55,10 +52,10 @@ function FeatureCard({
       >
         {icon}
       </Flex>
-      <Text fontSize="lg" fontWeight="bold" mb={2} color="gray.800">
+      <Text fontSize="lg" fontWeight="bold" mb={2} color="text.default">
         {title}
       </Text>
-      <Text color="gray.600" fontSize="sm">
+      <Text color="text.muted" fontSize="sm">
         {description}
       </Text>
     </Box>
@@ -71,7 +68,7 @@ function StatItem({ value, label }: { value: string; label: string }) {
       <Text fontSize={{ base: '2xl', md: '3xl' }} fontWeight="800" color="brand.600">
         {value}
       </Text>
-      <Text fontSize="sm" color="gray.500" mt={1}>
+      <Text fontSize="sm" color="text.muted" mt={1}>
         {label}
       </Text>
     </Box>
@@ -87,14 +84,23 @@ function PainPointCard({
   title: string
   description: string
   iconBg: string
-  icon: string
+  icon: React.ReactNode
 }) {
   return (
-    <Box p={6} bg="white" borderRadius="xl" boxShadow="md" borderWidth="1px" borderColor="gray.100">
+    <Box
+      p={6}
+      bg="bg.surface"
+      borderRadius="md"
+      boxShadow="none"
+      borderWidth="1px"
+      borderColor="border.default"
+      transition="all 0.2s"
+      _hover={{ transform: 'translateY(-2px)', boxShadow: 'md' }}
+    >
       <Flex
         w="48px"
         h="48px"
-        borderRadius="lg"
+        borderRadius="12px"
         bg={iconBg}
         align="center"
         justify="center"
@@ -103,10 +109,10 @@ function PainPointCard({
       >
         {icon}
       </Flex>
-      <Text fontSize="md" fontWeight="bold" mb={2} color="gray.800">
+      <Text fontSize="md" fontWeight="bold" mb={2} color="text.default">
         {title}
       </Text>
-      <Text color="gray.600" fontSize="sm">
+      <Text color="text.muted" fontSize="sm">
         {description}
       </Text>
     </Box>
@@ -133,61 +139,138 @@ function PricingCard({
   return (
     <Box
       p={8}
-      bg="white"
-      borderRadius="2xl"
-      boxShadow={featured ? 'xl' : 'md'}
-      borderWidth={featured ? '2px' : '1px'}
-      borderColor={featured ? 'brand.500' : 'gray.200'}
+      bg="bg.surface"
+      borderRadius="lg"
+      borderWidth="2px"
+      borderColor={featured ? 'brand.500' : 'border.default'}
+      textAlign="center"
       position="relative"
     >
       {featured && (
-        <Badge
-          colorPalette="blue"
+        <Flex
           position="absolute"
           top="-12px"
           left="50%"
           transform="translateX(-50%)"
-          px={3}
-          py={1}
-          borderRadius="full"
+          bg="brand.500"
+          color="white"
           fontSize="xs"
-          fontWeight="bold"
+          fontWeight="800"
+          px={3}
+          py="4px"
+          borderRadius="full"
+          whiteSpace="nowrap"
         >
           Le plus populaire
-        </Badge>
+        </Flex>
       )}
-      <Text fontSize="xl" fontWeight="800" mb={2}>
+      <Text fontSize="xl" fontWeight="800" textAlign="center">
         {name}
       </Text>
-      <Flex align="baseline" mb={6}>
-        <Text fontSize="4xl" fontWeight="800" color="gray.900">
-          {price}
-        </Text>
-        <Text fontSize="sm" color="gray.500" ml={1}>
-          {priceSuffix}
-        </Text>
-      </Flex>
-      <Stack gap={3} mb={6}>
+      <Box fontFamily="heading" fontSize="4xl" fontWeight="900" color="text.default" my={3} textAlign="center">
+        {price} <Text as="sub" fontSize="sm" color="text.muted" verticalAlign="baseline">{priceSuffix}</Text>
+      </Box>
+      <Stack gap={2} textAlign="left" my={5}>
         {features.map((f) => (
-          <Flex key={f.text} align="center" gap={2} opacity={f.available ? 1 : 0.4}>
-            <Text color={f.available ? 'green.500' : 'gray.400'} fontSize="sm">
-              {f.available ? '✓' : '✗'}
-            </Text>
-            <Text fontSize="sm" color={f.available ? 'gray.700' : 'gray.400'}>
-              {f.text}
-            </Text>
+          <Flex key={f.text} align="center" gap={2} color={f.available ? 'text.default' : 'text.muted'}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={f.available ? '#9BB23B' : 'currentColor'}
+              strokeWidth="2.5"
+              width="16"
+              height="16"
+              style={{ flexShrink: 0 }}
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <Text fontSize="sm">{f.text}</Text>
           </Flex>
         ))}
       </Stack>
-      <AccessibleButton
+      <Button
         asChild
-        colorPalette={featured ? 'blue' : 'gray'}
-        variant={featured ? 'solid' : 'outline'}
-        width="100%"
+        w="100%"
+        bg={featured ? 'brand.500' : 'transparent'}
+        color={featured ? 'white' : 'text.secondary'}
+        borderWidth={featured ? '0' : '1.5px'}
+        borderColor={featured ? 'transparent' : 'border.default'}
+        fontFamily="heading"
+        fontSize="sm"
+        fontWeight="700"
+        letterSpacing="0.01em"
+        borderRadius="md"
+        px={5}
+        py="11px"
+        height="auto"
+        boxShadow={featured ? 'sm' : 'none'}
+        _hover={featured
+          ? { bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }
+          : { borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }
+        }
+        _active={{ transform: 'translateY(0)' }}
       >
         <RouterLink to={ctaLink}>{cta}</RouterLink>
-      </AccessibleButton>
+      </Button>
     </Box>
+  )
+}
+
+function WarningTwoIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      <path
+        d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+        fill="none"
+        stroke="#DC2626"
+        strokeWidth="2"
+      />
+      <line x1="12" y1="9" x2="12" y2="13" stroke="#DC2626" strokeWidth="2" />
+      <line x1="12" y1="17" x2="12.01" y2="17" stroke="#DC2626" strokeWidth="2" />
+    </svg>
+  )
+}
+
+function CalendarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="18"
+        rx="2"
+        fill="none"
+        stroke="#78684E"
+        strokeWidth="2"
+      />
+      <line x1="16" y1="2" x2="16" y2="6" stroke="#78684E" strokeWidth="2" />
+      <line x1="8" y1="2" x2="8" y2="6" stroke="#78684E" strokeWidth="2" />
+      <line x1="3" y1="10" x2="21" y2="10" stroke="#78684E" strokeWidth="2" />
+    </svg>
+  )
+}
+
+function TimeIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...props}>
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        fill="none"
+        stroke="#4E6478"
+        strokeWidth="2"
+      />
+      <polyline
+        points="12 6 12 12 16 14"
+        fill="none"
+        stroke="#4E6478"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 
@@ -195,36 +278,47 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <Box borderBottomWidth="1px" borderColor="gray.200">
+    <Box borderWidth="1px" borderColor="border.default" borderRadius="md" overflow="hidden">
       <Flex
         as="button"
         w="100%"
-        py={5}
-        px={2}
         justify="space-between"
         align="center"
+        py={3}
+        px={4}
         cursor="pointer"
+        bg="bg.surface"
+        border="none"
+        gap={4}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        _hover={{ color: 'brand.600' }}
+        _hover={{ bg: 'bg.page' }}
+        transition="background 0.15s ease"
       >
-        <Text fontWeight="600" textAlign="left" fontSize="md" color="gray.800">
+        <Text fontWeight="600" textAlign="left" fontSize="md" color="text.default" flex="1">
           {question}
         </Text>
-        <Text
-          fontSize="xl"
-          color="gray.400"
-          ml={4}
-          transition="transform 0.2s"
-          transform={isOpen ? 'rotate(45deg)' : 'none'}
-          flexShrink={0}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          width="18"
+          height="18"
+          aria-hidden="true"
+          style={{
+            flexShrink: 0,
+            transition: 'transform 0.25s ease',
+            transform: isOpen ? 'rotate(45deg)' : 'none',
+          }}
         >
-          +
-        </Text>
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
       </Flex>
       {isOpen && (
-        <Box pb={5} px={2}>
-          <Text color="gray.600" fontSize="sm" lineHeight="1.7">
+        <Box px={4} pb={3} pt={3} borderTopWidth="1px" borderColor="border.default">
+          <Text color="text.muted" fontSize="sm" lineHeight="1.7">
             {answer}
           </Text>
         </Box>
@@ -239,165 +333,279 @@ export function HomePage() {
   return (
     <Box minH="100vh">
       {/* ── Navigation ── */}
-      <Box
+      <Flex
         as="header"
-        position="fixed"
+        position="sticky"
         top={0}
-        left={0}
-        right={0}
-        bg="white"
-        borderBottomWidth="1px"
-        borderColor="gray.200"
         zIndex={100}
+        bg="bg.surface"
+        borderBottomWidth="1px"
+        borderColor="border.default"
+        h="64px"
+        align="center"
+        justify="space-between"
+        px={8}
       >
-        <Container maxW="container.xl">
-          <Flex h="72px" align="center" justify="space-between">
-            <Image
-              src="/Logo_Unilien.svg"
-              alt="Unilien"
-              h="36px"
-              objectFit="contain"
-            />
-            <Flex gap={6} align="center" display={{ base: 'none', md: 'flex' }}>
-              <Link href="#fonctionnalites" color="gray.600" fontSize="sm" _hover={{ color: 'brand.600' }}>
-                Fonctionnalites
-              </Link>
-              <Link href="#conformite" color="gray.600" fontSize="sm" _hover={{ color: 'brand.600' }}>
-                Conformite
-              </Link>
-              <Link href="#tarifs" color="gray.600" fontSize="sm" _hover={{ color: 'brand.600' }}>
-                Tarifs
-              </Link>
-              <Link href="#faq" color="gray.600" fontSize="sm" _hover={{ color: 'brand.600' }}>
-                FAQ
-              </Link>
-            </Flex>
-            <Flex gap={3} align="center">
-              <Link asChild color="gray.600" fontSize="sm" _hover={{ color: 'brand.500' }}>
-                <RouterLink to="/connexion">Connexion</RouterLink>
-              </Link>
-              <AccessibleButton asChild colorPalette="blue" size="sm">
-                <RouterLink to="/inscription">Essai gratuit</RouterLink>
-              </AccessibleButton>
-            </Flex>
-          </Flex>
-        </Container>
-      </Box>
+        <Image
+          src="/Logo_Unilien.svg"
+          alt="Unilien"
+          h="36px"
+          objectFit="contain"
+        />
+        <Flex as="nav" gap={6} align="center" display={{ base: 'none', md: 'flex' }} aria-label="Navigation principale">
+          <Link href="#fonctionnalites" color="text.muted" fontSize="sm" fontWeight="600" textDecoration="none" _hover={{ color: 'text.default' }}>
+            Fonctionnalités
+          </Link>
+          <Link href="#conformite" color="text.muted" fontSize="sm" fontWeight="600" textDecoration="none" _hover={{ color: 'text.default' }}>
+            Conformité
+          </Link>
+          <Link href="#tarifs" color="text.muted" fontSize="sm" fontWeight="600" textDecoration="none" _hover={{ color: 'text.default' }}>
+            Tarifs
+          </Link>
+          <Link href="#faq" color="text.muted" fontSize="sm" fontWeight="600" textDecoration="none" _hover={{ color: 'text.default' }}>
+            FAQ
+          </Link>
+        </Flex>
+        <Flex gap={3} align="center">
+          <Button
+            asChild
+            bg="transparent"
+            color="text.secondary"
+            borderWidth="1.5px"
+            borderColor="border.default"
+            fontFamily="heading"
+            fontSize="xs"
+            fontWeight="700"
+            letterSpacing="0.01em"
+            borderRadius="6px"
+            px={4}
+            py="7px"
+            height="auto"
+            boxShadow="none"
+            _hover={{
+              borderColor: 'brand.500',
+              color: 'brand.500',
+              bg: 'brand.subtle',
+            }}
+          >
+            <RouterLink to="/connexion">Se connecter</RouterLink>
+          </Button>
+          <Button
+            asChild
+            bg="brand.500"
+            color="white"
+            fontFamily="heading"
+            fontSize="xs"
+            fontWeight="700"
+            letterSpacing="0.01em"
+            borderRadius="6px"
+            px={4}
+            py="7px"
+            height="auto"
+            boxShadow="sm"
+            _hover={{
+              bg: 'brand.600',
+              boxShadow: 'md',
+              transform: 'translateY(-1px)',
+            }}
+            _active={{
+              transform: 'translateY(0)',
+            }}
+          >
+            <RouterLink to="/inscription">Essai gratuit</RouterLink>
+          </Button>
+        </Flex>
+      </Flex>
 
       {/* ── Hero ── */}
-      <Box
-        pt={{ base: '120px', md: '140px' }}
-        pb={{ base: '60px', md: '80px' }}
-        bgGradient="to-br"
-        gradientFrom="brand.50"
-        gradientTo="white"
+      <Grid
+        templateColumns={{ base: '1fr', lg: '1fr 1fr' }}
+        alignItems="center"
+        gap={{ base: 6, lg: 16 }}
+        minH={{ base: 'auto', lg: 'calc(100vh - 64px)' }}
+        py={{ base: 10, lg: '60px' }}
+        px={8}
+        maxW="1200px"
+        mx="auto"
       >
-        <Container maxW="container.xl">
-          <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={12} alignItems="center">
-            <GridItem>
-              <Stack gap={6}>
-                <Flex align="center" gap={2}>
-                  <Text fontSize="xs" color="brand.600" fontWeight="600">
-                    ✓ Pour les particuliers employeurs · Conformite IDCC 3239 automatique
-                  </Text>
-                </Flex>
+        <GridItem>
+          <Stack gap={4}>
+            <Flex
+              as="span"
+              align="center"
+              gap={2}
+              bg="accent.subtle"
+              color="text.default"
+              fontSize="xs"
+              fontWeight="800"
+              textTransform="uppercase"
+              letterSpacing="0.08em"
+              px={3}
+              py="5px"
+              borderRadius="full"
+              maxW="fit-content"
+              mb={0}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" width="12" height="12" aria-hidden="true" style={{ flexShrink: 0 }}>
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Pour les particuliers employeurs · Conformité IDCC&nbsp;3239 automatique
+            </Flex>
 
-                <Heading
-                  fontSize={{ base: '2xl', md: '3xl', lg: '4xl' }}
-                  fontWeight="800"
-                  color="gray.900"
-                  lineHeight="1.2"
-                >
-                  Un planning illegal peut vous couter{' '}
-                  <Text as="em" color="red.600" fontStyle="normal">
-                    8 000 euros
-                  </Text>{' '}
-                  aux Prud'hommes.
-                </Heading>
+            <Heading
+              as="h1"
+              fontFamily="heading"
+              fontSize={{ base: '2xl', md: '3xl', lg: '42px' }}
+              fontWeight="900"
+              color="text.default"
+              lineHeight="1.15"
+              letterSpacing="-0.02em"
+              mb={0}
+            >
+              Un planning illégal peut vous coûter
+              <br />
+              <Text as="em" color="brand.500" fontStyle="normal">
+                8 000 €
+              </Text>{' '}
+              aux Prud&apos;hommes.
+            </Heading>
 
-                <Text fontSize="lg" color="gray.600" maxW="520px">
-                  Unilien bloque automatiquement les plannings non conformes avant qu'il soit trop tard.
-                  Le premier outil pense pour les employeurs de vie a domicile.
-                </Text>
+            <Text fontSize="lg" color="text.secondary" lineHeight="1.6" maxW="500px" mb={2}>
+              Unilien bloque automatiquement les plannings non conformes avant qu&apos;il soit trop tard. Le premier outil pensé pour les employeurs de vie à domicile.
+            </Text>
 
-                <Flex gap={4} flexWrap="wrap">
-                  <AccessibleButton asChild colorPalette="blue" size="lg">
-                    <RouterLink to="/inscription">Essayer gratuitement 14 jours</RouterLink>
-                  </AccessibleButton>
-                  <AccessibleButton asChild variant="outline" size="lg">
-                    <RouterLink to="/contact">Voir la demo</RouterLink>
-                  </AccessibleButton>
-                </Flex>
-
-                {/* Reassurance */}
-                <Stack gap={2}>
-                  <Flex align="center" gap={2}>
-                    <Text color="green.500" fontSize="sm">✓</Text>
-                    <Text fontSize="sm" color="gray.500">Aucune carte bancaire requise</Text>
-                  </Flex>
-                  <Flex align="center" gap={2}>
-                    <Text color="green.500" fontSize="sm">✓</Text>
-                    <Text fontSize="sm" color="gray.500">100% accessible — WCAG AAA, commande vocale</Text>
-                  </Flex>
-                  <Flex align="center" gap={2}>
-                    <Text color="green.500" fontSize="sm">✓</Text>
-                    <Text fontSize="sm" color="gray.500">Valide par juriste specialise IDCC 3239</Text>
-                  </Flex>
-                </Stack>
-              </Stack>
-            </GridItem>
-
-            {/* Mockup produit — bouclier juridique */}
-            <GridItem display={{ base: 'none', lg: 'block' }}>
-              <Box
-                bg="gray.50"
-                borderRadius="2xl"
-                p={6}
-                borderWidth="1px"
-                borderColor="gray.200"
-                boxShadow="lg"
+            <Flex gap={3} flexWrap="wrap" mb={4}>
+              <Button
+                asChild
+                bg="brand.500"
+                color="white"
+                fontFamily="heading"
+                fontSize="md"
+                fontWeight="700"
+                letterSpacing="0.01em"
+                borderRadius="10px"
+                px={8}
+                py="14px"
+                height="auto"
+                boxShadow="sm"
+                _hover={{ bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
+                _active={{ transform: 'translateY(0)' }}
               >
-                <Text fontWeight="700" fontSize="md" mb={4}>
-                  Bouclier Juridique — actif
-                </Text>
-                <Stack gap={3}>
-                  <Flex align="start" gap={3} p={3} bg="red.50" borderRadius="lg">
-                    <Box w="8px" h="8px" borderRadius="full" bg="red.500" mt={1.5} flexShrink={0} />
-                    <Box>
-                      <Text fontSize="sm" fontWeight="600" color="red.700">Repos 11h non respecte — BLOQUE</Text>
-                      <Text fontSize="xs" color="red.600">"Marie doit se reposer jusqu'a 7h demain."</Text>
-                    </Box>
-                  </Flex>
-                  <Flex align="start" gap={3} p={3} bg="red.50" borderRadius="lg">
-                    <Box w="8px" h="8px" borderRadius="full" bg="red.500" mt={1.5} flexShrink={0} />
-                    <Box>
-                      <Text fontSize="sm" fontWeight="600" color="red.700">Pause 20 min oubliee — BLOQUE</Text>
-                      <Text fontSize="xs" color="red.600">"Pause obligatoire si intervention {'>'} 6h."</Text>
-                    </Box>
-                  </Flex>
-                  <Flex align="start" gap={3} p={3} bg="green.50" borderRadius="lg">
-                    <Box w="8px" h="8px" borderRadius="full" bg="green.500" mt={1.5} flexShrink={0} />
-                    <Box>
-                      <Text fontSize="sm" fontWeight="600" color="green.700">Planning de la semaine — Conforme</Text>
-                      <Text fontSize="xs" color="green.600">Toutes les regles IDCC 3239 respectees.</Text>
-                    </Box>
-                  </Flex>
-                  <Flex align="start" gap={3} p={3} bg="gray.100" borderRadius="lg">
-                    <Box w="8px" h="8px" borderRadius="full" bg="blue.400" mt={1.5} flexShrink={0} />
-                    <Box>
-                      <Text fontSize="sm" fontWeight="600" color="gray.700">Majorations calculees automatiquement</Text>
-                      <Text fontSize="xs" color="gray.500">Dimanche +30% · Nuit +25% · Ferie +60%</Text>
-                    </Box>
-                  </Flex>
-                </Stack>
+                <RouterLink to="/inscription">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" />
+                  </svg>
+                  Essayer gratuitement 14 jours
+                </RouterLink>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                borderColor="border.default"
+                bg="transparent"
+                color="text.secondary"
+                fontFamily="heading"
+                fontSize="md"
+                fontWeight="700"
+                letterSpacing="0.01em"
+                borderRadius="10px"
+                px={8}
+                py="14px"
+                height="auto"
+                boxShadow="none"
+                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
+              >
+                <RouterLink to="/contact">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <polygon points="10 8 16 12 10 16 10 8" />
+                  </svg>
+                  Voir la démo
+                </RouterLink>
+              </Button>
+            </Flex>
+
+            <Stack gap={2}>
+              {[
+                'Aucune carte bancaire requise',
+                '100% accessible — WCAG AAA, commande vocale',
+                'Validé par juriste spécialisé IDCC 3239',
+              ].map((text) => (
+                <Flex key={text} align="center" gap={2}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#9BB23B" strokeWidth="2.5" width="15" height="15" aria-hidden="true" style={{ flexShrink: 0 }}>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <Text fontSize="sm" color="text.muted" fontWeight="500">{text}</Text>
+                </Flex>
+              ))}
+            </Stack>
+          </Stack>
+        </GridItem>
+
+        <GridItem display={{ base: 'none', lg: 'block' }}>
+          <Box
+            bg="brand.500"
+            borderRadius="xl"
+            p={6}
+            boxShadow="lg"
+            color="white"
+          >
+            <Text
+              fontFamily="heading"
+              fontSize="sm"
+              fontWeight="700"
+              textTransform="uppercase"
+              letterSpacing="0.06em"
+              mb={4}
+            >
+              🛡️ Bouclier Juridique — actif
+            </Text>
+
+            <Flex align="flex-start" gap={3} py={3} borderBottomWidth="1px" borderColor="rgba(255,255,255,0.12)">
+              <Box w="8px" h="8px" borderRadius="full" bg="#FF6B6B" mt="5px" flexShrink={0} />
+              <Box>
+                <Text fontSize="sm" fontWeight="700">Repos 11h non respecté — BLOQUÉ</Text>
+                <Text fontSize="xs" mt={1}>&quot;Marie doit se reposer jusqu&apos;à 7h demain.&quot;</Text>
               </Box>
-            </GridItem>
-          </Grid>
-        </Container>
-      </Box>
+            </Flex>
+
+            <Flex align="flex-start" gap={3} py={3} borderBottomWidth="1px" borderColor="rgba(255,255,255,0.12)">
+              <Box w="8px" h="8px" borderRadius="full" bg="#FF6B6B" mt="5px" flexShrink={0} />
+              <Box>
+                <Text fontSize="sm" fontWeight="700">Pause 20 min oubliée — BLOQUÉ</Text>
+                <Text fontSize="xs" mt={1}>&quot;Pause obligatoire si intervention {'>'} 6h.&quot;</Text>
+              </Box>
+            </Flex>
+
+            <Flex align="flex-start" gap={3} py={3} borderBottomWidth="1px" borderColor="rgba(255,255,255,0.12)">
+              <Box w="8px" h="8px" borderRadius="full" bg="#86EFAC" mt="5px" flexShrink={0} />
+              <Box>
+                <Text fontSize="sm" fontWeight="700">Planning de la semaine — Conforme ✓</Text>
+                <Text fontSize="xs" mt={1}>Toutes les règles IDCC 3239 respectées.</Text>
+              </Box>
+            </Flex>
+
+            <Flex align="flex-start" gap={3} py={3} borderBottomWidth="1px" borderColor="rgba(255,255,255,0.12)">
+              <Box w="8px" h="8px" borderRadius="full" bg="white" mt="5px" flexShrink={0} />
+              <Box>
+                <Text fontSize="sm" fontWeight="700">Majorations calculées automatiquement</Text>
+                <Text fontSize="xs" mt={1}>Dimanche +30% · Nuit +25% · Férié +60%</Text>
+              </Box>
+            </Flex>
+
+            <Flex align="flex-start" gap={3} py={3}>
+              <Box w="8px" h="8px" borderRadius="full" bg="#86EFAC" mt="5px" flexShrink={0} />
+              <Box>
+                <Text fontSize="sm" fontWeight="700">−40 % de charge administrative</Text>
+                <Text fontSize="xs" mt={1}>En moyenne 3h récupérées par semaine.</Text>
+              </Box>
+            </Flex>
+          </Box>
+        </GridItem>
+      </Grid>
 
       {/* ── Chiffres cles ── */}
-      <Box py={8} bg="white" borderBottomWidth="1px" borderColor="gray.100">
+      <Box py={8} bg="bg.page" borderTopWidth="1px" borderBottomWidth="1px" borderColor="border.default">
         <Container maxW="container.lg">
           <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={6}>
             <StatItem value="280 000" label="Beneficiaires PCH en France" />
@@ -409,132 +617,214 @@ export function HomePage() {
       </Box>
 
       {/* ── Section Problemes ── */}
-      <Box py="80px" bg="gray.50">
-        <Container maxW="container.lg">
+      <Box py="80px" bg="bg.page">
+        <Container maxW="container.xl">
           <Stack gap={12}>
             <Box textAlign="center">
-              <Heading fontSize="2xl" fontWeight="bold" color="gray.900" mb={3}>
-                Gerer vos auxiliaires, c'est gerer une PME 24h/24
+              <Heading fontSize="2xl" fontWeight="bold" color="text.default" mb={3}>
+                Gérer vos auxiliaires, c&apos;est gérer une PME 24h/24
               </Heading>
-              <Text color="gray.600">
-                Vous n'etes pas seul face a cette charge.
+              <Text color="text.muted" maxW="420px" mx="auto" textAlign="center">
+                Vous n&apos;êtes pas seul·e face à cette charge.
               </Text>
             </Box>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
-              <PainPointCard
-                icon="⚠️"
-                iconBg="red.50"
-                title="J'ai peur de faire une erreur couteuse"
-                description="Le droit du travail evolue. Une regle oubliee peut se transformer en litige a 8 000 euros d'indemnites."
-              />
-              <PainPointCard
-                icon="📋"
-                iconBg="orange.50"
-                title="Excel est inutilisable avec ma pathologie"
-                description="Les outils generiques ne sont pas adaptes a la gestion depuis un fauteuil roulant ou avec des troubles moteurs."
-              />
-              <PainPointCard
-                icon="⏰"
-                iconBg="blue.50"
-                title="Je ne sais jamais si mon planning est legal"
-                description="Les 11h de repos, la pause de 20 min, les 10h max par jour... Impossible de tout memoriser."
-              />
-            </Grid>
+            <Box maxW="900px" mx="auto">
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
+                <PainPointCard
+                  iconBg="danger.50"
+                  icon={<WarningTwoIcon width={24} height={24} />}
+                  title="J'ai peur de faire une erreur couteuse"
+                  description="Le droit du travail evolue. Une regle oubliee peut se transformer en litige a 8 000 euros d'indemnites."
+                />
+                <PainPointCard
+                  iconBg="warm.50"
+                  icon={<CalendarIcon width={24} height={24} />}
+                  title="Excel est inutilisable avec ma pathologie"
+                  description="Les outils generiques ne sont pas adaptes a la gestion depuis un fauteuil roulant ou avec des troubles moteurs."
+                />
+                <PainPointCard
+                  iconBg="brand.50"
+                  icon={<TimeIcon width={24} height={24} />}
+                  title="Je ne sais jamais si mon planning est legal"
+                  description="Les 11h de repos, la pause de 20 min, les 10h max par jour... Impossible de tout memoriser."
+                />
+              </Grid>
+            </Box>
           </Stack>
         </Container>
       </Box>
 
       {/* ── Section Fonctionnalites ── */}
-      <Box py="80px" id="fonctionnalites">
+      <Box py="80px" bg="bg.surface" id="fonctionnalites">
         <Container maxW="container.xl">
-          <Stack gap={12}>
-            <Box textAlign="center">
-              <Heading fontSize="2xl" fontWeight="bold" color="gray.900" mb={3}>
+          <Stack gap={10}>
+            <Box textAlign="center" maxW="600px" mx="auto">
+              <Heading fontSize="2xl" fontWeight="900" color="text.default" mb={3}>
                 Tout ce dont vous avez besoin
               </Heading>
-              <Text color="gray.600" maxW="600px" mx="auto">
-                Concu pour les employeurs particuliers, de la planification a la declaration.
+              <Text color="text.muted" fontSize="lg">
+                Conçu pour les employeurs particuliers, de la planification à la déclaration.
               </Text>
             </Box>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
-              <FeatureCard
-                icon="📅"
-                title="Planning intelligent"
-                description="Vues semaine et mois, interventions 24h, presence responsable. Glisser-deposer prevu."
-              />
-              <FeatureCard
-                icon="🛡️"
-                iconBg="red.50"
-                iconColor="red.600"
-                title="Bouclier IDCC 3239"
-                description="Blocage automatique des infractions : repos, pauses, amplitude, heures supplementaires."
-              />
-              <FeatureCard
-                icon="💰"
-                iconBg="green.50"
-                iconColor="green.600"
-                title="Calcul de paie automatique"
-                description="Majorations conformes, cotisations salariales et patronales, exoneration SS, taux PAS."
-              />
-              <FeatureCard
-                icon="💬"
-                title="Cahier de liaison"
-                description="Messagerie temps reel, rapports d'intervention, pieces jointes, indicateurs de frappe."
-              />
-              <FeatureCard
-                icon="🔔"
-                iconBg="orange.50"
-                iconColor="orange.600"
-                title="Notifications multi-canal"
-                description="Push, in-app, email. Rappels d'intervention, alertes conformite."
-              />
-              <FeatureCard
-                icon="📊"
-                iconBg="green.50"
-                iconColor="green.600"
-                title="Tableaux de bord PCH"
-                description="Enveloppe PCH mensuelle, reste a charge, previsions, export CESU en un clic."
-              />
-            </Grid>
+            <Box maxW="1100px" mx="auto">
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={5}>
+                <FeatureCard
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  }
+                  title="Planning intelligent"
+                  description="Vues semaine et mois, interventions 24h, présence responsable. Glisser-déposer prévu."
+                />
+                <FeatureCard
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" width="24" height="24">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  }
+                  iconBg="danger.50"
+                  title="Bouclier IDCC 3239"
+                  description="Blocage automatique des infractions : repos, pauses, amplitude, heures supplémentaires."
+                />
+                <FeatureCard
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#9BB23B" strokeWidth="2" width="24" height="24">
+                      <rect x="2" y="3" width="20" height="14" rx="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                  }
+                  iconBg="accent.subtle"
+                  title="Calcul de paie automatique"
+                  description="Majorations conformes, cotisations salariales et patronales, exonération SS, taux PAS."
+                />
+                <FeatureCard
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="24" height="24">
+                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                    </svg>
+                  }
+                  title="Cahier de liaison"
+                  description="Messagerie temps réel, rapports d&apos;intervention, pièces jointes, indicateurs de frappe."
+                />
+                <FeatureCard
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#78684E" strokeWidth="2" width="24" height="24">
+                      <path d="M18 8h1a4 4 0 010 8h-1" />
+                      <path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z" />
+                      <line x1="6" y1="1" x2="6" y2="4" />
+                      <line x1="10" y1="1" x2="10" y2="4" />
+                      <line x1="14" y1="1" x2="14" y2="4" />
+                    </svg>
+                  }
+                  iconBg="warm.50"
+                  title="Notifications multi-canal"
+                  description="Push, in-app, email (bientôt SMS). Rappels d&apos;intervention, alertes conformité."
+                />
+                <FeatureCard
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#9BB23B" strokeWidth="2" width="24" height="24">
+                      <line x1="18" y1="20" x2="18" y2="10" />
+                      <line x1="12" y1="20" x2="12" y2="4" />
+                      <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                  }
+                  iconBg="accent.subtle"
+                  title="Tableaux de bord PCH"
+                  description="Enveloppe PCH mensuelle, reste à charge, prévisions, export CESU en un clic."
+                />
+              </Grid>
+            </Box>
           </Stack>
         </Container>
       </Box>
 
       {/* ── Section Conformite ── */}
-      <Box py="80px" bg="gray.50" id="conformite">
-        <Container maxW="container.md">
+      <Box py="80px" bg="bg.page" id="conformite">
+        <Container maxW="container.xl">
           <Stack gap={10}>
-            <Box textAlign="center">
-              <Heading fontSize="2xl" fontWeight="bold" color="gray.900" mb={3}>
-                Ce n'est pas juste un agenda. C'est un bouclier juridique.
+            <Box textAlign="center" maxW="600px" mx="auto">
+              <Heading fontSize="2xl" fontWeight="900" color="text.default" mb={3}>
+                Ce n&apos;est pas juste un agenda. C&apos;est un bouclier juridique.
               </Heading>
-              <Text color="gray.600">
-                Unilien detecte et bloque en temps reel les infractions a la Convention IDCC 3239.
+              <Text color="text.muted" fontSize="lg">
+                Unilien détecte et bloque en temps réel les infractions à la Convention IDCC 3239.
               </Text>
             </Box>
-            <Stack gap={3}>
+            <Stack maxW="680px" mx="auto" w="100%" gap={3}>
               {/* Alerte danger */}
-              <Flex align="start" gap={3} p={4} bg="red.50" borderRadius="lg" borderLeftWidth="4px" borderLeftColor="red.500">
-                <Text fontSize="lg" mt={-0.5}>🛡️</Text>
+              <Flex
+                align="flex-start"
+                gap={3}
+                py={3}
+                px={4}
+                bg="danger.50"
+                borderRadius="md"
+                borderLeftWidth="3px"
+                borderLeftColor="danger.500"
+                color="danger.500"
+                role="alert"
+              >
+                <Box w="18px" h="18px" flexShrink={0} mt="2px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </Box>
                 <Box>
-                  <Text fontWeight="700" fontSize="sm" color="red.700">Repos 11h non respecte — BLOQUE</Text>
-                  <Text fontSize="xs" color="red.600">Marie doit avoir termine a 21h pour reprendre a 8h. Cette intervention est impossible.</Text>
+                  <Text fontWeight="700" fontSize="sm">Repos 11h non respecté — BLOQUÉ</Text>
+                  <Text fontSize="xs" mt="2px">Marie doit avoir terminé à 21h pour reprendre à 8h. Cette intervention est impossible.</Text>
                 </Box>
               </Flex>
               {/* Alerte warning */}
-              <Flex align="start" gap={3} p={4} bg="orange.50" borderRadius="lg" borderLeftWidth="4px" borderLeftColor="orange.500">
-                <Text fontSize="lg" mt={-0.5}>⚠️</Text>
+              <Flex
+                align="flex-start"
+                gap={3}
+                py={3}
+                px={4}
+                bg="warm.50"
+                borderRadius="md"
+                borderLeftWidth="3px"
+                borderLeftColor="warm.600"
+                color="warm.600"
+                role="alert"
+              >
+                <Box w="18px" h="18px" flexShrink={0} mt="2px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </Box>
                 <Box>
-                  <Text fontWeight="700" fontSize="sm" color="orange.700">Pause 20 min manquante — AVERTISSEMENT</Text>
-                  <Text fontSize="xs" color="orange.600">Intervention de 7h sans pause. L'Art. L3121-16 exige une pause si {'>'} 6h consecutives.</Text>
+                  <Text fontWeight="700" fontSize="sm">Pause 20 min manquante — AVERTISSEMENT</Text>
+                  <Text fontSize="xs" mt="2px">Intervention de 7h sans pause. L&apos;Art. L3121-16 exige une pause si {'>'} 6h consécutives.</Text>
                 </Box>
               </Flex>
               {/* Alerte success */}
-              <Flex align="start" gap={3} p={4} bg="green.50" borderRadius="lg" borderLeftWidth="4px" borderLeftColor="green.500">
-                <Text fontSize="lg" mt={-0.5}>✓</Text>
+              <Flex
+                align="flex-start"
+                gap={3}
+                py={3}
+                px={4}
+                bg="accent.subtle"
+                borderRadius="md"
+                borderLeftWidth="3px"
+                borderLeftColor="accent.solid"
+                color="text.default"
+                role="status"
+              >
+                <Box w="18px" h="18px" flexShrink={0} mt="2px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </Box>
                 <Box>
-                  <Text fontWeight="700" fontSize="sm" color="green.700">Planning de la semaine — Conforme</Text>
-                  <Text fontSize="xs" color="green.600">Toutes les regles IDCC 3239 sont respectees. Vous etes protege.</Text>
+                  <Text fontWeight="700" fontSize="sm">Planning de la semaine — Conforme</Text>
+                  <Text fontSize="xs" mt="2px">Toutes les règles IDCC 3239 sont respectées. Vous êtes protégé·e.</Text>
                 </Box>
               </Flex>
             </Stack>
@@ -543,136 +833,179 @@ export function HomePage() {
       </Box>
 
       {/* ── Temoignages ── */}
-      <Box py="80px">
+      <Box py="80px" bg="bg.surface">
         <Container maxW="container.xl">
-          <Stack gap={12}>
+          <Stack gap={10}>
             <Box textAlign="center">
-              <Heading fontSize="2xl" fontWeight="bold" color="gray.900">
+              <Heading fontSize="2xl" fontWeight="900" color="text.default">
                 Ils nous font confiance
               </Heading>
             </Box>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
-              <Box p={6} bg="white" borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
-                <Text color="gray.700" fontStyle="italic" mb={4} fontSize="sm" lineHeight="1.7">
-                  "Avant Unilien, je passais 3h par semaine sur Excel a verifier que mon planning etait legal. Maintenant c'est automatique."
-                </Text>
-                <Flex align="center" gap={3}>
-                  <Flex w="40px" h="40px" borderRadius="full" bg="blue.100" color="blue.700" align="center" justify="center" fontSize="sm" fontWeight="bold">
-                    CF
+            <Box maxW="1100px" mx="auto">
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={5}>
+                {/* Claire Fontaine */}
+                <Box p={6} bg="bg.surface" borderRadius="md" borderWidth="1px" borderColor="border.default">
+                  <Text color="text.secondary" fontStyle="italic" mb={4} fontSize="sm" lineHeight="1.7">
+                    &quot;Avant Unilien, je passais 3h par semaine sur Excel à vérifier que mon planning était légal. Maintenant c&apos;est automatique. J&apos;ai récupéré ce temps pour ma famille.&quot;
+                  </Text>
+                  <Flex align="center" gap={3}>
+                    <Flex
+                      w="36px"
+                      h="36px"
+                      borderRadius="full"
+                      bg="brand.500"
+                      color="white"
+                      align="center"
+                      justify="center"
+                      fontSize="13px"
+                      fontWeight="800"
+                      fontFamily="heading"
+                      flexShrink={0}
+                    >
+                      CF
+                    </Flex>
+                    <Box>
+                      <Text fontWeight="700" fontSize="sm" color="text.default">Claire Fontaine</Text>
+                      <Text fontSize="xs" color="text.muted">Employeur particulier — Tétraplégie C6</Text>
+                    </Box>
                   </Flex>
-                  <Box>
-                    <Text fontWeight="bold" fontSize="sm" color="gray.800">Claire Fontaine</Text>
-                    <Text fontSize="xs" color="gray.500">Employeur particulier</Text>
-                  </Box>
-                </Flex>
-              </Box>
-              <Box p={6} bg="white" borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
-                <Text color="gray.700" fontStyle="italic" mb={4} fontSize="sm" lineHeight="1.7">
-                  "Le bouclier juridique m'a evite deux erreurs de planning qui auraient pu finir aux Prud'hommes."
-                </Text>
-                <Flex align="center" gap={3}>
-                  <Flex w="40px" h="40px" borderRadius="full" bg="green.100" color="green.700" align="center" justify="center" fontSize="sm" fontWeight="bold">
-                    JM
+                </Box>
+                {/* Jean-Dominique Moreau */}
+                <Box p={6} bg="bg.surface" borderRadius="md" borderWidth="1px" borderColor="border.default">
+                  <Text color="text.secondary" fontStyle="italic" mb={4} fontSize="sm" lineHeight="1.7">
+                    &quot;Le bouclier juridique m&apos;a évité deux erreurs de planning qui auraient pu finir aux Prud&apos;hommes. L&apos;investissement est largement rentabilisé.&quot;
+                  </Text>
+                  <Flex align="center" gap={3}>
+                    <Flex
+                      w="36px"
+                      h="36px"
+                      borderRadius="full"
+                      bg="accent.subtle"
+                      color="accent.fg"
+                      align="center"
+                      justify="center"
+                      fontSize="13px"
+                      fontWeight="800"
+                      fontFamily="heading"
+                      flexShrink={0}
+                    >
+                      JD
+                    </Flex>
+                    <Box>
+                      <Text fontWeight="700" fontSize="sm" color="text.default">Jean-Dominique Moreau</Text>
+                      <Text fontSize="xs" color="text.muted">Bénéficiaire PCH — Paris 11e</Text>
+                    </Box>
                   </Flex>
-                  <Box>
-                    <Text fontWeight="bold" fontSize="sm" color="gray.800">Jean-Dominique Moreau</Text>
-                    <Text fontSize="xs" color="gray.500">Beneficiaire PCH</Text>
-                  </Box>
-                </Flex>
-              </Box>
-              <Box p={6} bg="white" borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
-                <Text color="gray.700" fontStyle="italic" mb={4} fontSize="sm" lineHeight="1.7">
-                  "La commande vocale change tout. Je peux gerer mon planning depuis mon fauteuil sans manipuler une souris."
-                </Text>
-                <Flex align="center" gap={3}>
-                  <Flex w="40px" h="40px" borderRadius="full" bg="orange.100" color="orange.700" align="center" justify="center" fontSize="sm" fontWeight="bold">
-                    SM
+                </Box>
+                {/* Sophie Martin */}
+                <Box p={6} bg="bg.surface" borderRadius="md" borderWidth="1px" borderColor="border.default">
+                  <Text color="text.secondary" fontStyle="italic" mb={4} fontSize="sm" lineHeight="1.7">
+                    &quot;La commande vocale change tout. Je peux gérer mon planning depuis mon fauteuil sans avoir à manipuler une souris. C&apos;est le seul outil qui soit vraiment accessible.&quot;
+                  </Text>
+                  <Flex align="center" gap={3}>
+                    <Flex
+                      w="36px"
+                      h="36px"
+                      borderRadius="full"
+                      bg="warm.50"
+                      color="warm.600"
+                      align="center"
+                      justify="center"
+                      fontSize="13px"
+                      fontWeight="800"
+                      fontFamily="heading"
+                      flexShrink={0}
+                    >
+                      SM
+                    </Flex>
+                    <Box>
+                      <Text fontWeight="700" fontSize="sm" color="text.default">Sophie Martin</Text>
+                      <Text fontSize="xs" color="text.muted">Employeur particulier — Sclérose en plaques</Text>
+                    </Box>
                   </Flex>
-                  <Box>
-                    <Text fontWeight="bold" fontSize="sm" color="gray.800">Sophie Martin</Text>
-                    <Text fontSize="xs" color="gray.500">Employeur particulier</Text>
-                  </Box>
-                </Flex>
-              </Box>
-            </Grid>
+                </Box>
+              </Grid>
+            </Box>
           </Stack>
         </Container>
       </Box>
 
       {/* ── Tarifs ── */}
-      <Box py="80px" bg="gray.50" id="tarifs">
-        <Container maxW="container.lg">
-          <Stack gap={12}>
-            <Box textAlign="center">
-              <Heading fontSize="2xl" fontWeight="bold" color="gray.900" mb={3}>
+      <Box py="80px" bg="bg.page" id="tarifs">
+        <Container maxW="container.xl">
+          <Stack gap={10}>
+            <Box textAlign="center" maxW="600px" mx="auto">
+              <Heading fontSize="2xl" fontWeight="900" color="text.default" mb={3}>
                 Tarifs simples, sans surprise
               </Heading>
-              <Text color="gray.600">
-                Commencez gratuitement. Evoluez quand votre equipe grandit.
+              <Text color="text.muted" fontSize="lg">
+                Commencez gratuitement. Évoluez quand votre équipe grandit.
               </Text>
             </Box>
-            <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6} alignItems="start">
-              <PricingCard
-                name="Gratuit"
-                price="0"
-                priceSuffix="euros/mois"
-                features={[
-                  { text: '1 employe', available: true },
-                  { text: 'Planning semaine', available: true },
-                  { text: 'Verifications IDCC 3239', available: true },
-                  { text: 'Pointage horaire', available: true },
-                  { text: 'Bulletins de paie', available: false },
-                  { text: 'Dashboard PCH', available: false },
-                ]}
-                cta="Demarrer gratuitement"
-                ctaLink="/inscription"
-              />
-              <PricingCard
-                name="Essentiel"
-                price="9,90"
-                priceSuffix="euros/mois"
-                featured
-                features={[
-                  { text: '3 employes', available: true },
-                  { text: 'Bulletins de paie PDF', available: true },
-                  { text: 'Conformite IDCC 3239', available: true },
-                  { text: 'Export planning (PDF, Excel, iCal)', available: true },
-                  { text: 'Dashboard PCH', available: true },
-                  { text: 'Cahier de liaison', available: true },
-                ]}
-                cta="Essayer 14 jours gratuits"
-                ctaLink="/inscription"
-              />
-              <PricingCard
-                name="Pro"
-                price="24,90"
-                priceSuffix="euros/mois"
-                features={[
-                  { text: 'Employes illimites', available: true },
-                  { text: "Tout l'Essentiel", available: true },
-                  { text: 'Exports avances', available: true },
-                  { text: 'Multi-comptes', available: true },
-                  { text: 'Notifications push + email', available: true },
-                  { text: 'Support prioritaire', available: true },
-                ]}
-                cta="Choisir Pro"
-                ctaLink="/inscription"
-              />
-            </Grid>
+            <Box maxW="1020px" mx="auto">
+              <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={5} alignItems="start">
+                <PricingCard
+                  name="Gratuit"
+                  price="0"
+                  priceSuffix="€/mois"
+                  features={[
+                    { text: '1 employé', available: true },
+                    { text: 'Planning semaine', available: true },
+                    { text: 'Vérifications IDCC 3239', available: true },
+                    { text: 'Pointage horaire', available: true },
+                    { text: 'Bulletins de paie', available: false },
+                    { text: 'Dashboard PCH', available: false },
+                  ]}
+                  cta="Démarrer gratuitement"
+                  ctaLink="/inscription"
+                />
+                <PricingCard
+                  name="Essentiel"
+                  price="9,90"
+                  priceSuffix="€/mois"
+                  featured
+                  features={[
+                    { text: '3 employés', available: true },
+                    { text: 'Bulletins de paie PDF', available: true },
+                    { text: 'Conformité IDCC 3239', available: true },
+                    { text: 'Export planning (PDF, Excel, iCal)', available: true },
+                    { text: 'Dashboard PCH N1–N3', available: true },
+                    { text: 'Cahier de liaison', available: true },
+                  ]}
+                  cta="Essayer 14 jours gratuits"
+                  ctaLink="/inscription"
+                />
+                <PricingCard
+                  name="Pro"
+                  price="24,90"
+                  priceSuffix="€/mois"
+                  features={[
+                    { text: 'Employés illimités', available: true },
+                    { text: "Tout l'Essentiel", available: true },
+                    { text: 'Exports avancés', available: true },
+                    { text: 'Multi-comptes', available: true },
+                    { text: 'Notifications push + email', available: true },
+                    { text: 'Support prioritaire', available: true },
+                  ]}
+                  cta="Choisir Pro"
+                  ctaLink="/inscription"
+                />
+              </Grid>
+            </Box>
           </Stack>
         </Container>
       </Box>
 
       {/* ── FAQ ── */}
-      <Box py="80px" id="faq">
-        <Container maxW="container.md">
+      <Box py="80px" bg="bg.surface" id="faq">
+        <Container maxW="container.xl">
           <Stack gap={8}>
             <Box textAlign="center">
-              <Heading fontSize="2xl" fontWeight="bold" color="gray.900">
-                Questions frequentes
+              <Heading fontSize="2xl" fontWeight="bold" color="text.default">
+                Questions fréquentes
               </Heading>
             </Box>
-            <Box>
+            <Stack maxW="720px" w="100%" mx="auto" gap={2}>
               <FaqItem
                 question="Qu'est-ce que la Convention IDCC 3239 ?"
                 answer="La Convention Collective Nationale des particuliers employeurs et de l'emploi a domicile (IDCC 3239) definit les regles du droit du travail applicables aux auxiliaires de vie employes directement par des particuliers. Elle couvre les temps de travail, repos, majorations, conges et modes de paiement (CESU notamment)."
@@ -697,104 +1030,141 @@ export function HomePage() {
                 question="Comment fonctionne la PCH dans Unilien ?"
                 answer="Le widget PCH affiche votre enveloppe mensuelle (heures allouees x tarif 2026), le cout reel employeur, le reste a charge et l'economie realisee grace a l'exoneration patronale SS. Les tarifs sont mis a jour annuellement."
               />
-            </Box>
+            </Stack>
           </Stack>
         </Container>
       </Box>
 
       {/* ── CTA Banner ── */}
-      <Box py="60px" bg="brand.500">
-        <Container maxW="container.md">
-          <Stack gap={4} align="center" textAlign="center">
-            <Heading fontSize="2xl" fontWeight="bold" color="white">
-              Protegez-vous des aujourd'hui.
-            </Heading>
-            <Text color="whiteAlpha.900">
-              14 jours d'essai gratuit. Aucune carte bancaire requise.
-            </Text>
-            <AccessibleButton asChild size="lg" bg="white" color="brand.600" _hover={{ bg: 'gray.100' }}>
-              <RouterLink to="/inscription">Commencer gratuitement</RouterLink>
-            </AccessibleButton>
-          </Stack>
-        </Container>
-      </Box>
+      <Flex direction="column" align="center" py="80px" px={8} bg="brand.500" textAlign="center">
+        <Heading fontSize="3xl" fontWeight="900" color="white" mb={3}>
+          Protégez-vous dès aujourd&apos;hui.
+        </Heading>
+        <Text fontSize="lg" color="white" mb={6}>
+          14 jours d&apos;essai gratuit. Aucune carte bancaire requise.
+        </Text>
+        <Button
+          asChild
+          bg="accent.500"
+          color="white"
+          fontFamily="heading"
+          fontSize="md"
+          fontWeight="700"
+          letterSpacing="0.01em"
+          borderRadius="md"
+          px={8}
+          py="14px"
+          height="auto"
+          boxShadow="sm"
+          _hover={{ bg: 'accent.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
+          _active={{ transform: 'translateY(0)' }}
+        >
+          <RouterLink to="/inscription">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Commencer gratuitement
+          </RouterLink>
+        </Button>
+      </Flex>
 
       {/* ── Footer ── */}
-      <Box py={12} bg="gray.900">
-        <Container maxW="container.xl">
-          <Grid templateColumns={{ base: '1fr', md: 'repeat(4, 1fr)' }} gap={8}>
-            <Stack gap={4}>
-              <Text fontSize="lg" fontWeight="bold" color="white">
-                Unilien
-              </Text>
-              <Text color="gray.400" fontSize="sm" lineHeight="1.7">
-                Le premier outil de gestion d'auxiliaires de vie avec protection juridique automatique IDCC 3239.
-              </Text>
-            </Stack>
+      <Box as="footer" py={10} px={8} bg="bg.page" borderTopWidth="1px" borderColor="border.default" role="contentinfo">
+        <Grid
+          templateColumns={{ base: '1fr 1fr', md: '2fr 1fr 1fr 1fr' }}
+          gap={8}
+          maxW="1100px"
+          mx="auto"
+          mb={8}
+        >
+          <Box>
+            <Text fontFamily="heading" fontSize="sm" fontWeight="700" color="text.default" mb={4}>
+              Unilien
+            </Text>
+            <Text color="text.muted" fontSize="sm" lineHeight="1.7" maxW="260px">
+              Le premier outil de gestion d&apos;auxiliaires de vie avec protection juridique automatique IDCC 3239.
+            </Text>
+          </Box>
 
-            <Stack gap={3}>
-              <Text fontWeight="semibold" color="white" fontSize="sm">
-                Produit
-              </Text>
-              <Link href="#fonctionnalites" color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
-                Fonctionnalites
+          <Box>
+            <Text fontFamily="heading" fontSize="sm" fontWeight="700" color="text.default" mb={4}>
+              Produit
+            </Text>
+            <Stack gap={2}>
+              <Link href="#fonctionnalites" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+                Fonctionnalités
               </Link>
-              <Link href="#conformite" color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
-                Conformite IDCC 3239
+              <Link href="#conformite" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+                Conformité IDCC 3239
               </Link>
-              <Link href="#tarifs" color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
+              <Link href="#tarifs" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 Tarifs
               </Link>
-              <Link href="#faq" color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
+              <Link href="#faq" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 FAQ
               </Link>
             </Stack>
+          </Box>
 
-            <Stack gap={3}>
-              <Text fontWeight="semibold" color="white" fontSize="sm">
-                Legal
-              </Text>
-              <Link color="gray.400" fontSize="sm" _hover={{ color: 'white' }} href="#">
-                Mentions legales
+          <Box>
+            <Text fontFamily="heading" fontSize="sm" fontWeight="700" color="text.default" mb={4}>
+              Légal
+            </Text>
+            <Stack gap={2}>
+              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+                Mentions légales
               </Link>
-              <Link color="gray.400" fontSize="sm" _hover={{ color: 'white' }} href="#">
-                Politique de confidentialite
+              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+                Politique de confidentialité
               </Link>
-              <Link color="gray.400" fontSize="sm" _hover={{ color: 'white' }} href="#">
+              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 CGU
               </Link>
-              <Link color="gray.400" fontSize="sm" _hover={{ color: 'white' }} href="#">
+              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 RGPD
               </Link>
             </Stack>
+          </Box>
 
-            <Stack gap={3}>
-              <Text fontWeight="semibold" color="white" fontSize="sm">
-                Support
-              </Text>
-              <Link asChild color="gray.400" fontSize="sm" _hover={{ color: 'white' }}>
+          <Box>
+            <Text fontFamily="heading" fontSize="sm" fontWeight="700" color="text.default" mb={4}>
+              Support
+            </Text>
+            <Stack gap={2}>
+              <Link asChild color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 <RouterLink to="/contact">Contact</RouterLink>
               </Link>
-              <Link color="gray.400" fontSize="sm" _hover={{ color: 'white' }} href="#">
+              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 Documentation
               </Link>
-              <Link color="gray.400" fontSize="sm" _hover={{ color: 'white' }} href="#">
-                Accessibilite
+              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+                Accessibilité (DSFR)
+              </Link>
+              <Link href="https://github.com/zephdev-92/Unilien" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+                GitHub
               </Link>
             </Stack>
-          </Grid>
+          </Box>
+        </Grid>
 
-          <Separator borderColor="gray.800" my={8} />
-
-          <Stack gap={1} textAlign="center">
-            <Text color="gray.500" fontSize="sm">
-              © {new Date().getFullYear()} Unilien. Tous droits reserves. Convention IDCC 3239.
-            </Text>
-            <Text color="gray.600" fontSize="xs">
-              Fait avec amour pour les personnes en situation de handicap.
-            </Text>
-          </Stack>
-        </Container>
+        <Flex
+          maxW="1100px"
+          mx="auto"
+          borderTopWidth="1px"
+          borderColor="border.default"
+          pt={5}
+          justify="space-between"
+          align="center"
+          gap={4}
+          flexDirection={{ base: 'column', md: 'row' }}
+        >
+          <Text fontSize="xs" color="text.muted">
+            © {new Date().getFullYear()} Unilien. Tous droits réservés. Convention IDCC 3239.
+          </Text>
+          <Text fontSize="xs" color="text.muted">
+            Fait avec ♥ pour les personnes en situation de handicap.
+          </Text>
+        </Flex>
       </Box>
     </Box>
   )

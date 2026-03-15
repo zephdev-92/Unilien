@@ -14,11 +14,9 @@ import {
   Badge,
   Spinner,
   Center,
-  HStack,
   Card,
   Input,
 } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
 import {
   getWeeklyComplianceOverview,
   checkSmicCompliance,
@@ -29,6 +27,9 @@ import { ComplianceHelp } from './ComplianceHelp'
 
 interface ComplianceDashboardProps {
   employerId: string
+  showHelp?: boolean
+  onShowHelp?: (show: boolean) => void
+  onRefreshRef?: React.MutableRefObject<(() => void) | null>
 }
 
 // ── Alert enrichment ─────────────────────────────────────────────────────────
@@ -125,10 +126,12 @@ function deriveChecks(
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
+export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShowHelp, onRefreshRef }: ComplianceDashboardProps) {
   const [overview, setOverview] = useState<WeeklyComplianceOverview | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showHelp, setShowHelp] = useState(false)
+  const [showHelpInternal, setShowHelpInternal] = useState(false)
+  const showHelp = showHelpProp ?? showHelpInternal
+  const setShowHelp = onShowHelp ?? setShowHelpInternal
   const [smicCompliant, setSmicCompliant] = useState(true)
 
   // Alert filters
@@ -154,6 +157,12 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
   useEffect(() => {
     if (employerId) loadData()
   }, [employerId, loadData])
+
+  // Expose loadData to parent for topbar refresh button
+  useEffect(() => {
+    if (onRefreshRef) onRefreshRef.current = loadData
+    return () => { if (onRefreshRef) onRefreshRef.current = null }
+  }, [onRefreshRef, loadData])
 
   // Derived data
   const alerts = useMemo(() => (overview ? enrichAlerts(overview) : []), [overview])
@@ -193,7 +202,7 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
       <Center py={12}>
         <Stack align="center" gap={4}>
           <Spinner size="xl" color="brand.500" />
-          <Text color="gray.600">Chargement des données de conformité...</Text>
+          <Text color="text.muted">Chargement des données de conformité...</Text>
         </Stack>
       </Center>
     )
@@ -204,9 +213,27 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
       <Box>
         <Flex justify="space-between" align="center" mb={6}>
           <Heading size="lg">Aide - Règles de conformité</Heading>
-          <AccessibleButton onClick={() => setShowHelp(false)}>
+          <Flex
+            as="button"
+            align="center"
+            justify="center"
+            px={4} py="6px"
+            borderRadius="6px"
+            borderWidth="1.5px"
+            borderColor="#D8E3ED"
+            bg="transparent"
+            color="#3D5166"
+            fontSize="13px"
+            fontWeight="600"
+            cursor="pointer"
+            whiteSpace="nowrap"
+            _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+            onClick={() => setShowHelp(false)}
+            role="button"
+            aria-label="Retour au tableau de bord"
+          >
             Retour au tableau de bord
-          </AccessibleButton>
+          </Flex>
         </Flex>
         <ComplianceHelp />
       </Box>
@@ -215,21 +242,8 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
 
   return (
     <Stack gap={6}>
-      {/* En-tête */}
-      <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
-        <Box>
-          <Heading size="lg">Conformité</Heading>
-          <Text color="gray.600">Convention Collective IDCC 3239</Text>
-        </Box>
-        <HStack gap={2}>
-          <AccessibleButton variant="outline" size="sm" onClick={() => setShowHelp(true)}>
-            Aide
-          </AccessibleButton>
-          <AccessibleButton variant="solid" colorPalette="blue" size="sm" onClick={loadData}>
-            Actualiser
-          </AccessibleButton>
-        </HStack>
-      </Flex>
+      {/* Sous-titre */}
+      <Text fontSize="sm" color="text.muted">Convention Collective IDCC 3239</Text>
 
       {/* Score card */}
       {overview && (
@@ -247,10 +261,10 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
                   <Text fontWeight="bold" fontSize="lg">
                     Score de conformité
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color="text.muted">
                     Convention IDCC 3239
                   </Text>
-                  <Text fontSize="xs" color="gray.400" mt={1}>
+                  <Text fontSize="xs" color="text.muted" mt={1}>
                     {okChecks} points conformes sur {totalChecks} contrôlés
                   </Text>
                 </Box>
@@ -260,7 +274,7 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
                   <Text fontSize="2xl" fontWeight="bold" color="green.600">
                     {overview.summary.compliant}
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="text.muted">
                     Points conformes
                   </Text>
                 </Box>
@@ -268,7 +282,7 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
                   <Text fontSize="2xl" fontWeight="bold" color="red.600">
                     {overview.summary.critical}
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="text.muted">
                     Alertes actives
                   </Text>
                 </Box>
@@ -276,7 +290,7 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
                   <Text fontSize="2xl" fontWeight="bold" color="orange.600">
                     {overview.summary.warnings}
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="text.muted">
                     Avertissements
                   </Text>
                 </Box>
@@ -363,7 +377,7 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
               ))}
             </Stack>
           ) : (
-            <Center py={6} borderWidth="1px" borderRadius="lg" borderStyle="dashed">
+            <Center py={6} borderWidth="1px" borderRadius="12px" borderStyle="dashed">
               <Stack align="center" gap={2}>
                 <svg
                   viewBox="0 0 24 24"
@@ -377,10 +391,10 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
                 >
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-                <Text color="gray.500" fontWeight="medium">
+                <Text color="text.muted" fontWeight="medium">
                   Aucune alerte active
                 </Text>
-                <Text fontSize="sm" color="gray.400">
+                <Text fontSize="sm" color="text.muted">
                   Tous vos indicateurs de conformité sont au vert.
                 </Text>
               </Stack>
@@ -413,8 +427,8 @@ export function ComplianceDashboard({ employerId }: ComplianceDashboardProps) {
             <Center py={8}>
               <Stack align="center" gap={3}>
                 <Text fontSize="4xl">👥</Text>
-                <Text color="gray.600">Aucun auxiliaire actif</Text>
-                <Text fontSize="sm" color="gray.500">
+                <Text color="text.muted">Aucun auxiliaire actif</Text>
+                <Text fontSize="sm" color="text.muted">
                   Ajoutez des auxiliaires pour voir leur conformité
                 </Text>
               </Stack>
@@ -481,7 +495,7 @@ function AlertCard({
       p={4}
       gap={4}
       borderWidth="1px"
-      borderRadius="lg"
+      borderRadius="12px"
       borderColor={isDanger ? 'red.200' : 'orange.200'}
       bg={isDanger ? 'red.50' : 'orange.50'}
       align="flex-start"
@@ -515,7 +529,7 @@ function AlertCard({
         <Text fontWeight="bold" mb={1}>
           {alert.title}
         </Text>
-        <Text fontSize="sm" color="gray.600" mb={3} lineHeight="tall">
+        <Text fontSize="sm" color="text.muted" mb={3} lineHeight="tall">
           {alert.description}
         </Text>
         <Flex gap={2} flexWrap="wrap">
@@ -527,12 +541,47 @@ function AlertCard({
       </Box>
 
       <Flex direction="column" gap={2} flexShrink={0}>
-        <AccessibleButton size="sm" variant="ghost" accessibleLabel="Corriger l'alerte">
+        <Flex
+          as="button"
+          align="center"
+          justify="center"
+          px={4} py="6px"
+          borderRadius="6px"
+          borderWidth="1.5px"
+          borderColor="#D8E3ED"
+          bg="transparent"
+          color="#3D5166"
+          fontSize="13px"
+          fontWeight="600"
+          cursor="pointer"
+          whiteSpace="nowrap"
+          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+          role="button"
+          aria-label="Corriger l'alerte"
+        >
           Corriger
-        </AccessibleButton>
-        <AccessibleButton size="sm" variant="ghost" onClick={onIgnore} accessibleLabel="Ignorer l'alerte">
+        </Flex>
+        <Flex
+          as="button"
+          align="center"
+          justify="center"
+          px={4} py="6px"
+          borderRadius="6px"
+          borderWidth="1.5px"
+          borderColor="#D8E3ED"
+          bg="transparent"
+          color="#3D5166"
+          fontSize="13px"
+          fontWeight="600"
+          cursor="pointer"
+          whiteSpace="nowrap"
+          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+          onClick={onIgnore}
+          role="button"
+          aria-label="Ignorer l'alerte"
+        >
           Ignorer
-        </AccessibleButton>
+        </Flex>
       </Flex>
     </Flex>
   )
@@ -555,7 +604,7 @@ function CheckGroupCard({ group }: { group: CheckGroup }) {
               gap={3}
               py={2}
               borderBottomWidth={i < group.checks.length - 1 ? '1px' : '0'}
-              borderColor="gray.100"
+              borderColor="border.default"
             >
               <CheckStatusIcon status={check.status} />
               <Text fontSize="sm" flex={1}>

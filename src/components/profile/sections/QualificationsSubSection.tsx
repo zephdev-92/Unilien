@@ -30,16 +30,16 @@ export function QualificationsSubSection({
   onRemove,
 }: Props) {
   return (
-    <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
+    <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6}>
       <Text fontSize="xl" fontWeight="semibold" mb={2}>Qualifications</Text>
-      <Text fontSize="sm" color="gray.600" mb={4}>Vos compétences et services proposés</Text>
+      <Text fontSize="sm" color="text.muted" mb={4}>Vos compétences et services proposés</Text>
 
       {/* Tags sélectionnés */}
       <Flex wrap="wrap" gap={2} mb={4}>
         {qualifications.map((qual) => (
           <Badge
             key={qual}
-            colorPalette="blue"
+            colorPalette="brand"
             px={3}
             py={1}
             borderRadius="full"
@@ -63,7 +63,7 @@ export function QualificationsSubSection({
           </Badge>
         ))}
         {qualifications.length === 0 && (
-          <Text color="gray.500" fontSize="sm">Aucune qualification sélectionnée</Text>
+          <Text color="text.muted" fontSize="sm">Aucune qualification sélectionnée</Text>
         )}
       </Flex>
 
@@ -79,7 +79,7 @@ export function QualificationsSubSection({
             py={1}
             borderRadius="full"
             cursor="pointer"
-            _hover={{ bg: 'gray.100' }}
+            _hover={{ bg: 'bg.surface.hover' }}
             onClick={() => onAdd(qual)}
           >
             + {qual}

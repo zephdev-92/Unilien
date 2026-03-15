@@ -63,18 +63,18 @@ export function AnalyticsDashboard({ profileId, role, employerId }: AnalyticsDas
       <Stack gap={6}>
         <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <Box key={i} bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={4} boxShadow="sm">
-              <Skeleton height="40px" width="40px" borderRadius="lg" mb={3} />
+            <Box key={i} bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={4} boxShadow="sm">
+              <Skeleton height="40px" width="40px" borderRadius="12px" mb={3} />
               <Skeleton height="28px" width="50%" mb={2} />
               <Skeleton height="14px" width="80%" mb={1} />
               <Skeleton height="12px" width="60%" />
             </Box>
           ))}
         </SimpleGrid>
-        <Skeleton height="280px" borderRadius="lg" />
+        <Skeleton height="280px" borderRadius="12px" />
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
-          <Skeleton height="300px" borderRadius="lg" />
-          <Skeleton height="300px" borderRadius="lg" />
+          <Skeleton height="300px" borderRadius="12px" />
+          <Skeleton height="300px" borderRadius="12px" />
         </SimpleGrid>
       </Stack>
     )
@@ -82,8 +82,8 @@ export function AnalyticsDashboard({ profileId, role, employerId }: AnalyticsDas
 
   if (error) {
     return (
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={8} boxShadow="sm" textAlign="center">
-        <Text color="gray.500">{error}</Text>
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={8} boxShadow="sm" textAlign="center">
+        <Text color="text.muted">{error}</Text>
       </Box>
     )
   }
@@ -95,14 +95,14 @@ export function AnalyticsDashboard({ profileId, role, employerId }: AnalyticsDas
       {/* Period selector */}
       <Flex justify="space-between" align="center" flexWrap="wrap" gap={3}>
         <Box>
-          <Text fontSize="lg" fontWeight="semibold" color="gray.900">
+          <Text fontSize="lg" fontWeight="semibold" color="text.default">
             {role === 'employer' ? 'Statistiques employeur' : 'Mes statistiques'}
           </Text>
-          <Text fontSize="sm" color="gray.500">
+          <Text fontSize="sm" color="text.muted">
             Vue detaillee sur {period} mois
           </Text>
         </Box>
-        <Flex gap={1} bg="gray.100" borderRadius="lg" p={1}>
+        <Flex gap={1} bg="bg.surface.hover" borderRadius="12px" p={1}>
           {PERIOD_OPTIONS.map((opt) => (
             <Box
               as="button"
@@ -110,11 +110,11 @@ export function AnalyticsDashboard({ profileId, role, employerId }: AnalyticsDas
               onClick={() => setPeriod(opt.value)}
               px={3}
               py={1.5}
-              borderRadius="md"
+              borderRadius="10px"
               fontSize="sm"
               fontWeight="medium"
               bg={period === opt.value ? 'white' : 'transparent'}
-              color={period === opt.value ? 'brand.600' : 'gray.600'}
+              color={period === opt.value ? 'brand.600' : 'text.muted'}
               boxShadow={period === opt.value ? 'sm' : 'none'}
               transition="all 0.15s"
               _hover={{ color: 'brand.600' }}

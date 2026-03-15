@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Box, Flex, Text, Badge, Table } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
+import { useState, useEffect, useMemo } from 'react'
+import { Box, Flex, Text, Table, Button, NativeSelect } from '@chakra-ui/react'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import { calculateShiftDuration } from '@/lib/compliance'
 import type { Shift, UserRole } from '@/types'
 import { formatTime, formatHours } from './clockInUtils'
@@ -11,6 +12,8 @@ interface TodayTableProps {
   activeShiftId?: string | null
   clockInTime?: string | null
   userRole: UserRole
+  employerName?: string
+  selectedDate?: Date
   onClockIn: (shift: Shift) => void
   onValidate?: (shift: Shift) => void
   onModify?: (shift: Shift) => void
@@ -51,11 +54,15 @@ export function TodayTable({
   activeShiftId,
   clockInTime,
   userRole,
+  employerName,
+  selectedDate,
   onClockIn,
   onValidate,
   onModify,
 }: TodayTableProps) {
   const isEmployer = userRole === 'employer'
+  const isPastDate = !!selectedDate
+  const [filterEmployee, setFilterEmployee] = useState('')
 
   const allShifts = [
     ...completedShifts.map((s) => ({ ...s, _status: 'completed' as const })),
@@ -65,165 +72,211 @@ export function TodayTable({
     })),
   ].sort((a, b) => a.startTime.localeCompare(b.startTime))
 
+  const employeeNames = useMemo(() => {
+    const names = new Set<string>()
+    for (const s of allShifts) {
+      if (s.employeeName) names.add(s.employeeName)
+    }
+    return Array.from(names).sort()
+  }, [allShifts])
+
+  const filteredShifts = filterEmployee
+    ? allShifts.filter((s) => s.employeeName === filterEmployee)
+    : allShifts
+
+  const tableTitle = isPastDate
+    ? (isEmployer ? `Heures du ${format(selectedDate, 'EEEE d MMMM', { locale: fr })}` : `Mes heures du ${format(selectedDate, 'EEEE d MMMM', { locale: fr })}`)
+    : (isEmployer ? "Heures d'aujourd'hui" : "Mes heures d'aujourd'hui")
+
+  const sectionHeader = (
+    <Flex align="center" justify="space-between" gap={3} mb={4} flexWrap="wrap">
+      <Text id="today-heading" fontFamily="heading" fontSize="lg" fontWeight="700">
+        {tableTitle}
+      </Text>
+      {isEmployer && employeeNames.length > 1 && (
+        <Box minW="200px">
+          <NativeSelect.Root size="sm">
+            <NativeSelect.Field
+              value={filterEmployee}
+              onChange={(e) => setFilterEmployee(e.target.value)}
+              aria-label="Filtrer par employé"
+            >
+              <option value="">Tous les employés</option>
+              {employeeNames.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+        </Box>
+      )}
+    </Flex>
+  )
+
   if (allShifts.length === 0) {
     return (
-      <Box
-        bg="white"
-        borderRadius="xl"
-        borderWidth="1px"
-        borderColor="gray.200"
-        p={6}
-        boxShadow="sm"
-        textAlign="center"
-      >
-        <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={4}>
-          Heures d'aujourd'hui
-        </Text>
-        <Text fontSize="3xl" mb={2} aria-hidden="true">📭</Text>
-        <Text color="gray.500">
-          {isEmployer
-            ? "Aucune intervention prévue aujourd'hui pour vos auxiliaires"
-            : "Aucune intervention prévue aujourd'hui"}
-        </Text>
-      </Box>
+      <section aria-labelledby="today-heading">
+        {sectionHeader}
+        <Box
+          bg="bg.surface"
+          borderRadius="md"
+          borderWidth="1px"
+          borderColor="border.default"
+          boxShadow="0 2px 8px rgba(78,100,120,.09)"
+          p={6}
+          textAlign="center"
+        >
+          <Text color="text.muted">
+            {isEmployer
+              ? "Aucune intervention prévue aujourd'hui pour vos auxiliaires"
+              : "Aucune intervention prévue aujourd'hui"}
+          </Text>
+        </Box>
+      </section>
     )
   }
 
   return (
-    <Box
-      bg="white"
-      borderRadius="xl"
-      borderWidth="1px"
-      borderColor="gray.200"
-      boxShadow="sm"
-      overflow="hidden"
-    >
-      <Text fontSize="lg" fontWeight="semibold" color="gray.900" p={5} pb={0}>
-        Heures d'aujourd'hui
-      </Text>
+    <section aria-labelledby="today-heading">
+      {sectionHeader}
 
-      <Box overflowX="auto">
-        <Table.Root size="sm" mt={3}>
-          <Table.Header>
-            <Table.Row>
-              {isEmployer && (
-                <Table.ColumnHeader pl={5}>Auxiliaire</Table.ColumnHeader>
-              )}
-              <Table.ColumnHeader pl={isEmployer ? undefined : 5}>Début</Table.ColumnHeader>
-              <Table.ColumnHeader>Fin</Table.ColumnHeader>
-              <Table.ColumnHeader>Durée</Table.ColumnHeader>
-              <Table.ColumnHeader>Statut</Table.ColumnHeader>
-              <Table.ColumnHeader pr={5} textAlign="right">
-                <Text srOnly>Actions</Text>
-              </Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {allShifts.map((shift) => {
-              const isActive = shift._status === 'active'
-              const isCompleted = shift._status === 'completed'
-              const durationMin = isCompleted
-                ? calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
-                : 0
+      <Box
+        bg="bg.surface"
+        borderRadius="md"
+        borderWidth="1px"
+        borderColor="border.default"
+        boxShadow="0 2px 8px rgba(78,100,120,.09)"
+        overflow="hidden"
+      >
+        <Box overflowX="auto">
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row css={{ background: '#F3F6F9' }}>
+                {isEmployer && (
+                  <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Employé</Table.ColumnHeader>
+                )}
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Début</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Fin</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Durée</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Statut</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166" textAlign="right">
+                  <Text srOnly>Actions</Text>
+                </Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {filteredShifts.map((shift) => {
+                const isActive = shift._status === 'active'
+                const isCompleted = shift._status === 'completed'
+                const durationMin = isCompleted
+                  ? calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
+                  : 0
 
-              return (
-                <Table.Row
-                  key={shift.id}
-                  bg={isActive ? 'blue.50' : undefined}
-                >
-                  {isEmployer && (
-                    <Table.Cell pl={5}>
-                      <Text fontSize="sm" fontWeight="medium">
-                        {shift.employeeName || 'Auxiliaire'}
-                      </Text>
+                return (
+                  <Table.Row
+                    key={shift.id}
+                    css={{ '&:hover': { background: '#F3F6F9' }, '&:last-child td': { borderBottom: 'none' } }}
+                  >
+                    {isEmployer && (
+                      <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                        <Flex align="center" gap={2}>
+                          {shift.employeeAvatarUrl ? (
+                            <Box
+                              as="img"
+                              src={shift.employeeAvatarUrl}
+                              alt={shift.employeeName || 'Avatar'}
+                              w="28px" h="28px" borderRadius="full"
+                              objectFit="cover" flexShrink={0}
+                            />
+                          ) : (
+                            <Flex
+                              w="28px" h="28px" borderRadius="full"
+                              bg="#3D5166" color="white"
+                              align="center" justify="center"
+                              fontSize="xs" fontWeight="700" flexShrink={0}
+                              aria-hidden="true"
+                            >
+                              {(shift.employeeName || 'A').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                            </Flex>
+                          )}
+                          <Text fontSize="sm" fontWeight="500" color="#323538">{shift.employeeName || 'Auxiliaire'}</Text>
+                        </Flex>
+                      </Table.Cell>
+                    )}
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                      <Text fontSize="sm" color="#323538">{formatTime(shift.startTime)}</Text>
                     </Table.Cell>
-                  )}
-                  <Table.Cell pl={isEmployer ? undefined : 5}>
-                    <Text fontSize="sm" fontWeight="medium">
-                      {formatTime(shift.startTime)}
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Text fontSize="sm">
-                      {isCompleted ? formatTime(shift.endTime) : '—'}
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell>
-                    {isActive && clockInTime ? (
-                      <ElapsedDuration clockInTime={clockInTime} />
-                    ) : isCompleted ? (
-                      <Text fontSize="sm">{formatHours(durationMin / 60)}</Text>
-                    ) : (
-                      <Text fontSize="sm" color="gray.400">—</Text>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {isActive && (
-                      <Badge colorPalette="orange" size="sm">En cours</Badge>
-                    )}
-                    {isCompleted && isEmployer && !shift.validatedByEmployer && (
-                      <Badge colorPalette="yellow" size="sm">À valider</Badge>
-                    )}
-                    {isCompleted && isEmployer && shift.validatedByEmployer && (
-                      <Badge colorPalette="green" size="sm">Validé</Badge>
-                    )}
-                    {isCompleted && !isEmployer && (
-                      <Badge colorPalette="green" size="sm">Terminé</Badge>
-                    )}
-                    {shift._status === 'planned' && (
-                      <Badge colorPalette="gray" size="sm">Prévu</Badge>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell pr={5}>
-                    <Flex justify="flex-end" gap={2}>
-                      {/* Employee/caregiver: bouton Pointer */}
-                      {!isEmployer && shift._status === 'planned' && !activeShiftId && (
-                        <AccessibleButton
-                          size="xs"
-                          colorPalette="blue"
-                          onClick={() => onClockIn(shift)}
-                        >
-                          Pointer
-                        </AccessibleButton>
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                      <Text fontSize="sm" color="#323538">{isCompleted ? formatTime(shift.endTime) : '—'}</Text>
+                    </Table.Cell>
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                      {isActive && clockInTime ? (
+                        <ElapsedDuration clockInTime={clockInTime} />
+                      ) : isCompleted ? (
+                        <Text fontSize="sm" color="#323538">{formatHours(durationMin / 60)}</Text>
+                      ) : (
+                        <Text fontSize="sm" color="#3D5166">—</Text>
                       )}
-                      {/* Employer: boutons Modifier / Valider */}
-                      {isEmployer && isCompleted && !shift.validatedByEmployer && (
-                        <>
-                          <AccessibleButton
-                            size="xs"
-                            variant="outline"
-                            colorPalette="blue"
-                            onClick={() => onModify?.(shift)}
-                          >
-                            Modifier
-                          </AccessibleButton>
-                          <AccessibleButton
-                            size="xs"
-                            colorPalette="green"
-                            onClick={() => onValidate?.(shift)}
-                          >
-                            Valider
-                          </AccessibleButton>
-                        </>
+                    </Table.Cell>
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                      {isActive && (
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#F2EDE5" color="#4A3D2B">En cours</Flex>
                       )}
-                      {isEmployer && isCompleted && shift.validatedByEmployer && (
-                        <AccessibleButton
-                          size="xs"
-                          variant="outline"
-                          colorPalette="gray"
-                          onClick={() => onModify?.(shift)}
-                        >
+                      {isCompleted && isEmployer && !shift.validatedByEmployer && (
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#F2EDE5" color="#4A3D2B">À valider</Flex>
+                      )}
+                      {isCompleted && isEmployer && shift.validatedByEmployer && (
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#EFF4DC" color="#3A5210">Validé</Flex>
+                      )}
+                      {isCompleted && !isEmployer && (
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#EFF4DC" color="#3A5210">Terminé</Flex>
+                      )}
+                      {shift._status === 'planned' && (
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#EDF1F5" color="#3D5166">Prévu</Flex>
+                      )}
+                      {shift.lateEntry && (
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#FEF3C7" color="#92400E" ml={1}>Rétroactif</Flex>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                      <Flex justify="flex-end" gap={2}>
+                        {!isEmployer && !isPastDate && shift._status === 'planned' && !activeShiftId && (
+                          <Button size="xs" bg="#3D5166" color="white" borderRadius="md" fontWeight="600" _hover={{ bg: '#2E3F50' }} onClick={() => onClockIn(shift)}>
+                            Pointer
+                          </Button>
+                        )}
+                        <Button size="xs" variant="ghost" borderWidth="1.5px" borderColor="border.default" borderRadius="md" fontWeight="600" color="text.secondary" _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }} onClick={() => onModify?.(shift)}>
                           Modifier
-                        </AccessibleButton>
-                      )}
-                    </Flex>
-                  </Table.Cell>
-                </Table.Row>
-              )
-            })}
-          </Table.Body>
-        </Table.Root>
+                        </Button>
+                        {isEmployer && isCompleted && !shift.validatedByEmployer && (
+                          <Button size="xs" bg="#9BB23B" color="white" borderRadius="md" fontWeight="600" _hover={{ bg: '#8A9E34' }} onClick={() => onValidate?.(shift)}>
+                            Valider
+                          </Button>
+                        )}
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
+                )
+              })}
+            </Table.Body>
+          </Table.Root>
+        </Box>
       </Box>
-    </Box>
+
+      {!isEmployer && (
+        <Text fontSize="sm" color="text.muted" mt={3}>
+          Une erreur dans vos heures ?{' '}
+          <Text
+            as="a"
+            href="/liaison?to=general"
+            color="#3D5166"
+            fontWeight="600"
+            _hover={{ textDecoration: 'underline' }}
+          >
+            Contacter {employerName || 'votre employeur'} →
+          </Text>
+        </Text>
+      )}
+    </section>
   )
 }

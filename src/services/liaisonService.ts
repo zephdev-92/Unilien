@@ -79,12 +79,13 @@ export async function getConversations(
       .limit(1)
       .maybeSingle()
 
-    // Nombre de messages non lus
+    // Nombre de messages non lus (inclut read_by NULL = jamais lu)
     const { count: unreadCount } = await supabase
       .from('liaison_messages')
       .select('*', { count: 'exact', head: true })
       .eq('conversation_id', conv.id)
-      .not('read_by', 'cs', `{${userId}}`)
+      .neq('sender_id', userId)
+      .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
 
     result.push(mapConversationFromDb(conv, {
       otherParticipant,
@@ -181,21 +182,36 @@ export async function getOrCreatePrivateConversation(
  * Retourne l'ID de la conversation.
  */
 export async function ensureTeamConversation(employerId: string): Promise<string | null> {
+  // Récupérer tous les membres de l'équipe pour peupler participant_ids
+  const memberIds = await getTeamMemberIds(employerId)
+
   const { data: existing } = await supabase
     .from('conversations')
-    .select('id')
+    .select('id, participant_ids')
     .eq('employer_id', employerId)
     .eq('type', 'team')
     .maybeSingle()
 
-  if (existing) return existing.id
+  if (existing) {
+    // Mettre à jour participant_ids si la liste a changé
+    const currentIds: string[] = existing.participant_ids || []
+    const hasNew = memberIds.some((id: string) => !currentIds.includes(id))
+    if (hasNew) {
+      const merged = [...new Set([...currentIds, ...memberIds])]
+      await supabase
+        .from('conversations')
+        .update({ participant_ids: merged })
+        .eq('id', existing.id)
+    }
+    return existing.id
+  }
 
   const { data: created, error } = await supabase
     .from('conversations')
     .insert({
       employer_id: employerId,
       type: 'team',
-      participant_ids: [],
+      participant_ids: memberIds,
     })
     .select('id')
     .single()
@@ -206,6 +222,40 @@ export async function ensureTeamConversation(employerId: string): Promise<string
   }
 
   return created.id
+}
+
+/**
+ * Récupère les IDs de tous les membres de l'équipe (employeur + auxiliaires actifs + aidants).
+ */
+async function getTeamMemberIds(employerId: string): Promise<string[]> {
+  const ids = new Set<string>([employerId])
+
+  // Auxiliaires actifs
+  const { data: contracts } = await supabase
+    .from('contracts')
+    .select('employee_id')
+    .eq('employer_id', employerId)
+    .eq('status', 'active')
+
+  if (contracts) {
+    for (const c of contracts) {
+      if (c.employee_id) ids.add(c.employee_id)
+    }
+  }
+
+  // Aidants
+  const { data: caregivers } = await supabase
+    .from('caregiver_employers')
+    .select('caregiver_id')
+    .eq('employer_id', employerId)
+
+  if (caregivers) {
+    for (const cg of caregivers) {
+      if (cg.caregiver_id) ids.add(cg.caregiver_id)
+    }
+  }
+
+  return Array.from(ids)
 }
 
 // ============================================
@@ -314,10 +364,24 @@ export async function createLiaisonMessage(
     throw new Error(error.message)
   }
 
-  // Mettre à jour updated_at de la conversation
+  // Mettre à jour updated_at + s'assurer que l'expéditeur est dans participant_ids
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('participant_ids')
+    .eq('id', conversationId)
+    .single()
+
+  const currentIds: string[] = conv?.participant_ids || []
+  const updatedIds = currentIds.includes(senderId)
+    ? currentIds
+    : [...currentIds, senderId]
+
   await supabase
     .from('conversations')
-    .update({ updated_at: new Date().toISOString() })
+    .update({
+      updated_at: new Date().toISOString(),
+      participant_ids: updatedIds,
+    })
     .eq('id', conversationId)
 
   return mapMessageFromDb(data)
@@ -402,12 +466,13 @@ export async function markAllMessagesAsRead(
   conversationId: string,
   userId: string
 ): Promise<void> {
-  // Get all unread messages in this conversation
+  // Get all unread messages in this conversation (inclut read_by NULL)
   const { data: unreadMessages, error: fetchError } = await supabase
     .from('liaison_messages')
     .select('id, read_by')
     .eq('conversation_id', conversationId)
-    .not('read_by', 'cs', `{${userId}}`)
+    .neq('sender_id', userId)
+    .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
 
   if (fetchError) {
     logger.error('Erreur récupération messages non lus:', fetchError)
@@ -436,7 +501,8 @@ export async function getLiaisonUnreadCount(
     .from('liaison_messages')
     .select('*', { count: 'exact', head: true })
     .eq('conversation_id', conversationId)
-    .not('read_by', 'cs', `{${userId}}`)
+    .neq('sender_id', userId)
+    .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
 
   if (error) {
     logger.error('Erreur comptage messages non lus:', error)
@@ -457,7 +523,8 @@ export async function getTotalUnreadCount(
     .from('liaison_messages')
     .select('*', { count: 'exact', head: true })
     .eq('employer_id', employerId)
-    .not('read_by', 'cs', `{${userId}}`)
+    .neq('sender_id', userId)
+    .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
 
   if (error) {
     logger.error('Erreur comptage messages non lus total:', error)

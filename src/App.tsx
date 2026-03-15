@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Box, Container, Spinner, Center, Text } from '@chakra-ui/react'
 import { LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm } from '@/components/auth'
 import { ErrorBoundary } from '@/components/ui'
 import { RouteAnnouncer } from '@/components/accessibility/RouteAnnouncer'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabase/client'
 import type { UserRole } from '@/types'
 
 // Pages chargées dynamiquement (code splitting)
@@ -87,6 +88,27 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 }
 
 function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Rediriger vers /reinitialisation si le flux recovery arrive sur une autre page
+  // (ex. Supabase redirige vers / car redirect_to n'est pas dans la whitelist)
+  useEffect(() => {
+    // Cas 1: hash contient type=recovery au chargement (Supabase a redirigé vers /)
+    if (location.pathname !== '/reinitialisation' && location.hash.includes('type=recovery')) {
+      navigate(`/reinitialisation${location.hash}`, { replace: true })
+      return
+    }
+
+    // Cas 2: écouter PASSWORD_RECOVERY (au cas où le hash est traité après mount)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' && location.pathname !== '/reinitialisation') {
+        navigate(`/reinitialisation${location.hash}`, { replace: true })
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [navigate, location.pathname, location.hash])
+
   return (
     <>
       <AccessibilityApplier />
@@ -104,10 +126,8 @@ function App() {
             path="/connexion"
             element={
               <PublicRoute>
-                <Box minH="100vh" bg="gray.50">
-                  <Container maxW="container.sm" py={8}>
-                    <LoginForm />
-                  </Container>
+                <Box minH="100vh" bg="bg.page" display="flex" alignItems="center" justifyContent="center" p={6}>
+                  <LoginForm />
                 </Box>
               </PublicRoute>
             }
@@ -116,10 +136,8 @@ function App() {
             path="/inscription"
             element={
               <PublicRoute>
-                <Box minH="100vh" bg="gray.50">
-                  <Container maxW="container.sm" py={8}>
-                    <SignupForm />
-                  </Container>
+                <Box minH="100vh" bg="bg.page" display="flex" alignItems="center" justifyContent="center" p={6}>
+                  <SignupForm />
                 </Box>
               </PublicRoute>
             }
@@ -128,10 +146,8 @@ function App() {
             path="/mot-de-passe-oublie"
             element={
               <PublicRoute>
-                <Box minH="100vh" bg="gray.50">
-                  <Container maxW="container.sm" py={8}>
-                    <ForgotPasswordForm />
-                  </Container>
+                <Box minH="100vh" bg="bg.page" display="flex" alignItems="center" justifyContent="center" p={6}>
+                  <ForgotPasswordForm />
                 </Box>
               </PublicRoute>
             }
@@ -157,7 +173,7 @@ function App() {
           <Route path="/messagerie" element={<ProtectedRoute><ErrorBoundary><LiaisonPage /></ErrorBoundary></ProtectedRoute>} />
 
           {/* Routes protégées avec restriction de rôle */}
-          <Route path="/pointage" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/suivi-des-heures" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/equipe" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><TeamPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/conformite" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><CompliancePage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />

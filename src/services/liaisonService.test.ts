@@ -84,6 +84,7 @@ function mockSupabaseQuery(result: { data?: unknown; error?: unknown; count?: nu
   chain.lte = vi.fn().mockReturnValue(chain)
   chain.lt = vi.fn().mockReturnValue(chain)
   chain.not = vi.fn().mockReturnValue(chain)
+  chain.neq = vi.fn().mockReturnValue(chain)
   chain.or = vi.fn().mockReturnValue(chain)
   chain.order = vi.fn().mockReturnValue(chain)
   chain.limit = vi.fn().mockReturnValue(chain)
@@ -110,6 +111,7 @@ function mockSupabaseQuerySequence(results: Array<{ data?: unknown; error?: unkn
     chain.lte = vi.fn().mockReturnValue(chain)
     chain.lt = vi.fn().mockReturnValue(chain)
     chain.not = vi.fn().mockReturnValue(chain)
+    chain.neq = vi.fn().mockReturnValue(chain)
     chain.or = vi.fn().mockReturnValue(chain)
     chain.order = vi.fn().mockReturnValue(chain)
     chain.limit = vi.fn().mockReturnValue(chain)
@@ -192,7 +194,11 @@ describe('getConversations', () => {
 
 describe('ensureTeamConversation', () => {
   it('retourne l\'id si la conversation equipe existe', async () => {
-    mockSupabaseQuery({ data: { id: CONV_ID }, error: null })
+    mockSupabaseQuerySequence([
+      { data: [], error: null }, // contracts (getTeamMemberIds)
+      { data: [], error: null }, // caregiver_employers (getTeamMemberIds)
+      { data: { id: CONV_ID, participant_ids: [EMPLOYER_ID] }, error: null }, // maybeSingle → conv existante
+    ])
 
     const result = await ensureTeamConversation(EMPLOYER_ID)
 
@@ -201,6 +207,8 @@ describe('ensureTeamConversation', () => {
 
   it('cree la conversation si elle n\'existe pas', async () => {
     mockSupabaseQuerySequence([
+      { data: [], error: null }, // contracts (getTeamMemberIds)
+      { data: [], error: null }, // caregiver_employers (getTeamMemberIds)
       { data: null, error: null }, // maybeSingle → pas de conv existante
       { data: { id: 'conv-new' }, error: null }, // insert → nouvelle conv
     ])
@@ -212,6 +220,8 @@ describe('ensureTeamConversation', () => {
 
   it('retourne null en cas d\'erreur de creation', async () => {
     mockSupabaseQuerySequence([
+      { data: [], error: null }, // contracts (getTeamMemberIds)
+      { data: [], error: null }, // caregiver_employers (getTeamMemberIds)
       { data: null, error: null }, // pas de conv existante
       { data: null, error: { message: 'Insert failed' } }, // erreur insert
     ])
@@ -371,9 +381,10 @@ describe('getOlderMessages', () => {
 describe('createLiaisonMessage', () => {
   it('insere un message avec conversationId et retourne le resultat mappe', async () => {
     const row = createMockMessageDbRow()
-    // 2 appels : insert + update conversations
+    // 3 appels : insert + fetch conv participant_ids + update conversations
     mockSupabaseQuerySequence([
       { data: row, error: null },
+      { data: { participant_ids: [USER_ID] }, error: null },
       { data: null, error: null },
     ])
 
@@ -396,6 +407,7 @@ describe('createLiaisonMessage', () => {
     const row = createMockMessageDbRow()
     mockSupabaseQuerySequence([
       { data: row, error: null },
+      { data: { participant_ids: [USER_ID] }, error: null },
       { data: null, error: null },
     ])
 
@@ -545,7 +557,8 @@ describe('getLiaisonUnreadCount', () => {
     const count = await getLiaisonUnreadCount(CONV_ID, USER_ID)
 
     expect(count).toBe(5)
-    expect(chain.not).toHaveBeenCalledWith('read_by', 'cs', `{${USER_ID}}`)
+    expect(chain.neq).toHaveBeenCalledWith('sender_id', USER_ID)
+    expect(chain.or).toHaveBeenCalledWith(`read_by.is.null,not.read_by.cs.{${USER_ID}}`)
   })
 
   it('retourne 0 en cas d\'erreur', async () => {

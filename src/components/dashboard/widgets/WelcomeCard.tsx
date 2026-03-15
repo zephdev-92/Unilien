@@ -1,25 +1,14 @@
-import { Box, Flex, Text, Avatar, Badge, Skeleton } from '@chakra-ui/react'
+import { Box, Flex, Text, Skeleton } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { AccessibleButton } from '@/components/ui'
-import type { Profile, Shift, UserRole } from '@/types'
+import type { Profile, Shift } from '@/types'
 
 interface WelcomeCardProps {
   profile: Profile
   nextShift?: Shift | null
   complianceAlertCount?: number
+  todayEmployeeCount?: number
+  todayShiftCount?: number
   loading?: boolean
-}
-
-const roleLabels: Record<UserRole, string> = {
-  employer: 'Employeur',
-  employee: 'Auxiliaire de vie',
-  caregiver: 'Aidant familial',
-}
-
-const roleDescriptions: Record<UserRole, string> = {
-  employer: 'Gérez vos auxiliaires et suivez les interventions',
-  employee: 'Consultez votre planning et le cahier de liaison',
-  caregiver: 'Suivez les soins de votre proche',
 }
 
 function formatDateEyebrow(): string {
@@ -39,23 +28,49 @@ function formatNextShiftChip(shift: Shift): string {
   const isToday = shiftDate.toDateString() === now.toDateString()
 
   if (isToday) {
-    return `Prochaine intervention à ${shift.startTime}`
+    return `Prochaine intervention à ${shift.startTime.slice(0, 5)}`
   }
 
   const tomorrow = new Date(now)
   tomorrow.setDate(tomorrow.getDate() + 1)
   if (shiftDate.toDateString() === tomorrow.toDateString()) {
-    return `Demain à ${shift.startTime}`
+    return `Demain à ${shift.startTime.slice(0, 5)}`
   }
 
   const dayName = shiftDate.toLocaleDateString('fr-FR', { weekday: 'long' })
-  return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} à ${shift.startTime}`
+  return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} à ${shift.startTime.slice(0, 5)}`
+}
+
+/** Proto chip on gradient hero */
+function GlassChip({ children, highlighted }: { children: React.ReactNode; highlighted?: boolean }) {
+  return (
+    <Flex
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      gap="5px"
+      bg={highlighted ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.18)'}
+      borderWidth="1px"
+      borderColor={highlighted ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.3)'}
+      borderRadius="20px"
+      px={3}
+      py="4px"
+      fontSize="14px"
+      fontWeight="600"
+      color="white"
+      css={{ backdropFilter: 'blur(4px)' }}
+    >
+      {children}
+    </Flex>
+  )
 }
 
 export function WelcomeCard({
   profile,
   nextShift,
   complianceAlertCount,
+  todayEmployeeCount,
+  todayShiftCount,
   loading = false,
 }: WelcomeCardProps) {
   const currentHour = new Date().getHours()
@@ -68,96 +83,114 @@ export function WelcomeCard({
   if (loading) {
     return (
       <Box
-        bg="white"
-        borderRadius="lg"
-        borderWidth="1px"
-        borderColor="gray.200"
-        p={6}
-        boxShadow="sm"
+        borderRadius="16px"
+        p={{ base: 5, md: 6 }}
+        bg="linear-gradient(135deg, #3D5166, #5A6190)"
       >
-        <Skeleton height="14px" width="180px" mb={3} />
-        <Flex align="center" gap={4}>
-          <Skeleton borderRadius="full" height="48px" width="48px" />
-          <Box flex="1">
-            <Skeleton height="28px" width="250px" mb={2} />
-            <Skeleton height="16px" width="300px" mb={3} />
-            <Flex gap={2}>
-              <Skeleton height="24px" width="180px" borderRadius="full" />
-              <Skeleton height="24px" width="100px" borderRadius="full" />
-            </Flex>
-          </Box>
+        <Skeleton height="14px" width="180px" mb={2} />
+        <Skeleton height="28px" width="260px" mb={3} />
+        <Flex gap={2}>
+          <Skeleton height="28px" width="200px" borderRadius="full" />
+          <Skeleton height="28px" width="140px" borderRadius="full" />
         </Flex>
       </Box>
     )
   }
 
+  // Build chips
+  const chips: React.ReactNode[] = []
+
+  if (profile.role === 'employer' && todayEmployeeCount !== undefined && todayEmployeeCount > 0) {
+    chips.push(
+      <GlassChip key="employees" highlighted>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+        </svg>
+        {todayEmployeeCount} employé{todayEmployeeCount > 1 ? 's' : ''} en intervention aujourd&apos;hui
+      </GlassChip>
+    )
+  }
+
+  if (nextShift && !(profile.role === 'employer' && todayEmployeeCount)) {
+    chips.push(
+      <GlassChip key="shift" highlighted>
+        {formatNextShiftChip(nextShift)}
+      </GlassChip>
+    )
+  }
+
+  if (profile.role === 'employee' && todayShiftCount !== undefined && todayShiftCount > 0) {
+    chips.push(
+      <GlassChip key="today-shifts">
+        {todayShiftCount} intervention{todayShiftCount > 1 ? 's' : ''} aujourd&apos;hui
+      </GlassChip>
+    )
+  }
+
+  if (complianceAlertCount !== undefined && complianceAlertCount > 0) {
+    chips.push(
+      <GlassChip key="compliance">
+        {complianceAlertCount} anomalie{complianceAlertCount > 1 ? 's' : ''} détectée{complianceAlertCount > 1 ? 's' : ''}
+      </GlassChip>
+    )
+  }
+
   return (
-    <Box
-      bg="white"
-      borderRadius="lg"
-      borderWidth="1px"
-      borderColor="gray.200"
-      p={6}
-      boxShadow="sm"
+    <Flex
+      align="center"
+      justify="space-between"
+      gap={4}
+      bg="linear-gradient(135deg, #3D5166, #5A6190)"
+      borderRadius="16px"
+      px={{ base: 5, md: 6 }}
+      py={5}
+      color="white"
+      flexWrap={{ base: 'wrap', md: 'nowrap' }}
     >
-      <Text fontSize="sm" color="gray.500" mb={3}>
-        {formatDateEyebrow()}
-      </Text>
+      {/* Left */}
+      <Box flex="1" minW={0}>
+        <Text fontSize="14px" opacity={0.8} mb={1}>
+          {formatDateEyebrow()}
+        </Text>
+        <Text fontSize="22px" fontWeight="800" lineHeight="1.2" mb={chips.length > 0 ? 3 : 0}>
+          {greeting}, {profile.firstName} 👋
+        </Text>
+        {chips.length > 0 && (
+          <Flex gap={2} flexWrap="wrap" alignItems="center">
+            {chips}
+          </Flex>
+        )}
+      </Box>
 
-      <Flex align="center" gap={4} mb={nextShift || complianceAlertCount ? 4 : 0}>
-        <Avatar.Root size="lg">
-          <Avatar.Fallback name={`${profile.firstName} ${profile.lastName}`} />
-          {profile.avatarUrl && <Avatar.Image src={profile.avatarUrl} />}
-        </Avatar.Root>
-        <Box>
-          <Text fontSize="2xl" fontWeight="bold" color="gray.900">
-            {greeting}, {profile.firstName} !
-          </Text>
-          <Text fontSize="md" color="gray.600">
-            {roleLabels[profile.role]} - {roleDescriptions[profile.role]}
-          </Text>
+      {/* Right — CTA button */}
+      <Box flexShrink={0}>
+        <Box
+          as={RouterLink}
+          to={profile.role === 'employee' ? '/suivi-des-heures' : '/planning'}
+          display="inline-flex"
+          alignItems="center"
+          px={4}
+          py={2}
+          borderRadius="10px"
+          fontSize="14px"
+          fontWeight="700"
+          color="white"
+          bg="rgba(255,255,255,.25)"
+          borderWidth="1px"
+          borderColor="rgba(255,255,255,.4)"
+          textDecoration="none"
+          transition="background 0.15s"
+          _hover={{ bg: 'rgba(255,255,255,.35)' }}
+          _focusVisible={{
+            outline: '2px solid white',
+            outlineOffset: '2px',
+          }}
+        >
+          {profile.role === 'employee' ? 'Enregistrer mes heures →' : 'Voir le planning du jour →'}
         </Box>
-      </Flex>
-
-      {(nextShift || (complianceAlertCount !== undefined && complianceAlertCount > 0)) && (
-        <Flex gap={2} flexWrap="wrap" align="center" mt={1}>
-          {nextShift && (
-            <Badge
-              colorPalette="blue"
-              variant="subtle"
-              px={3}
-              py={1}
-              borderRadius="full"
-              fontSize="xs"
-            >
-              {formatNextShiftChip(nextShift)}
-            </Badge>
-          )}
-          {complianceAlertCount !== undefined && complianceAlertCount > 0 && (
-            <Badge
-              colorPalette="orange"
-              variant="subtle"
-              px={3}
-              py={1}
-              borderRadius="full"
-              fontSize="xs"
-            >
-              {complianceAlertCount} alerte{complianceAlertCount > 1 ? 's' : ''} conformité
-            </Badge>
-          )}
-          <Box flex="1" />
-          <AccessibleButton
-            variant="ghost"
-            size="sm"
-            colorPalette="brand"
-            asChild
-            accessibleLabel="Voir le planning du jour"
-          >
-            <RouterLink to="/planning">Voir le planning</RouterLink>
-          </AccessibleButton>
-        </Flex>
-      )}
-    </Box>
+      </Box>
+    </Flex>
   )
 }
 

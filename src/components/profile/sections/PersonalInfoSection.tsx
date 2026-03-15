@@ -151,10 +151,10 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
     >
       <Text fontSize="xl" fontWeight="semibold" mb={6}>
@@ -201,7 +201,7 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
             <Text fontWeight="medium" mb={1}>
               Photo de profil
             </Text>
-            <Text fontSize="sm" color="gray.500" mb={2}>
+            <Text fontSize="sm" color="text.muted" mb={2}>
               JPG, PNG, GIF ou WebP. Max 2 Mo.
             </Text>
 
@@ -303,7 +303,7 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
             <Flex justify="flex-end">
               <AccessibleButton
                 type="submit"
-                colorPalette="blue"
+                colorPalette="brand"
                 loading={isLoading}
                 loadingText="Enregistrement..."
                 disabled={!isDirty}

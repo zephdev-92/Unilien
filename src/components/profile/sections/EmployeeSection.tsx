@@ -108,9 +108,9 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
       />
 
       {/* Adresse */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6}>
         <Text fontSize="xl" fontWeight="semibold" mb={2}>Adresse</Text>
-        <Text fontSize="sm" color="gray.600" mb={4}>
+        <Text fontSize="sm" color="text.muted" mb={4}>
           Votre adresse de domicile (utilisée pour calculer les distances)
         </Text>
         <Stack gap={4}>
@@ -143,7 +143,7 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
       </Box>
 
       {/* Distance max */}
-      <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6}>
         <Text fontSize="xl" fontWeight="semibold" mb={6}>Zone de déplacement</Text>
         <AccessibleInput
           label="Distance maximale de déplacement"
@@ -163,7 +163,7 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
           </Text>
         )}
         <AccessibleButton
-          colorPalette="blue"
+          colorPalette="brand"
           loading={isLoading}
           loadingText="Enregistrement..."
           onClick={handleSubmit(onSubmit)}

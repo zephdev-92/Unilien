@@ -9,6 +9,13 @@ export const SHIFT_STATUS_COLORS: Record<Shift['status'], string> = {
   absent: 'red',
 }
 
+export const SHIFT_STATUS_VARIANTS: Record<Shift['status'], 'active' | 'pending' | 'off' | 'danger' | 'success'> = {
+  planned: 'active',
+  completed: 'success',
+  cancelled: 'off',
+  absent: 'danger',
+}
+
 export const SHIFT_STATUS_LABELS: Record<Shift['status'], string> = {
   planned: 'Planifié',
   completed: 'Terminé',
@@ -29,6 +36,12 @@ export const ABSENCE_STATUS_COLORS: Record<Absence['status'], string> = {
   pending: 'orange',
   approved: 'green',
   rejected: 'red',
+}
+
+export const ABSENCE_STATUS_VARIANTS: Record<Absence['status'], 'active' | 'pending' | 'off' | 'danger' | 'success'> = {
+  pending: 'pending',
+  approved: 'success',
+  rejected: 'danger',
 }
 
 export const ABSENCE_STATUS_LABELS: Record<Absence['status'], string> = {

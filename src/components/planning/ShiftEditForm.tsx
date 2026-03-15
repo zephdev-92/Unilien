@@ -120,7 +120,7 @@ export function ShiftEditForm({
 
         {/* Durée affichée */}
         {durationHours > 0 && (
-          <Text fontSize="sm" color="gray.600">
+          <Text fontSize="sm" color="text.muted">
             Durée : {durationHours.toFixed(1)} heures
             {(watchedBreakDuration ?? 0) > 0 &&
               ` (pause de ${watchedBreakDuration} min déduite)`
@@ -242,7 +242,7 @@ export function ShiftEditForm({
 
         {/* Erreur de soumission */}
         {submitError && (
-          <Box p={4} bg="red.50" borderRadius="md">
+          <Box p={4} bg="red.50" borderRadius="10px">
             <Text color="red.700">{submitError}</Text>
           </Box>
         )}

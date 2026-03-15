@@ -43,13 +43,13 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <Center minH="100vh" bg="gray.50" p={4}>
+        <Center minH="100vh" bg="bg.page" p={4}>
           <VStack gap={6} maxW="md" textAlign="center">
             <Box>
-              <Heading size="lg" color="gray.800" mb={2}>
+              <Heading size="lg" color="text.default" mb={2}>
                 Une erreur est survenue
               </Heading>
-              <Text color="gray.600">
+              <Text color="text.muted">
                 L'application a rencontré un problème inattendu.
                 Vos données sont en sécurité.
               </Text>
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 bg="red.50"
                 border="1px solid"
                 borderColor="red.200"
-                borderRadius="md"
+                borderRadius="10px"
                 p={4}
                 textAlign="left"
               >
@@ -75,7 +75,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
 
             <Button
-              colorPalette="blue"
+              colorPalette="brand"
               size="lg"
               onClick={this.handleReload}
             >

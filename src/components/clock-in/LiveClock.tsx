@@ -21,27 +21,32 @@ export function LiveClock() {
 
   return (
     <Box
-      bg="white"
+      bg="bg.surface"
       borderRadius="xl"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
-      boxShadow="sm"
+      boxShadow="0 2px 8px rgba(78,100,120,.09)"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
       textAlign="center"
       aria-label="Heure actuelle"
     >
       <Text
-        fontSize="4xl"
-        fontWeight="bold"
-        color="gray.900"
-        fontFamily="mono"
-        letterSpacing="wider"
+        fontSize="56px"
+        fontWeight="900"
+        color="text.default"
+        fontFamily="heading"
+        letterSpacing="-0.03em"
+        lineHeight="1"
+        mb={1}
         aria-live="polite"
         aria-atomic="true"
       >
         {time}
       </Text>
-      <Text fontSize="sm" color="gray.500" textTransform="capitalize" mt={1}>
+      <Text fontSize="sm" color="text.muted" fontWeight="500" textTransform="capitalize" w="100%" textAlign="center">
         {date}
       </Text>
     </Box>

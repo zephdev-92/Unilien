@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import {
-  Dialog,
-  Portal,
   Box,
   Stack,
   Flex,
@@ -11,6 +9,7 @@ import {
 } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
 import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compliance'
+import { PlanningModal } from './PlanningModal'
 import type { ShiftType } from '@/types'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
@@ -153,44 +152,55 @@ export function NewShiftModal({
     return `${watchedValues.date} · ${watchedValues.startTime ?? ''}–${watchedValues.endTime ?? ''} · ${typeLabel}`
   })()
 
+  const footerContent = (
+    <Flex gap={3} justify="space-between" w="full" align="center">
+      {isValidating && (
+        <Text fontSize="sm" color="text.muted">Validation en cours...</Text>
+      )}
+      <Flex gap={3} ml="auto">
+        <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose} disabled={isSubmitting || isBatchSubmitting}>
+          Annuler
+        </AccessibleButton>
+        {repeatConfig.isRepeatEnabled ? (
+          <AccessibleButton
+            bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
+            disabled={isSubmitDisabled || repeatOccurrences.length === 0}
+            onClick={() => setIsPreviewOpen(true)}
+          >
+            Vérifier ({repeatOccurrences.length} intervention{repeatOccurrences.length > 1 ? 's' : ''})
+          </AccessibleButton>
+        ) : (
+          <AccessibleButton
+            type="submit"
+            form="new-shift-form"
+            bg={hasErrors ? 'gray.400' : '#3D5166'} color="white" _hover={{ bg: hasErrors ? 'gray.400' : '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
+            loading={isSubmitting}
+            disabled={isSubmitDisabled}
+          >
+            {hasErrors ? 'Intervention non conforme' : hasWarnings && !acknowledgeWarnings ? 'Vérifiez les avertissements' : "Créer l'intervention"}
+          </AccessibleButton>
+        )}
+      </Flex>
+    </Flex>
+  )
+
   return (
     <>
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
-      <Portal>
-        <Dialog.Backdrop bg="blackAlpha.600" />
-        <Dialog.Positioner>
-          <Dialog.Content
-            bg="white"
-            borderRadius="xl"
-            maxW="600px"
-            w="95vw"
-            maxH="90vh"
-            overflow="auto"
-          >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Flex justify="space-between" align="center" pr={8}>
-                <Dialog.Title fontSize="xl" fontWeight="bold">
-                  Nouvelle intervention
-                </Dialog.Title>
-                {complianceResult && !isValidating && (
-                  <ComplianceBadge result={complianceResult} size="sm" />
-                )}
-              </Flex>
-              <Dialog.CloseTrigger position="absolute" top={4} right={4} asChild>
-                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer">
-                  X
-                </AccessibleButton>
-              </Dialog.CloseTrigger>
-            </Dialog.Header>
-
-            <Dialog.Body p={6}>
+    <PlanningModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Nouvelle intervention"
+      titleRight={complianceResult && !isValidating ? <ComplianceBadge result={complianceResult} size="sm" /> : undefined}
+      large
+      footer={footerContent}
+    >
               <form id="new-shift-form" onSubmit={handleSubmit(onSubmit)}>
                 <Stack gap={4}>
                   {/* Sélection auxiliaire */}
                   {isLoadingContracts ? (
-                    <Text color="gray.500">Chargement des auxiliaires...</Text>
+                    <Text color="text.muted">Chargement des auxiliaires...</Text>
                   ) : contracts.length === 0 ? (
-                    <Box p={4} bg="orange.50" borderRadius="md">
+                    <Box p={4} bg="orange.50" borderRadius="10px">
                       <Text color="orange.700">
                         Aucun contrat actif. Veuillez d'abord créer un contrat avec un auxiliaire.
                       </Text>
@@ -254,13 +264,13 @@ export function NewShiftModal({
                     </Box>
                     {shiftType === 'guard_24h' ? (
                       <Box flex={1}>
-                        <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                        <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>
                           Heure de fin
                         </Text>
-                        <Box p={2} borderWidth="2px" borderColor="gray.200" borderRadius="md" bg="gray.50">
-                          <Text fontSize="sm" color="gray.500">
+                        <Box p={2} borderWidth="2px" borderColor="border.default" borderRadius="10px" bg="bg.page">
+                          <Text fontSize="sm" color="text.muted">
                             {watchedValues.startTime || '—'}{' '}
-                            <Text as="span" fontWeight="bold" color="gray.700">+24h</Text> (auto)
+                            <Text as="span" fontWeight="bold" color="text.secondary">+24h</Text> (auto)
                           </Text>
                         </Box>
                         <input type="hidden" {...register('endTime')} />
@@ -280,7 +290,7 @@ export function NewShiftModal({
 
                   {/* Durée affichée */}
                   {durationHours > 0 && (
-                    <Text fontSize="sm" color="gray.600">
+                    <Text fontSize="sm" color="text.muted">
                       Durée : {durationHours.toFixed(1)} heures
                       {watchedValues.breakDuration > 0 &&
                         ` (pause de ${watchedValues.breakDuration} min déduite)`
@@ -382,31 +392,59 @@ export function NewShiftModal({
 
                   {/* Tâches */}
                   <Box>
-                    <Text fontWeight="medium" fontSize="md" mb={2}>
+                    <Text fontWeight="600" fontSize="sm" color="text.default" mb={1}>
                       Tâches prévues
                     </Text>
                     <Textarea
-                      placeholder="Une tâche par ligne&#10;Ex: Aide au lever&#10;Préparation du petit-déjeuner"
+                      placeholder={'Une tâche par ligne\nEx: Aide au lever\nPréparation du petit-déjeuner'}
                       rows={4}
-                      size="lg"
-                      borderWidth="2px"
+                      fontSize="sm"
+                      borderWidth="1.5px"
+                      borderColor="border.default"
+                      borderRadius="10px"
+                      bg="bg.page"
+                      p="10px 12px"
+                      minH="80px"
+                      css={{
+                        '&:focus': {
+                          borderColor: 'var(--chakra-colors-brand-500)',
+                          boxShadow: '0 0 0 3px rgba(78,100,120,.12)',
+                          background: 'var(--chakra-colors-bg-surface, #fff)',
+                        },
+                        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                        resize: 'vertical',
+                      }}
                       {...register('tasks')}
                     />
-                    <Text fontSize="sm" color="gray.600" mt={1}>
+                    <Text fontSize="xs" color="text.muted" mt={1}>
                       Une tâche par ligne
                     </Text>
                   </Box>
 
                   {/* Notes */}
                   <Box>
-                    <Text fontWeight="medium" fontSize="md" mb={2}>
+                    <Text fontWeight="600" fontSize="sm" color="text.default" mb={1}>
                       Notes
                     </Text>
                     <Textarea
                       placeholder="Notes ou instructions particulières..."
                       rows={3}
-                      size="lg"
-                      borderWidth="2px"
+                      fontSize="sm"
+                      borderWidth="1.5px"
+                      borderColor="border.default"
+                      borderRadius="10px"
+                      bg="bg.page"
+                      p="10px 12px"
+                      minH="80px"
+                      css={{
+                        '&:focus': {
+                          borderColor: 'var(--chakra-colors-brand-500)',
+                          boxShadow: '0 0 0 3px rgba(78,100,120,.12)',
+                          background: 'var(--chakra-colors-bg-surface, #fff)',
+                        },
+                        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                        resize: 'vertical',
+                      }}
                       {...register('notes')}
                     />
                   </Box>
@@ -419,56 +457,13 @@ export function NewShiftModal({
 
                   {/* Erreur de soumission */}
                   {submitError && (
-                    <Box p={4} bg="red.50" borderRadius="md">
+                    <Box p={4} bg="red.50" borderRadius="10px">
                       <Text color="red.700">{submitError}</Text>
                     </Box>
                   )}
                 </Stack>
               </form>
-            </Dialog.Body>
-
-            <Dialog.Footer p={6} borderTopWidth="1px">
-              <Flex gap={3} justify="space-between" w="full" align="center">
-                {isValidating && (
-                  <Text fontSize="sm" color="gray.500">
-                    Validation en cours...
-                  </Text>
-                )}
-                <Flex gap={3} ml="auto">
-                  <AccessibleButton variant="outline" onClick={onClose} disabled={isSubmitting || isBatchSubmitting}>
-                    Annuler
-                  </AccessibleButton>
-                  {repeatConfig.isRepeatEnabled ? (
-                    <AccessibleButton
-                      colorPalette="blue"
-                      disabled={isSubmitDisabled || repeatOccurrences.length === 0}
-                      onClick={() => setIsPreviewOpen(true)}
-                    >
-                      Vérifier ({repeatOccurrences.length} intervention{repeatOccurrences.length > 1 ? 's' : ''})
-                    </AccessibleButton>
-                  ) : (
-                    <AccessibleButton
-                      type="submit"
-                      form="new-shift-form"
-                      colorPalette={hasErrors ? 'gray' : 'blue'}
-                      loading={isSubmitting}
-                      disabled={isSubmitDisabled}
-                    >
-                      {hasErrors
-                        ? 'Intervention non conforme'
-                        : hasWarnings && !acknowledgeWarnings
-                          ? 'Vérifiez les avertissements'
-                          : "Créer l'intervention"
-                      }
-                    </AccessibleButton>
-                  )}
-                </Flex>
-              </Flex>
-            </Dialog.Footer>
-          </Dialog.Content>
-        </Dialog.Positioner>
-      </Portal>
-    </Dialog.Root>
+    </PlanningModal>
 
     {isPreviewOpen && (
       <RepeatPreviewModal

@@ -1,37 +1,39 @@
 import { useState, useEffect } from 'react'
 import {
-  Box,
   Flex,
-  Text,
-  Avatar,
-  Badge,
-  Stack,
-  Input,
+  Textarea,
+  Button,
+  Field,
+  NativeSelect,
 } from '@chakra-ui/react'
 import { Dialog } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { getActiveAuxiliariesForEmployer } from '@/services/auxiliaryService'
 import { getCaregiversForEmployer } from '@/services/caregiverTeamService'
+import { getProfileById } from '@/services/profileService'
 import type { AuxiliarySummary } from '@/services/auxiliaryService'
 import type { CaregiverWithProfile } from '@/services/caregiverTeamService'
-
 
 interface TeamMember {
   id: string
   firstName: string
   lastName: string
   avatarUrl?: string
-  role: 'employee' | 'caregiver'
+  role: 'employee' | 'caregiver' | 'employer'
 }
+
+export type NewMessageRecipient =
+  | { type: 'team' }
+  | { type: 'member'; memberId: string }
 
 interface NewConversationModalProps {
   isOpen: boolean
   onClose: () => void
   employerId: string
   currentUserId: string
-  /** IDs des membres qui ont déjà une conversation privée avec l'utilisateur courant */
-  existingConversationMemberIds: string[]
-  onSelect: (memberId: string) => void
+  /** ID de la conversation d'équipe (pour l'option "Toute l'équipe") */
+  teamConversationId: string | null
+  onSend: (recipient: NewMessageRecipient, content: string) => Promise<void>
 }
 
 export function NewConversationModal({
@@ -39,12 +41,16 @@ export function NewConversationModal({
   onClose,
   employerId,
   currentUserId,
-  existingConversationMemberIds,
-  onSelect,
+  teamConversationId,
+  onSend,
 }: NewConversationModalProps) {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [search, setSearch] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [recipient, setRecipient] = useState<string>('')
+  const [content, setContent] = useState('')
+  const [recipientError, setRecipientError] = useState<string | null>(null)
+  const [contentError, setContentError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -77,9 +83,24 @@ export function NewConversationModal({
             role: 'caregiver' as const,
           }))
 
-        // Dédupliquer par id
         const seen = new Set<string>()
         const all: TeamMember[] = []
+
+        // Ajouter l'employeur en premier si l'utilisateur n'est pas l'employeur (ex. auxiliaire, aidant)
+        if (employerId && employerId !== currentUserId) {
+          const employerProfile = await getProfileById(employerId)
+          if (employerProfile) {
+            all.push({
+              id: employerProfile.id,
+              firstName: employerProfile.firstName,
+              lastName: employerProfile.lastName,
+              avatarUrl: employerProfile.avatarUrl,
+              role: 'employer' as const,
+            })
+            seen.add(employerProfile.id)
+          }
+        }
+
         for (const m of [...employees, ...cg]) {
           if (!seen.has(m.id)) {
             seen.add(m.id)
@@ -94,16 +115,48 @@ export function NewConversationModal({
     }
 
     loadMembers()
+    setRecipient('')
+    setContent('')
+    setRecipientError(null)
+    setContentError(null)
   }, [isOpen, employerId, currentUserId])
 
-  const filtered = members.filter((m) => {
-    const fullName = `${m.firstName} ${m.lastName}`.toLowerCase()
-    return fullName.includes(search.toLowerCase())
-  })
+  const handleSubmit = async () => {
+    setRecipientError(null)
+    setContentError(null)
 
-  const handleSelect = (memberId: string) => {
-    onSelect(memberId)
-    onClose()
+    if (!recipient || recipient === '') {
+      setRecipientError('Veuillez sélectionner un destinataire.')
+      return
+    }
+
+    const trimmed = content.trim()
+    if (!trimmed) {
+      setContentError('Le message ne peut pas être vide.')
+      return
+    }
+
+    if (recipient === 'team') {
+      if (!teamConversationId) {
+        setRecipientError('Conversation d\'équipe non disponible.')
+        return
+      }
+    }
+
+    setIsSubmitting(true)
+    try {
+      const rec: NewMessageRecipient =
+        recipient === 'team'
+          ? { type: 'team' }
+          : { type: 'member', memberId: recipient }
+
+      await onSend(rec, trimmed)
+      onClose()
+    } catch {
+      setContentError('Erreur lors de l\'envoi.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -112,7 +165,7 @@ export function NewConversationModal({
       <Dialog.Positioner>
         <Dialog.Content>
           <Dialog.Header>
-            <Dialog.Title>Nouvelle conversation</Dialog.Title>
+            <Dialog.Title>Nouveau message</Dialog.Title>
             <Dialog.CloseTrigger asChild>
               <AccessibleButton
                 variant="ghost"
@@ -120,84 +173,111 @@ export function NewConversationModal({
                 position="absolute"
                 right={3}
                 top={3}
+                w="32px"
+                h="32px"
+                minW="32px"
+                minH="32px"
+                borderRadius="md"
+                _hover={{ bg: 'bg.page', color: 'text.default' }}
                 accessibleLabel="Fermer"
               >
-                ✕
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={18} height={18} aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </AccessibleButton>
             </Dialog.CloseTrigger>
           </Dialog.Header>
 
           <Dialog.Body>
-            {/* Recherche */}
-            <Flex align="center" gap={2} mb={4}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" color="gray"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <Input
-                placeholder="Rechercher un membre..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                size="sm"
-                variant="flushed"
-                flex={1}
-              />
+            <Flex direction="column" gap={4} as="form" onSubmit={(e) => { e.preventDefault(); handleSubmit() }} id="new-msg-form">
+              {/* Destinataire(s) — prototype */}
+              <Field.Root invalid={!!recipientError} required>
+                <Field.Label htmlFor="msg-to" fontWeight="medium" fontSize="sm" color="text.default">
+                  Destinataire(s) <span className="required" aria-label="obligatoire">*</span>
+                </Field.Label>
+                <NativeSelect.Root size="sm">
+                  <NativeSelect.Field
+                    id="msg-to"
+                    value={recipient}
+                    onChange={(e) => {
+                      setRecipient(e.target.value)
+                      setRecipientError(null)
+                    }}
+                    disabled={isLoading}
+                    bg="bg.page"
+                    borderColor={recipientError ? 'danger.500' : 'border.default'}
+                    borderRadius="lg"
+                    css={{
+                      minHeight: '40px',
+                      '&:focus': { borderColor: 'brand.500', boxShadow: '0 0 0 2px rgba(78,100,120,.15)' },
+                    }}
+                  >
+                    <option value="">Choisir…</option>
+                    {teamConversationId && <option value="team">Toute l&apos;équipe</option>}
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.firstName} {m.lastName}
+                      </option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+                {recipientError && (
+                  <Field.ErrorText fontSize="xs" color="danger.600">{recipientError}</Field.ErrorText>
+                )}
+              </Field.Root>
+
+              {/* Message — prototype */}
+              <Field.Root invalid={!!contentError} required>
+                <Field.Label htmlFor="msg-body" fontWeight="medium" fontSize="sm" color="text.default">
+                  Message <span className="required" aria-label="obligatoire">*</span>
+                </Field.Label>
+                <Textarea
+                  id="msg-body"
+                  rows={4}
+                  placeholder="Votre message…"
+                  value={content}
+                  onChange={(e) => {
+                    setContent(e.target.value)
+                    setContentError(null)
+                  }}
+                  disabled={isSubmitting}
+                  bg="bg.page"
+                  borderColor={contentError ? 'danger.500' : 'border.default'}
+                  borderRadius="lg"
+                  resize="vertical"
+                  maxH="200px"
+                  _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 2px rgba(78,100,120,.15)' }}
+                />
+                {contentError && (
+                  <Field.ErrorText fontSize="xs" color="danger.600">{contentError}</Field.ErrorText>
+                )}
+              </Field.Root>
             </Flex>
-
-            {/* Liste */}
-            {isLoading ? (
-              <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-                Chargement...
-              </Text>
-            ) : filtered.length === 0 ? (
-              <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-                Aucun membre trouvé.
-              </Text>
-            ) : (
-              <Stack gap={1}>
-                {filtered.map((member) => {
-                  const alreadyExists = existingConversationMemberIds.includes(member.id)
-                  const fullName = `${member.firstName} ${member.lastName}`
-
-                  return (
-                    <Flex
-                      key={member.id}
-                      align="center"
-                      gap={3}
-                      px={3}
-                      py={2.5}
-                      borderRadius="md"
-                      cursor={alreadyExists ? 'default' : 'pointer'}
-                      opacity={alreadyExists ? 0.5 : 1}
-                      _hover={alreadyExists ? {} : { bg: 'blue.50' }}
-                      onClick={alreadyExists ? undefined : () => handleSelect(member.id)}
-                    >
-                      <Avatar.Root size="sm" flexShrink={0}>
-                        {member.avatarUrl ? <Avatar.Image src={member.avatarUrl} /> : null}
-                        <Avatar.Fallback name={fullName} />
-                      </Avatar.Root>
-
-                      <Box flex={1} minW={0}>
-                        <Text fontSize="sm" fontWeight="medium" truncate>
-                          {fullName}
-                        </Text>
-                        <Badge
-                          size="sm"
-                          colorPalette={member.role === 'employee' ? 'blue' : 'purple'}
-                          variant="subtle"
-                        >
-                          {member.role === 'employee' ? 'Auxiliaire' : 'Aidant'}
-                        </Badge>
-                      </Box>
-
-                      {alreadyExists && (
-                        <Text fontSize="xs" color="gray.400">
-                          Déjà en cours
-                        </Text>
-                      )}
-                    </Flex>
-                  )
-                })}
-              </Stack>
-            )}
           </Dialog.Body>
+
+          <Dialog.Footer
+            p={4}
+            pt={0}
+            borderTopWidth="1px"
+            borderColor="border.default"
+            justifyContent="flex-end"
+            gap={2}
+          >
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button
+              size="sm"
+              bg="brand.500"
+              color="white"
+              _hover={{ bg: 'brand.600' }}
+              onClick={handleSubmit}
+              isLoading={isSubmitting}
+              type="submit"
+              form="new-msg-form"
+            >
+              Envoyer
+            </Button>
+          </Dialog.Footer>
         </Dialog.Content>
       </Dialog.Positioner>
     </Dialog.Root>

@@ -49,7 +49,7 @@ describe('MessageInput', () => {
   describe('Rendu initial', () => {
     it('affiche le textarea avec le placeholder par défaut', () => {
       renderWithProviders(<MessageInput {...defaultProps} />)
-      expect(screen.getByPlaceholderText('Écrivez un message...')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Écrire un message…')).toBeInTheDocument()
     })
 
     it('affiche un placeholder personnalisé', () => {
@@ -83,7 +83,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} />)
 
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), 'Bonjour')
+      await user.type(screen.getByPlaceholderText('Écrire un message…'), 'Bonjour')
 
       expect(screen.getByRole('button', { name: /envoyer le message/i })).not.toBeDisabled()
     })
@@ -93,7 +93,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onSend={onSend} />)
 
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), 'Bonjour')
+      await user.type(screen.getByPlaceholderText('Écrire un message…'), 'Bonjour')
       await user.click(screen.getByRole('button', { name: /envoyer le message/i }))
 
       await waitFor(() => {
@@ -106,7 +106,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onSend={onSend} />)
 
-      const textarea = screen.getByPlaceholderText('Écrivez un message...')
+      const textarea = screen.getByPlaceholderText('Écrire un message…')
       await user.type(textarea, 'Bonjour')
       await user.click(screen.getByRole('button', { name: /envoyer le message/i }))
 
@@ -120,7 +120,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onSend={onSend} />)
 
-      const textarea = screen.getByPlaceholderText('Écrivez un message...')
+      const textarea = screen.getByPlaceholderText('Écrire un message…')
       await user.type(textarea, 'Bonjour')
       await user.keyboard('{Enter}')
 
@@ -134,7 +134,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onSend={onSend} />)
 
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), '  Bonjour  ')
+      await user.type(screen.getByPlaceholderText('Écrire un message…'), '  Bonjour  ')
       await user.keyboard('{Enter}')
 
       await waitFor(() => {
@@ -147,7 +147,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onSend={onSend} />)
 
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), '   ')
+      await user.type(screen.getByPlaceholderText('Écrire un message…'), '   ')
       await user.keyboard('{Enter}')
 
       expect(onSend).not.toHaveBeenCalled()
@@ -160,7 +160,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onTyping={onTyping} />)
 
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), 'A')
+      await user.type(screen.getByPlaceholderText('Écrire un message…'), 'A')
 
       expect(onTyping).toHaveBeenCalledWith(true)
     })
@@ -171,7 +171,7 @@ describe('MessageInput', () => {
       const user = userEvent.setup()
       renderWithProviders(<MessageInput {...defaultProps} onSend={onSend} onTyping={onTyping} />)
 
-      await user.type(screen.getByPlaceholderText('Écrivez un message...'), 'Salut')
+      await user.type(screen.getByPlaceholderText('Écrire un message…'), 'Salut')
       onTyping.mockClear()
       await user.keyboard('{Enter}')
 
@@ -184,7 +184,7 @@ describe('MessageInput', () => {
   describe('État désactivé', () => {
     it('désactive le textarea quand disabled=true', () => {
       renderWithProviders(<MessageInput {...defaultProps} disabled />)
-      expect(screen.getByPlaceholderText('Écrivez un message...')).toBeDisabled()
+      expect(screen.getByPlaceholderText('Écrire un message…')).toBeDisabled()
     })
 
     it('désactive les boutons quand disabled=true', () => {
@@ -271,7 +271,7 @@ describe('MessageInput', () => {
       renderWithProviders(<MessageInput {...defaultProps} />)
 
       const longText = 'a'.repeat(501)
-      fireEvent.change(screen.getByPlaceholderText('Écrivez un message...'), {
+      fireEvent.change(screen.getByPlaceholderText('Écrire un message…'), {
         target: { value: longText },
       })
 

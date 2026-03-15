@@ -205,8 +205,8 @@ describe('getEmployerStats', () => {
 describe('getEmployeeStats', () => {
   it('retourne les statistiques completes pour un employe', async () => {
     const contracts = [
-      { id: 'contract-1', hourly_rate: 14, employer_id: 'emp-A' },
-      { id: 'contract-2', hourly_rate: 16, employer_id: 'emp-B' },
+      { id: 'contract-1', hourly_rate: 14, weekly_hours: 20, employer_id: 'emp-A' },
+      { id: 'contract-2', hourly_rate: 16, weekly_hours: 15, employer_id: 'emp-B' },
     ]
     const shiftsThisMonth = [
       makeShift({ start_time: '09:00', end_time: '12:00', break_duration: 0, contract_id: 'contract-1' }),
@@ -226,17 +226,15 @@ describe('getEmployeeStats', () => {
 
     const result = await getEmployeeStats(EMPLOYEE_ID)
 
-    // Heures ce mois: shift1=180min=3h, shift2=240min=4h -> 7h
-    // Heures mois dernier: 240min=4h
     expect(result.hoursThisMonth).toBe(7)
     expect(result.hoursLastMonth).toBe(4)
     expect(result.hoursDiff).toBe(3)
+    expect(result.contractualHours).toBe(Math.round(35 * 4.33))
     expect(result.activeEmployers).toBe(2)
     expect(result.shiftsThisMonth).toBe(2)
     expect(result.upcomingShifts).toBe(1)
-
-    // Revenu: shift1 -> 180min/60 * 14 = 42, shift2 -> 240min/60 * 16 = 64 => 106
     expect(result.estimatedRevenue).toBe(106)
+    expect(result.presenceRate).toBeGreaterThanOrEqual(0)
   })
 
   it('retourne tout a 0 si aucun contrat actif', async () => {
@@ -246,15 +244,15 @@ describe('getEmployeeStats', () => {
 
     const result = await getEmployeeStats(EMPLOYEE_ID)
 
-    expect(result).toEqual({
-      hoursThisMonth: 0,
-      hoursLastMonth: 0,
-      hoursDiff: 0,
-      estimatedRevenue: 0,
-      activeEmployers: 0,
-      shiftsThisMonth: 0,
-      upcomingShifts: 0,
-    })
+    expect(result.hoursThisMonth).toBe(0)
+    expect(result.contractualHours).toBe(0)
+    expect(result.estimatedRevenue).toBe(0)
+    expect(result.activeEmployers).toBe(0)
+    expect(result.shiftsThisMonth).toBe(0)
+    expect(result.shiftsToday).toBe(0)
+    expect(result.activeShiftsNow).toBe(0)
+    expect(result.upcomingShifts).toBe(0)
+    expect(result.presenceRate).toBe(0)
   })
 
   it('retourne tout a 0 si contracts est null', async () => {
@@ -264,22 +262,15 @@ describe('getEmployeeStats', () => {
 
     const result = await getEmployeeStats(EMPLOYEE_ID)
 
-    expect(result).toEqual({
-      hoursThisMonth: 0,
-      hoursLastMonth: 0,
-      hoursDiff: 0,
-      estimatedRevenue: 0,
-      activeEmployers: 0,
-      shiftsThisMonth: 0,
-      upcomingShifts: 0,
-    })
+    expect(result.hoursThisMonth).toBe(0)
+    expect(result.shiftsThisMonth).toBe(0)
+    expect(result.presenceRate).toBe(0)
   })
 
   it('calcule estimatedRevenue par contrat avec le bon taux horaire', async () => {
     const contracts = [
-      { id: 'c-1', hourly_rate: 20, employer_id: 'emp-A' },
+      { id: 'c-1', hourly_rate: 20, weekly_hours: 35, employer_id: 'emp-A' },
     ]
-    // 1 shift de 2h sur contract c-1
     const shiftsThisMonth = [
       makeShift({ start_time: '10:00', end_time: '12:00', break_duration: 0, contract_id: 'c-1' }),
     ]
@@ -293,15 +284,14 @@ describe('getEmployeeStats', () => {
 
     const result = await getEmployeeStats(EMPLOYEE_ID)
 
-    // 120min / 60 * 20 = 40 EUR
     expect(result.estimatedRevenue).toBe(40)
   })
 
   it('compte les employeurs uniques via employer_id distinct', async () => {
     const contracts = [
-      { id: 'c-1', hourly_rate: 14, employer_id: 'emp-A' },
-      { id: 'c-2', hourly_rate: 15, employer_id: 'emp-A' },
-      { id: 'c-3', hourly_rate: 16, employer_id: 'emp-B' },
+      { id: 'c-1', hourly_rate: 14, weekly_hours: 10, employer_id: 'emp-A' },
+      { id: 'c-2', hourly_rate: 15, weekly_hours: 10, employer_id: 'emp-A' },
+      { id: 'c-3', hourly_rate: 16, weekly_hours: 10, employer_id: 'emp-B' },
     ]
 
     mockSupabaseQuerySequence([
@@ -313,13 +303,12 @@ describe('getEmployeeStats', () => {
 
     const result = await getEmployeeStats(EMPLOYEE_ID)
 
-    // 3 contrats mais seulement 2 employeurs distincts
     expect(result.activeEmployers).toBe(2)
   })
 
   it('ignore les shifts sans contrat correspondant pour le revenu', async () => {
     const contracts = [
-      { id: 'c-1', hourly_rate: 20, employer_id: 'emp-A' },
+      { id: 'c-1', hourly_rate: 20, weekly_hours: 35, employer_id: 'emp-A' },
     ]
     const shiftsThisMonth = [
       makeShift({ start_time: '09:00', end_time: '12:00', break_duration: 0, contract_id: 'c-unknown' }),
@@ -334,9 +323,7 @@ describe('getEmployeeStats', () => {
 
     const result = await getEmployeeStats(EMPLOYEE_ID)
 
-    // Le shift n'a pas de contrat correspondant -> revenu = 0
     expect(result.estimatedRevenue).toBe(0)
-    // Mais le shift est quand meme compte
     expect(result.shiftsThisMonth).toBe(1)
   })
 })

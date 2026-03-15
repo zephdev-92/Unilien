@@ -2,12 +2,12 @@
  * Page de tableau de bord de conformité
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import { DashboardLayout } from '@/components/dashboard'
 import { ComplianceDashboard } from '@/components/compliance'
 import { useAuth } from '@/hooks/useAuth'
-import { Center, Spinner } from '@chakra-ui/react'
+import { Box, Center, Flex, Spinner } from '@chakra-ui/react'
 import { getCaregiver } from '@/services/caregiverService'
 import type { Caregiver } from '@/types'
 
@@ -15,6 +15,8 @@ export function CompliancePage() {
   const { profile } = useAuth()
   const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
   const [caregiverLoaded, setCaregiverLoaded] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const refreshRef = useRef<(() => void) | null>(null)
 
   // Charger les données de l'aidant si nécessaire
   useEffect(() => {
@@ -30,7 +32,7 @@ export function CompliancePage() {
 
   if (!profile || isLoadingCaregiver) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Conformité">
         <Center py={12}>
           <Spinner size="xl" color="brand.500" />
         </Center>
@@ -52,9 +54,59 @@ export function CompliancePage() {
     return <Navigate to="/tableau-de-bord" replace />
   }
 
+  const topbarRight = (
+    <Flex gap={2}>
+      <Flex
+        as="button"
+        align="center"
+        gap={1}
+        px={3} py="6px"
+        borderRadius="6px"
+        borderWidth="1.5px"
+        borderColor="border.default"
+        bg="transparent"
+        color="#3D5166"
+        fontSize="13px"
+        fontWeight="600"
+        cursor="pointer"
+        _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+        onClick={() => setShowHelp(true)}
+        role="button"
+        aria-label="Aide"
+      >
+        <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <Box as="span" display={{ base: 'none', sm: 'inline' }}>Aide</Box>
+      </Flex>
+      <Flex
+        as="button"
+        align="center"
+        gap={1}
+        px={3} py="6px"
+        borderRadius="6px"
+        bg="#3D5166"
+        color="white"
+        fontSize="13px"
+        fontWeight="700"
+        cursor="pointer"
+        _hover={{ bg: '#2E3F50' }}
+        onClick={() => refreshRef.current?.()}
+        role="button"
+        aria-label="Actualiser"
+      >
+        <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        <Box as="span" display={{ base: 'none', sm: 'inline' }}>Actualiser</Box>
+      </Flex>
+    </Flex>
+  )
+
   return (
-    <DashboardLayout>
-      <ComplianceDashboard employerId={employerId} />
+    <DashboardLayout title="Conformité" topbarRight={topbarRight}>
+      <ComplianceDashboard
+        employerId={employerId}
+        showHelp={showHelp}
+        onShowHelp={setShowHelp}
+        onRefreshRef={refreshRef}
+      />
     </DashboardLayout>
   )
 }

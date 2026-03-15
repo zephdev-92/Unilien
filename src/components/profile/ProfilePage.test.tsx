@@ -143,9 +143,11 @@ describe('ProfilePage', () => {
       await waitFor(() => {
         expect(screen.getByTestId('profile-hero')).toBeInTheDocument()
         expect(screen.getByTestId('profile-jump-nav')).toBeInTheDocument()
-        expect(screen.getByText('Mon profil')).toBeInTheDocument()
-        expect(screen.getByText('Ma situation')).toBeInTheDocument()
-        expect(screen.getByText("Contacts d'urgence")).toBeInTheDocument()
+        // "Mon profil" apparait dans la jump nav + SectionTitle
+        expect(screen.getAllByText('Mon profil').length).toBeGreaterThanOrEqual(1)
+        // "Ma situation" apparait dans la jump nav + SectionTitle
+        expect(screen.getAllByText('Ma situation').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText("Contacts d'urgence").length).toBeGreaterThanOrEqual(1)
       })
     })
 

@@ -64,10 +64,10 @@ describe('ComplianceWidget', () => {
   })
 
   describe('État loading', () => {
-    it('affiche un spinner pendant le chargement', () => {
+    it('affiche le titre "Alertes conformité" pendant le chargement', () => {
       mockGetWeeklyComplianceOverview.mockReturnValue(new Promise(() => {}))
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
-      expect(screen.getByText('Conformité')).toBeInTheDocument()
+      expect(screen.getByText('Alertes conformité')).toBeInTheDocument()
     })
 
     it('appelle le service avec le bon employerId', async () => {
@@ -104,7 +104,7 @@ describe('ComplianceWidget', () => {
     it('affiche le lien vers /conformite', async () => {
       renderWithProviders(<ComplianceWidget employerId="employer-1" />)
       await waitFor(() => {
-        const link = screen.getByRole('link', { name: /tout voir/i })
+        const link = screen.getByRole('link', { name: /voir toute la conformité/i })
         expect(link).toHaveAttribute('href', '/conformite')
       })
     })

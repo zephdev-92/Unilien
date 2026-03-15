@@ -4,7 +4,6 @@ import {
   Flex,
   Box,
   Text,
-  SimpleGrid,
   Center,
   Spinner,
   Alert,
@@ -32,19 +31,62 @@ interface AuxiliaryTabProps {
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
-      p={4}
+      borderColor="border.default"
       boxShadow="sm"
+      p={4}
       textAlign="center"
     >
-      <Text fontSize="2xl" fontWeight="bold" color="brand.600" lineHeight={1}>
+      <Text fontSize="2xl" fontWeight="bold" color="brand.500" lineHeight={1}>
         {value}
       </Text>
-      <Text fontSize="sm" color="gray.500" mt={1}>
+      <Text fontSize="sm" color="text.muted" mt={1}>
         {label}
+      </Text>
+    </Box>
+  )
+}
+
+function AddCard({ onClick }: { onClick: () => void }) {
+  return (
+    <Box
+      as="button"
+      onClick={onClick}
+      borderRadius="12px"
+      border="2px dashed"
+      borderColor="border.default"
+      bg="transparent"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      minH={{ base: '120px', sm: '280px' }}
+      cursor="pointer"
+      transition="border-color 0.2s, background 0.2s"
+      _hover={{ borderColor: 'brand.400', bg: 'brand.50' }}
+      w="full"
+    >
+      <Box
+        w="48px"
+        h="48px"
+        borderRadius="full"
+        bg="border.default"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        mb={3}
+        transition="background 0.2s"
+        css={{ 'button:hover &': { background: 'var(--chakra-colors-brand-50)' } }}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" color="var(--chakra-colors-brand-500)">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </Box>
+      <Text color="text.muted" fontSize="sm" fontWeight={500}>
+        Ajouter un employé
       </Text>
     </Box>
   )
@@ -65,13 +107,11 @@ export function AuxiliaryTab({
 }: AuxiliaryTabProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Calculer les stats
   const totalWeeklyHours = auxiliaries
     .filter((a) => a.contractStatus === 'active')
     .reduce((sum, a) => sum + a.weeklyHours, 0)
   const activeContracts = auxiliaries.filter((a) => a.contractStatus === 'active').length
 
-  // Filtrer par recherche texte
   const displayedAuxiliaries = searchQuery
     ? filteredAuxiliaries.filter((a) => {
         const q = searchQuery.toLowerCase()
@@ -82,84 +122,89 @@ export function AuxiliaryTab({
     : filteredAuxiliaries
 
   return (
-    <Stack gap={6} pt={4}>
-      {/* Stats équipe */}
-      {!isLoading && auxiliaries.length > 0 && (
-        <SimpleGrid columns={{ base: 2, md: 4 }} gap={4}>
-          <StatCard value={String(activeAuxCount)} label={`Employe${activeAuxCount > 1 ? 's' : ''} actif${activeAuxCount > 1 ? 's' : ''}`} />
-          <StatCard value={String(inactiveAuxCount)} label="Inactif" />
-          <StatCard value={`${totalWeeklyHours}h`} label="Heures / semaine" />
-          <StatCard value={String(activeContracts)} label={`Contrat${activeContracts > 1 ? 's' : ''} actif${activeContracts > 1 ? 's' : ''}`} />
-        </SimpleGrid>
-      )}
-
-      {/* Toolbar: recherche + filtres + bouton ajouter */}
+    <Stack gap={5} pt={4}>
+      {/* Toolbar */}
       <Flex
+        gap={3}
         direction={{ base: 'column', sm: 'row' }}
         justify="space-between"
         align={{ base: 'stretch', sm: 'center' }}
-        gap={3}
       >
-        <Flex gap={3} flex={1} align="center" flexWrap="wrap">
-          {/* Recherche */}
+        <Flex gap={3} flex={1} align="center">
           <Box position="relative" flex={1} minW="200px" maxW="320px">
             <Box
               position="absolute"
               left={3}
               top="50%"
               transform="translateY(-50%)"
-              color="gray.400"
+              color="text.muted"
               pointerEvents="none"
               zIndex={1}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </Box>
             <Input
-              placeholder="Rechercher un employe..."
+              placeholder="Rechercher un employé…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               pl={9}
+              py="8px"
               size="sm"
-              borderRadius="md"
-              aria-label="Rechercher un employe"
+              borderRadius="full"
+              borderWidth="1.5px"
+              borderColor="border.default"
+              bg="bg.surface"
+              fontSize="sm"
+              _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 3px rgba(78,100,120,.1)' }}
+              aria-label="Rechercher un employé"
             />
           </Box>
-
-          {/* Filtres statut */}
-          <Flex gap={1}>
-            {(
-              [
-                { value: 'all', label: 'Tous', palette: 'blue' },
-                { value: 'active', label: 'Actifs', palette: 'blue' },
-                { value: 'on_leave', label: `En conge${onLeaveAuxCount > 0 ? ` (${onLeaveAuxCount})` : ''}`, palette: 'orange' },
-                { value: 'inactive', label: 'Inactifs', palette: 'blue' },
-              ] as const
-            ).map(({ value, label, palette }) => (
-              <AccessibleButton
-                key={value}
-                size="sm"
-                variant={filter === value ? 'solid' : 'outline'}
-                colorPalette={filter === value ? palette : 'gray'}
-                onClick={() => onFilterChange(value)}
-                minH="36px"
-              >
-                {label}
-              </AccessibleButton>
-            ))}
-          </Flex>
         </Flex>
 
-        <AccessibleButton
-          colorPalette="blue"
-          onClick={onAdd}
-          size="sm"
+        <Box
+          as="select"
+          value={filter}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+            onFilterChange(e.target.value as 'all' | 'active' | 'inactive' | 'on_leave')
+          }
+          borderRadius="10px"
+          borderWidth="1.5px"
+          borderColor="border.default"
+          bg="bg.surface"
+          px={3}
+          py="7px"
+          fontSize="sm"
+          color="text.default"
+          cursor="pointer"
+          minW="160px"
+          outline="none"
+          transition="border-color 0.15s"
+          _focus={{ borderColor: 'brand.500' }}
+          aria-label="Filtrer par statut"
         >
-          + Ajouter
-        </AccessibleButton>
+          <option value="all">Tous les statuts</option>
+          <option value="active">Actif ({activeAuxCount})</option>
+          <option value="on_leave">En congé ({onLeaveAuxCount})</option>
+          <option value="inactive">Inactif ({inactiveAuxCount})</option>
+        </Box>
       </Flex>
+
+      {/* Stats */}
+      {!isLoading && auxiliaries.length > 0 && (
+        <Box
+          display="grid"
+          gridTemplateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
+          gap={4}
+        >
+          <StatCard value={String(activeAuxCount)} label={`Employé${activeAuxCount > 1 ? 's' : ''} actif${activeAuxCount > 1 ? 's' : ''}`} />
+          <StatCard value={String(onLeaveAuxCount)} label="En congé" />
+          <StatCard value={`${totalWeeklyHours}h`} label="Heures ce mois" />
+          <StatCard value={String(activeContracts)} label={`Contrat${activeContracts > 1 ? 's' : ''} actif${activeContracts > 1 ? 's' : ''}`} />
+        </Box>
+      )}
 
       {/* Contenu */}
       {isLoading ? (
@@ -171,35 +216,50 @@ export function AuxiliaryTab({
           <Alert.Indicator />
           <Alert.Title>{error}</Alert.Title>
         </Alert.Root>
+      ) : displayedAuxiliaries.length === 0 && auxiliaries.length === 0 ? (
+        <EmptyState.Root>
+          <EmptyState.Content>
+            <EmptyState.Title>Aucun employé dans votre équipe</EmptyState.Title>
+            <EmptyState.Description>
+              Commencez par ajouter votre premier auxiliaire de vie pour gérer son planning et ses documents.
+            </EmptyState.Description>
+            <AccessibleButton bg="brand.500" color="white" _hover={{ bg: 'brand.600' }} size="sm" onClick={onAdd} mt={3}>
+              Ajouter un employé
+            </AccessibleButton>
+          </EmptyState.Content>
+        </EmptyState.Root>
       ) : displayedAuxiliaries.length === 0 ? (
         <EmptyState.Root>
           <EmptyState.Content>
             <EmptyState.Title>
-              {auxiliaries.length === 0
-                ? 'Aucun auxiliaire'
-                : searchQuery
-                  ? 'Aucun resultat'
-                  : 'Aucun auxiliaire avec ce filtre'}
+              {searchQuery ? 'Aucun résultat' : 'Aucun employé avec ce filtre'}
             </EmptyState.Title>
             <EmptyState.Description>
-              {auxiliaries.length === 0
-                ? 'Ajoutez votre premier auxiliaire pour commencer a planifier les interventions.'
-                : searchQuery
-                  ? `Aucun employe ne correspond a "${searchQuery}".`
-                  : 'Aucun auxiliaire ne correspond aux filtres selectionnes.'}
+              {searchQuery
+                ? `Aucun employé ne correspond à "${searchQuery}".`
+                : 'Aucun auxiliaire ne correspond aux filtres sélectionnés.'}
             </EmptyState.Description>
           </EmptyState.Content>
         </EmptyState.Root>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+        <Box
+          display="grid"
+          gridTemplateColumns="repeat(auto-fill, minmax(260px, 1fr))"
+          gap={5}
+          role="list"
+        >
           {displayedAuxiliaries.map((auxiliary) => (
-            <AuxiliaryCard
-              key={auxiliary.contractId}
-              auxiliary={auxiliary}
-              onClick={() => onSelect(auxiliary)}
-            />
+            <Box key={auxiliary.contractId} role="listitem">
+              <AuxiliaryCard
+                auxiliary={auxiliary}
+                onClick={() => onSelect(auxiliary)}
+              />
+            </Box>
           ))}
-        </SimpleGrid>
+          <Box role="listitem">
+            <AddCard onClick={onAdd} />
+          </Box>
+        </Box>
       )}
     </Stack>
   )

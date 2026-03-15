@@ -65,45 +65,49 @@ export function AnomaliesPanel({ todayShifts, historyShifts }: AnomaliesPanelPro
     return result
   }, [todayShifts, historyShifts])
 
-  if (anomalies.length === 0) return null
-
   return (
     <Box
-      bg="white"
-      borderRadius="xl"
+      bg="bg.surface"
+      borderRadius="md"
       borderWidth="1px"
-      borderColor="gray.200"
-      p={5}
-      boxShadow="sm"
+      borderColor="border.default"
+      boxShadow="0 2px 8px rgba(78,100,120,.09)"
+      overflow="hidden"
     >
-      <Text fontSize="sm" fontWeight="semibold" color="gray.700" mb={3}>
-        Anomalies détectées
-      </Text>
-
-      <Stack gap={2.5}>
-        {anomalies.map((anomaly) => (
-          <Flex
-            key={anomaly.id}
-            align="center"
-            gap={2.5}
-            p={3}
-            borderRadius="md"
-            bg={anomaly.severity === 'danger' ? 'red.50' : 'blue.50'}
-            borderWidth="1px"
-            borderColor={anomaly.severity === 'danger' ? 'red.200' : 'blue.200'}
-          >
-            <Text flexShrink={0} aria-hidden="true">
-              {anomaly.severity === 'danger' ? '⚠️' : 'ℹ️'}
-            </Text>
-            <Text
-              fontSize="sm"
-              color={anomaly.severity === 'danger' ? 'red.700' : 'blue.700'}
-            >
-              {anomaly.message}
-            </Text>
-          </Flex>
-        ))}
-      </Stack>
+      <Box px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+        <Text fontFamily="heading" fontSize="md" fontWeight="700">Anomalies détectées</Text>
+      </Box>
+      <Box p={4}>
+        {anomalies.length === 0 ? (
+          <Text fontSize="sm" color="#3D5166">Aucune anomalie détectée.</Text>
+        ) : (
+          <Stack gap={3}>
+            {anomalies.map((anomaly) => (
+              <Flex
+                key={anomaly.id}
+                align="center"
+                gap={2.5}
+                px={3}
+                py={2.5}
+                borderRadius="md"
+                borderLeftWidth="3px"
+                borderLeftColor={anomaly.severity === 'danger' ? '#991B1B' : '#3D5166'}
+                bg={anomaly.severity === 'danger' ? '#FEF2F2' : '#EDF1F5'}
+                color={anomaly.severity === 'danger' ? '#991B1B' : '#3D5166'}
+              >
+                <Box flexShrink={0} mt="1px">
+                  {anomaly.severity === 'danger' ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16} aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  )}
+                </Box>
+                <Text fontSize="sm" fontWeight="500">{anomaly.message}</Text>
+              </Flex>
+            ))}
+          </Stack>
+        )}
+      </Box>
     </Box>
   )
 }

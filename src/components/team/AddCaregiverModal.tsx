@@ -173,20 +173,20 @@ export function AddCaregiverModal({
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
-            borderRadius="xl"
+            bg="bg.surface"
+            borderRadius="12px"
             maxW="500px"
             w="90vw"
             maxH="90vh"
             overflow="auto"
           >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Dialog.Title fontSize="xl" fontWeight="bold">
+            <Dialog.Header p={6} borderBottomWidth="1px" borderColor="border.default">
+              <Dialog.Title fontSize="lg" fontWeight={700} color="brand.500">
                 Ajouter un aidant familial
               </Dialog.Title>
               <Dialog.CloseTrigger position="absolute" top={4} right={4} asChild>
-                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer">
-                  ✕
+                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer" color="brand.500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </AccessibleButton>
               </Dialog.CloseTrigger>
             </Dialog.Header>
@@ -211,12 +211,14 @@ export function AddCaregiverModal({
                       onClick={handleSearch}
                       loading={isSearching}
                       loadingText="..."
-                      colorPalette="blue"
+                      bg="brand.500"
+                      color="white"
+                      _hover={{ bg: 'brand.600' }}
                     >
                       Rechercher
                     </AccessibleButton>
                   </Flex>
-                  <Text fontSize="sm" color="gray.500" mt={1}>
+                  <Text fontSize="sm" color="text.muted" mt={1}>
                     L'aidant doit avoir un compte Unilien avec le rôle "Aidant familial"
                   </Text>
                 </Box>
@@ -227,7 +229,7 @@ export function AddCaregiverModal({
                     bg="red.50"
                     borderWidth="1px"
                     borderColor="red.200"
-                    borderRadius="md"
+                    borderRadius="10px"
                     p={3}
                   >
                     <Text color="red.700" fontSize="sm">
@@ -243,7 +245,7 @@ export function AddCaregiverModal({
                       bg="green.50"
                       borderWidth="1px"
                       borderColor="green.200"
-                      borderRadius="md"
+                      borderRadius="10px"
                       p={4}
                     >
                       <Flex align="center" gap={3}>
@@ -256,7 +258,7 @@ export function AddCaregiverModal({
                           <Text fontWeight="semibold">
                             {foundCaregiver.firstName} {foundCaregiver.lastName}
                           </Text>
-                          <Text fontSize="sm" color="gray.600">
+                          <Text fontSize="sm" color="text.muted">
                             {foundCaregiver.email}
                           </Text>
                         </Box>
@@ -273,9 +275,9 @@ export function AddCaregiverModal({
                         w="100%"
                         p={2}
                         borderWidth="1px"
-                        borderRadius="md"
-                        borderColor="gray.200"
-                        bg="white"
+                        borderRadius="10px"
+                        borderColor="border.default"
+                        bg="bg.surface"
                         value={legalStatus}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                           handleLegalStatusChange(e.target.value as CaregiverLegalStatus | 'none')
@@ -287,7 +289,7 @@ export function AddCaregiverModal({
                           </option>
                         ))}
                       </Box>
-                      <Text fontSize="xs" color="gray.500" mt={1}>
+                      <Text fontSize="xs" color="text.muted" mt={1}>
                         Important : les tuteurs et curateurs ont automatiquement tous les droits
                       </Text>
                     </Box>
@@ -295,16 +297,16 @@ export function AddCaregiverModal({
                     {/* Message si permissions verrouillées */}
                     {permissionsLocked && (
                       <Box
-                        bg="blue.50"
+                        bg="brand.50"
                         borderWidth="1px"
-                        borderColor="blue.200"
-                        borderRadius="md"
+                        borderColor="brand.200"
+                        borderRadius="10px"
                         p={3}
                       >
-                        <Text color="blue.700" fontSize="sm" fontWeight="medium">
+                        <Text color="brand.700" fontSize="sm" fontWeight="medium">
                           En tant que {legalStatus === 'tutor' ? 'tuteur' : 'curateur'}, cet aidant aura automatiquement tous les droits.
                         </Text>
-                        <Text color="blue.600" fontSize="xs" mt={1}>
+                        <Text color="brand.600" fontSize="xs" mt={1}>
                           Ces permissions ne pourront pas être modifiées après l'ajout.
                         </Text>
                       </Box>
@@ -326,7 +328,7 @@ export function AddCaregiverModal({
                           <Checkbox.Label>
                             <Box>
                               <Text>Voir le planning</Text>
-                              <Text fontSize="xs" color="gray.500">
+                              <Text fontSize="xs" color="text.muted">
                                 Consulter les interventions prévues
                               </Text>
                             </Box>
@@ -343,7 +345,7 @@ export function AddCaregiverModal({
                           <Checkbox.Label>
                             <Box>
                               <Text>Modifier le planning</Text>
-                              <Text fontSize="xs" color="gray.500">
+                              <Text fontSize="xs" color="text.muted">
                                 Ajouter ou modifier des interventions
                               </Text>
                             </Box>
@@ -360,7 +362,7 @@ export function AddCaregiverModal({
                           <Checkbox.Label>
                             <Box>
                               <Text>Voir le cahier de liaison</Text>
-                              <Text fontSize="xs" color="gray.500">
+                              <Text fontSize="xs" color="text.muted">
                                 Lire les messages et notes
                               </Text>
                             </Box>
@@ -377,7 +379,7 @@ export function AddCaregiverModal({
                           <Checkbox.Label>
                             <Box>
                               <Text>Écrire dans le cahier de liaison</Text>
-                              <Text fontSize="xs" color="gray.500">
+                              <Text fontSize="xs" color="text.muted">
                                 Ajouter des messages et notes
                               </Text>
                             </Box>
@@ -394,7 +396,7 @@ export function AddCaregiverModal({
                           <Checkbox.Label>
                             <Box>
                               <Text>Gérer l'équipe</Text>
-                              <Text fontSize="xs" color="gray.500">
+                              <Text fontSize="xs" color="text.muted">
                                 Ajouter ou retirer des membres de l'équipe
                               </Text>
                             </Box>
@@ -411,7 +413,7 @@ export function AddCaregiverModal({
                           <Checkbox.Label>
                             <Box>
                               <Text>Exporter les données</Text>
-                              <Text fontSize="xs" color="gray.500">
+                              <Text fontSize="xs" color="text.muted">
                                 Télécharger les rapports et documents
                               </Text>
                             </Box>
@@ -424,13 +426,15 @@ export function AddCaregiverModal({
               </Stack>
             </Dialog.Body>
 
-            <Dialog.Footer p={6} borderTopWidth="1px">
+            <Dialog.Footer p={6} borderTopWidth="1px" borderColor="border.default">
               <Flex gap={3} justify="flex-end">
-                <AccessibleButton variant="ghost" onClick={handleClose}>
+                <AccessibleButton variant="ghost" onClick={handleClose} color="brand.500">
                   Annuler
                 </AccessibleButton>
                 <AccessibleButton
-                  colorPalette="blue"
+                  bg="brand.500"
+                  color="white"
+                  _hover={{ bg: 'brand.600' }}
                   onClick={handleSubmit}
                   disabled={!foundCaregiver}
                   loading={isSubmitting}

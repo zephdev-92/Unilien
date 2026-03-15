@@ -1,22 +1,20 @@
 import { useState } from 'react'
 import {
-  Dialog,
-  Portal,
   Box,
   Stack,
   Flex,
   Text,
-  Badge,
   Separator,
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, StatusPill } from '@/components/ui'
+import { PlanningModal } from './PlanningModal'
 import { updateAbsenceStatus, cancelAbsence } from '@/services/absenceService'
 import type { Absence, UserRole } from '@/types'
 import {
   ABSENCE_TYPE_LABELS as absenceTypeLabels,
-  ABSENCE_STATUS_COLORS as statusColors,
+  ABSENCE_STATUS_VARIANTS as statusVariants,
   ABSENCE_STATUS_LABELS as statusLabels,
 } from '@/lib/constants/statusMaps'
 
@@ -93,48 +91,46 @@ export function AbsenceDetailModal({
   const canEmployerAct = userRole === 'employer' && absence.status === 'pending'
   const canEmployeeCancel = userRole === 'employee' && absence.status === 'pending'
 
-  return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
-      <Portal>
-        <Dialog.Backdrop bg="blackAlpha.600" />
-        <Dialog.Positioner>
-          <Dialog.Content
-            bg="white"
-            borderRadius="xl"
-            maxW="500px"
-            w="95vw"
-            maxH="90vh"
-            overflow="auto"
-          >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Flex justify="space-between" align="center" pr={8}>
-                <Dialog.Title fontSize="xl" fontWeight="bold">
-                  Demande d'absence
-                </Dialog.Title>
-                <Badge colorPalette={statusColors[absence.status]} size="lg">
-                  {statusLabels[absence.status]}
-                </Badge>
-              </Flex>
-              <Dialog.CloseTrigger
-                position="absolute"
-                top={4}
-                right={4}
-                asChild
-              >
-                <AccessibleButton
-                  variant="ghost"
-                  size="sm"
-                  accessibleLabel="Fermer"
-                >
-                  X
-                </AccessibleButton>
-              </Dialog.CloseTrigger>
-            </Dialog.Header>
+  const footerContent = (
+    <Flex gap={3} justify="flex-end" w="full">
+      {canEmployerAct && (
+        <>
+          <AccessibleButton variant="outline" bg="transparent" color="#991B1B" borderWidth="1.5px" borderColor="#FECACA" _hover={{ borderColor: '#991B1B', bg: '#FEF2F2' }} onClick={handleReject} disabled={isSubmitting}>
+            Refuser
+          </AccessibleButton>
+          <AccessibleButton bg="#16a34a" color="white" _hover={{ bg: '#15803d', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={handleApprove} loading={isSubmitting}>
+            Approuver
+          </AccessibleButton>
+        </>
+      )}
+      {canEmployeeCancel && (
+        <AccessibleButton variant="outline" bg="transparent" color="#991B1B" borderWidth="1.5px" borderColor="#FECACA" _hover={{ borderColor: '#991B1B', bg: '#FEF2F2' }} onClick={handleCancel} loading={isSubmitting}>
+          Annuler ma demande
+        </AccessibleButton>
+      )}
+      {!canEmployerAct && !canEmployeeCancel && (
+        <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose}>
+          Fermer
+        </AccessibleButton>
+      )}
+    </Flex>
+  )
 
-            <Dialog.Body p={6}>
+  return (
+    <PlanningModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Demande d'absence"
+      titleRight={
+        <StatusPill variant={statusVariants[absence.status]}>
+          {statusLabels[absence.status]}
+        </StatusPill>
+      }
+      footer={footerContent}
+    >
               <Stack gap={4}>
                 <Box>
-                  <Text fontSize="sm" color="gray.500" mb={1}>
+                  <Text fontSize="sm" color="text.muted" mb={1}>
                     Type d'absence
                   </Text>
                   <Text fontSize="lg" fontWeight="semibold">
@@ -145,7 +141,7 @@ export function AbsenceDetailModal({
                 <Separator />
 
                 <Box>
-                  <Text fontSize="sm" color="gray.500" mb={1}>
+                  <Text fontSize="sm" color="text.muted" mb={1}>
                     {isSameDay ? 'Date' : 'Période'}
                   </Text>
                   <Text fontSize="md">
@@ -161,7 +157,7 @@ export function AbsenceDetailModal({
                   <>
                     <Separator />
                     <Box>
-                      <Text fontSize="sm" color="gray.500" mb={1}>
+                      <Text fontSize="sm" color="text.muted" mb={1}>
                         Motif
                       </Text>
                       <Text fontSize="md" whiteSpace="pre-wrap">
@@ -175,7 +171,7 @@ export function AbsenceDetailModal({
                   <>
                     <Separator />
                     <Box>
-                      <Text fontSize="sm" color="gray.500" mb={1}>
+                      <Text fontSize="sm" color="text.muted" mb={1}>
                         Arrêt de travail
                       </Text>
                       {absence.justificationUrl ? (
@@ -184,7 +180,7 @@ export function AbsenceDetailModal({
                           gap={3}
                           p={3}
                           bg="green.50"
-                          borderRadius="md"
+                          borderRadius="10px"
                           borderWidth="1px"
                           borderColor="green.200"
                         >
@@ -219,7 +215,7 @@ export function AbsenceDetailModal({
                           gap={3}
                           p={3}
                           bg="orange.50"
-                          borderRadius="md"
+                          borderRadius="10px"
                           borderWidth="1px"
                           borderColor="orange.200"
                         >
@@ -242,7 +238,7 @@ export function AbsenceDetailModal({
                 <Separator />
 
                 <Box>
-                  <Text fontSize="sm" color="gray.500" mb={1}>
+                  <Text fontSize="sm" color="text.muted" mb={1}>
                     Demande créée le
                   </Text>
                   <Text fontSize="md">
@@ -251,60 +247,12 @@ export function AbsenceDetailModal({
                 </Box>
 
                 {submitError && (
-                  <Box p={4} bg="red.50" borderRadius="md">
+                  <Box p={4} bg="red.50" borderRadius="10px">
                     <Text color="red.700">{submitError}</Text>
                   </Box>
                 )}
               </Stack>
-            </Dialog.Body>
-
-            <Dialog.Footer p={6} borderTopWidth="1px">
-              <Flex gap={3} justify="flex-end" w="full">
-                {canEmployerAct && (
-                  <>
-                    <AccessibleButton
-                      variant="outline"
-                      colorPalette="red"
-                      onClick={handleReject}
-                      disabled={isSubmitting}
-                    >
-                      Refuser
-                    </AccessibleButton>
-                    <AccessibleButton
-                      colorPalette="green"
-                      onClick={handleApprove}
-                      loading={isSubmitting}
-                    >
-                      Approuver
-                    </AccessibleButton>
-                  </>
-                )}
-
-                {canEmployeeCancel && (
-                  <AccessibleButton
-                    variant="outline"
-                    colorPalette="red"
-                    onClick={handleCancel}
-                    loading={isSubmitting}
-                  >
-                    Annuler ma demande
-                  </AccessibleButton>
-                )}
-
-                {!canEmployerAct && !canEmployeeCancel && (
-                  <AccessibleButton
-                    variant="outline"
-                    onClick={onClose}
-                  >
-                    Fermer
-                  </AccessibleButton>
-                )}
-              </Flex>
-            </Dialog.Footer>
-          </Dialog.Content>
-        </Dialog.Positioner>
-      </Portal>
-    </Dialog.Root>
+    </PlanningModal>
   )
 }
 

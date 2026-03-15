@@ -128,7 +128,7 @@ function NotificationItem({
     <Box
       as="article"
       bg={notification.isRead ? 'white' : 'blue.50'}
-      borderRadius="md"
+      borderRadius="10px"
       p={3}
       borderLeftWidth="3px"
       borderLeftColor={`${config.color}.500`}
@@ -175,7 +175,7 @@ function NotificationItem({
 
           <Text
             fontSize="sm"
-            color="gray.600"
+            color="text.muted"
             lineClamp={2}
             cursor={notification.actionUrl ? 'pointer' : 'default'}
             onClick={notification.actionUrl ? onClick : undefined}
@@ -183,7 +183,7 @@ function NotificationItem({
             {sanitizeText(notification.message)}
           </Text>
 
-          <Text fontSize="xs" color="gray.500" mt={1}>
+          <Text fontSize="xs" color="text.muted" mt={1}>
             {timeAgo}
           </Text>
         </Box>
@@ -199,7 +199,7 @@ function NotificationItem({
                 e.stopPropagation()
                 onMarkAsRead()
               }}
-              color="blue.500"
+              color="brand.500"
             >
               <CheckIcon />
             </IconButton>
@@ -212,7 +212,7 @@ function NotificationItem({
               e.stopPropagation()
               onDismiss()
             }}
-            color="gray.500"
+            color="text.muted"
             _hover={{ color: 'red.500' }}
           >
             <CloseIcon />
@@ -301,11 +301,11 @@ export function NotificationsPanel({
       w={{ base: '100vw', sm: '380px' }}
       maxW="100vw"
       maxH="500px"
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       boxShadow="xl"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       overflow="hidden"
       zIndex={1000}
       role="dialog"
@@ -315,16 +315,16 @@ export function NotificationsPanel({
       <Flex
         px={4}
         py={3}
-        bg="gray.50"
+        bg="bg.page"
         borderBottomWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         justify="space-between"
         align="center"
       >
         <Flex align="center" gap={2}>
           <Text fontWeight="semibold">Notifications</Text>
           {unreadCount > 0 && (
-            <Badge colorPalette="blue" borderRadius="full">
+            <Badge colorPalette="brand" borderRadius="full">
               {unreadCount} non lue{unreadCount > 1 ? 's' : ''}
             </Badge>
           )}
@@ -349,7 +349,7 @@ export function NotificationsPanel({
               size="sm"
               onClick={onDismissAll}
               title="Effacer toutes les notifications"
-              color="gray.500"
+              color="text.muted"
               _hover={{ color: 'red.500' }}
             >
               <TrashIcon />
@@ -370,13 +370,13 @@ export function NotificationsPanel({
       <Box maxH="400px" overflowY="auto" p={2}>
         {isLoading ? (
           <Center py={8}>
-            <Spinner size="md" color="blue.500" />
+            <Spinner size="md" color="brand.500" />
           </Center>
         ) : !hasNotifications ? (
           <Center py={8}>
             <Box textAlign="center">
               <Text fontSize="3xl" mb={2}>🔔</Text>
-              <Text color="gray.500" fontSize="sm">
+              <Text color="text.muted" fontSize="sm">
                 Aucune notification
               </Text>
             </Box>

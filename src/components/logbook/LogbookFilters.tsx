@@ -1,5 +1,4 @@
-import { Box, Flex, Checkbox, Input } from '@chakra-ui/react'
-import { AccessibleSelect, AccessibleButton } from '@/components/ui'
+import { Box, Flex, Input } from '@chakra-ui/react'
 import type { LogEntryFilters } from '@/services/logbookService'
 import type { LogEntry, UserRole } from '@/types'
 
@@ -10,20 +9,15 @@ interface LogbookFiltersProps {
   onFiltersChange: (filters: LogEntryFilters) => void
 }
 
-const categoryPills: { value: LogEntry['type']; label: string; palette: string }[] = [
-  { value: 'info', label: 'Observation', palette: 'blue' },
-  { value: 'incident', label: 'Incident', palette: 'red' },
-  { value: 'alert', label: 'Alerte', palette: 'orange' },
-  { value: 'instruction', label: 'Instruction', palette: 'purple' },
+const categoryOptions: { value: string; label: string }[] = [
+  { value: '', label: 'Toutes les catégories' },
+  { value: 'info', label: 'Observation' },
+  { value: 'incident', label: 'Incident' },
+  { value: 'alert', label: 'Alerte' },
+  { value: 'instruction', label: 'Instruction' },
 ]
 
-const importanceOptions = [
-  { value: '', label: 'Toutes' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'urgent', label: 'Urgent' },
-]
-
-const authorRoleOptions = [
+const authorRoleOptions: { value: string; label: string }[] = [
   { value: '', label: 'Tous les auteurs' },
   { value: 'employer', label: 'Employeur' },
   { value: 'employee', label: 'Auxiliaire' },
@@ -31,23 +25,11 @@ const authorRoleOptions = [
 ]
 
 export function LogbookFilters({ filters, searchQuery, onSearchChange, onFiltersChange }: LogbookFiltersProps) {
-  const handleCategoryToggle = (type: LogEntry['type']) => {
-    const current = filters.type || []
-    const isActive = current.includes(type)
-    const newTypes = isActive
-      ? current.filter((t) => t !== type)
-      : [...current, type]
-    onFiltersChange({
-      ...filters,
-      type: newTypes.length > 0 ? newTypes : undefined,
-    })
-  }
-
-  const handleImportanceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value
     onFiltersChange({
       ...filters,
-      importance: value ? (value as LogEntry['importance']) : undefined,
+      type: value ? [value as LogEntry['type']] : undefined,
     })
   }
 
@@ -59,126 +41,81 @@ export function LogbookFilters({ filters, searchQuery, onSearchChange, onFilters
     })
   }
 
-  const handleReset = () => {
-    onFiltersChange({})
-    onSearchChange('')
-  }
-
-  const hasActiveFilters =
-    filters.type ||
-    filters.importance ||
-    filters.authorRole ||
-    filters.unreadOnly ||
-    searchQuery
-
   return (
-    <Box
-      bg="white"
-      borderRadius="lg"
-      borderWidth="1px"
-      borderColor="gray.200"
-      p={4}
+    <Flex
+      justify="space-between"
+      align="center"
       mb={4}
+      gap={3}
+      flexWrap="wrap"
     >
-      {/* Search input */}
-      <Box position="relative" mb={4}>
+      {/* Search — proto: toolbar-left > search-wrap */}
+      <Box position="relative" w={{ base: '100%', md: 'auto' }} minW="220px">
         <Box
           position="absolute"
           left={3}
           top="50%"
           transform="translateY(-50%)"
-          color="gray.400"
+          color="text.muted"
           pointerEvents="none"
           zIndex={1}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </Box>
         <Input
-          placeholder="Rechercher dans le journal..."
+          placeholder="Rechercher dans le journal…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          pl={9}
+          pl="calc(12px + 20px)"
+          py="8px"
           size="sm"
-          borderRadius="md"
+          borderRadius="full"
+          borderWidth="1.5px"
+          borderColor="border.default"
+          bg="bg.surface"
+          fontSize="sm"
+          _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 3px rgba(78,100,120,.1)' }}
           aria-label="Rechercher dans le journal"
         />
       </Box>
 
-      {/* Category pills */}
-      <Flex gap={2} mb={4} flexWrap="wrap">
-        {categoryPills.map(({ value, label, palette }) => {
-          const isActive = filters.type?.includes(value)
-          return (
-            <AccessibleButton
-              key={value}
-              size="sm"
-              variant={isActive ? 'solid' : 'outline'}
-              colorPalette={isActive ? palette : 'gray'}
-              onClick={() => handleCategoryToggle(value)}
-              minH="32px"
-            >
-              {label}
-            </AccessibleButton>
-          )
-        })}
+      {/* Dropdowns — proto: toolbar-right > 2 selects */}
+      <Flex gap={3} align="center">
+        <Box
+          as="select"
+          px={3} py="7px"
+          borderWidth="1.5px" borderColor="border.default" borderRadius="10px"
+          fontSize="14px" fontWeight="500" color="brand.500"
+          bg="bg.surface" cursor="pointer"
+          _hover={{ borderColor: 'brand.100' }}
+          value={filters.authorRole || ''}
+          onChange={handleAuthorRoleChange}
+          aria-label="Filtrer par auteur"
+        >
+          {authorRoleOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </Box>
+        <Box
+          as="select"
+          px={3} py="7px"
+          borderWidth="1.5px" borderColor="border.default" borderRadius="10px"
+          fontSize="14px" fontWeight="500" color="brand.500"
+          bg="bg.surface" cursor="pointer"
+          _hover={{ borderColor: 'brand.100' }}
+          value={filters.type?.[0] || ''}
+          onChange={handleCategoryChange}
+          aria-label="Filtrer par catégorie"
+        >
+          {categoryOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </Box>
       </Flex>
-
-      {/* Secondary filters */}
-      <Flex
-        direction={{ base: 'column', md: 'row' }}
-        gap={4}
-        align={{ base: 'stretch', md: 'flex-end' }}
-        wrap="wrap"
-      >
-        <Box flex="1" minW="150px">
-          <AccessibleSelect
-            label="Importance"
-            options={importanceOptions}
-            value={filters.importance || ''}
-            onChange={handleImportanceChange}
-          />
-        </Box>
-
-        <Box flex="1" minW="150px">
-          <AccessibleSelect
-            label="Auteur"
-            options={authorRoleOptions}
-            value={filters.authorRole || ''}
-            onChange={handleAuthorRoleChange}
-          />
-        </Box>
-
-        <Box minW="150px" py={2}>
-          <Checkbox.Root
-            checked={filters.unreadOnly || false}
-            onCheckedChange={(e) => {
-              onFiltersChange({
-                ...filters,
-                unreadOnly: e.checked === true,
-              })
-            }}
-          >
-            <Checkbox.HiddenInput />
-            <Checkbox.Control />
-            <Checkbox.Label>Non lues uniquement</Checkbox.Label>
-          </Checkbox.Root>
-        </Box>
-
-        {hasActiveFilters && (
-          <AccessibleButton
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            accessibleLabel="Reinitialiser les filtres"
-          >
-            Reinitialiser
-          </AccessibleButton>
-        )}
-      </Flex>
-    </Box>
+    </Flex>
   )
 }
 

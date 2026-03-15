@@ -178,6 +178,7 @@ export interface Shift {
   contractId: string
   employeeId?: string // Disponible quand le shift est chargé avec JOIN contract
   employeeName?: string // Disponible quand le shift est chargé avec JOIN contract+profile
+  employeeAvatarUrl?: string // Avatar de l'employé (JOIN contract+profile)
   date: Date
   startTime: string
   endTime: string
@@ -194,6 +195,7 @@ export interface Shift {
   computedPay: ComputedPay
   validatedByEmployer: boolean
   validatedByEmployee: boolean
+  lateEntry?: boolean
   createdAt: Date
   updatedAt: Date
 }

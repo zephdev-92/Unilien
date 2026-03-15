@@ -2,7 +2,6 @@ import { forwardRef } from 'react'
 import {
   Box,
   IconButton,
-  Badge,
   VisuallyHidden,
 } from '@chakra-ui/react'
 
@@ -25,11 +24,11 @@ export interface NotificationBellProps {
 // BELL ICON
 // ============================================
 
-function BellIcon({ hasUnread }: { hasUnread: boolean }) {
+function BellIcon() {
   return (
     <svg
-      width="24"
-      height="24"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -39,22 +38,6 @@ function BellIcon({ hasUnread }: { hasUnread: boolean }) {
     >
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      {hasUnread && (
-        <circle
-          cx="18"
-          cy="6"
-          r="3"
-          fill="currentColor"
-          stroke="none"
-        >
-          <animate
-            attributeName="opacity"
-            values="1;0.5;1"
-            dur="2s"
-            repeatCount="indefinite"
-          />
-        </circle>
-      )}
     </svg>
   )
 }
@@ -79,12 +62,18 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
           }
           aria-expanded={isOpen}
           aria-haspopup="menu"
-          variant="ghost"
+          variant="outline"
           onClick={onClick}
-          color={hasUnread ? 'blue.500' : 'gray.600'}
-          minW="44px"
-          minH="44px"
-          borderRadius="full"
+          bg="#F3F6F9"
+          color="#3D5166"
+          borderWidth="1.5px"
+          borderColor="#D8E3ED"
+          minW="38px"
+          minH="38px"
+          w="38px"
+          h="38px"
+          borderRadius="10px"
+          _hover={{ bg: '#EDF1F5', borderColor: '#C2D2E0' }}
           position="relative"
           css={{
             // Subtle animation when has unread
@@ -109,24 +98,28 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
             },
           }}
         >
-          <BellIcon hasUnread={hasUnread} />
+          <BellIcon />
         </IconButton>
 
-        {/* Badge */}
+        {/* Badge count */}
         {hasUnread && !isLoading && (
-          <Badge
-            colorPalette="red"
+          <Box
+            as="span"
             position="absolute"
-            top="-2px"
-            right="-2px"
-            borderRadius="full"
-            minW="20px"
-            h="20px"
-            fontSize="xs"
-            fontWeight="bold"
+            top="-4px"
+            right="-4px"
             display="flex"
             alignItems="center"
             justifyContent="center"
+            minW="20px"
+            h="20px"
+            px="5px"
+            borderRadius="full"
+            bg="#E53E3E"
+            color="white"
+            fontSize="11px"
+            fontWeight="700"
+            lineHeight="1"
             pointerEvents="none"
             css={{
               animation: 'badge-pop 0.3s ease-out',
@@ -141,7 +134,7 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
             }}
           >
             {displayCount}
-          </Badge>
+          </Box>
         )}
 
         {/* Screen reader announcement */}

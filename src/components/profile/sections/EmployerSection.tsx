@@ -55,6 +55,7 @@ type EmployerFormData = z.infer<typeof employerSchema>
 interface EmployerSectionProps {
   employer?: Employer
   onSave: (data: Partial<Employer>) => Promise<void>
+  section?: 'all' | 'situation' | 'emergency'
 }
 
 // Mock data for development
@@ -76,7 +77,7 @@ const defaultEmployer: Partial<Employer> = {
   emergencyContacts: [],
 }
 
-export function EmployerSection({ employer = defaultEmployer as Employer, onSave }: EmployerSectionProps) {
+export function EmployerSection({ employer = defaultEmployer as Employer, onSave, section = 'all' }: EmployerSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(
@@ -153,14 +154,18 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
     setEmergencyContacts(updated)
   }
 
+  const showSituation = section === 'all' || section === 'situation'
+  const showEmergency = section === 'all' || section === 'emergency'
+
   return (
     <Stack gap={6}>
       {/* Adresse */}
+      {showSituation && (
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Text fontSize="xl" fontWeight="semibold" mb={6}>
@@ -203,13 +208,15 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           </Stack>
         </Box>
       </Box>
+      )}
 
       {/* Informations médicales */}
+      {showSituation && (
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Text fontSize="xl" fontWeight="semibold" mb={6}>
@@ -240,19 +247,19 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
                 type="button"
                 w="full"
                 p={3}
-                bg="gray.50"
-                borderRadius="md"
+                bg="bg.page"
+                borderRadius="10px"
                 borderWidth="1px"
-                borderColor="gray.200"
+                borderColor="border.default"
                 cursor="pointer"
-                _hover={{ bg: 'gray.100' }}
+                _hover={{ bg: 'bg.surface.hover' }}
                 textAlign="left"
               >
                 <Flex justify="space-between" align="center">
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                  <Text fontSize="sm" fontWeight="medium" color="text.secondary">
                     Besoins, CESU & convention
                   </Text>
-                  <Box color="gray.400">
+                  <Box color="text.muted">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -278,8 +285,8 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
                   {...register('cesuNumber')}
                 />
 
-                <Box p={3} bg="blue.50" borderRadius="md" borderWidth="1px" borderColor="blue.200">
-                  <Text fontSize="sm" color="blue.800">
+                <Box p={3} bg="brand.50" borderRadius="10px" borderWidth="1px" borderColor="brand.200">
+                  <Text fontSize="sm" color="brand.700">
                     <Text as="span" fontWeight="medium">Convention applicable :</Text>{' '}
                     IDCC 3239 — Convention collective du particulier employeur
                   </Text>
@@ -292,12 +299,12 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
             justify="space-between"
             align="center"
             p={4}
-            bg="gray.50"
-            borderRadius="md"
+            bg="bg.page"
+            borderRadius="10px"
           >
             <Box>
               <Text fontWeight="medium">Bénéficiaire PCH</Text>
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color="text.muted">
                 Prestation de Compensation du Handicap
               </Text>
             </Box>
@@ -340,12 +347,12 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
               {pchRate !== null && (
                 <Box
                   p={3}
-                  bg="blue.50"
-                  borderRadius="md"
+                  bg="brand.50"
+                  borderRadius="10px"
                   borderWidth="1px"
-                  borderColor="blue.200"
+                  borderColor="brand.200"
                 >
-                  <Text fontSize="sm" color="blue.800">
+                  <Text fontSize="sm" color="brand.700">
                     <Text as="span" fontWeight="medium">Tarif appliqué :</Text>{' '}
                     {pchRate.toFixed(2).replace('.', ',')} €/h
                     {pchEnveloppe !== null && (
@@ -362,13 +369,15 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           )}
         </Stack>
       </Box>
+      )}
 
       {/* Contacts d'urgence */}
+      {showEmergency && (
       <Box
-        bg="white"
-        borderRadius="lg"
+        bg="bg.surface"
+        borderRadius="12px"
         borderWidth="1px"
-        borderColor="gray.200"
+        borderColor="border.default"
         p={6}
       >
         <Flex justify="space-between" align="center" mb={6}>
@@ -376,7 +385,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
             <Text fontSize="xl" fontWeight="semibold">
               Contacts d'urgence
             </Text>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="text.muted">
               Personnes à contacter en cas d'urgence
             </Text>
           </Box>
@@ -390,7 +399,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
         </Flex>
 
         {emergencyContacts.length === 0 ? (
-          <Text color="gray.500" textAlign="center" py={4}>
+          <Text color="text.muted" textAlign="center" py={4}>
             Aucun contact d'urgence enregistré
           </Text>
         ) : (
@@ -399,10 +408,10 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
               <Box
                 key={index}
                 p={4}
-                bg="gray.50"
-                borderRadius="md"
+                bg="bg.page"
+                borderRadius="10px"
                 borderWidth="1px"
-                borderColor="gray.200"
+                borderColor="border.default"
               >
                 <Flex justify="space-between" align="start" mb={4}>
                   <Text fontWeight="medium">Contact {index + 1}</Text>
@@ -448,6 +457,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           </Stack>
         )}
       </Box>
+      )}
 
       {/* Bouton sauvegarder */}
       <Flex justify="flex-end">
@@ -457,7 +467,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           </Text>
         )}
         <AccessibleButton
-          colorPalette="blue"
+          colorPalette="brand"
           loading={isLoading}
           loadingText="Enregistrement..."
           onClick={handleSubmit(onSubmit)}

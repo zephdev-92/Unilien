@@ -5,9 +5,8 @@ import {
   Stack,
   Flex,
   Text,
-  Badge,
 } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, StatusPill } from '@/components/ui'
 import { validateShift } from '@/lib/compliance'
 import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
 import type { ComplianceResult } from '@/types'
@@ -84,7 +83,7 @@ export function RepeatPreviewModal({
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
+            bg="bg.surface"
             borderRadius="xl"
             maxW="500px"
             w="95vw"
@@ -104,14 +103,14 @@ export function RepeatPreviewModal({
 
             <Dialog.Body p={6}>
               <Stack gap={4}>
-                <Box p={3} bg="gray.50" borderRadius="md">
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                <Box p={3} bg="bg.page" borderRadius="10px">
+                  <Text fontSize="sm" fontWeight="medium" color="text.secondary">
                     Intervention source
                   </Text>
-                  <Text fontSize="sm" color="gray.600">{baseShiftSummary}</Text>
+                  <Text fontSize="sm" color="text.muted">{baseShiftSummary}</Text>
                 </Box>
 
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="text.muted">
                   {validOccurrences.length} intervention{validOccurrences.length > 1 ? 's' : ''} valide{validOccurrences.length > 1 ? 's' : ''}
                   {blockedCount > 0 && (
                     <Text as="span" color="red.600">
@@ -130,11 +129,11 @@ export function RepeatPreviewModal({
 
             <Dialog.Footer p={6} borderTopWidth="1px">
               <Flex gap={3} justify="flex-end" w="full">
-                <AccessibleButton variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose} disabled={isSubmitting}>
                   Annuler
                 </AccessibleButton>
                 <AccessibleButton
-                  colorPalette="blue"
+                  bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
                   loading={isSubmitting}
                   disabled={validOccurrences.length === 0 || isSubmitting}
                   onClick={() => onConfirm(validOccurrences)}
@@ -160,7 +159,7 @@ function OccurrenceRow({ result }: { result: OccurrenceResult }) {
       align="center"
       justify="space-between"
       p={3}
-      borderRadius="md"
+      borderRadius="10px"
       bg={blocked ? 'red.50' : complianceResult.warnings.length > 0 ? 'orange.50' : 'green.50'}
       opacity={blocked ? 0.7 : 1}
     >
@@ -170,17 +169,17 @@ function OccurrenceRow({ result }: { result: OccurrenceResult }) {
       <Flex gap={2} align="center">
         {blocked ? (
           <>
-            <Badge colorPalette="red" size="sm">Conflit</Badge>
+            <StatusPill variant="danger" size="sm">Conflit</StatusPill>
             {complianceResult.errors[0] && (
-              <Text fontSize="xs" color="red.600" maxW="180px" truncate>
+              <Text fontSize="xs" color="#991B1B" maxW="180px" truncate>
                 {complianceResult.errors[0].message}
               </Text>
             )}
           </>
         ) : complianceResult.warnings.length > 0 ? (
-          <Badge colorPalette="orange" size="sm">Avertissement</Badge>
+          <StatusPill variant="pending" size="sm">Avertissement</StatusPill>
         ) : (
-          <Badge colorPalette="green" size="sm">OK</Badge>
+          <StatusPill variant="success" size="sm">OK</StatusPill>
         )}
       </Flex>
     </Flex>

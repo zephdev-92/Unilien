@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Box, Stack, Flex, Text, Center, Spinner, Badge } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Center, Spinner } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
 import { AccessibleButton } from '@/components/ui'
@@ -211,7 +211,7 @@ export function LogbookPage() {
       <DashboardLayout title="Cahier de liaison">
         <Box
           bg="orange.50"
-          borderRadius="lg"
+          borderRadius="12px"
           borderWidth="1px"
           borderColor="orange.200"
           p={8}
@@ -235,42 +235,45 @@ export function LogbookPage() {
     profile.role === 'employee' ||
     (profile.role === 'caregiver' && caregiverPermissions?.canWriteLiaison === true)
 
-  return (
-    <DashboardLayout title="Cahier de liaison">
-      <Box>
-        {/* Header */}
-        <Flex
-          justify="space-between"
-          align="center"
-          mb={4}
-          p={4}
-          bg="white"
-          borderRadius="lg"
-          borderWidth="1px"
-          borderColor="gray.200"
-          flexWrap="wrap"
-          gap={3}
-        >
-          <Flex align="center" gap={3}>
-            <Text fontSize="xl" fontWeight="semibold" color="gray.900">
-              Cahier de liaison
-            </Text>
-            {unreadCount > 0 && (
-              <Badge colorPalette="blue" size="md">
-                {unreadCount} non lu{unreadCount > 1 ? 's' : ''}
-              </Badge>
-            )}
-          </Flex>
+  const topbarRight = canWrite ? (
+    <Flex
+      as="button"
+      align="center"
+      gap={1}
+      px={4} py="6px"
+      bg="#3D5166" color="white"
+      borderRadius="6px"
+      fontSize="13px" fontWeight="700"
+      _hover={{ bg: '#2E3F50' }}
+      onClick={() => setIsNewEntryModalOpen(true)}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={14} height={14} aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <Box as="span" display={{ base: 'none', sm: 'inline' }}>Nouvelle note</Box>
+    </Flex>
+  ) : undefined
 
-          {canWrite && (
-            <AccessibleButton
-              colorPalette="blue"
-              onClick={() => setIsNewEntryModalOpen(true)}
-            >
-              + Nouvelle note
-            </AccessibleButton>
-          )}
-        </Flex>
+  return (
+    <DashboardLayout title="Cahier de liaison" topbarRight={topbarRight}>
+      <Box>
+
+        {/* Bandeau non lus */}
+        {unreadCount > 0 && (
+          <Flex
+            align="center"
+            gap={2}
+            mb={3}
+            px={3}
+            py={2}
+            bg="#EDF1F5"
+            borderRadius="8px"
+            fontSize="13px"
+            fontWeight="600"
+            color="#3D5166"
+          >
+            <Box w="6px" h="6px" borderRadius="50%" bg="#3D5166" flexShrink={0} />
+            {unreadCount} note{unreadCount > 1 ? 's' : ''} non lue{unreadCount > 1 ? 's' : ''}
+          </Flex>
+        )}
 
         {/* Filters with search */}
         <LogbookFilters
@@ -287,21 +290,21 @@ export function LogbookPage() {
           </Center>
         ) : displayedEntries.length === 0 ? (
           <Box
-            bg="white"
-            borderRadius="lg"
+            bg="bg.surface"
+            borderRadius="12px"
             borderWidth="1px"
-            borderColor="gray.200"
+            borderColor="border.default"
             p={8}
             textAlign="center"
           >
-            <Text fontSize="lg" color="gray.500" mb={4}>
+            <Text fontSize="lg" color="text.muted" mb={4}>
               {searchQuery
                 ? `Aucun resultat pour "${searchQuery}"`
                 : 'Aucune entree dans le cahier de liaison'}
             </Text>
             {canWrite && !searchQuery && (
               <AccessibleButton
-                colorPalette="blue"
+                colorPalette="brand"
                 variant="outline"
                 onClick={() => setIsNewEntryModalOpen(true)}
               >
@@ -315,11 +318,11 @@ export function LogbookPage() {
               if (item.type === 'separator') {
                 return (
                   <Flex key={`sep-${item.key}`} align="center" gap={3} py={3} pl="40px">
-                    <Box h="1px" flex={1} bg="gray.200" />
-                    <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="capitalize" whiteSpace="nowrap">
+                    <Box h="1px" flex={1} bg="border.default" />
+                    <Text fontSize="xs" fontWeight="semibold" color="text.muted" textTransform="capitalize" whiteSpace="nowrap">
                       {item.label}
                     </Text>
-                    <Box h="1px" flex={1} bg="gray.200" />
+                    <Box h="1px" flex={1} bg="border.default" />
                   </Flex>
                 )
               }
@@ -353,7 +356,7 @@ export function LogbookPage() {
 
         {/* Results count */}
         {displayedEntries.length > 0 && (
-          <Text fontSize="sm" color="gray.500" mt={4} textAlign="center">
+          <Text fontSize="sm" color="text.muted" mt={4} textAlign="center">
             {displayedEntries.length} sur {totalCount} entree{totalCount > 1 ? 's' : ''}
           </Text>
         )}

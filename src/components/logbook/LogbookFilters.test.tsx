@@ -17,92 +17,52 @@ describe('LogbookFilters', () => {
   describe('Rendu de base', () => {
     it('affiche le champ de recherche', () => {
       renderWithProviders(<LogbookFilters {...defaultProps} />)
-      expect(screen.getByPlaceholderText('Rechercher dans le journal...')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Rechercher dans le journal\u2026')).toBeInTheDocument()
     })
 
-    it('affiche les boutons de categorie', () => {
+    it('affiche le select de filtrage par auteur', () => {
       renderWithProviders(<LogbookFilters {...defaultProps} />)
-      expect(screen.getByRole('button', { name: 'Observation' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Incident' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Alerte' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Instruction' })).toBeInTheDocument()
+      expect(screen.getByLabelText('Filtrer par auteur')).toBeInTheDocument()
     })
 
-    it('affiche le select "Importance"', () => {
+    it('affiche le select de filtrage par categorie', () => {
       renderWithProviders(<LogbookFilters {...defaultProps} />)
-      expect(screen.getByText('Importance')).toBeInTheDocument()
+      expect(screen.getByLabelText('Filtrer par catégorie')).toBeInTheDocument()
     })
 
-    it('affiche le select "Auteur"', () => {
+    it('affiche les options de categorie dans le dropdown', () => {
       renderWithProviders(<LogbookFilters {...defaultProps} />)
-      expect(screen.getByText('Auteur')).toBeInTheDocument()
+      expect(screen.getByText('Toutes les catégories')).toBeInTheDocument()
+      expect(screen.getByText('Observation')).toBeInTheDocument()
+      expect(screen.getByText('Incident')).toBeInTheDocument()
+      expect(screen.getByText('Alerte')).toBeInTheDocument()
+      expect(screen.getByText('Instruction')).toBeInTheDocument()
     })
 
-    it('affiche la checkbox "Non lues uniquement"', () => {
+    it('affiche les options d\'auteur dans le dropdown', () => {
       renderWithProviders(<LogbookFilters {...defaultProps} />)
-      expect(screen.getByText('Non lues uniquement')).toBeInTheDocument()
+      expect(screen.getByText('Tous les auteurs')).toBeInTheDocument()
+      expect(screen.getByText('Employeur')).toBeInTheDocument()
+      expect(screen.getByText('Auxiliaire')).toBeInTheDocument()
+      expect(screen.getByText('Aidant')).toBeInTheDocument()
     })
   })
 
-  describe('Bouton Reinitialiser', () => {
-    it('n\'affiche pas le bouton Reinitialiser si aucun filtre actif', () => {
-      renderWithProviders(<LogbookFilters {...defaultProps} />)
-      expect(screen.queryByRole('button', { name: /reinitialiser/i })).not.toBeInTheDocument()
-    })
-
-    it('affiche le bouton Reinitialiser si un filtre de type est actif', () => {
-      renderWithProviders(
-        <LogbookFilters {...defaultProps} filters={{ type: ['info'] }} />
-      )
-      expect(screen.getByRole('button', { name: /reinitialiser/i })).toBeInTheDocument()
-    })
-
-    it('affiche le bouton Reinitialiser si unreadOnly=true', () => {
-      renderWithProviders(
-        <LogbookFilters {...defaultProps} filters={{ unreadOnly: true }} />
-      )
-      expect(screen.getByRole('button', { name: /reinitialiser/i })).toBeInTheDocument()
-    })
-
-    it('affiche le bouton Reinitialiser si searchQuery non vide', () => {
-      renderWithProviders(
-        <LogbookFilters {...defaultProps} searchQuery="test" />
-      )
-      expect(screen.getByRole('button', { name: /reinitialiser/i })).toBeInTheDocument()
-    })
-
-    it('appelle onFiltersChange et onSearchChange au clic sur Reinitialiser', async () => {
-      const user = userEvent.setup()
-      const onFiltersChange = vi.fn()
-      const onSearchChange = vi.fn()
-      renderWithProviders(
-        <LogbookFilters
-          filters={{ type: ['info'] }}
-          searchQuery="test"
-          onSearchChange={onSearchChange}
-          onFiltersChange={onFiltersChange}
-        />
-      )
-      await user.click(screen.getByRole('button', { name: /reinitialiser/i }))
-      expect(onFiltersChange).toHaveBeenCalledWith({})
-      expect(onSearchChange).toHaveBeenCalledWith('')
-    })
-  })
-
-  describe('Changement de filtre — categorie (pills)', () => {
-    it('appelle onFiltersChange avec type=["incident"] au clic sur Incident', async () => {
+  describe('Changement de filtre — categorie (select)', () => {
+    it('appelle onFiltersChange avec type=["incident"] au changement de categorie', async () => {
       const user = userEvent.setup()
       const onFiltersChange = vi.fn()
       renderWithProviders(
         <LogbookFilters {...defaultProps} onFiltersChange={onFiltersChange} />
       )
-      await user.click(screen.getByRole('button', { name: 'Incident' }))
+      const categorySelect = screen.getByLabelText('Filtrer par catégorie')
+      await user.selectOptions(categorySelect, 'incident')
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({ type: ['incident'] })
       )
     })
 
-    it('retire le type au second clic (toggle off)', async () => {
+    it('appelle onFiltersChange avec type=undefined si "Toutes" selectionne', async () => {
       const user = userEvent.setup()
       const onFiltersChange = vi.fn()
       renderWithProviders(
@@ -112,24 +72,10 @@ describe('LogbookFilters', () => {
           onFiltersChange={onFiltersChange}
         />
       )
-      await user.click(screen.getByRole('button', { name: 'Observation' }))
+      const categorySelect = screen.getByLabelText('Filtrer par catégorie')
+      await user.selectOptions(categorySelect, '')
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({ type: undefined })
-      )
-    })
-  })
-
-  describe('Changement de filtre — importance', () => {
-    it('appelle onFiltersChange avec importance="urgent"', async () => {
-      const user = userEvent.setup()
-      const onFiltersChange = vi.fn()
-      renderWithProviders(
-        <LogbookFilters {...defaultProps} onFiltersChange={onFiltersChange} />
-      )
-      const selects = screen.getAllByRole('combobox')
-      await user.selectOptions(selects[0], 'urgent')
-      expect(onFiltersChange).toHaveBeenCalledWith(
-        expect.objectContaining({ importance: 'urgent' })
       )
     })
   })
@@ -141,10 +87,27 @@ describe('LogbookFilters', () => {
       renderWithProviders(
         <LogbookFilters {...defaultProps} onFiltersChange={onFiltersChange} />
       )
-      const selects = screen.getAllByRole('combobox')
-      await user.selectOptions(selects[1], 'employer')
+      const authorSelect = screen.getByLabelText('Filtrer par auteur')
+      await user.selectOptions(authorSelect, 'employer')
       expect(onFiltersChange).toHaveBeenCalledWith(
         expect.objectContaining({ authorRole: 'employer' })
+      )
+    })
+
+    it('appelle onFiltersChange avec authorRole=undefined si "Tous" selectionne', async () => {
+      const user = userEvent.setup()
+      const onFiltersChange = vi.fn()
+      renderWithProviders(
+        <LogbookFilters
+          {...defaultProps}
+          filters={{ authorRole: 'employer' }}
+          onFiltersChange={onFiltersChange}
+        />
+      )
+      const authorSelect = screen.getByLabelText('Filtrer par auteur')
+      await user.selectOptions(authorSelect, '')
+      expect(onFiltersChange).toHaveBeenCalledWith(
+        expect.objectContaining({ authorRole: undefined })
       )
     })
   })
@@ -156,7 +119,7 @@ describe('LogbookFilters', () => {
       renderWithProviders(
         <LogbookFilters {...defaultProps} onSearchChange={onSearchChange} />
       )
-      await user.type(screen.getByPlaceholderText('Rechercher dans le journal...'), 'test')
+      await user.type(screen.getByPlaceholderText('Rechercher dans le journal\u2026'), 'test')
       expect(onSearchChange).toHaveBeenCalled()
     })
   })

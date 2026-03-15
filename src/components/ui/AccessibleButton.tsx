@@ -45,30 +45,33 @@ export const AccessibleButton = forwardRef<HTMLButtonElement, AccessibleButtonPr
         aria-busy={loading}
         aria-disabled={disabled || loading}
         size="lg"
-        minH="60px"
-        minW="60px"
-        px={6}
-        fontWeight="semibold"
-        borderRadius="md"
+
+        px={5}
+        fontWeight="bold"
+        borderRadius="10px"
+        letterSpacing="0.01em"
+        fontSize="sm"
         css={{
-          // Focus visible pour accessibilité
-          '&:focus': {
-            boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.6)',
-            outline: '2px solid transparent',
-            outlineOffset: '2px',
-          },
+          // Focus visible — double anneau comme le prototype
           '&:focus-visible': {
-            boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.6)',
-            outline: '2px solid transparent',
+            boxShadow: '0 0 0 2px #fff',
+            outline: '2px solid var(--chakra-colors-brand-500)',
             outlineOffset: '2px',
           },
-          // Hover avec contraste suffisant
+          // Hover avec elevation
           '&:hover:not(:disabled)': {
             transform: 'translateY(-1px)',
-            boxShadow: 'md',
+            boxShadow: '0 4px 16px rgba(78,100,120,.12)',
           },
-          // Transition respectueuse de prefers-reduced-motion
-          transition: 'all 0.2s',
+          '&:active:not(:disabled)': {
+            transform: 'translateY(0)',
+          },
+          // Disabled
+          '&:disabled, &[aria-disabled=true]': {
+            opacity: 0.45,
+            cursor: 'not-allowed',
+          },
+          transition: 'background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
           '@media (prefers-reduced-motion: reduce)': {
             transition: 'none',
             transform: 'none !important',

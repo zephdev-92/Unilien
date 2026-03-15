@@ -72,7 +72,7 @@ export function ComplianceBadge({
         <span>{badge}</span>
       </Tooltip.Trigger>
       <Tooltip.Positioner>
-        <Tooltip.Content bg="gray.800" color="white" px={3} py={2} borderRadius="md">
+        <Tooltip.Content bg="gray.800" color="white" px={3} py={2} borderRadius="10px">
           <Text fontSize="sm">{description}</Text>
         </Tooltip.Content>
       </Tooltip.Positioner>
@@ -127,7 +127,7 @@ export function ComplianceIcon({
         </Text>
       </Tooltip.Trigger>
       <Tooltip.Positioner>
-        <Tooltip.Content bg="gray.800" color="white" px={3} py={2} borderRadius="md">
+        <Tooltip.Content bg="gray.800" color="white" px={3} py={2} borderRadius="10px">
           <Text fontSize="sm">{label}</Text>
         </Tooltip.Content>
       </Tooltip.Positioner>

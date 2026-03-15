@@ -18,9 +18,9 @@ interface Props {
 
 export function DriversLicenseSubSection({ driversLicense, onChange }: Props) {
   return (
-    <Box bg="white" borderRadius="lg" borderWidth="1px" borderColor="gray.200" p={6}>
+    <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6}>
       <Text fontSize="xl" fontWeight="semibold" mb={2}>Permis de conduire</Text>
-      <Text fontSize="sm" color="gray.600" mb={4}>
+      <Text fontSize="sm" color="text.muted" mb={4}>
         Indiquez si vous possédez le permis et un véhicule
       </Text>
 
@@ -29,10 +29,10 @@ export function DriversLicenseSubSection({ driversLicense, onChange }: Props) {
           justify="space-between"
           align="center"
           p={4}
-          bg="gray.50"
-          borderRadius="md"
+          bg="bg.page"
+          borderRadius="10px"
           borderWidth="1px"
-          borderColor="gray.200"
+          borderColor="border.default"
         >
           <Text fontWeight="medium">Je possède le permis de conduire</Text>
           <Switch.Root
@@ -70,14 +70,14 @@ export function DriversLicenseSubSection({ driversLicense, onChange }: Props) {
               justify="space-between"
               align="center"
               p={4}
-              bg="gray.50"
-              borderRadius="md"
+              bg="bg.page"
+              borderRadius="10px"
               borderWidth="1px"
-              borderColor="gray.200"
+              borderColor="border.default"
             >
               <Box>
                 <Text fontWeight="medium">Je dispose d'un véhicule personnel</Text>
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="text.muted">
                   Vous pouvez vous déplacer de manière autonome
                 </Text>
               </Box>

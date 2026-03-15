@@ -69,20 +69,20 @@ export function NewContractModal({
         <Dialog.Backdrop bg="blackAlpha.600" />
         <Dialog.Positioner>
           <Dialog.Content
-            bg="white"
-            borderRadius="xl"
+            bg="bg.surface"
+            borderRadius="12px"
             maxW="500px"
             w="90vw"
             maxH="90vh"
             overflow="auto"
           >
-            <Dialog.Header p={6} borderBottomWidth="1px">
-              <Dialog.Title fontSize="xl" fontWeight="bold">
+            <Dialog.Header p={6} borderBottomWidth="1px" borderColor="border.default">
+              <Dialog.Title fontSize="lg" fontWeight={700} color="brand.500">
                 Ajouter un auxiliaire
               </Dialog.Title>
               <Dialog.CloseTrigger position="absolute" top={4} right={4} asChild>
-                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer">
-                  X
+                <AccessibleButton variant="ghost" size="sm" accessibleLabel="Fermer" color="brand.500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </AccessibleButton>
               </Dialog.CloseTrigger>
             </Dialog.Header>
@@ -111,7 +111,7 @@ export function NewContractModal({
                 <Stack gap={4}>
                   <form onSubmit={searchForm.handleSubmit(onSearch)}>
                     <Stack gap={4}>
-                      <Text color="gray.600">
+                      <Text color="text.muted">
                         Recherchez l'auxiliaire par son adresse email.
                       </Text>
 
@@ -125,14 +125,16 @@ export function NewContractModal({
                       />
 
                       {searchError && !showInviteForm && (
-                        <Box p={4} bg="orange.50" borderRadius="md">
+                        <Box p={4} bg="orange.50" borderRadius="10px">
                           <Text color="orange.700">{searchError}</Text>
                         </Box>
                       )}
 
                       <AccessibleButton
                         type="submit"
-                        colorPalette="blue"
+                        bg="brand.500"
+                        color="white"
+                        _hover={{ bg: 'brand.600' }}
                         loading={isSearching}
                         loadingText="Recherche..."
                       >
@@ -145,23 +147,23 @@ export function NewContractModal({
                   {showInviteForm && !inviteSuccess && (
                     <Box
                       p={5}
-                      bg="blue.50"
-                      borderRadius="lg"
+                      bg="brand.50"
+                      borderRadius="12px"
                       borderWidth="1px"
-                      borderColor="blue.200"
+                      borderColor="brand.200"
                     >
                       <Flex align="center" gap={2} mb={3}>
-                        <Box color="blue.600" flexShrink={0}>
+                        <Box color="brand.600" flexShrink={0}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                             <polyline points="22,6 12,13 2,6" />
                           </svg>
                         </Box>
-                        <Text fontWeight="semibold" color="blue.800">
+                        <Text fontWeight="semibold" color="brand.700">
                           Inviter par email
                         </Text>
                       </Flex>
-                      <Text fontSize="sm" color="blue.700" mb={4}>
+                      <Text fontSize="sm" color="brand.700" mb={4}>
                         Aucun compte trouve pour <strong>{searchedEmail}</strong>.
                         Renseignez le nom de l'auxiliaire pour lui envoyer une invitation.
                         Il recevra un email pour creer son mot de passe.
@@ -196,13 +198,13 @@ export function NewContractModal({
                         </Flex>
 
                         {inviteError && (
-                          <Box p={3} bg="red.50" borderRadius="md">
+                          <Box p={3} bg="red.50" borderRadius="10px">
                             <Text fontSize="sm" color="red.700">{inviteError}</Text>
                           </Box>
                         )}
 
                         <AccessibleButton
-                          colorPalette="blue"
+                          colorPalette="brand"
                           size="sm"
                           onClick={onInvite}
                           loading={isInviting}
@@ -220,7 +222,7 @@ export function NewContractModal({
                     <Box
                       p={5}
                       bg="green.50"
-                      borderRadius="lg"
+                      borderRadius="12px"
                       borderWidth="1px"
                       borderColor="green.200"
                     >
@@ -257,7 +259,7 @@ export function NewContractModal({
               {step === 1 && foundEmployee && (
                 <form id="contract-form" onSubmit={contractForm.handleSubmit(onSubmitContract)}>
                   <Stack gap={4}>
-                    <Box p={4} bg="green.50" borderRadius="md">
+                    <Box p={4} bg="green.50" borderRadius="10px">
                       <Flex justify="space-between" align="center">
                         <Box>
                           <Text fontWeight="semibold" color="green.700">
@@ -335,11 +337,11 @@ export function NewContractModal({
                       </Box>
                     </Flex>
 
-                    <Box p={4} bg="gray.50" borderRadius="md">
+                    <Box p={4} bg="bg.page" borderRadius="10px">
                       <Text fontWeight="medium" mb={2}>
                         Estimation mensuelle
                       </Text>
-                      <Text color="gray.700">
+                      <Text color="text.secondary">
                         {contractForm.watch('weeklyHours') || 0}h × 4,33 semaines ×{' '}
                         {contractForm.watch('hourlyRate') || 0}€ ={' '}
                         <Text as="span" fontWeight="bold">
@@ -359,7 +361,7 @@ export function NewContractModal({
                     )}
 
                     {submitError && (
-                      <Box p={4} bg="red.50" borderRadius="md">
+                      <Box p={4} bg="red.50" borderRadius="10px">
                         <Text color="red.700">{submitError}</Text>
                       </Box>
                     )}
@@ -368,10 +370,11 @@ export function NewContractModal({
               )}
             </Dialog.Body>
 
-            <Dialog.Footer p={6} borderTopWidth="1px">
+            <Dialog.Footer p={6} borderTopWidth="1px" borderColor="border.default">
               <Flex gap={3} justify="flex-end">
                 <AccessibleButton
-                  variant="outline"
+                  variant="ghost"
+                  color="brand.500"
                   onClick={handleClose}
                   disabled={isSearching || isSubmitting || isInviting}
                 >
@@ -382,7 +385,9 @@ export function NewContractModal({
                   <AccessibleButton
                     type="submit"
                     form="contract-form"
-                    colorPalette="blue"
+                    bg="brand.500"
+                    color="white"
+                    _hover={{ bg: 'brand.600' }}
                     loading={isSubmitting}
                     loadingText="Creation..."
                   >

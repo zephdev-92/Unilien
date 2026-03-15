@@ -49,16 +49,16 @@ export function AccessibilitySection() {
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
     >
       <Text fontSize="xl" fontWeight="semibold" mb={2}>
         Accessibilité
       </Text>
-      <Text color="gray.600" mb={6}>
+      <Text color="text.muted" mb={6}>
         Personnalisez l'application selon vos besoins
       </Text>
 
@@ -69,15 +69,15 @@ export function AccessibilitySection() {
               justify="space-between"
               align="center"
               p={4}
-              bg="gray.50"
+              bg="bg.page"
               borderRadius={settings.largeText && setting.key === 'largeText' ? 'md md 0 0' : 'md'}
-              _hover={{ bg: 'gray.100' }}
+              _hover={{ bg: 'bg.surface.hover' }}
             >
               <Box flex={1} pr={4}>
                 <Text fontWeight="medium" mb={1}>
                   {setting.label}
                 </Text>
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="text.muted">
                   {setting.description}
                 </Text>
               </Box>
@@ -99,13 +99,13 @@ export function AccessibilitySection() {
                 px={4}
                 pt={3}
                 pb={4}
-                bg="gray.50"
+                bg="bg.page"
                 borderTopWidth="1px"
-                borderTopColor="gray.200"
+                borderTopColor="border.default"
                 borderRadius="0 0 md md"
               >
                 <HStack justify="space-between" mb={3}>
-                  <Text fontSize="sm" color="gray.600">Taille choisie</Text>
+                  <Text fontSize="sm" color="text.muted">Taille choisie</Text>
                   <Text fontSize="sm" fontWeight="semibold" color="brand.600">
                     {settings.textScale}%
                   </Text>
@@ -126,9 +126,9 @@ export function AccessibilitySection() {
                     </Slider.Thumb>
                   </Slider.Control>
                   <Slider.MarkerGroup>
-                    <Slider.Marker value={80}><Text fontSize="xs" color="gray.400">80%</Text></Slider.Marker>
-                    <Slider.Marker value={100}><Text fontSize="xs" color="gray.400">100%</Text></Slider.Marker>
-                    <Slider.Marker value={150}><Text fontSize="xs" color="gray.400">150%</Text></Slider.Marker>
+                    <Slider.Marker value={80}><Text fontSize="xs" color="text.muted">80%</Text></Slider.Marker>
+                    <Slider.Marker value={100}><Text fontSize="xs" color="text.muted">100%</Text></Slider.Marker>
+                    <Slider.Marker value={150}><Text fontSize="xs" color="text.muted">150%</Text></Slider.Marker>
                   </Slider.MarkerGroup>
                 </Slider.Root>
               </Box>
@@ -137,7 +137,7 @@ export function AccessibilitySection() {
         ))}
       </Stack>
 
-      <Text fontSize="sm" color="gray.500" mt={6}>
+      <Text fontSize="sm" color="text.muted" mt={6}>
         Ces paramètres sont enregistrés localement sur votre appareil.
       </Text>
     </Box>

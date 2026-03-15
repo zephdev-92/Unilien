@@ -37,7 +37,7 @@ function RateCircle({ rate }: { rate: number }) {
         />
       </svg>
       <Box position="absolute" textAlign="center">
-        <Text fontSize="xl" fontWeight="bold" color="gray.900" lineHeight={1}>
+        <Text fontSize="xl" fontWeight="bold" color="text.default" lineHeight={1}>
           {rate}%
         </Text>
       </Box>
@@ -58,17 +58,17 @@ export function PresenceRateWidget({ data }: PresenceRateWidgetProps) {
 
   return (
     <Box
-      bg="white"
-      borderRadius="lg"
+      bg="bg.surface"
+      borderRadius="12px"
       borderWidth="1px"
-      borderColor="gray.200"
+      borderColor="border.default"
       p={6}
       boxShadow="sm"
     >
-      <Text fontSize="lg" fontWeight="semibold" color="gray.900" mb={1}>
+      <Text fontSize="lg" fontWeight="semibold" color="text.default" mb={1}>
         Taux de presence
       </Text>
-      <Text fontSize="sm" color="gray.500" mb={5}>
+      <Text fontSize="sm" color="text.muted" mb={5}>
         Interventions realisees vs annulees/absences
       </Text>
 
@@ -76,7 +76,7 @@ export function PresenceRateWidget({ data }: PresenceRateWidgetProps) {
         <RateCircle rate={current?.rate ?? 0} />
       </Flex>
 
-      <Text fontSize="sm" fontWeight="medium" color="gray.700" textAlign="center" mb={4}>
+      <Text fontSize="sm" fontWeight="medium" color="text.secondary" textAlign="center" mb={4}>
         {current?.label ?? ''} — {current?.completed ?? 0} realisee{(current?.completed ?? 0) > 1 ? 's' : ''} sur {current?.total ?? 0}
       </Text>
 
@@ -92,7 +92,7 @@ export function PresenceRateWidget({ data }: PresenceRateWidgetProps) {
                 borderRadius="full"
                 mb={1}
               />
-              <Text fontSize="10px" color="gray.400">
+              <Text fontSize="10px" color="text.muted">
                 {d.label.slice(0, 3)}
               </Text>
             </Box>
@@ -100,7 +100,7 @@ export function PresenceRateWidget({ data }: PresenceRateWidgetProps) {
         })}
       </SimpleGrid>
 
-      <Text fontSize="xs" color="gray.400" textAlign="center" mt={3}>
+      <Text fontSize="xs" color="text.muted" textAlign="center" mt={3}>
         Moyenne {data.length} mois : {avgRate}%
       </Text>
     </Box>

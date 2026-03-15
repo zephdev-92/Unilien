@@ -44,7 +44,6 @@ describe('ConversationList', () => {
     conversations: allConversations,
     selectedId: null,
     onSelect: vi.fn(),
-    onNewPrivate: vi.fn(),
     currentUserId: 'u-1',
   }
 
@@ -127,14 +126,5 @@ describe('ConversationList', () => {
       expect(onSelect).toHaveBeenCalledWith(privateConv1)
     })
 
-    it('appelle onNewPrivate quand on clique sur "Nouvelle conversation"', async () => {
-      const onNewPrivate = vi.fn()
-      const user = userEvent.setup()
-      renderWithProviders(<ConversationList {...defaultProps} onNewPrivate={onNewPrivate} />)
-
-      await user.click(screen.getByText('Nouvelle conversation'))
-
-      expect(onNewPrivate).toHaveBeenCalled()
-    })
   })
 })

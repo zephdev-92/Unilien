@@ -172,7 +172,7 @@ export function PayslipGeneratorModal({
               <Box
                 borderWidth="1px"
                 borderColor="orange.200"
-                borderRadius="md"
+                borderRadius="10px"
                 p={3}
                 bg="orange.50"
               >
@@ -195,7 +195,7 @@ export function PayslipGeneratorModal({
                 </Text>
               </Box>
 
-              <Text fontSize="xs" color="gray.500" lineHeight="1.5">
+              <Text fontSize="xs" color="text.muted" lineHeight="1.5">
                 Le bulletin est généré à titre indicatif selon les taux IDCC 3239 (barèmes 2025).
                 Le taux PAS est celui renseigné sur le contrat (0% par défaut).
               </Text>

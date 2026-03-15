@@ -36,8 +36,8 @@ const ClockIcon = (
 )
 
 const colorMap = {
-  orange: { bg: 'orange.50', border: 'orange.200', icon: 'orange.600', text: 'orange.800', sub: 'orange.600' },
-  blue: { bg: 'blue.50', border: 'blue.200', icon: 'blue.600', text: 'blue.800', sub: 'blue.600' },
+  orange: { bg: 'warm.50', border: 'warm.200', icon: 'warm.500', text: 'warm.700', sub: 'warm.500' },
+  blue: { bg: 'brand.50', border: 'brand.200', icon: 'brand.500', text: 'brand.700', sub: 'brand.500' },
 }
 
 export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
@@ -136,8 +136,8 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
   if (loading) {
     return (
       <Flex gap={4} flexWrap="wrap">
-        <Skeleton flex="1" minW="240px" height="64px" borderRadius="md" />
-        <Skeleton flex="1" minW="240px" height="64px" borderRadius="md" />
+        <Skeleton flex="1" minW="240px" height="64px" borderRadius="12px" />
+        <Skeleton flex="1" minW="240px" height="64px" borderRadius="12px" />
       </Flex>
     )
   }
@@ -164,9 +164,9 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
             bg={colors.bg}
             borderWidth="1px"
             borderColor={colors.border}
-            borderRadius="md"
+            borderRadius="12px"
             textDecoration="none"
-            transition="all 0.2s"
+            transition="all 0.15s ease"
             _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }}
             _focusVisible={{
               outline: '2px solid',
@@ -185,8 +185,8 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
               justify="center"
               w="36px"
               h="36px"
-              borderRadius="md"
-              bg={`${nudge.color}.100`}
+              borderRadius="12px"
+              bg={nudge.color === 'orange' ? 'warm.100' : 'brand.100'}
               color={colors.icon}
               flexShrink={0}
             >

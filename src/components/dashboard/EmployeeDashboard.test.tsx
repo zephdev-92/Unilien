@@ -1,39 +1,47 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '@/test/helpers'
-import { createMockProfile, createMockShift } from '@/test/fixtures'
+import { createMockProfile } from '@/test/fixtures'
 import { EmployeeDashboard } from './EmployeeDashboard'
 
 // ── Mocks widgets ─────────────────────────────────────────────────────────────
 
 vi.mock('./widgets', () => ({
-  WelcomeCard: ({ profile }: { profile: { firstName: string } }) => (
-    <div data-testid="welcome-card">{profile.firstName}</div>
-  ),
-  StatsWidget: ({ userRole }: { userRole: string }) => (
-    <div data-testid="stats-widget" data-role={userRole} />
-  ),
-  QuickActionsWidget: ({ userRole }: { userRole: string }) => (
-    <div data-testid="quick-actions-widget" data-role={userRole} />
-  ),
-  UpcomingShiftsWidget: ({
+  WelcomeCard: ({
+    profile,
     loading,
-    userRole,
-    shifts,
   }: {
+    profile: { firstName: string }
     loading?: boolean
-    userRole: string
-    shifts: unknown[]
   }) => (
-    <div
-      data-testid="upcoming-shifts-widget"
-      data-loading={String(loading)}
-      data-role={userRole}
-      data-count={shifts.length}
-    />
+    <div data-testid="welcome-card" data-loading={String(!!loading)}>
+      {profile.firstName}
+    </div>
   ),
-  RecentLogsWidget: ({ employerId }: { employerId: string }) => (
-    <div data-testid="recent-logs-widget" data-employer-id={employerId} />
+  StatsWidget: ({ userRole, profileId }: { userRole: string; profileId: string }) => (
+    <div data-testid="stats-widget" data-role={userRole} data-profile-id={profileId} />
+  ),
+  EmployeeShiftTimeline: ({ employeeId }: { employeeId: string }) => (
+    <div data-testid="employee-shift-timeline" data-employee-id={employeeId} />
+  ),
+  EmployeeHoursProgress: ({ employeeId }: { employeeId: string }) => (
+    <div data-testid="employee-hours-progress" data-employee-id={employeeId} />
+  ),
+  RecentMessagesWidget: ({ userId }: { userId: string }) => (
+    <div data-testid="recent-messages-widget" data-user-id={userId} />
+  ),
+  ClockInWidget: ({
+    hasActiveShift,
+  }: {
+    hasActiveShift: boolean
+  }) => (
+    <div data-testid="clock-in-widget" data-has-active-shift={String(hasActiveShift)} />
+  ),
+  EmployeeLeaveWidget: ({ employeeId }: { employeeId: string }) => (
+    <div data-testid="employee-leave-widget" data-employee-id={employeeId} />
+  ),
+  EmployeeDocumentsWidget: ({ employeeId }: { employeeId: string }) => (
+    <div data-testid="employee-documents-widget" data-employee-id={employeeId} />
   ),
 }))
 
@@ -71,33 +79,40 @@ describe('EmployeeDashboard', () => {
       })
     })
 
-    it('affiche le QuickActionsWidget en mode employee', async () => {
+    it('affiche le EmployeeShiftTimeline avec le profileId', async () => {
       renderWithProviders(<EmployeeDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.getByTestId('quick-actions-widget')).toHaveAttribute(
-          'data-role',
-          'employee'
-        )
-      })
-    })
-
-    it('affiche l\'UpcomingShiftsWidget en mode employee', async () => {
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      await waitFor(() => {
-        expect(screen.getByTestId('upcoming-shifts-widget')).toHaveAttribute(
-          'data-role',
-          'employee'
-        )
-      })
-    })
-
-    it('affiche le RecentLogsWidget avec le profileId comme employerId', async () => {
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      await waitFor(() => {
-        expect(screen.getByTestId('recent-logs-widget')).toHaveAttribute(
-          'data-employer-id',
+        expect(screen.getByTestId('employee-shift-timeline')).toHaveAttribute(
+          'data-employee-id',
           'employee-1'
         )
+      })
+    })
+
+    it('affiche le EmployeeHoursProgress avec le profileId', async () => {
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('employee-hours-progress')).toHaveAttribute(
+          'data-employee-id',
+          'employee-1'
+        )
+      })
+    })
+
+    it('affiche le RecentMessagesWidget avec le profileId', async () => {
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('recent-messages-widget')).toHaveAttribute(
+          'data-user-id',
+          'employee-1'
+        )
+      })
+    })
+
+    it('affiche le ClockInWidget', async () => {
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('clock-in-widget')).toBeInTheDocument()
       })
     })
 
@@ -111,63 +126,6 @@ describe('EmployeeDashboard', () => {
   })
 
   describe('Chargement des shifts', () => {
-    it('passe loading=true pendant le chargement', () => {
-      mockGetShifts.mockReturnValue(new Promise(() => {}))
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      expect(screen.getByTestId('upcoming-shifts-widget')).toHaveAttribute(
-        'data-loading',
-        'true'
-      )
-    })
-
-    it('passe loading=false après chargement', async () => {
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      await waitFor(() => {
-        expect(screen.getByTestId('upcoming-shifts-widget')).toHaveAttribute(
-          'data-loading',
-          'false'
-        )
-      })
-    })
-
-    it('filtre les shifts non-planifiés', async () => {
-      const planned = createMockShift({ id: 'sh-1', status: 'planned' })
-      const cancelled = createMockShift({ id: 'sh-2', status: 'cancelled' })
-      mockGetShifts.mockResolvedValue([planned, cancelled])
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      await waitFor(() => {
-        expect(screen.getByTestId('upcoming-shifts-widget')).toHaveAttribute(
-          'data-count',
-          '1'
-        )
-      })
-    })
-
-    it('limite les shifts à 5 au maximum', async () => {
-      const shifts = Array.from({ length: 10 }, (_, i) =>
-        createMockShift({ id: `sh-${i}`, status: 'planned' })
-      )
-      mockGetShifts.mockResolvedValue(shifts)
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      await waitFor(() => {
-        expect(screen.getByTestId('upcoming-shifts-widget')).toHaveAttribute(
-          'data-count',
-          '5'
-        )
-      })
-    })
-
-    it('passe un tableau vide si le service échoue', async () => {
-      mockGetShifts.mockRejectedValue(new Error('Réseau'))
-      renderWithProviders(<EmployeeDashboard profile={profile} />)
-      await waitFor(() => {
-        expect(screen.getByTestId('upcoming-shifts-widget')).toHaveAttribute(
-          'data-count',
-          '0'
-        )
-      })
-    })
-
     it('appelle getShifts avec le bon profileId et rôle employee', async () => {
       renderWithProviders(<EmployeeDashboard profile={profile} />)
       await waitFor(() => {
@@ -177,6 +135,15 @@ describe('EmployeeDashboard', () => {
           expect.any(Date),
           expect.any(Date)
         )
+      })
+    })
+
+    it('gère les erreurs de getShifts sans crash', async () => {
+      mockGetShifts.mockRejectedValue(new Error('Réseau'))
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      // Le composant ne crash pas
+      await waitFor(() => {
+        expect(screen.getByTestId('welcome-card')).toBeInTheDocument()
       })
     })
   })
