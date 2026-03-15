@@ -6,7 +6,6 @@ import {
 } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton } from '@/components/ui'
 import { calculateShiftDuration } from '@/lib/compliance/utils'
-import { getMinBreakForSegment } from '@/hooks/useGuardSegments'
 import { REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import type { GuardSegment } from '@/types'
 
@@ -42,7 +41,6 @@ export function Guard24hSection({
   nightInterventionsCount,
   onAddSegment,
   onRemoveSegment,
-  onUpdateSegmentEnd,
   onUpdateSegmentType,
   onUpdateSegmentBreak,
   onInterventionCountChange,
@@ -89,7 +87,6 @@ export function Guard24hSection({
         {guardSegments.map((seg, i) => {
           const isLast = i === guardSegments.length - 1
           const canDelete = guardSegments.length > 2
-          const minBreak = getMinBreakForSegment(i, guardSegments)
 
           return (
             <Flex

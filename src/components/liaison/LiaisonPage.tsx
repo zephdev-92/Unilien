@@ -497,8 +497,6 @@ export function LiaisonPage() {
     profile.role === 'employee' ||
     (profile.role === 'caregiver' && caregiverPermissions?.canWriteLiaison === true)
 
-  const teamConv = conversations.find(c => c.type === 'team')
-
   // Titre et sous-titre de la conversation sélectionnée (prototype)
   const convTitle = selectedConv?.type === 'team'
     ? 'Équipe'

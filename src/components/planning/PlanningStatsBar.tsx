@@ -137,7 +137,7 @@ interface PlanningStatsBarProps {
   employeeId?: string
 }
 
-export function PlanningStatsBar({ shifts, absences, role, pchMonthlyHours, employeeId }: PlanningStatsBarProps) {
+export function PlanningStatsBar({ shifts, role, pchMonthlyHours, employeeId }: PlanningStatsBarProps) {
   const [acquiredDays, setAcquiredDays] = useState<number | null>(null)
   const [weeklyHours, setWeeklyHours] = useState<number>(0)
 

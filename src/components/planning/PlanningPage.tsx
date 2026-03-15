@@ -17,7 +17,7 @@ import {
 import { fr } from 'date-fns/locale'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
-import { AccessibleButton } from '@/components/ui'
+// AccessibleButton available via '@/components/ui' if needed
 import { WeekView } from './WeekView'
 import { MonthView } from './MonthView'
 import { NewShiftModal } from './NewShiftModal'
@@ -64,7 +64,7 @@ export function PlanningPage() {
   const [isDlMenuOpen, setIsDlMenuOpen] = useState(false)
 
   // Filtres sidebar
-  const [statusFilter, setStatusFilter] = useState<ShiftStatusFilter>('all')
+  const [statusFilter] = useState<ShiftStatusFilter>('all')
   const [typeFilter, setTypeFilter] = useState<ShiftTypeFilter>('all')
   const [employeeFilter, setEmployeeFilter] = useState<string | null>(null)
 
@@ -220,23 +220,8 @@ export function PlanningPage() {
   }
   const goToToday = () => setCurrentDate(new Date())
 
-  // Profile not loaded yet
-  if (!profile) {
-    return (
-      <DashboardLayout title="Planning">
-        <Center py={12}>
-          <Spinner size="xl" color="brand.500" />
-        </Center>
-      </DashboardLayout>
-    )
-  }
-
-  const dateLabel = viewMode === 'week'
-    ? `${format(weekStart, 'd', { locale: fr })} - ${format(weekEnd, 'd MMMM yyyy', { locale: fr })}`
-    : format(currentDate, 'MMMM yyyy', { locale: fr })
-
-  const isEmployee = profile.role === 'employee'
-  const isEmployer = profile.role === 'employer' || profile.role === 'caregiver'
+  const isEmployee = profile?.role === 'employee'
+  const isEmployer = profile?.role === 'employer' || profile?.role === 'caregiver'
 
   // Extract unique employees for dropdown filter
   const employees = useMemo(() => {
@@ -274,6 +259,21 @@ export function PlanningPage() {
       logger.error('Erreur export planning:', error)
     }
   }, [profile, currentDate, isEmployee])
+
+  // Profile not loaded yet
+  if (!profile) {
+    return (
+      <DashboardLayout title="Planning">
+        <Center py={12}>
+          <Spinner size="xl" color="brand.500" />
+        </Center>
+      </DashboardLayout>
+    )
+  }
+
+  const dateLabel = viewMode === 'week'
+    ? `${format(weekStart, 'd', { locale: fr })} - ${format(weekEnd, 'd MMMM yyyy', { locale: fr })}`
+    : format(currentDate, 'MMMM yyyy', { locale: fr })
 
   // Header actions — proto: topbar-right = toggle + actions
   const btnRadius = '6px'

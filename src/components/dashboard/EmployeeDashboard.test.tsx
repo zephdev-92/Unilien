@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '@/test/helpers'
-import { createMockProfile, createMockShift } from '@/test/fixtures'
+import { createMockProfile } from '@/test/fixtures'
 import { EmployeeDashboard } from './EmployeeDashboard'
 
 // ── Mocks widgets ─────────────────────────────────────────────────────────────

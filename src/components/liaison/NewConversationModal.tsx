@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Box,
   Flex,
-  Text,
   Textarea,
   Button,
   Field,
