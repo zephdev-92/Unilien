@@ -61,6 +61,9 @@ export interface Employee {
   availabilityTemplate: AvailabilityTemplate
   driversLicense?: DriversLicense
   address?: Address
+  dateOfBirth?: string
+  socialSecurityNumber?: string
+  iban?: string
 }
 
 // Types de relation aidant

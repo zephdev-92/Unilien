@@ -40,6 +40,9 @@ export interface EmployeeDbRow {
   availability_template: Record<string, string[]> | null
   drivers_license: DriversLicenseDb | null
   address: AddressDb | null
+  date_of_birth: string | null
+  social_security_number: string | null
+  iban: string | null
   profile?: ProfileDbRow
 }
 
