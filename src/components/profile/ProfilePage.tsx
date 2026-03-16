@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Box, Stack, Flex, Text, Center, Spinner, Avatar } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Center, Spinner, Avatar, Button } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { DashboardLayout } from '@/components/dashboard'
@@ -387,6 +387,35 @@ function EmergencyContactsEdit({ employer, onSave }: { employer?: Employer; onSa
   return <EmployerSection employer={employer} onSave={onSave} section="emergency" />
 }
 
+function MaskedValue({ value, visibleEnd = 2, prefix = '' }: { value?: string; visibleEnd?: number; prefix?: string }) {
+  const [revealed, setRevealed] = useState(false)
+
+  if (!value) return <Text fontSize="sm" color="text.muted" fontWeight={500}>Non renseigné</Text>
+
+  const masked = prefix
+    ? `${prefix} ${'●'.repeat(Math.max(0, value.length - prefix.length - visibleEnd))} ${value.slice(-visibleEnd)}`
+    : `${'●'.repeat(Math.max(0, value.length - visibleEnd))} ${value.slice(-visibleEnd)}`
+
+  return (
+    <Flex align="center" gap={2}>
+      <Text fontSize="sm" fontWeight={500} fontFamily={revealed ? 'mono' : undefined} letterSpacing={revealed ? '0.5px' : undefined}>
+        {revealed ? value : masked}
+      </Text>
+      <Button
+        variant="ghost"
+        size="xs"
+        fontSize="xs"
+        fontWeight={600}
+        color="text.muted"
+        onClick={() => setRevealed(!revealed)}
+        aria-label={revealed ? 'Masquer' : 'Afficher'}
+      >
+        {revealed ? 'Masquer' : 'Afficher'}
+      </Button>
+    </Flex>
+  )
+}
+
 function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; isLoading: boolean }) {
   if (isLoading) {
     return <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
@@ -394,6 +423,45 @@ function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; 
 
   return (
     <Stack gap={4}>
+      {/* Informations administratives */}
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+          <Text fontSize="md" fontWeight={700}>Informations administratives</Text>
+        </Box>
+        <Box px={6} py={5}>
+          <Stack as="dl" gap={0}>
+            <Flex align="baseline" gap={4} py={3} borderBottomWidth="1px" borderColor="border.default" css={{ '&:first-of-type': { paddingTop: 0 } }}>
+              <Box as="dt" minW="120px" flexShrink={0}>
+                <Text fontSize="xs" color="text.muted" fontWeight={500}>Date de naissance</Text>
+              </Box>
+              <Box as="dd" flex={1}>
+                <Text fontSize="sm" color={employee?.dateOfBirth ? 'text.default' : 'text.muted'} fontWeight={500}>
+                  {employee?.dateOfBirth
+                    ? new Date(employee.dateOfBirth).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : 'Non renseigné'}
+                </Text>
+              </Box>
+            </Flex>
+            <Flex align="center" gap={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+              <Box as="dt" minW="120px" flexShrink={0}>
+                <Text fontSize="xs" color="text.muted" fontWeight={500}>N° sécurité sociale</Text>
+              </Box>
+              <Box as="dd" flex={1}>
+                <MaskedValue value={employee?.socialSecurityNumber} visibleEnd={2} />
+              </Box>
+            </Flex>
+            <Flex align="center" gap={4} py={3} css={{ '&:last-of-type': { paddingBottom: 0 } }}>
+              <Box as="dt" minW="120px" flexShrink={0}>
+                <Text fontSize="xs" color="text.muted" fontWeight={500}>IBAN</Text>
+              </Box>
+              <Box as="dd" flex={1}>
+                <MaskedValue value={employee?.iban} visibleEnd={3} prefix="FR76" />
+              </Box>
+            </Flex>
+          </Stack>
+        </Box>
+      </Box>
+
       {/* Qualifications */}
       <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
         <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
