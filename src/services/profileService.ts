@@ -341,6 +341,9 @@ export async function getEmployee(profileId: string): Promise<Employee | null> {
     availabilityTemplate: data.availability_template as Employee['availabilityTemplate'],
     driversLicense,
     address,
+    dateOfBirth: data.date_of_birth || undefined,
+    socialSecurityNumber: data.social_security_number || undefined,
+    iban: data.iban || undefined,
   }
 }
 
@@ -371,6 +374,9 @@ export async function upsertEmployee(profileId: string, data: Partial<Employee>)
     availability_template: data.availabilityTemplate || {},
     drivers_license: driversLicenseDb,
     address: addressDb,
+    date_of_birth: data.dateOfBirth || null,
+    social_security_number: data.socialSecurityNumber ? sanitizeText(data.socialSecurityNumber) : null,
+    iban: data.iban ? sanitizeText(data.iban) : null,
   }
 
   const { error } = await supabase
