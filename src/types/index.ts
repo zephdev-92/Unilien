@@ -64,6 +64,7 @@ export interface Employee {
   dateOfBirth?: string
   socialSecurityNumber?: string
   iban?: string
+  emergencyContacts?: EmergencyContact[]
 }
 
 // Types de relation aidant

@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 16 mars 2026 (2084 tests / 116 fichiers, dashboard aidant mobile, profil auxiliaire enrichi)
+**Dernière mise à jour**: 16 mars 2026 (2084 tests / 116 fichiers, employee emergency contacts, liaison fix)
 **Version**: 1.9.0
 **Statut projet**: 🟡 En développement actif
 
@@ -28,7 +28,7 @@
 
 - **Fichiers source**: ~190 fichiers TS/TSX (hors tests)
 - **Tests**: 2084 tests / 116 fichiers (70%+ coverage)
-- **Migrations DB**: 37 migrations
+- **Migrations DB**: 38 migrations
 - **Composants UI**: ~88 composants
 - **Services**: 19 services
 - **Hooks**: 20 hooks custom
@@ -68,6 +68,38 @@ Ajout de 3 champs au profil employé (auxiliaire de vie) :
 #### Métriques session (16/03/2026)
 - Tests : 2026 → 2084 (+58 tests, 116 fichiers)
 - 37 migrations DB (était 36)
+
+### Semaine 12-13 — 15-16 mars 2026 (PRs #158–#165)
+
+#### Prototype alignment, retroactive clock-in & mobile responsive (PR #158 ✅)
+
+- Timeline, leave, documents, clock-in widgets alignés sur le prototype CSS
+- DateNavigator 8 jours pour pointage rétroactif, RetroactiveEntryForm, badge "Rétroactif"
+- SpotlightSearch : moteur de recherche global Ctrl+K (searchService, useSpotlightSearch)
+- Mobile responsive : boutons header condensés, logo icône seule, ordre widgets mobile
+
+#### Caregiver dashboard mobile & clock-in fixes (PR #163 ✅)
+
+- Layout mobile dashboard aidant, corrections clock-in, améliorations garde 24h
+
+#### Employee profile fields (PR #164 ✅)
+
+- Ajout date de naissance, N° sécurité sociale, IBAN au profil auxiliaire
+- Migration 037, composant `MaskedValue` (afficher/masquer avec bouton outline)
+- Validation Zod (SSN 13-15 chiffres, IBAN format FR)
+
+#### Employee emergency contacts & liaison fix
+
+- Migration 038 : `emergency_contacts JSONB` sur table `employees`
+- Formulaire édition contacts d'urgence (ajout/suppression, nom/téléphone/relation)
+- Vue lecture avec avatar, nom, relation, téléphone
+- Fix RouteAnnouncer : ajout `/profil` et `/analytique` dans ROUTE_LABELS
+- **Fix message double** : `NewConversationModal` avait `onClick` + `type="submit"` sur le bouton Envoyer → double appel `handleSubmit`
+- Déduplication realtime INSERT par `message.id` dans LiaisonPage
+
+#### Métriques session (16/03/2026)
+- Tests : 2026 → 2084 (+58 tests, 116 fichiers)
+- Migrations : 35 → 38
 
 ### Semaine 11 — 10 mars 2026 (PRs #154–#155)
 

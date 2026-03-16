@@ -280,7 +280,10 @@ export function LiaisonPage() {
         selectedConv.id,
         (eventType, message) => {
           if (eventType === 'INSERT') {
-            setMessages(prev => [...prev, message])
+            setMessages(prev => {
+              if (prev.some(m => m.id === message.id)) return prev
+              return [...prev, message]
+            })
             // Mettre à jour le dernier message dans la liste
             setConversations(prev =>
               prev.map(c =>

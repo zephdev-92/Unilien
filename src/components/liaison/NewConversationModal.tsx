@@ -270,8 +270,7 @@ export function NewConversationModal({
               bg="brand.500"
               color="white"
               _hover={{ bg: 'brand.600' }}
-              onClick={handleSubmit}
-              isLoading={isSubmitting}
+              loading={isSubmitting}
               type="submit"
               form="new-msg-form"
             >

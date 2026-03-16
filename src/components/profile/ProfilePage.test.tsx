@@ -212,7 +212,7 @@ describe('ProfilePage', () => {
       renderWithProviders(<ProfilePage />)
 
       await waitFor(() => {
-        expect(screen.getByText('Mon metier')).toBeInTheDocument()
+        expect(screen.getAllByText('Mon métier').length).toBeGreaterThanOrEqual(1)
       })
     })
 

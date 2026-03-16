@@ -118,7 +118,10 @@ export function ProfilePage() {
           { id: 'section-urgence', label: "Contacts d'urgence" },
         ]
       : userRole === 'employee'
-        ? [{ id: 'section-metier', label: 'Mon metier' }]
+        ? [
+            { id: 'section-metier', label: 'Mon métier' },
+            { id: 'section-urgence-employee', label: "Contacts d'urgence" },
+          ]
         : [{ id: 'section-aidant', label: 'Mon profil aidant' }]),
   ]
 
@@ -465,6 +468,44 @@ function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; 
               </Box>
             </Flex>
           </Stack>
+        </Box>
+      </Box>
+
+      {/* Contacts d'urgence */}
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+          <Text fontSize="md" fontWeight={700}>Contacts d&apos;urgence</Text>
+        </Box>
+        <Box px={6} py={5}>
+          {(employee?.emergencyContacts?.length ?? 0) === 0 ? (
+            <Text color="text.muted" fontSize="sm" textAlign="center" py={4}>
+              Aucun contact d&apos;urgence enregistré
+            </Text>
+          ) : (
+            <Stack gap={3}>
+              {employee?.emergencyContacts?.map((contact, index) => (
+                <Flex
+                  key={index}
+                  p={4}
+                  bg="bg.page"
+                  borderRadius="10px"
+                  borderWidth="1px"
+                  borderColor="border.default"
+                  align="center"
+                  gap={4}
+                >
+                  <Avatar.Root size="sm">
+                    <Avatar.Fallback name={contact.name} bg="brand.500" color="white" />
+                  </Avatar.Root>
+                  <Box flex={1}>
+                    <Text fontWeight={600} fontSize="sm">{contact.name}</Text>
+                    <Text fontSize="xs" color="text.muted">{contact.relationship}</Text>
+                  </Box>
+                  <Text fontSize="sm" color="text.muted">{contact.phone}</Text>
+                </Flex>
+              ))}
+            </Stack>
+          )}
         </Box>
       </Box>
 
