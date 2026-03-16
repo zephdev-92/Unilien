@@ -402,11 +402,17 @@ function MaskedValue({ value, visibleEnd = 2, prefix = '' }: { value?: string; v
         {revealed ? value : masked}
       </Text>
       <Button
-        variant="ghost"
+        variant="outline"
         size="xs"
-        fontSize="xs"
+        fontSize="11px"
         fontWeight={600}
-        color="text.muted"
+        color="text.secondary"
+        borderColor="border.default"
+        borderWidth="1.5px"
+        borderRadius="6px"
+        px={3}
+        h="26px"
+        _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
         onClick={() => setRevealed(!revealed)}
         aria-label={revealed ? 'Masquer' : 'Afficher'}
       >
