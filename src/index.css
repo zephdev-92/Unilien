@@ -112,6 +112,49 @@ li {
   outline: 3px solid #3D5166 !important;
 }
 
+/* ===== Densite interface : compact ===== */
+[data-density='compact'] {
+  --density-spacing: 0.75;
+}
+
+[data-density='compact'] .chakra-card__body {
+  padding: 12px !important;
+}
+
+[data-density='compact'] .chakra-card__header {
+  padding: 8px 12px !important;
+}
+
+[data-density='compact'] .chakra-stack {
+  gap: 12px;
+}
+
+[data-density='compact'] .chakra-table td,
+[data-density='compact'] .chakra-table th {
+  padding: 6px 8px !important;
+}
+
+[data-density='compact'] .chakra-button {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+/* Sidebar navigation — compact */
+[data-density='compact'] #app-sidebar .chakra-stack {
+  gap: 0 !important;
+}
+
+[data-density='compact'] #app-sidebar [data-sidebar-section] {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+[data-density='compact'] #app-sidebar [data-sidebar-item] {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  min-height: 32px !important;
+}
+
 /* Masquer visuellement mais garder accessible */
 .visually-hidden {
   position: absolute;

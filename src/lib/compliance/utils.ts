@@ -34,8 +34,13 @@ export function calculateShiftDuration(
   const startMinutes = timeToMinutes(startTime)
   let endMinutes = timeToMinutes(endTime)
 
-  // Si l'intervention passe minuit ou dure 24h (même heure début/fin)
-  if (endMinutes <= startMinutes) {
+  // Si même heure début/fin → durée 0 (pas 24h, sauf garde 24h gérée ailleurs)
+  if (endMinutes === startMinutes) {
+    return 0
+  }
+
+  // Si l'intervention passe minuit (fin < début)
+  if (endMinutes < startMinutes) {
     endMinutes += 24 * 60
   }
 
@@ -237,7 +242,10 @@ export function getEffectiveHours(
   if (type === 'presence_day') return rawHours * (2 / 3)
   if (type === 'guard_24h') {
     // Somme des heures effectives de tous les segments de type 'effective' (hors pause)
-    if (!shift.guardSegments?.length) return rawHours // fallback gracieux
+    if (!shift.guardSegments?.length) {
+      // Garde 24h sans segments : si start === end, c'est une garde complète de 24h
+      return rawHours === 0 ? 24 : rawHours
+    }
     return shift.guardSegments.reduce((total, seg, i, arr) => {
       const end = arr[i + 1]?.startTime ?? shift.startTime
       const mins = calculateShiftDuration(seg.startTime, end, 0)

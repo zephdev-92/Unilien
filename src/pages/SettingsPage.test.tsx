@@ -8,6 +8,33 @@ import { SettingsPage } from './SettingsPage'
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 
+vi.mock('@/hooks/usePushNotifications', () => ({
+  usePushNotifications: vi.fn().mockReturnValue({
+    isSupported: true, isConfigured: true, permission: 'default',
+    isSubscribed: false, isLoading: false, error: null,
+    subscribe: vi.fn().mockResolvedValue(true), unsubscribe: vi.fn().mockResolvedValue(true),
+    requestPermission: vi.fn(), showNotification: vi.fn(),
+  }),
+}))
+
+vi.mock('@/services/profileService', () => ({
+  updateProfile: vi.fn().mockResolvedValue(undefined),
+  uploadAvatar: vi.fn().mockResolvedValue({ url: 'https://example.com/avatar.jpg' }),
+  deleteAvatar: vi.fn().mockResolvedValue(undefined),
+  validateAvatarFile: vi.fn().mockReturnValue({ valid: true }),
+}))
+
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: 'test@test.com' } } }), updateUser: vi.fn().mockResolvedValue({ error: null }), signInWithPassword: vi.fn().mockResolvedValue({ error: null }) },
+    from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ data: [] }) }) }),
+  },
+}))
+
+vi.mock('@/lib/logger', () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
+}))
+
 vi.mock('@/components/dashboard', () => ({
   DashboardLayout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="layout">{children}</div>
@@ -136,11 +163,11 @@ describe('SettingsPage', () => {
       expect(screen.getByText('Désactiver le compte')).toBeInTheDocument()
     })
 
-    it('affiche le champ de confirmation quand on clique sur Supprimer', () => {
+    it('affiche les boutons zone de danger en disabled', () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Sécurité'))
-      fireEvent.click(screen.getByText('Supprimer', { exact: true }))
-      expect(screen.getByPlaceholderText('SUPPRIMER')).toBeInTheDocument()
+      const supprimerBtn = screen.getByRole('button', { name: 'Supprimer' })
+      expect(supprimerBtn).toBeDisabled()
     })
   })
 
@@ -197,8 +224,8 @@ describe('SettingsPage', () => {
       fireEvent.click(screen.getByText('Notifications'))
       expect(screen.getByText('Notifications push')).toBeInTheDocument()
       expect(screen.getByText('Notifications e-mail')).toBeInTheDocument()
-      expect(screen.getByText('Rappels d\'intervention')).toBeInTheDocument()
-      expect(screen.getByText('Bulletins de paie générés')).toBeInTheDocument()
+      expect(screen.getByText('Activer les notifications push')).toBeInTheDocument()
+      expect(screen.getByText('Activer les e-mails')).toBeInTheDocument()
     })
   })
 

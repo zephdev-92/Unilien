@@ -343,13 +343,22 @@ describe('getCaregiverStats', () => {
       { id: 'log-3', read_by: null },
       { id: 'log-4', read_by: [] },
     ]
+    const shiftsToday = [{ id: 's-5' }, { id: 's-6' }]
+    const monthShiftsWithHours = [
+      { start_time: '08:00', end_time: '12:00' },
+      { start_time: '14:00', end_time: '16:00' },
+    ]
 
     mockSupabaseQuerySequence([
-      { data: { employer_id: EMPLOYER_ID }, error: null },     // caregiver.single()
-      { data: contracts, error: null },                        // contracts
-      { data: shiftsThisMonth, error: null },                  // shiftsThisMonth
-      { data: upcomingShifts, error: null },                   // upcomingShifts
-      { data: logEntries, error: null },                       // logEntries
+      { data: { employer_id: EMPLOYER_ID }, error: null },     // 1. caregiver.single()
+      { data: contracts, error: null },                        // 2. contracts
+      { data: shiftsThisMonth, error: null },                  // 3. shiftsThisMonth
+      { data: upcomingShifts, error: null },                   // 4. upcomingShifts
+      { data: logEntries, error: null },                       // 5. logEntries
+      { data: shiftsToday, error: null },                      // 6. shiftsToday
+      { data: monthShiftsWithHours, error: null },             // 7. monthShiftsWithHours
+      { data: { pch_beneficiary: true, pch_monthly_hours: 62 }, error: null }, // 8. employer PCH
+      { data: [{ id: 'doc-1' }], error: null },                // 9. documents to sign
     ])
 
     const result = await getCaregiverStats(CAREGIVER_ID)
@@ -362,6 +371,11 @@ describe('getCaregiverStats', () => {
     // log-3: read_by = null -> null?.includes -> false -> unread
     // log-4: read_by = [] -> pas inclus -> unread
     expect(result.unreadLogs).toBe(3)
+    expect(result.shiftsToday).toBe(2)
+    expect(result.hoursThisMonth).toBe(6) // 4h + 2h
+    expect(result.pchMonthlyHours).toBe(62)
+    expect(result.pchRemaining).toBe(56) // 62 - 6
+    expect(result.documentsToSign).toBe(1)
   })
 
   it('retourne tout a 0 si pas d employeur associe', async () => {
@@ -376,6 +390,11 @@ describe('getCaregiverStats', () => {
       logEntriesThisWeek: 0,
       upcomingShifts: 0,
       unreadLogs: 0,
+      shiftsToday: 0,
+      hoursThisMonth: 0,
+      pchMonthlyHours: 0,
+      pchRemaining: 0,
+      documentsToSign: 0,
     })
   })
 
@@ -391,6 +410,11 @@ describe('getCaregiverStats', () => {
       logEntriesThisWeek: 0,
       upcomingShifts: 0,
       unreadLogs: 0,
+      shiftsToday: 0,
+      hoursThisMonth: 0,
+      pchMonthlyHours: 0,
+      pchRemaining: 0,
+      documentsToSign: 0,
     })
   })
 
@@ -400,12 +424,16 @@ describe('getCaregiverStats', () => {
       { data: [], error: null },          // contracts vides
       // Pas de query shifts car contractIds.length === 0
       { data: [], error: null },          // logEntries
+      { data: { pch_beneficiary: false, pch_monthly_hours: 0 }, error: null }, // employer PCH
+      { data: [], error: null },          // documents
     ])
 
     const result = await getCaregiverStats(CAREGIVER_ID)
 
     expect(result.shiftsThisMonth).toBe(0)
     expect(result.upcomingShifts).toBe(0)
+    expect(result.shiftsToday).toBe(0)
+    expect(result.hoursThisMonth).toBe(0)
   })
 
   it('calcule les unreadLogs en excluant ceux lus par le caregiver', async () => {
@@ -418,10 +446,14 @@ describe('getCaregiverStats', () => {
 
     mockSupabaseQuerySequence([
       { data: { employer_id: EMPLOYER_ID }, error: null },
-      { data: [{ id: 'c-1' }], error: null },
-      { data: [], error: null },
-      { data: [], error: null },
-      { data: logEntries, error: null },
+      { data: [{ id: 'c-1' }], error: null },             // contracts
+      { data: [], error: null },                           // shiftsThisMonth
+      { data: [], error: null },                           // upcomingShifts
+      { data: logEntries, error: null },                   // logEntries
+      { data: [], error: null },                           // shiftsToday
+      { data: [], error: null },                           // monthShiftsWithHours
+      { data: { pch_beneficiary: false, pch_monthly_hours: 0 }, error: null },
+      { data: [], error: null },                           // documents
     ])
 
     const result = await getCaregiverStats(CAREGIVER_ID)
@@ -433,10 +465,14 @@ describe('getCaregiverStats', () => {
   it('gere logEntries null', async () => {
     mockSupabaseQuerySequence([
       { data: { employer_id: EMPLOYER_ID }, error: null },
-      { data: [{ id: 'c-1' }], error: null },
-      { data: [{ id: 's-1' }], error: null },
-      { data: [], error: null },
-      { data: null, error: null },    // logEntries null
+      { data: [{ id: 'c-1' }], error: null },             // contracts
+      { data: [{ id: 's-1' }], error: null },              // shiftsThisMonth
+      { data: [], error: null },                           // upcomingShifts
+      { data: null, error: null },                         // logEntries null
+      { data: [], error: null },                           // shiftsToday
+      { data: [], error: null },                           // monthShiftsWithHours
+      { data: { pch_beneficiary: false, pch_monthly_hours: 0 }, error: null },
+      { data: [], error: null },                           // documents
     ])
 
     const result = await getCaregiverStats(CAREGIVER_ID)

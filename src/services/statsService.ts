@@ -37,6 +37,11 @@ export interface CaregiverStats {
   logEntriesThisWeek: number
   upcomingShifts: number
   unreadLogs: number
+  shiftsToday: number
+  hoursThisMonth: number
+  pchMonthlyHours: number
+  pchRemaining: number
+  documentsToSign: number
 }
 
 /**
@@ -258,6 +263,11 @@ export async function getCaregiverStats(caregiverId: string): Promise<CaregiverS
       logEntriesThisWeek: 0,
       upcomingShifts: 0,
       unreadLogs: 0,
+      shiftsToday: 0,
+      hoursThisMonth: 0,
+      pchMonthlyHours: 0,
+      pchRemaining: 0,
+      documentsToSign: 0,
     }
   }
 
@@ -305,11 +315,61 @@ export async function getCaregiverStats(caregiverId: string): Promise<CaregiverS
     entry => !entry.read_by?.includes(caregiverId)
   ).length
 
+  // Shifts du jour
+  const today = format(now, 'yyyy-MM-dd')
+  const { data: shiftsToday } = contractIds.length > 0
+    ? await supabase
+        .from('shifts')
+        .select('id')
+        .in('contract_id', contractIds)
+        .eq('date', today)
+    : { data: [] }
+
+  // Heures du mois (shifts completed + planned avec durée)
+  const { data: monthShiftsWithHours } = contractIds.length > 0
+    ? await supabase
+        .from('shifts')
+        .select('start_time, end_time')
+        .in('contract_id', contractIds)
+        .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
+        .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
+        .in('status', ['completed', 'planned'])
+    : { data: [] }
+
+  let hoursThisMonth = 0
+  for (const s of monthShiftsWithHours || []) {
+    const [sh, sm] = (s.start_time as string).split(':').map(Number)
+    const [eh, em] = (s.end_time as string).split(':').map(Number)
+    hoursThisMonth += (eh * 60 + em - sh * 60 - sm) / 60
+  }
+
+  // PCH : enveloppe de l'employeur
+  const { data: employer } = await supabase
+    .from('employers')
+    .select('pch_beneficiary, pch_monthly_hours')
+    .eq('profile_id', employerId)
+    .maybeSingle()
+
+  const pchMonthlyHours = (employer?.pch_beneficiary && employer?.pch_monthly_hours) ? employer.pch_monthly_hours : 0
+  const pchRemaining = Math.max(0, pchMonthlyHours - hoursThisMonth)
+
+  // Documents à signer
+  const { data: docsToSign } = await supabase
+    .from('documents')
+    .select('id')
+    .eq('user_id', employerId)
+    .eq('status', 'pending')
+
   return {
     shiftsThisMonth: shiftsThisMonth?.length || 0,
     logEntriesThisWeek: logEntries?.length || 0,
     upcomingShifts: upcomingShiftsData?.length || 0,
     unreadLogs,
+    shiftsToday: shiftsToday?.length || 0,
+    hoursThisMonth: Math.round(hoursThisMonth * 10) / 10,
+    pchMonthlyHours,
+    pchRemaining: Math.round(pchRemaining * 10) / 10,
+    documentsToSign: docsToSign?.length || 0,
   }
 }
 

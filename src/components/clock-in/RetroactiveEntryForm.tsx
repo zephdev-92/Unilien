@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Flex, Text, Input, Button, Stack } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -37,6 +37,25 @@ export function RetroactiveEntryForm({
     return initial
   })
 
+  // Resynchroniser les entries quand les shifts changent (après validation ou changement de date)
+  useEffect(() => {
+    setEntries((prev) => {
+      const next: Record<string, ShiftEntry> = {}
+      for (const shift of shifts) {
+        if (shift.status !== 'completed') {
+          // Garder les valeurs éditées par l'utilisateur si elles existent déjà
+          next[shift.id] = prev[shift.id] ?? {
+            shiftId: shift.id,
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+          }
+        }
+      }
+      return next
+    })
+    setErrors({})
+  }, [shifts])
+
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submittingId, setSubmittingId] = useState<string | null>(null)
 
@@ -58,7 +77,11 @@ export function RetroactiveEntryForm({
     const entry = entries[shiftId]
     if (!entry) return
 
-    if (entry.startTime >= entry.endTime) {
+    // Pour les gardes 24h et les nuits, l'heure de fin peut être <= début (chevauchement minuit)
+    const shift = shifts.find((s) => s.id === shiftId)
+    const allowsOvernight = shift?.shiftType === 'guard_24h' || shift?.shiftType === 'presence_night'
+
+    if (entry.startTime >= entry.endTime && !allowsOvernight) {
       setErrors((prev) => ({
         ...prev,
         [shiftId]: "L'heure de début doit être antérieure à l'heure de fin",

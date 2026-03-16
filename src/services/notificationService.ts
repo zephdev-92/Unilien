@@ -252,6 +252,7 @@ export async function updateNotificationPreferences(
 
   if (error) {
     logger.error('Erreur mise à jour préférences:', error)
+    throw new Error(error.message)
   }
 }
 

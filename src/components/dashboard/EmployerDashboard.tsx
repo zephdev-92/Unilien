@@ -76,44 +76,55 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
   }, [profile.id])
 
   return (
-    <Stack gap={6}>
-      <WelcomeCard
-        profile={profile}
-        nextShift={shifts[0] ?? null}
-        complianceAlertCount={complianceAlertCount}
-        loading={isLoadingShifts}
-      />
-      <ActionNudgesWidget employerId={profile.id} />
-      <StatsWidget userRole="employer" profileId={profile.id} />
-      <Grid templateColumns={{ base: '1fr', lg: '1fr 340px' }} gap={6}>
-        <GridItem minW={0}>
-          <Stack gap={6}>
-            <TodayPlanningWidget employerId={profile.id} />
-            {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (
-              <PchEnvelopeWidget employerId={profile.id} />
-            )}
-            <BudgetForecastWidget employerId={profile.id} />
-          </Stack>
-        </GridItem>
-        <GridItem minW={0}>
-          <Stack gap={6}>
-            <ComplianceWidget employerId={profile.id} />
-            <QuickActionsWidget userRole="employer" />
-          </Stack>
-        </GridItem>
-      </Grid>
-      {/* TODO: réactiver quand les données seront disponibles
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
-        <TeamWidget employerId={profile.id} />
-        <UpcomingShiftsWidget
-          shifts={shifts}
+    <Grid
+      templateColumns={{ base: '1fr', lg: '1fr 340px' }}
+      gap={6}
+    >
+      {/* Mobile: 1 — Desktop: full width row */}
+      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 1, lg: 0 }}>
+        <WelcomeCard
+          profile={profile}
+          nextShift={shifts[0] ?? null}
+          complianceAlertCount={complianceAlertCount}
           loading={isLoadingShifts}
-          userRole="employer"
         />
-      </SimpleGrid>
-      <RecentLogsWidget employerId={profile.id} />
-      */}
-    </Stack>
+      </GridItem>
+
+      {/* Mobile: 5 — Desktop: 2e (full width) */}
+      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 5, lg: 1 }}>
+        <ActionNudgesWidget employerId={profile.id} />
+      </GridItem>
+
+      {/* Mobile: 8 (dernier) — Desktop: 3e (full width, avant la grille) */}
+      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 8, lg: 2 }}>
+        <StatsWidget userRole="employer" profileId={profile.id} />
+      </GridItem>
+
+      {/* Mobile: 2 — Desktop: col gauche */}
+      <GridItem order={{ base: 2, lg: 3 }} minW={0}>
+        <TodayPlanningWidget employerId={profile.id} />
+      </GridItem>
+
+      {/* Mobile: 3 — Desktop: col droite, span rows */}
+      <GridItem order={{ base: 3, lg: 3 }} gridRow={{ lg: 'span 3' }} minW={0}>
+        <Stack gap={6}>
+          <ComplianceWidget employerId={profile.id} />
+          <QuickActionsWidget userRole="employer" />
+        </Stack>
+      </GridItem>
+
+      {/* Mobile: 6 — Desktop: col gauche */}
+      {employer?.pchBeneficiary && employer.pchType && employer.pchMonthlyHours && (
+        <GridItem order={{ base: 6, lg: 4 }} minW={0}>
+          <PchEnvelopeWidget employerId={profile.id} />
+        </GridItem>
+      )}
+
+      {/* Mobile: 7 — Desktop: col gauche */}
+      <GridItem order={{ base: 7, lg: 5 }} minW={0}>
+        <BudgetForecastWidget employerId={profile.id} />
+      </GridItem>
+    </Grid>
   )
 }
 

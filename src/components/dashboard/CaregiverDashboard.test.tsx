@@ -15,17 +15,23 @@ vi.mock('./widgets', () => ({
     <div data-testid="stats-widget" data-role={userRole} />
   ),
   QuickActionsWidget: () => <div data-testid="quick-actions-widget" />,
-  UpcomingShiftsWidget: ({ shifts }: { shifts: unknown[] }) => (
-    <div data-testid="upcoming-shifts-widget" data-count={shifts.length} />
+  ClockInWidget: ({ variant }: { variant?: string }) => (
+    <div data-testid="clockin-widget" data-variant={variant} />
   ),
-  TeamWidget: ({ employerId }: { employerId: string }) => (
-    <div data-testid="team-widget" data-employer-id={employerId} />
+  PchEnvelopeWidget: ({ employerId }: { employerId: string }) => (
+    <div data-testid="pch-envelope-widget" data-employer-id={employerId} />
   ),
-  ComplianceWidget: ({ employerId }: { employerId: string }) => (
-    <div data-testid="compliance-widget" data-employer-id={employerId} />
+  PchMiniWidget: ({ employerId }: { employerId: string }) => (
+    <div data-testid="pch-mini-widget" data-employer-id={employerId} />
   ),
-  RecentLogsWidget: ({ employerId }: { employerId: string }) => (
-    <div data-testid="recent-logs-widget" data-employer-id={employerId} />
+  WeekSummaryWidget: ({ userId }: { userId: string }) => (
+    <div data-testid="week-summary-widget" data-user-id={userId} />
+  ),
+  RecentMessagesWidget: ({ userId }: { userId: string }) => (
+    <div data-testid="recent-messages-widget" data-user-id={userId} />
+  ),
+  CaregiverShiftTimeline: ({ profileId }: { profileId: string }) => (
+    <div data-testid="caregiver-timeline" data-profile-id={profileId} />
   ),
 }))
 
@@ -38,6 +44,22 @@ vi.mock('@/services/caregiverService', () => ({
   getCaregiver: (...args: unknown[]) => mockGetCaregiver(...args),
   getUpcomingShiftsForCaregiver: (...args: unknown[]) =>
     mockGetUpcomingShiftsForCaregiver(...args),
+}))
+
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { first_name: 'Marie', last_name: 'Fontaine' } }),
+        }),
+      }),
+    }),
+  },
+}))
+
+vi.mock('@/lib/logger', () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -77,6 +99,15 @@ function makeCaregiver(permissions: CaregiverPermissions, employerId = 'employer
   }
 }
 
+// Helper: certains widgets sont dupliqués (layout desktop + mobile)
+function queryTestId(testId: string) {
+  return screen.queryAllByTestId(testId)
+}
+
+function expectPresent(testId: string) {
+  expect(queryTestId(testId).length).toBeGreaterThan(0)
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('CaregiverDashboard', () => {
@@ -89,7 +120,6 @@ describe('CaregiverDashboard', () => {
     it('affiche un spinner pendant le chargement', () => {
       mockGetCaregiver.mockReturnValue(new Promise(() => {}))
       renderWithProviders(<CaregiverDashboard profile={profile} />)
-      // Le WelcomeCard n'est pas encore affiché — spinner à la place
       expect(screen.queryByTestId('welcome-card')).not.toBeInTheDocument()
     })
   })
@@ -108,8 +138,8 @@ describe('CaregiverDashboard', () => {
       mockGetCaregiver.mockResolvedValue(null)
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.queryByTestId('stats-widget')).not.toBeInTheDocument()
-        expect(screen.queryByTestId('upcoming-shifts-widget')).not.toBeInTheDocument()
+        expect(queryTestId('stats-widget')).toHaveLength(0)
+        expect(queryTestId('caregiver-timeline')).toHaveLength(0)
       })
     })
   })
@@ -123,12 +153,19 @@ describe('CaregiverDashboard', () => {
       })
     })
 
-    it("n'affiche pas les widgets planifiés ou liaison", async () => {
+    it("n'affiche pas la timeline sans permission planning", async () => {
       mockGetCaregiver.mockResolvedValue(makeCaregiver(noPermissions))
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.queryByTestId('upcoming-shifts-widget')).not.toBeInTheDocument()
-        expect(screen.queryByTestId('recent-logs-widget')).not.toBeInTheDocument()
+        expect(queryTestId('caregiver-timeline')).toHaveLength(0)
+      })
+    })
+
+    it('affiche quand même les stats aidant', async () => {
+      mockGetCaregiver.mockResolvedValue(makeCaregiver(noPermissions))
+      renderWithProviders(<CaregiverDashboard profile={profile} />)
+      await waitFor(() => {
+        expectPresent('stats-widget')
       })
     })
   })
@@ -148,30 +185,57 @@ describe('CaregiverDashboard', () => {
     it('affiche le QuickActionsWidget', async () => {
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.getByTestId('quick-actions-widget')).toBeInTheDocument()
+        expectPresent('quick-actions-widget')
       })
     })
 
-    it('affiche l\'UpcomingShiftsWidget si canViewPlanning', async () => {
+    it('affiche la CaregiverShiftTimeline si canViewPlanning', async () => {
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.getByTestId('upcoming-shifts-widget')).toBeInTheDocument()
+        expectPresent('caregiver-timeline')
       })
     })
 
-    it('affiche le RecentLogsWidget si canViewLiaison', async () => {
+    it('affiche le ClockInWidget avec variant warm', async () => {
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.getByTestId('recent-logs-widget')).toBeInTheDocument()
+        const widgets = screen.getAllByTestId('clockin-widget')
+        expect(widgets[0]).toHaveAttribute('data-variant', 'warm')
       })
     })
 
-    it("n'affiche pas StatsWidget, TeamWidget, ComplianceWidget sans permissions avancées", async () => {
+    it('affiche le PchEnvelopeWidget', async () => {
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.queryByTestId('stats-widget')).not.toBeInTheDocument()
-        expect(screen.queryByTestId('team-widget')).not.toBeInTheDocument()
-        expect(screen.queryByTestId('compliance-widget')).not.toBeInTheDocument()
+        expectPresent('pch-envelope-widget')
+      })
+    })
+
+    it('affiche le WeekSummaryWidget', async () => {
+      renderWithProviders(<CaregiverDashboard profile={profile} />)
+      await waitFor(() => {
+        expectPresent('week-summary-widget')
+      })
+    })
+
+    it('affiche le RecentMessagesWidget', async () => {
+      renderWithProviders(<CaregiverDashboard profile={profile} />)
+      await waitFor(() => {
+        expectPresent('recent-messages-widget')
+      })
+    })
+
+    it('affiche le PchMiniWidget', async () => {
+      renderWithProviders(<CaregiverDashboard profile={profile} />)
+      await waitFor(() => {
+        expectPresent('pch-mini-widget')
+      })
+    })
+
+    it('affiche StatsWidget avec stats aidant (sans employerId) sans permissions avancées', async () => {
+      renderWithProviders(<CaregiverDashboard profile={profile} />)
+      await waitFor(() => {
+        expectPresent('stats-widget')
       })
     })
 
@@ -188,28 +252,10 @@ describe('CaregiverDashboard', () => {
       mockGetCaregiver.mockResolvedValue(makeCaregiver(advancedPermissions, 'employer-99'))
     })
 
-    it('affiche le StatsWidget avec employerId de l\'aidant', async () => {
+    it('affiche le StatsWidget avec employerId', async () => {
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.getByTestId('stats-widget')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche le TeamWidget si canManageTeam', async () => {
-      renderWithProviders(<CaregiverDashboard profile={profile} />)
-      await waitFor(() => {
-        const teamWidget = screen.getByTestId('team-widget')
-        expect(teamWidget).toBeInTheDocument()
-        expect(teamWidget).toHaveAttribute('data-employer-id', 'employer-99')
-      })
-    })
-
-    it('affiche le ComplianceWidget si canExportData', async () => {
-      renderWithProviders(<CaregiverDashboard profile={profile} />)
-      await waitFor(() => {
-        const complianceWidget = screen.getByTestId('compliance-widget')
-        expect(complianceWidget).toBeInTheDocument()
-        expect(complianceWidget).toHaveAttribute('data-employer-id', 'employer-99')
+        expectPresent('stats-widget')
       })
     })
 
@@ -227,8 +273,7 @@ describe('CaregiverDashboard', () => {
   })
 
   describe('Gestion des erreurs', () => {
-    it('affiche le message "Profil aidant non configuré" si getCaregiver échoue (caregiver reste null)', async () => {
-      // Quand getCaregiver rejette, caregiver reste null → early return "non configuré"
+    it('affiche le message "Profil aidant non configuré" si getCaregiver échoue', async () => {
       mockGetCaregiver.mockRejectedValue(new Error('Réseau'))
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
@@ -237,7 +282,6 @@ describe('CaregiverDashboard', () => {
     })
 
     it('affiche un message d\'erreur si getUpcomingShiftsForCaregiver échoue', async () => {
-      // getCaregiver réussit (caregiver non-null) → le catch atteint setError visible
       mockGetCaregiver.mockResolvedValue(makeCaregiver(viewPermissions))
       mockGetUpcomingShiftsForCaregiver.mockRejectedValue(new Error('Réseau'))
       renderWithProviders(<CaregiverDashboard profile={profile} />)

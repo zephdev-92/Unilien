@@ -500,7 +500,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
             const visibleItems = section.items.filter(filterNavItem)
             if (visibleItems.length === 0) return null
             return (
-              <Box key={section.label} py={3}>
+              <Box key={section.label} py={3} data-sidebar-section="">
                 <Text
                   fontSize="xs"
                   fontWeight="bold"
@@ -525,6 +525,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                       >
                         <RouterLink to={item.href}>
                           <Flex
+                            data-sidebar-item=""
                             align="center"
                             gap={3}
                             px={5}

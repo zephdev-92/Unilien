@@ -8,6 +8,8 @@ interface WelcomeCardProps {
   complianceAlertCount?: number
   todayEmployeeCount?: number
   todayShiftCount?: number
+  /** Number of care sessions today (caregiver) */
+  todayCareCount?: number
   loading?: boolean
 }
 
@@ -71,6 +73,7 @@ export function WelcomeCard({
   complianceAlertCount,
   todayEmployeeCount,
   todayShiftCount,
+  todayCareCount,
   loading = false,
 }: WelcomeCardProps) {
   const currentHour = new Date().getHours()
@@ -80,12 +83,17 @@ export function WelcomeCard({
   else if (currentHour < 18) greeting = 'Bon après-midi'
   else greeting = 'Bonsoir'
 
+  const isCaregiver = profile.role === 'caregiver'
+  const gradient = isCaregiver
+    ? 'linear-gradient(135deg, #5E5038, #8A7A60)'
+    : 'linear-gradient(135deg, #3D5166, #5A6190)'
+
   if (loading) {
     return (
       <Box
         borderRadius="16px"
         p={{ base: 5, md: 6 }}
-        bg="linear-gradient(135deg, #3D5166, #5A6190)"
+        bg={gradient}
       >
         <Skeleton height="14px" width="180px" mb={2} />
         <Skeleton height="28px" width="260px" mb={3} />
@@ -112,7 +120,7 @@ export function WelcomeCard({
     )
   }
 
-  if (nextShift && !(profile.role === 'employer' && todayEmployeeCount)) {
+  if (profile.role !== 'caregiver' && nextShift && !(profile.role === 'employer' && todayEmployeeCount)) {
     chips.push(
       <GlassChip key="shift" highlighted>
         {formatNextShiftChip(nextShift)}
@@ -124,6 +132,14 @@ export function WelcomeCard({
     chips.push(
       <GlassChip key="today-shifts">
         {todayShiftCount} intervention{todayShiftCount > 1 ? 's' : ''} aujourd&apos;hui
+      </GlassChip>
+    )
+  }
+
+  if (profile.role === 'caregiver' && todayCareCount !== undefined && todayCareCount > 0) {
+    chips.push(
+      <GlassChip key="care-count">
+        {todayCareCount} intervention{todayCareCount > 1 ? 's' : ''} prévue{todayCareCount > 1 ? 's' : ''} aujourd&apos;hui
       </GlassChip>
     )
   }
@@ -141,7 +157,7 @@ export function WelcomeCard({
       align="center"
       justify="space-between"
       gap={4}
-      bg="linear-gradient(135deg, #3D5166, #5A6190)"
+      bg={gradient}
       borderRadius="16px"
       px={{ base: 5, md: 6 }}
       py={5}
@@ -167,7 +183,7 @@ export function WelcomeCard({
       <Box flexShrink={0}>
         <Box
           as={RouterLink}
-          to={profile.role === 'employee' ? '/suivi-des-heures' : '/planning'}
+          to={profile.role === 'employee' ? '/suivi-des-heures' : isCaregiver ? '/planning' : '/planning'}
           display="inline-flex"
           alignItems="center"
           px={4}
@@ -187,7 +203,7 @@ export function WelcomeCard({
             outlineOffset: '2px',
           }}
         >
-          {profile.role === 'employee' ? 'Enregistrer mes heures →' : 'Voir le planning du jour →'}
+          {profile.role === 'employee' ? 'Enregistrer mes heures →' : isCaregiver ? 'Mon planning →' : 'Voir le planning du jour →'}
         </Box>
       </Box>
     </Flex>
