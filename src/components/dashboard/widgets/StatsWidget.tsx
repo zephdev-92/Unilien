@@ -12,8 +12,8 @@ import {
   type CaregiverStats,
 } from '@/services/statsService'
 
-type StatIconType = 'clock' | 'money' | 'calendar' | 'users' | 'home' | 'notebook'
-type StatIconColor = 'blue' | 'green' | 'orange'
+type StatIconType = 'clock' | 'money' | 'calendar' | 'users' | 'home' | 'notebook' | 'shield' | 'file'
+type StatIconColor = 'blue' | 'green' | 'orange' | 'warn'
 
 interface Stat {
   label: string
@@ -43,6 +43,7 @@ const ICON_BG_COLORS: Record<StatIconColor, { bg: string; color: string }> = {
   blue: { bg: 'brand.50', color: 'brand.500' },
   green: { bg: 'accent.50', color: 'accent.700' },
   orange: { bg: 'warm.50', color: 'warm.500' },
+  warn: { bg: '#FEF9C3', color: '#B45309' },
 }
 
 const ICON_NAV_NAMES: Record<StatIconType, string> = {
@@ -52,6 +53,8 @@ const ICON_NAV_NAMES: Record<StatIconType, string> = {
   users: 'users',
   home: 'grid',
   notebook: 'book',
+  shield: 'shield',
+  file: 'file',
 }
 
 function StatIcon({ type, color }: { type: StatIconType; color: StatIconColor }) {
@@ -162,19 +165,35 @@ function formatEmployeeStats(stats: EmployeeStats): Stat[] {
 function formatCaregiverStats(stats: CaregiverStats): Stat[] {
   return [
     {
-      label: 'Interventions',
-      value: stats.shiftsThisMonth.toString(),
-      change: stats.upcomingShifts > 0 ? `${stats.upcomingShifts} \u00e0 venir` : 'Ce mois',
+      label: 'Interventions du jour',
+      value: stats.shiftsToday.toString(),
+      change: stats.upcomingShifts > 0 ? `${stats.upcomingShifts} à venir` : 'Aujourd\'hui',
       changeType: stats.upcomingShifts > 0 ? 'positive' : 'neutral',
-      iconType: 'calendar',
+      iconType: 'clock',
+      iconColor: 'blue',
+    },
+    {
+      label: 'Heures ce mois',
+      value: `${stats.hoursThisMonth}h`,
+      change: stats.pchMonthlyHours > 0 ? `sur ${stats.pchMonthlyHours}h allouées PCH` : 'Ce mois',
+      changeType: 'positive',
+      iconType: 'clock',
       iconColor: 'green',
     },
     {
-      label: 'Notes cahier',
-      value: stats.logEntriesThisWeek.toString(),
-      change: stats.unreadLogs > 0 ? `${stats.unreadLogs} non lue${stats.unreadLogs > 1 ? 's' : ''}` : 'Cette semaine',
-      changeType: stats.unreadLogs > 0 ? 'negative' : 'neutral',
-      iconType: 'notebook',
+      label: 'Enveloppe PCH restante',
+      value: `${stats.pchRemaining}h`,
+      change: new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+      changeType: 'neutral',
+      iconType: 'shield',
+      iconColor: 'warn',
+    },
+    {
+      label: 'Documents à signer',
+      value: stats.documentsToSign.toString(),
+      change: stats.documentsToSign > 0 ? 'Consulter →' : 'Aucun en attente',
+      changeType: stats.documentsToSign > 0 ? 'positive' : 'neutral',
+      iconType: 'file',
       iconColor: 'blue',
     },
   ]

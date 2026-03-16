@@ -7,7 +7,7 @@
  *  Avancé : Données
  */
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import {
   Box,
   VStack,
@@ -29,6 +29,11 @@ import {
 import { DashboardLayout } from '@/components/dashboard'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
+import { updateProfile, uploadAvatar, deleteAvatar, validateAvatarFile, getEmployer, upsertEmployer, getEmployee, upsertEmployee } from '@/services/profileService'
+import type { Address, UserRole } from '@/types'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { supabase } from '@/lib/supabase/client'
+import { logger } from '@/lib/logger'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -93,6 +98,34 @@ const NAV_SECTIONS: NavSection[] = [
 export function SettingsPage() {
   const { profile, userRole } = useAuth()
   const [activePanel, setActivePanel] = useState<PanelId>('profil')
+  const navRef = useRef<HTMLDivElement>(null)
+  const [showPrev, setShowPrev] = useState(false)
+  const [showNext, setShowNext] = useState(false)
+
+  const updateArrows = useCallback(() => {
+    const el = navRef.current
+    if (!el) return
+    setShowPrev(el.scrollLeft > 4)
+    setShowNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
+  }, [])
+
+  useEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    updateArrows()
+    el.addEventListener('scroll', updateArrows, { passive: true })
+    window.addEventListener('resize', updateArrows)
+    return () => {
+      el.removeEventListener('scroll', updateArrows)
+      window.removeEventListener('resize', updateArrows)
+    }
+  }, [updateArrows])
+
+  const scrollNav = useCallback((dir: 'prev' | 'next') => {
+    const el = navRef.current
+    if (!el) return
+    el.scrollBy({ left: dir === 'next' ? 150 : -150, behavior: 'smooth' })
+  }, [])
 
   if (!profile) {
     return (
@@ -116,7 +149,7 @@ export function SettingsPage() {
         css={{ margin: 'calc(var(--chakra-spacing-6) * -1)' }}
         minH={{ md: 'calc(100vh - 60px)' }}
       >
-        {/* Navigation latérale */}
+        {/* Navigation latérale / tabs mobile */}
         <Box
           minW={{ md: '210px' }}
           w={{ base: '100%', md: '210px' }}
@@ -126,18 +159,75 @@ export function SettingsPage() {
           borderColor="border.default"
           bg="bg.surface"
           py={{ base: 0, md: 3 }}
-          position={{ base: 'relative', md: 'absolute' }}
-          top={{ md: '0' }}
-          left={{ md: '0' }}
+          position={{ base: 'relative', md: 'fixed' }}
+          top={{ md: '60px' }}
           bottom={{ md: '0' }}
+          zIndex={{ md: 100 }}
           overflowY={{ md: 'auto' }}
         >
+          {/* Flèche précédent — mobile uniquement */}
+          {showPrev && (
+            <Box
+              as="button"
+              onClick={() => scrollNav('prev')}
+              display={{ base: 'flex', md: 'none' }}
+              position="absolute"
+              left="4px"
+              top="50%"
+              transform="translateY(-50%)"
+              zIndex={2}
+              w="28px"
+              h="28px"
+              borderRadius="50%"
+              border="2px solid"
+              borderColor="brand.500"
+              bg="bg.surface"
+              color="brand.500"
+              alignItems="center"
+              justifyContent="center"
+              _hover={{ bg: 'brand.500', color: 'white' }}
+              transition="background 0.15s ease, color 0.15s ease"
+              aria-label="Défiler vers la gauche"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><polyline points="15 18 9 12 15 6" /></svg>
+            </Box>
+          )}
+
+          {/* Flèche suivant — mobile uniquement */}
+          {showNext && (
+            <Box
+              as="button"
+              onClick={() => scrollNav('next')}
+              display={{ base: 'flex', md: 'none' }}
+              position="absolute"
+              right="4px"
+              top="50%"
+              transform="translateY(-50%)"
+              zIndex={2}
+              w="28px"
+              h="28px"
+              borderRadius="50%"
+              border="2px solid"
+              borderColor="brand.500"
+              bg="bg.surface"
+              color="brand.500"
+              alignItems="center"
+              justifyContent="center"
+              _hover={{ bg: 'brand.500', color: 'white' }}
+              transition="background 0.15s ease, color 0.15s ease"
+              aria-label="Défiler vers la droite"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" width={14} height={14}><polyline points="9 18 15 12 9 6" /></svg>
+            </Box>
+          )}
+
           <Box
+            ref={navRef}
             overflowX={{ base: 'auto', md: 'visible' }}
             display={{ base: 'flex', md: 'block' }}
             gap={0}
-            pb={{ base: 0, md: 0 }}
-            css={{ '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }}
+            px={{ base: '36px', md: 0 }}
+            css={{ '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
           >
             {visibleSections.map((section) => (
               <Box key={section.label} mb={{ md: 4 }} display={{ base: 'flex', md: 'block' }} flexShrink={0}>
@@ -166,15 +256,18 @@ export function SettingsPage() {
                       onClick={() => setActivePanel(item.id)}
                       whiteSpace="nowrap"
                       gap={2}
-                      borderRadius="6px"
+                      borderRadius={{ base: '6px', md: '6px' }}
                       fontSize="sm"
-                      px={5}
-                      py="9px"
+                      px={{ base: 3, md: 5 }}
+                      py={{ base: '12px', md: '9px' }}
                       h="auto"
                       mx="5px"
+                      my={{ base: activePanel === item.id ? '5px' : 0, md: 0 }}
                       w={{ md: 'calc(100% - 10px)' }}
-                      _hover={{ bg: 'brand.subtle', color: 'text.default' }}
+                      flexShrink={0}
+                      _hover={{ bg: 'brand.subtle', color: 'brand.500', borderRadius: '6px', my: { base: '5px', md: 0 } }}
                       transition="background 0.15s ease, color 0.15s ease"
+                      css={{ '& svg': { width: { base: '14px', md: '16px' }, height: { base: '14px', md: '16px' } } }}
                     >
                       {item.icon}
                       {item.label}
@@ -187,16 +280,16 @@ export function SettingsPage() {
         </Box>
 
         {/* Contenu */}
-        <Box ml={{ base: 0, md: '210px' }} minW={0} p={6}>
-          {activePanel === 'profil' && <ProfilPanel profile={profile} />}
+        <Box ml={{ base: 0, md: '210px' }} minW={0} p={{ base: '20px 16px', md: 6 }}>
+          {activePanel === 'profil' && <ProfilPanel profile={profile} userRole={userRole!} />}
           {activePanel === 'securite' && <SecuritePanel />}
           {activePanel === 'abonnement' && <AbonnementPanel />}
-          {activePanel === 'notifications' && <NotificationsPanel />}
+          {activePanel === 'notifications' && <NotificationsPanel userId={profile.id} />}
           {activePanel === 'convention' && <ConventionPanel />}
           {activePanel === 'pch' && <PchPanel />}
           {activePanel === 'apparence' && <ApparencePanel />}
           {activePanel === 'accessibilite' && <AccessibilitePanel />}
-          {activePanel === 'donnees' && <DonneesPanel />}
+          {activePanel === 'donnees' && <DonneesPanel userId={profile.id} />}
         </Box>
       </Box>
     </DashboardLayout>
@@ -267,14 +360,112 @@ function ToggleRow({
 
 // ── Profil ────────────────────────────────────────────────────────────────────
 
-function ProfilPanel({ profile }: { profile: { firstName: string; lastName: string; email: string; phone?: string | null } }) {
+function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: string; lastName: string; email: string; phone?: string | null; avatarUrl?: string }; userRole: UserRole }) {
   const [firstName, setFirstName] = useState(profile.firstName)
   const [lastName, setLastName] = useState(profile.lastName)
   const [email] = useState(profile.email)
   const [phone, setPhone] = useState(profile.phone ?? '')
-  const [address, setAddress] = useState('')
+  const emptyAddress: Address = { street: '', city: '', postalCode: '', country: 'France' }
+  const [address, setAddress] = useState<Address>(emptyAddress)
+  const [initialAddress, setInitialAddress] = useState<Address>(emptyAddress)
   const [lang, setLang] = useState('fr')
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY')
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? '')
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Charger l'adresse depuis la table du rôle
+  useEffect(() => {
+    async function loadAddress() {
+      try {
+        let addr: Address | undefined
+        if (userRole === 'employer') {
+          const emp = await getEmployer(profile.id)
+          addr = emp?.address
+        } else if (userRole === 'employee') {
+          const emp = await getEmployee(profile.id)
+          addr = emp?.address
+        }
+        // caregiver: address is on the employer they work for, not on them
+        if (addr) {
+          setAddress(addr)
+          setInitialAddress(addr)
+        }
+      } catch (err) {
+        logger.error('Erreur chargement adresse:', err)
+      }
+    }
+    loadAddress()
+  }, [profile.id, userRole])
+
+  const addressChanged = address.street !== initialAddress.street || address.city !== initialAddress.city || address.postalCode !== initialAddress.postalCode || address.country !== initialAddress.country
+  const hasChanges = firstName !== profile.firstName || lastName !== profile.lastName || (phone || '') !== (profile.phone || '') || addressChanged
+
+  const handleSaveProfile = async () => {
+    setSaving(true)
+    setFeedback(null)
+    try {
+      await updateProfile(profile.id, { firstName, lastName, phone: phone || undefined })
+      // Sauvegarder l'adresse si modifiée
+      if (addressChanged) {
+        if (userRole === 'employer') {
+          await upsertEmployer(profile.id, { address })
+        } else if (userRole === 'employee') {
+          await upsertEmployee(profile.id, { address })
+        }
+        setInitialAddress(address)
+      }
+      setFeedback({ type: 'success', msg: 'Profil mis à jour.' })
+    } catch (err) {
+      setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const validation = validateAvatarFile(file)
+    if (!validation.valid) {
+      setFeedback({ type: 'error', msg: validation.error! })
+      return
+    }
+    setSaving(true)
+    setFeedback(null)
+    try {
+      const result = await uploadAvatar(profile.id, file)
+      setAvatarUrl(result.url)
+      setFeedback({ type: 'success', msg: 'Photo mise à jour.' })
+    } catch (err) {
+      setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Erreur upload.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleAvatarDelete = async () => {
+    setSaving(true)
+    setFeedback(null)
+    try {
+      await deleteAvatar(profile.id)
+      setAvatarUrl('')
+      setFeedback({ type: 'success', msg: 'Photo supprimée.' })
+    } catch (err) {
+      setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Erreur suppression.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setFirstName(profile.firstName)
+    setLastName(profile.lastName)
+    setPhone(profile.phone ?? '')
+    setAddress(initialAddress)
+    setFeedback(null)
+  }
 
   return (
     <VStack gap={6} align="stretch">
@@ -282,6 +473,12 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
         title="Informations"
         subtitle="Gérez vos informations personnelles et les détails de votre compte."
       />
+
+      {feedback && (
+        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'green.50' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
+          <Text fontSize="sm" color={feedback.type === 'success' ? 'green.700' : 'red.700'}>{feedback.msg}</Text>
+        </Box>
+      )}
 
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
@@ -291,29 +488,30 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
         <Card.Body p={4}>
           {/* Avatar */}
           <HStack gap={4} mb={6}>
-            <Box
-              w="72px"
-              h="72px"
-              borderRadius="full"
-              bg="brand.500"
-              color="white"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              fontSize="1.6rem"
-              fontWeight="800"
-              flexShrink={0}
-              aria-label={`Avatar ${firstName} ${lastName}`}
-            >
-              {firstName.charAt(0)}{lastName.charAt(0)}
-            </Box>
+            {avatarUrl ? (
+              <Box w="72px" h="72px" borderRadius="full" overflow="hidden" flexShrink={0}>
+                <img src={avatarUrl} alt={`Avatar ${firstName} ${lastName}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </Box>
+            ) : (
+              <Box
+                w="72px" h="72px" borderRadius="full" bg="brand.500" color="white"
+                display="flex" alignItems="center" justifyContent="center"
+                fontSize="1.6rem" fontWeight="800" flexShrink={0}
+                aria-label={`Avatar ${firstName} ${lastName}`}
+              >
+                {firstName.charAt(0)}{lastName.charAt(0)}
+              </Box>
+            )}
             <VStack gap={2} align="start">
-              <Button variant="ghost" size="sm" borderWidth="1.5px" borderColor="border.default">
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={handleAvatarUpload} />
+              <Button variant="ghost" size="sm" borderWidth="1.5px" borderColor="border.default" onClick={() => fileInputRef.current?.click()} disabled={saving}>
                 Changer la photo
               </Button>
-              <Button variant="ghost" size="sm" color="red.600" borderWidth="1.5px" borderColor="red.200" _hover={{ bg: 'red.50', borderColor: 'red.500' }}>
-                Supprimer
-              </Button>
+              {avatarUrl && (
+                <Button variant="ghost" size="sm" color="red.600" borderWidth="1.5px" borderColor="red.200" _hover={{ bg: 'red.50', borderColor: 'red.500' }} onClick={handleAvatarDelete} disabled={saving}>
+                  Supprimer
+                </Button>
+              )}
             </VStack>
           </HStack>
           <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
@@ -334,14 +532,28 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
             </Field.Root>
             <Field.Root gridColumn={{ md: '1 / -1' }}>
-              <Field.Label>Adresse</Field.Label>
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+              <Field.Label>Adresse (rue)</Field.Label>
+              <Input value={address.street} onChange={(e) => setAddress((a) => ({ ...a, street: e.target.value }))} placeholder="12 rue des Lilas" disabled={userRole === 'caregiver'} />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Code postal</Field.Label>
+              <Input value={address.postalCode} onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))} placeholder="75001" disabled={userRole === 'caregiver'} />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Ville</Field.Label>
+              <Input value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} placeholder="Paris" disabled={userRole === 'caregiver'} />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Pays</Field.Label>
+              <Input value={address.country} onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value }))} disabled={userRole === 'caregiver'} />
               <Field.HelperText>Utilisée pour les bulletins de paie.</Field.HelperText>
             </Field.Root>
           </Grid>
           <HStack mt={5} gap={3} justify="flex-end">
-            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md">Annuler</Button>
-            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Enregistrer</Button>
+            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md" onClick={handleCancel} disabled={saving || !hasChanges}>Annuler</Button>
+            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }} onClick={handleSaveProfile} disabled={saving || !hasChanges}>
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </Button>
           </HStack>
         </Card.Body>
       </Card.Root>
@@ -374,7 +586,7 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
             </Field.Root>
           </Grid>
           <HStack mt={5} justify="flex-end">
-            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Enregistrer</Button>
+            <Text fontSize="xs" color="text.muted">Langue et format seront disponibles prochainement.</Text>
           </HStack>
         </Card.Body>
       </Card.Root>
@@ -385,9 +597,47 @@ function ProfilPanel({ profile }: { profile: { firstName: string; lastName: stri
 // ── Sécurité ──────────────────────────────────────────────────────────────────
 
 function SecuritePanel() {
-  const [twoFaEnabled, setTwoFaEnabled] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [currentPwd, setCurrentPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
+  const pwdValid = newPwd.length >= 12 && /[A-Z]/.test(newPwd) && /\d/.test(newPwd)
+  const pwdMatch = newPwd === confirmPwd
+  const canSubmit = currentPwd.length > 0 && pwdValid && pwdMatch
+
+  const handleChangePassword = async () => {
+    if (!canSubmit) return
+    setSaving(true)
+    setFeedback(null)
+    try {
+      // Vérifier le mot de passe actuel en tentant un sign-in
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email) throw new Error('Utilisateur non trouvé.')
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPwd,
+      })
+      if (signInError) {
+        setFeedback({ type: 'error', msg: 'Mot de passe actuel incorrect.' })
+        setSaving(false)
+        return
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPwd })
+      if (error) throw error
+      setFeedback({ type: 'success', msg: 'Mot de passe mis à jour.' })
+      setCurrentPwd('')
+      setNewPwd('')
+      setConfirmPwd('')
+    } catch (err) {
+      setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Erreur lors du changement de mot de passe.' })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <VStack gap={6} align="stretch">
@@ -395,6 +645,12 @@ function SecuritePanel() {
         title="Sécurité"
         subtitle="Gérez votre mot de passe et la sécurité de votre compte."
       />
+
+      {feedback && (
+        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'green.50' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
+          <Text fontSize="sm" color={feedback.type === 'success' ? 'green.700' : 'red.700'}>{feedback.msg}</Text>
+        </Box>
+      )}
 
       {/* Mot de passe */}
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
@@ -405,45 +661,55 @@ function SecuritePanel() {
           <VStack gap={4} align="stretch">
             <Field.Root>
               <Field.Label>Mot de passe actuel</Field.Label>
-              <Input type="password" placeholder="••••••••••••" autoComplete="current-password" />
+              <Input type="password" placeholder="••••••••••••" autoComplete="current-password" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} />
             </Field.Root>
             <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
-              <Field.Root>
+              <Field.Root invalid={newPwd.length > 0 && !pwdValid}>
                 <Field.Label>Nouveau mot de passe</Field.Label>
-                <Input type="password" placeholder="••••••••••••" autoComplete="new-password" />
+                <Input type="password" placeholder="••••••••••••" autoComplete="new-password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} />
                 <Field.HelperText>Minimum 12 caractères, dont 1 majuscule et 1 chiffre.</Field.HelperText>
               </Field.Root>
-              <Field.Root>
+              <Field.Root invalid={confirmPwd.length > 0 && !pwdMatch}>
                 <Field.Label>Confirmer le mot de passe</Field.Label>
-                <Input type="password" placeholder="••••••••••••" autoComplete="new-password" />
+                <Input type="password" placeholder="••••••••••••" autoComplete="new-password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} />
+                {confirmPwd.length > 0 && !pwdMatch && <Field.ErrorText>Les mots de passe ne correspondent pas.</Field.ErrorText>}
               </Field.Root>
             </Grid>
             <HStack justify="flex-end">
-              <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Mettre à jour</Button>
+              <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }} onClick={handleChangePassword} disabled={saving || !canSubmit}>
+                {saving ? 'Mise à jour…' : 'Mettre à jour'}
+              </Button>
             </HStack>
           </VStack>
         </Card.Body>
       </Card.Root>
 
-      {/* 2FA */}
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+      {/* 2FA — bientôt disponible */}
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Double authentification (2FA)</Card.Title>
+          <HStack gap={2}>
+            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Double authentification (2FA)</Card.Title>
+            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
+          </HStack>
         </Card.Header>
         <Card.Body p={4}>
           <ToggleRow
             label="Activer la 2FA"
             description="Protégez votre compte avec Google Authenticator, Authy ou tout autre app d'authentification."
-            checked={twoFaEnabled}
-            onChange={setTwoFaEnabled}
+            checked={false}
+            onChange={() => {}}
+            disabled
           />
         </Card.Body>
       </Card.Root>
 
       {/* Zone de danger */}
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="red.200" boxShadow="sm">
-        <Card.Header bg="red.50" borderBottomWidth="1px" borderColor="red.200">
-          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700" color="red.600">Zone de danger</Card.Title>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="red.200" boxShadow="sm" opacity={0.6}>
+        <Card.Header px={4} py={3} bg="red.50" borderBottomWidth="1px" borderColor="red.200">
+          <HStack gap={2}>
+            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700" color="red.600">Zone de danger</Card.Title>
+            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
+          </HStack>
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={4} align="stretch">
@@ -452,52 +718,17 @@ function SecuritePanel() {
                 <Text fontWeight="medium" fontSize="sm">Supprimer toutes les données</Text>
                 <Text fontSize="xs" color="text.muted">Efface définitivement les interventions et données employés.</Text>
               </Box>
-              <Button
-                colorPalette="red"
-                size="xs"
-                variant="outline"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
+              <Button colorPalette="red" size="xs" variant="outline" disabled>
                 Supprimer
               </Button>
             </HStack>
-            {showDeleteConfirm && (
-              <Box p={4} bg="red.50" borderRadius="10px">
-                <Text fontSize="sm" mb={2}>
-                  Tapez <strong>SUPPRIMER</strong> pour confirmer
-                </Text>
-                <Input
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="SUPPRIMER"
-                  size="sm"
-                  mb={2}
-                />
-                <HStack gap={2}>
-                  <Button
-                    colorPalette="red"
-                    size="xs"
-                    disabled={deleteConfirmText !== 'SUPPRIMER'}
-                  >
-                    Supprimer définitivement
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText('') }}
-                  >
-                    Annuler
-                  </Button>
-                </HStack>
-              </Box>
-            )}
             <Separator />
             <HStack justify="space-between" align="start">
               <Box>
                 <Text fontWeight="medium" fontSize="sm">Désactiver le compte</Text>
                 <Text fontSize="xs" color="text.muted">Votre compte sera suspendu. Les données restent 30 jours.</Text>
               </Box>
-              <Button colorPalette="red" size="xs" variant="outline">
+              <Button colorPalette="red" size="xs" variant="outline" disabled>
                 Désactiver
               </Button>
             </HStack>
@@ -713,14 +944,31 @@ function UsageBar({ label, value, percent }: { label: string; value: string; per
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
-function NotificationsPanel() {
-  const [pushReminders, setPushReminders] = useState(true)
-  const [pushCompliance, setPushCompliance] = useState(true)
-  const [pushLeave, setPushLeave] = useState(true)
-  const [pushWeekly, setPushWeekly] = useState(false)
-  const [emailPayslips, setEmailPayslips] = useState(true)
-  const [emailSecurity, setEmailSecurity] = useState(true)
-  const [emailMessages, setEmailMessages] = useState(false)
+function NotificationsPanel({ userId }: { userId: string }) {
+  const {
+    isSupported,
+    isConfigured,
+    permission,
+    isSubscribed,
+    isLoading,
+    error: pushError,
+    subscribe,
+    unsubscribe,
+  } = usePushNotifications({ userId })
+
+  const [emailEnabled, setEmailEnabled] = useState(true)
+  const [messageNotifications, setMessageNotifications] = useState(false)
+
+  const pushAvailable = isSupported && isConfigured
+  const pushDenied = permission === 'denied'
+
+  const handleTogglePush = async () => {
+    if (isSubscribed) {
+      await unsubscribe()
+    } else {
+      await subscribe()
+    }
+  }
 
   return (
     <VStack gap={6} align="stretch">
@@ -736,23 +984,49 @@ function NotificationsPanel() {
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
-            <ToggleRow label="Rappels d'intervention" description="30 minutes avant le début d'une intervention." checked={pushReminders} onChange={setPushReminders} />
-            <ToggleRow label="Alertes de conformité" description="Notifications immédiates en cas de non-conformité détectée." checked={pushCompliance} onChange={setPushCompliance} />
-            <ToggleRow label="Congés à solder" description="Rappel 30 jours avant expiration des congés payés." checked={pushLeave} onChange={setPushLeave} />
-            <ToggleRow label="Résumé hebdomadaire" description="Récapitulatif des heures et de la conformité chaque lundi." checked={pushWeekly} onChange={setPushWeekly} />
+            {!pushAvailable && (
+              <Box px={4} py={3} mb={3} borderRadius="md" bg="orange.50" borderWidth="1px" borderColor="orange.200">
+                <Text fontSize="sm" color="orange.700">
+                  {!isSupported
+                    ? 'Votre navigateur ne supporte pas les notifications push.'
+                    : 'Les notifications push ne sont pas encore configurées sur le serveur.'}
+                </Text>
+              </Box>
+            )}
+            {pushDenied && (
+              <Box px={4} py={3} mb={3} borderRadius="md" bg="red.50" borderWidth="1px" borderColor="red.200">
+                <Text fontSize="sm" color="red.700">
+                  Les notifications sont bloquées par votre navigateur. Autorisez-les dans les paramètres de votre navigateur pour ce site.
+                </Text>
+              </Box>
+            )}
+            {pushError && (
+              <Box px={4} py={3} mb={3} borderRadius="md" bg="red.50" borderWidth="1px" borderColor="red.200">
+                <Text fontSize="sm" color="red.700">{pushError}</Text>
+              </Box>
+            )}
+            <ToggleRow
+              label="Activer les notifications push"
+              description={isSubscribed ? 'Les notifications sont actives sur cet appareil.' : 'Recevez des alertes en temps réel.'}
+              checked={isSubscribed}
+              onChange={handleTogglePush}
+              disabled={!pushAvailable || pushDenied || isLoading}
+            />
           </VStack>
         </Card.Body>
       </Card.Root>
 
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Notifications e-mail</Card.Title>
+          <HStack gap={2}>
+            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Notifications e-mail</Card.Title>
+            <Badge size="sm" colorPalette="orange">Bientôt</Badge>
+          </HStack>
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
-            <ToggleRow label="Bulletins de paie générés" description="Envoi automatique par e-mail après génération." checked={emailPayslips} onChange={setEmailPayslips} />
-            <ToggleRow label="Alertes de sécurité" description="Connexion depuis un nouvel appareil ou une nouvelle localisation." checked={emailSecurity} onChange={setEmailSecurity} />
-            <ToggleRow label="Nouveaux messages" description="Notification par e-mail quand vous recevez un nouveau message." checked={emailMessages} onChange={setEmailMessages} />
+            <ToggleRow label="Activer les e-mails" description="Active ou désactive toutes les notifications par e-mail." checked={emailEnabled} onChange={() => setEmailEnabled(!emailEnabled)} disabled badge="Bientôt" />
+            <ToggleRow label="Nouveaux messages" description="Notification par e-mail quand vous recevez un nouveau message." checked={messageNotifications} onChange={() => setMessageNotifications(!messageNotifications)} disabled />
           </VStack>
         </Card.Body>
       </Card.Root>
@@ -762,16 +1036,44 @@ function NotificationsPanel() {
 
 // ── Convention ─────────────────────────────────────────────────────────────────
 
-function ConventionPanel() {
-  const [ruleBreak, setRuleBreak] = useState(true)
-  const [ruleDailyMax, setRuleDailyMax] = useState(true)
-  const [ruleOvertime, setRuleOvertime] = useState(true)
-  const [ruleNight, setRuleNight] = useState(true)
+const CONVENTION_STORAGE_KEY = 'unilien-convention-settings'
+const CONVENTION_DEFAULTS = {
+  ruleBreak: true, ruleDailyMax: true, ruleOvertime: true, ruleNight: true,
+  majDimanche: 30, majFerie: 60, majNuit: 25, majSupp: 25,
+}
 
-  const [majDimanche, setMajDimanche] = useState('30')
-  const [majFerie, setMajFerie] = useState('60')
-  const [majNuit, setMajNuit] = useState('25')
-  const [majSupp, setMajSupp] = useState('25')
+function loadConventionSettings() {
+  try {
+    const raw = localStorage.getItem(CONVENTION_STORAGE_KEY)
+    return raw ? { ...CONVENTION_DEFAULTS, ...JSON.parse(raw) } : { ...CONVENTION_DEFAULTS }
+  } catch { return { ...CONVENTION_DEFAULTS } }
+}
+
+function ConventionPanel() {
+  const [settings, setSettings] = useState(loadConventionSettings)
+  const [feedback, setFeedback] = useState<string | null>(null)
+
+  const update = (patch: Partial<typeof settings>) => {
+    setSettings((prev: typeof settings) => {
+      const next = { ...prev, ...patch }
+      localStorage.setItem(CONVENTION_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const handleSave = () => {
+    localStorage.setItem(CONVENTION_STORAGE_KEY, JSON.stringify(settings))
+    setFeedback('Majorations enregistrées.')
+    setTimeout(() => setFeedback(null), 3000)
+  }
+
+  const handleReset = () => {
+    const defaults = { ...CONVENTION_DEFAULTS }
+    setSettings(defaults)
+    localStorage.setItem(CONVENTION_STORAGE_KEY, JSON.stringify(defaults))
+    setFeedback('Valeurs réinitialisées.')
+    setTimeout(() => setFeedback(null), 3000)
+  }
 
   return (
     <VStack gap={6} align="stretch">
@@ -780,16 +1082,22 @@ function ConventionPanel() {
         subtitle="Paramètres de conformité liés à l'IDCC 3239 — Particuliers employeurs et emploi à domicile."
       />
 
+      {feedback && (
+        <Box px={4} py={3} borderRadius="md" bg="green.50" borderWidth="1px" borderColor="green.200">
+          <Text fontSize="sm" color="green.700">{feedback}</Text>
+        </Box>
+      )}
+
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
           <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Règles de validation</Card.Title>
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
-            <ToggleRow label="Pause obligatoire (Art. L3121-16)" description="Alerte si aucune pause de 20 min pour une intervention supérieure à 6h." checked={ruleBreak} onChange={setRuleBreak} />
-            <ToggleRow label="Durée maximale journalière" description="Avertissement si le total dépasse 10h par jour." checked={ruleDailyMax} onChange={setRuleDailyMax} />
-            <ToggleRow label="Heures supplémentaires" description="Calcul automatique des majorations au-delà de 40h/semaine." checked={ruleOvertime} onChange={setRuleOvertime} />
-            <ToggleRow label="Présence nuit / Garde 24h" description="Alerte si la présence de nuit dépasse 12h consécutives." checked={ruleNight} onChange={setRuleNight} />
+            <ToggleRow label="Pause obligatoire (Art. L3121-16)" description="Alerte si aucune pause de 20 min pour une intervention supérieure à 6h." checked={settings.ruleBreak} onChange={() => update({ ruleBreak: !settings.ruleBreak })} />
+            <ToggleRow label="Durée maximale journalière" description="Avertissement si le total dépasse 10h par jour." checked={settings.ruleDailyMax} onChange={() => update({ ruleDailyMax: !settings.ruleDailyMax })} />
+            <ToggleRow label="Heures supplémentaires" description="Calcul automatique des majorations au-delà de 40h/semaine." checked={settings.ruleOvertime} onChange={() => update({ ruleOvertime: !settings.ruleOvertime })} />
+            <ToggleRow label="Présence nuit / Garde 24h" description="Alerte si la présence de nuit dépasse 12h consécutives." checked={settings.ruleNight} onChange={() => update({ ruleNight: !settings.ruleNight })} />
           </VStack>
         </Card.Body>
       </Card.Root>
@@ -803,38 +1111,58 @@ function ConventionPanel() {
           <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
             <Field.Root>
               <Field.Label>Majoration dimanche (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={majDimanche} onChange={(e) => setMajDimanche(e.target.value)} />
+              <Input type="number" min={0} max={100} value={settings.majDimanche} onChange={(e) => update({ majDimanche: Number(e.target.value) })} />
             </Field.Root>
             <Field.Root>
               <Field.Label>Majoration jour férié (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={majFerie} onChange={(e) => setMajFerie(e.target.value)} />
+              <Input type="number" min={0} max={100} value={settings.majFerie} onChange={(e) => update({ majFerie: Number(e.target.value) })} />
             </Field.Root>
             <Field.Root>
               <Field.Label>Majoration nuit (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={majNuit} onChange={(e) => setMajNuit(e.target.value)} />
+              <Input type="number" min={0} max={100} value={settings.majNuit} onChange={(e) => update({ majNuit: Number(e.target.value) })} />
             </Field.Root>
             <Field.Root>
               <Field.Label>Majoration heures sup (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={majSupp} onChange={(e) => setMajSupp(e.target.value)} />
+              <Input type="number" min={0} max={100} value={settings.majSupp} onChange={(e) => update({ majSupp: Number(e.target.value) })} />
             </Field.Root>
           </Grid>
           <HStack mt={5} gap={3} justify="flex-end">
-            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md">Réinitialiser</Button>
-            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }}>Enregistrer</Button>
+            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md" onClick={handleReset}>Réinitialiser</Button>
+            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }} onClick={handleSave}>Enregistrer</Button>
           </HStack>
         </Card.Body>
       </Card.Root>
+
+      <HStack gap={2} align="center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14} aria-hidden="true" style={{ flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+        <Text fontSize="sm" color="text.muted">Les règles de validation sont enregistrées automatiquement. Les majorations nécessitent un clic sur Enregistrer.</Text>
+      </HStack>
     </VStack>
   )
 }
 
 // ── PCH ───────────────────────────────────────────────────────────────────────
 
+const PCH_ALERTS_KEY = 'unilien-pch-alerts'
+const PCH_ALERTS_DEFAULTS = { alertQuota: true, alertRenewal: true, alertAttestation: true, alertReleve: true }
+
+function loadPchAlerts() {
+  try {
+    const raw = localStorage.getItem(PCH_ALERTS_KEY)
+    return raw ? { ...PCH_ALERTS_DEFAULTS, ...JSON.parse(raw) } : { ...PCH_ALERTS_DEFAULTS }
+  } catch { return { ...PCH_ALERTS_DEFAULTS } }
+}
+
 function PchPanel() {
-  const [alertQuota, setAlertQuota] = useState(true)
-  const [alertRenewal, setAlertRenewal] = useState(true)
-  const [alertAttestation, setAlertAttestation] = useState(true)
-  const [alertReleve, setAlertReleve] = useState(true)
+  const [alerts, setAlerts] = useState(loadPchAlerts)
+
+  const toggle = (key: keyof typeof alerts) => {
+    setAlerts((prev: typeof alerts) => {
+      const next = { ...prev, [key]: !prev[key] }
+      localStorage.setItem(PCH_ALERTS_KEY, JSON.stringify(next))
+      return next
+    })
+  }
 
   return (
     <VStack gap={6} align="stretch">
@@ -849,10 +1177,10 @@ function PchPanel() {
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
-            <ToggleRow label="Quota atteint à 90 %" description="Alerte quand vous approchez du plafond mensuel PCH (55h36 sur 62h)." checked={alertQuota} onChange={setAlertQuota} />
-            <ToggleRow label="Rappel renouvellement PCH" description="Notification 3 mois avant l'expiration de votre accord MDPH." checked={alertRenewal} onChange={setAlertRenewal} />
-            <ToggleRow label="Attestation annuelle à signer" description="Rappel 30 jours avant la date limite de renouvellement de l'attestation." checked={alertAttestation} onChange={setAlertAttestation} />
-            <ToggleRow label="Relevé mensuel disponible" description="Notification quand le relevé d'heures du mois précédent est généré." checked={alertReleve} onChange={setAlertReleve} />
+            <ToggleRow label="Quota atteint à 90 %" description="Alerte quand vous approchez du plafond mensuel PCH (55h36 sur 62h)." checked={alerts.alertQuota} onChange={() => toggle('alertQuota')} />
+            <ToggleRow label="Rappel renouvellement PCH" description="Notification 3 mois avant l'expiration de votre accord MDPH." checked={alerts.alertRenewal} onChange={() => toggle('alertRenewal')} />
+            <ToggleRow label="Attestation annuelle à signer" description="Rappel 30 jours avant la date limite de renouvellement de l'attestation." checked={alerts.alertAttestation} onChange={() => toggle('alertAttestation')} />
+            <ToggleRow label="Relevé mensuel disponible" description="Notification quand le relevé d'heures du mois précédent est généré." checked={alerts.alertReleve} onChange={() => toggle('alertReleve')} />
           </VStack>
         </Card.Body>
       </Card.Root>
@@ -877,15 +1205,45 @@ function PchPanel() {
           </Field.Root>
         </Card.Body>
       </Card.Root>
+
+      <HStack gap={2} align="center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14} aria-hidden="true" style={{ flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+        <Text fontSize="sm" color="text.muted">Les alertes sont enregistrées automatiquement sur votre appareil.</Text>
+      </HStack>
     </VStack>
   )
 }
 
 // ── Apparence ─────────────────────────────────────────────────────────────────
 
+const APPARENCE_STORAGE_KEY = 'unilien-apparence'
+
+function loadApparenceSettings(): { darkMode: boolean; density: 'comfortable' | 'compact' } {
+  try {
+    const raw = localStorage.getItem(APPARENCE_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : { darkMode: false, density: 'comfortable' }
+  } catch { return { darkMode: false, density: 'comfortable' } }
+}
+
+function applyDensity(density: 'comfortable' | 'compact') {
+  document.documentElement.setAttribute('data-density', density)
+}
+
 function ApparencePanel() {
-  const [darkMode, setDarkMode] = useState(false)
-  const [density, setDensity] = useState<'comfortable' | 'compact'>('comfortable')
+  const [settings, setSettings] = useState(() => {
+    const s = loadApparenceSettings()
+    applyDensity(s.density)
+    return s
+  })
+
+  const update = (patch: Partial<typeof settings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...patch }
+      localStorage.setItem(APPARENCE_STORAGE_KEY, JSON.stringify(next))
+      if (next.density !== prev.density) applyDensity(next.density)
+      return next
+    })
+  }
 
   return (
     <VStack gap={6} align="stretch">
@@ -894,16 +1252,20 @@ function ApparencePanel() {
         subtitle="Personnalisez l'interface selon vos préférences visuelles."
       />
 
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Thème</Card.Title>
+          <HStack gap={2}>
+            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Thème</Card.Title>
+            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
+          </HStack>
         </Card.Header>
         <Card.Body p={4}>
           <ToggleRow
             label="Mode sombre"
             description="Réduit la fatigue visuelle en environnement peu éclairé."
-            checked={darkMode}
-            onChange={setDarkMode}
+            checked={settings.darkMode}
+            onChange={() => update({ darkMode: !settings.darkMode })}
+            disabled
           />
         </Card.Body>
       </Card.Root>
@@ -919,13 +1281,14 @@ function ApparencePanel() {
                 key={d}
                 flex={1}
                 borderWidth="2px"
-                borderColor={density === d ? 'brand.500' : 'gray.200'}
+                borderColor={settings.density === d ? 'brand.500' : 'gray.200'}
                 borderRadius="10px"
                 p={4}
                 cursor="pointer"
-                onClick={() => setDensity(d)}
+                onClick={() => update({ density: d })}
                 role="radio"
-                aria-checked={density === d}
+                aria-checked={settings.density === d}
+                transition="border-color 0.15s ease"
               >
                 <Text fontWeight="medium" fontSize="sm" mb={1}>
                   {d === 'comfortable' ? 'Confortable' : 'Compact'}
@@ -940,6 +1303,11 @@ function ApparencePanel() {
           </HStack>
         </Card.Body>
       </Card.Root>
+
+      <HStack gap={2} align="center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14} aria-hidden="true" style={{ flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+        <Text fontSize="sm" color="text.muted">Ces paramètres sont enregistrés localement sur votre appareil.</Text>
+      </HStack>
     </VStack>
   )
 }
@@ -1044,9 +1412,97 @@ function AccessibilitePanel() {
 
 // ── Données ───────────────────────────────────────────────────────────────────
 
-function DonneesPanel() {
-  const [analytics, setAnalytics] = useState(true)
-  const [cookies, setCookies] = useState(true)
+const PRIVACY_STORAGE_KEY = 'unilien-privacy'
+
+function loadPrivacySettings() {
+  try {
+    const raw = localStorage.getItem(PRIVACY_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : { analytics: true, cookies: true }
+  } catch { return { analytics: true, cookies: true } }
+}
+
+function DonneesPanel({ userId }: { userId: string }) {
+  const [privacy, setPrivacy] = useState(loadPrivacySettings)
+  const [exporting, setExporting] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
+  const togglePrivacy = (key: 'analytics' | 'cookies') => {
+    setPrivacy((prev: typeof privacy) => {
+      const next = { ...prev, [key]: !prev[key] }
+      localStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  const handleExportJSON = async () => {
+    setExporting('json')
+    setFeedback(null)
+    try {
+      const queries: { table: string; filter: string; col: string }[] = [
+        { table: 'profiles', filter: 'id', col: 'eq' },
+        { table: 'shifts', filter: 'employer_id', col: 'or_employee' },
+        { table: 'absences', filter: 'employee_id', col: 'or_employer' },
+        { table: 'contracts', filter: 'employer_id', col: 'or_employee' },
+        { table: 'logbook_entries', filter: 'user_id', col: 'eq' },
+        { table: 'liaison_messages', filter: 'sender_id', col: 'eq' },
+        { table: 'documents', filter: 'user_id', col: 'eq' },
+      ]
+      const data: Record<string, unknown[]> = {}
+      for (const q of queries) {
+        let query = supabase.from(q.table).select('*')
+        if (q.col === 'eq') {
+          query = query.eq(q.filter, userId)
+        } else {
+          query = query.or(`employee_id.eq.${userId},employer_id.eq.${userId}`)
+        }
+        const { data: rows, error } = await query
+        if (!error && rows) data[q.table] = rows
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `unilien-export-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setFeedback({ type: 'success', msg: 'Export JSON téléchargé.' })
+    } catch (err) {
+      logger.error('Erreur export JSON:', err)
+      setFeedback({ type: 'error', msg: 'Erreur lors de l\'export.' })
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  const handleExportCSV = async () => {
+    setExporting('csv')
+    setFeedback(null)
+    try {
+      const { data: shifts } = await supabase.from('shifts').select('*').or(`employee_id.eq.${userId},employer_id.eq.${userId}`)
+      if (!shifts || shifts.length === 0) {
+        setFeedback({ type: 'error', msg: 'Aucune intervention à exporter.' })
+        setExporting(null)
+        return
+      }
+      const headers = Object.keys(shifts[0])
+      const csv = [headers.join(';'), ...shifts.map((r) => headers.map((h) => String(r[h] ?? '')).join(';'))].join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `unilien-planning-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      setFeedback({ type: 'success', msg: 'Export CSV téléchargé.' })
+    } catch (err) {
+      logger.error('Erreur export CSV:', err)
+      setFeedback({ type: 'error', msg: 'Erreur lors de l\'export.' })
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  const downloadIcon = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 
   return (
     <VStack gap={6} align="stretch">
@@ -1054,6 +1510,12 @@ function DonneesPanel() {
         title="Données"
         subtitle="Export, import et gestion de vos données personnelles."
       />
+
+      {feedback && (
+        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'green.50' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
+          <Text fontSize="sm" color={feedback.type === 'success' ? 'green.700' : 'red.700'}>{feedback.msg}</Text>
+        </Box>
+      )}
 
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
@@ -1067,9 +1529,11 @@ function DonneesPanel() {
               color="text.secondary" fontWeight="600"
               _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
               gap={2}
+              onClick={handleExportJSON}
+              disabled={exporting !== null}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exporter toutes les données (JSON)
+              {downloadIcon}
+              {exporting === 'json' ? 'Export en cours…' : 'Exporter toutes les données (JSON)'}
             </Button>
             <Button
               variant="ghost" size="sm" w="fit-content"
@@ -1077,41 +1541,38 @@ function DonneesPanel() {
               color="text.secondary" fontWeight="600"
               _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
               gap={2}
+              onClick={handleExportCSV}
+              disabled={exporting !== null}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exporter le planning (CSV)
-            </Button>
-            <Button
-              variant="ghost" size="sm" w="fit-content"
-              borderWidth="1.5px" borderColor="border.default" borderRadius="md"
-              color="text.secondary" fontWeight="600"
-              _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
-              gap={2}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16} aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exporter les bulletins de paie (ZIP)
+              {downloadIcon}
+              {exporting === 'csv' ? 'Export en cours…' : 'Exporter le planning (CSV)'}
             </Button>
           </VStack>
         </Card.Body>
       </Card.Root>
 
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Confidentialité</Card.Title>
+          <HStack gap={2}>
+            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Confidentialité</Card.Title>
+            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
+          </HStack>
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
             <ToggleRow
               label="Analyses anonymisées"
               description="Contribuez à améliorer Unilien en partageant des données d'usage anonymisées."
-              checked={analytics}
-              onChange={setAnalytics}
+              checked={privacy.analytics}
+              onChange={() => togglePrivacy('analytics')}
+              disabled
             />
             <ToggleRow
               label="Cookies de performance"
               description="Cookies pour optimiser les temps de chargement."
-              checked={cookies}
-              onChange={setCookies}
+              checked={privacy.cookies}
+              onChange={() => togglePrivacy('cookies')}
+              disabled
             />
           </VStack>
         </Card.Body>

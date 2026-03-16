@@ -1,19 +1,33 @@
+/**
+ * Dashboard Aidant — aligné sur le prototype dashboard-aidant.html
+ *
+ * Layout :
+ *  - WelcomeCard (warm)
+ *  - Stats (4 cartes)
+ *  - 2 colonnes :
+ *    - Gauche : Timeline du jour, Enveloppe PCH, Semaine en cours
+ *    - Droite  : ClockIn widget, PCH mini, Messages
+ */
+
 import { useState, useEffect } from 'react'
-import { Stack, Box, Text, Center, Spinner, SimpleGrid } from '@chakra-ui/react'
+import { Grid, GridItem, Stack, Box, Text, Center, Spinner } from '@chakra-ui/react'
 import type { Profile, Shift, Caregiver } from '@/types'
 import {
   WelcomeCard,
-  UpcomingShiftsWidget,
-  RecentLogsWidget,
-  QuickActionsWidget,
   StatsWidget,
-  TeamWidget,
-  ComplianceWidget,
+  QuickActionsWidget,
+  ClockInWidget,
+  PchEnvelopeWidget,
+  PchMiniWidget,
+  WeekSummaryWidget,
+  RecentMessagesWidget,
+  CaregiverShiftTimeline,
 } from './widgets'
 import {
   getCaregiver,
   getUpcomingShiftsForCaregiver,
 } from '@/services/caregiverService'
+import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 
 interface CaregiverDashboardProps {
@@ -23,6 +37,8 @@ interface CaregiverDashboardProps {
 export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
   const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
   const [shifts, setShifts] = useState<Shift[]>([])
+  const [todayCareCount, setTodayCareCount] = useState(0)
+  const [employerName, setEmployerName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,15 +48,32 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
       setError(null)
 
       try {
-        // Charger le profil aidant
         const caregiverData = await getCaregiver(profile.id)
         setCaregiver(caregiverData)
 
         if (caregiverData) {
-          // Charger les prochains shifts si l'aidant a la permission
+          // Charger les prochains shifts
           if (caregiverData.permissions.canViewPlanning) {
             const shiftsData = await getUpcomingShiftsForCaregiver(profile.id, 5)
             setShifts(shiftsData)
+
+            // Compter les temps d'aide du jour
+            const today = new Date().toISOString().split('T')[0]
+            const todayShifts = shiftsData.filter((s) => s.date === today)
+            setTodayCareCount(todayShifts.length)
+          }
+
+          // Charger le nom de l'employeur
+          if (caregiverData.employerId) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', caregiverData.employerId)
+              .maybeSingle()
+
+            if (data) {
+              setEmployerName(`${data.first_name} ${data.last_name}`)
+            }
           }
         }
       } catch (err) {
@@ -57,12 +90,12 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
   if (isLoading) {
     return (
       <Center py={12}>
-        <Spinner size="xl" color="brand.500" />
+        <Spinner size="xl" color="warm.500" />
       </Center>
     )
   }
 
-  // Si pas de profil aidant trouvé
+  // Pas de profil aidant
   if (!caregiver) {
     return (
       <Stack gap={6}>
@@ -81,31 +114,26 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
     )
   }
 
-  // Afficher les permissions de l'aidant
-  const hasAnyViewPermission =
-    caregiver.permissions.canViewPlanning || caregiver.permissions.canViewLiaison
-
-  // Vérifier si l'aidant a des permissions avancées (tuteur/curateur)
-  const hasAdvancedPermissions =
-    caregiver.permissions.canManageTeam ||
-    caregiver.permissions.canEditPlanning ||
-    caregiver.permissions.canExportData
+  const hasViewPermission = caregiver.permissions.canViewPlanning || caregiver.permissions.canViewLiaison
+  const hasAdvancedPermissions = caregiver.permissions.canManageTeam || caregiver.permissions.canEditPlanning || caregiver.permissions.canExportData
 
   return (
     <Stack gap={6}>
+      {/* Greeting Banner — warm */}
       <WelcomeCard
         profile={profile}
         nextShift={shifts[0] ?? null}
+        todayCareCount={todayCareCount}
         loading={isLoading}
       />
 
       {/* Message si aucune permission */}
-      {!hasAnyViewPermission && !hasAdvancedPermissions && (
-        <Box p={6} bg="brand.50" borderRadius="12px" borderWidth="1px" borderColor="brand.200">
-          <Text fontWeight="medium" color="brand.700" mb={2}>
+      {!hasViewPermission && !hasAdvancedPermissions && (
+        <Box p={6} bg="warm.50" borderRadius="12px" borderWidth="1px" borderColor="warm.200">
+          <Text fontWeight="medium" color="warm.700" mb={2}>
             Accès limité
           </Text>
-          <Text color="brand.500">
+          <Text color="warm.500">
             Vous êtes enregistré comme aidant mais vous n'avez pas encore de permissions
             pour accéder au planning ou au cahier de liaison. Contactez votre proche
             pour qu'il vous accorde les accès nécessaires.
@@ -113,37 +141,54 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
         </Box>
       )}
 
-      {/* Stats widget pour les aidants avec permissions avancées */}
-      {hasAdvancedPermissions && (
-        <StatsWidget userRole="caregiver" profileId={profile.id} employerId={caregiver.employerId} />
-      )}
+      {/* ── LAYOUT DESKTOP : Stats + 2 colonnes ── */}
+      <Box display={{ base: 'none', lg: 'block' }}>
+        <Stack gap={6}>
+          <StatsWidget
+            userRole="caregiver"
+            profileId={profile.id}
+            employerId={hasAdvancedPermissions ? caregiver.employerId : undefined}
+          />
+          <Grid templateColumns="1fr 340px" gap={6}>
+            <GridItem minW={0}>
+              <Stack gap={6}>
+                {caregiver.permissions.canViewPlanning && (
+                  <CaregiverShiftTimeline profileId={profile.id} employerName={employerName} />
+                )}
+                <PchEnvelopeWidget employerId={caregiver.employerId} />
+                <WeekSummaryWidget userId={profile.id} accentColor="var(--chakra-colors-warm-500)" />
+              </Stack>
+            </GridItem>
+            <GridItem minW={0}>
+              <Stack gap={6}>
+                <ClockInWidget variant="warm" />
+                <PchMiniWidget employerId={caregiver.employerId} />
+                <RecentMessagesWidget userId={profile.id} />
+                <QuickActionsWidget userRole="caregiver" permissions={caregiver.permissions} />
+              </Stack>
+            </GridItem>
+          </Grid>
+        </Stack>
+      </Box>
 
-      {/* Actions rapides */}
-      <QuickActionsWidget userRole="caregiver" permissions={caregiver.permissions} />
-
-      {/* Widgets équipe et conformité pour les aidants avec permissions avancées */}
-      {hasAdvancedPermissions && (
-        <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
-          {caregiver.permissions.canManageTeam && (
-            <TeamWidget employerId={caregiver.employerId} />
-          )}
-          {caregiver.permissions.canExportData && (
-            <ComplianceWidget employerId={caregiver.employerId} />
-          )}
-        </SimpleGrid>
-      )}
-
-      {/* Prochaines interventions et cahier de liaison */}
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6}>
+      {/* ── LAYOUT MOBILE : ordre spécifique ── */}
+      <Stack gap={6} display={{ base: 'flex', lg: 'none' }}>
         {caregiver.permissions.canViewPlanning && (
-          <UpcomingShiftsWidget shifts={shifts} userRole="caregiver" />
+          <CaregiverShiftTimeline profileId={profile.id} employerName={employerName} />
         )}
-        {caregiver.permissions.canViewLiaison && (
-          <RecentLogsWidget employerId={caregiver.employerId} />
-        )}
-      </SimpleGrid>
+        <ClockInWidget variant="warm" />
+        <RecentMessagesWidget userId={profile.id} />
+        <PchEnvelopeWidget employerId={caregiver.employerId} />
+        <QuickActionsWidget userRole="caregiver" permissions={caregiver.permissions} />
+        <WeekSummaryWidget userId={profile.id} accentColor="var(--chakra-colors-warm-500)" />
+        <StatsWidget
+          userRole="caregiver"
+          profileId={profile.id}
+          employerId={hasAdvancedPermissions ? caregiver.employerId : undefined}
+        />
+      </Stack>
 
-      {/* Message d'erreur si présent */}
+      {/* Erreur */}
       {error && (
         <Box p={4} bg="red.50" borderRadius="10px">
           <Text color="red.700">{error}</Text>

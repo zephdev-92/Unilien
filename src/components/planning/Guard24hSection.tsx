@@ -41,6 +41,7 @@ export function Guard24hSection({
   nightInterventionsCount,
   onAddSegment,
   onRemoveSegment,
+  onUpdateSegmentEnd,
   onUpdateSegmentType,
   onUpdateSegmentBreak,
   onInterventionCountChange,
@@ -103,13 +104,27 @@ export function Guard24hSection({
               py={2}
             >
               {/* Plage horaire */}
-              <Text fontSize="14px" fontWeight="700" fontFamily="heading" color="text.default" whiteSpace="nowrap">
-                {seg.startTime} – {isLast ? guardSegments[0].startTime : (
-                  <Box as="span">
-                    {guardSegments[i + 1]?.startTime}
-                  </Box>
-                )}
-              </Text>
+              <Flex align="center" gap={1} fontSize="14px" fontWeight="700" fontFamily="heading" color="text.default" whiteSpace="nowrap">
+                <Text as="span">{seg.startTime}</Text>
+                <Text as="span">–</Text>
+                <input
+                  type="time"
+                  value={isLast ? guardSegments[0].startTime : (guardSegments[i + 1]?.startTime ?? '')}
+                  onChange={(e) => onUpdateSegmentEnd(i, e.target.value)}
+                  disabled={isLast}
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    padding: '2px 4px',
+                    border: isLast ? 'none' : '1.5px solid #D8E3ED',
+                    borderRadius: '4px',
+                    background: isLast ? 'transparent' : 'white',
+                    color: '#3D5166',
+                    width: '80px',
+                    cursor: isLast ? 'default' : 'pointer',
+                  }}
+                />
+              </Flex>
 
               {/* Select type — inline, pas de label */}
               <select

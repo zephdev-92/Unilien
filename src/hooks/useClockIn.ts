@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { format, subDays, startOfDay, endOfDay, isSameDay, differenceInDays } from 'date-fns'
 import { useAuth } from '@/hooks/useAuth'
 import { getShifts, updateShift } from '@/services/shiftService'
@@ -37,6 +37,16 @@ export function useClockIn(
   const [isLoadingHistory, setIsLoadingHistory] = useState(true)
   const [historyDays, setHistoryDays] = useState(7)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+
+  // Auto-dismiss du message de succès après 8 secondes
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    if (successMessage) {
+      successTimerRef.current = setTimeout(() => setSuccessMessage(null), 8000)
+    }
+    return () => { if (successTimerRef.current) clearTimeout(successTimerRef.current) }
+  }, [successMessage])
 
   const loadAllShifts = useCallback(async () => {
     if (!profile) return
@@ -153,7 +163,9 @@ export function useClockIn(
 
   const handleClockIn = (shift: Shift) => {
     setActiveShiftId(shift.id)
-    setClockInTime(format(new Date(), 'HH:mm'))
+    // Utiliser l'heure de début prévue du shift, pas l'heure réelle de pointage
+    // L'auxiliaire peut pointer en retard mais l'heure de début reste celle du planning
+    setClockInTime(shift.startTime)
     setStep('in-progress')
     setError(null)
     setSuccessMessage(null)

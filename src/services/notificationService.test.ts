@@ -647,12 +647,12 @@ describe('updateNotificationPreferences', () => {
     expect(upsertArg.push_enabled).toBeUndefined()
   })
 
-  it('gère les erreurs sans throw', async () => {
+  it('throw en cas d erreur Supabase', async () => {
     mockSupabaseQuery({ data: null, error: { message: 'error' } })
 
     await expect(
       updateNotificationPreferences(USER_ID, { pushEnabled: true })
-    ).resolves.toBeUndefined()
+    ).rejects.toThrow('error')
   })
 })
 

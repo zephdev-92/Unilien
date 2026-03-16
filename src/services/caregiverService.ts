@@ -198,7 +198,28 @@ export async function updateCaregiverProfile(
       }
     : null
 
-  const updateData = {
+  // Si le statut juridique change et n'est plus tuteur/curateur, réinitialiser les permissions avancées
+  let permissionsReset: Record<string, unknown> | undefined
+  if (data.legalStatus !== undefined) {
+    const isGuardian = data.legalStatus === 'tutor' || data.legalStatus === 'curator'
+    if (!isGuardian) {
+      // Lire les permissions actuelles pour ne modifier que les avancées
+      const current = await getCaregiver(profileId)
+      if (current?.permissions) {
+        const { canManageTeam, canEditPlanning, canExportData } = current.permissions
+        if (canManageTeam || canEditPlanning || canExportData) {
+          permissionsReset = {
+            ...current.permissions,
+            canManageTeam: false,
+            canEditPlanning: false,
+            canExportData: false,
+          }
+        }
+      }
+    }
+  }
+
+  const updateData: Record<string, unknown> = {
     relationship: data.relationship || null,
     relationship_details: data.relationshipDetails ? sanitizeText(data.relationshipDetails) : null,
     legal_status: data.legalStatus || null,
@@ -206,6 +227,11 @@ export async function updateCaregiverProfile(
     emergency_phone: data.emergencyPhone ? sanitizeText(data.emergencyPhone) : null,
     availability_hours: data.availabilityHours ? sanitizeText(data.availabilityHours) : null,
     can_replace_employer: data.canReplaceEmployer ?? false,
+  }
+
+  if (permissionsReset) {
+    updateData.permissions = permissionsReset
+    updateData.permissions_locked = false
   }
 
   const { data: result, error, count } = await supabase

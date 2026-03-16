@@ -32,7 +32,6 @@ export function Dashboard() {
   return (
     <DashboardLayout title="Tableau de bord">
       <PushPermissionBanner userId={profile.id} />
-
       {userRole === 'employer' && <EmployerDashboard profile={profile} />}
       {userRole === 'employee' && <EmployeeDashboard profile={profile} />}
       {userRole === 'caregiver' && <CaregiverDashboard profile={profile} />}

@@ -47,6 +47,11 @@ const caregiverStats: CaregiverStats = {
   logEntriesThisWeek: 3,
   upcomingShifts: 2,
   unreadLogs: 1,
+  shiftsToday: 2,
+  hoursThisMonth: 18,
+  pchMonthlyHours: 62,
+  pchRemaining: 44,
+  documentsToSign: 1,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -204,22 +209,19 @@ describe('StatsWidget', () => {
       mockGetCaregiverStats.mockResolvedValue(caregiverStats)
     })
 
-    it('affiche les interventions du mois', async () => {
+    it('affiche les 4 stats aidant', async () => {
       renderWithProviders(
         <StatsWidget userRole="caregiver" profileId="caregiver-1" />
       )
       await waitFor(() => {
-        expect(screen.getByText('5')).toBeInTheDocument()
-      })
-    })
-
-    it('affiche les entrées cahier cette semaine avec logs non lus', async () => {
-      renderWithProviders(
-        <StatsWidget userRole="caregiver" profileId="caregiver-1" />
-      )
-      await waitFor(() => {
-        expect(screen.getByText('3')).toBeInTheDocument()
-        expect(screen.getByText('1 non lue')).toBeInTheDocument()
+        expect(screen.getByText('Interventions du jour')).toBeInTheDocument()
+        expect(screen.getByText('2')).toBeInTheDocument()
+        expect(screen.getByText('Heures ce mois')).toBeInTheDocument()
+        expect(screen.getByText('18h')).toBeInTheDocument()
+        expect(screen.getByText('Enveloppe PCH restante')).toBeInTheDocument()
+        expect(screen.getByText('44h')).toBeInTheDocument()
+        expect(screen.getByText('Documents à signer')).toBeInTheDocument()
+        expect(screen.getByText('1')).toBeInTheDocument()
       })
     })
 
