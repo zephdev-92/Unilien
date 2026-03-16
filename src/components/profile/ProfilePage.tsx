@@ -28,35 +28,6 @@ const ROLE_LABELS: Record<string, string> = {
   caregiver: 'Aidant familial',
 }
 
-function MaskedValue({ value, visibleEnd = 2, prefix = '' }: { value?: string; visibleEnd?: number; prefix?: string }) {
-  const [revealed, setRevealed] = useState(false)
-  if (!value) return <Text fontSize="sm" color="text.muted" fontWeight={500}>Non renseigné</Text>
-  const masked = prefix
-    ? `${prefix} ${'•'.repeat(Math.max(0, value.length - visibleEnd))}${value.slice(-visibleEnd)}`
-    : `${'•'.repeat(Math.max(0, value.length - visibleEnd))}${value.slice(-visibleEnd)}`
-  return (
-    <Flex align="center" gap={3}>
-      <Text fontSize="sm" fontWeight={500} letterSpacing="0.5px">
-        {revealed ? value : masked}
-      </Text>
-      <Button
-        variant="outline"
-        size="xs"
-        borderWidth="1.5px"
-        borderColor="border.default"
-        fontSize="11px"
-        h="26px"
-        px={3}
-        fontWeight={600}
-        _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
-        onClick={() => setRevealed(!revealed)}
-      >
-        {revealed ? 'Masquer' : 'Afficher'}
-      </Button>
-    </Flex>
-  )
-}
-
 export function ProfilePage() {
   const { profile, userRole, isInitialized } = useAuth()
   const setProfile = useAuthStore((state) => state.setProfile)
@@ -417,6 +388,41 @@ function EmergencyContactsView({ employer, isLoading }: { employer: Employer | n
 
 function EmergencyContactsEdit({ employer, onSave }: { employer?: Employer; onSave: (data: Partial<Employer>) => Promise<void> }) {
   return <EmployerSection employer={employer} onSave={onSave} section="emergency" />
+}
+
+function MaskedValue({ value, visibleEnd = 2, prefix = '' }: { value?: string; visibleEnd?: number; prefix?: string }) {
+  const [revealed, setRevealed] = useState(false)
+
+  if (!value) return <Text fontSize="sm" color="text.muted" fontWeight={500}>Non renseigné</Text>
+
+  const masked = prefix
+    ? `${prefix} ${'●'.repeat(Math.max(0, value.length - prefix.length - visibleEnd))} ${value.slice(-visibleEnd)}`
+    : `${'●'.repeat(Math.max(0, value.length - visibleEnd))} ${value.slice(-visibleEnd)}`
+
+  return (
+    <Flex align="center" gap={2}>
+      <Text fontSize="sm" fontWeight={500} fontFamily={revealed ? 'mono' : undefined} letterSpacing={revealed ? '0.5px' : undefined}>
+        {revealed ? value : masked}
+      </Text>
+      <Button
+        variant="outline"
+        size="xs"
+        fontSize="11px"
+        fontWeight={600}
+        color="text.secondary"
+        borderColor="border.default"
+        borderWidth="1.5px"
+        borderRadius="6px"
+        px={3}
+        h="26px"
+        _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+        onClick={() => setRevealed(!revealed)}
+        aria-label={revealed ? 'Masquer' : 'Afficher'}
+      >
+        {revealed ? 'Masquer' : 'Afficher'}
+      </Button>
+    </Flex>
+  )
 }
 
 function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; isLoading: boolean }) {

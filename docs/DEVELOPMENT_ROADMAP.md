@@ -13,14 +13,14 @@
 | Catégorie | Complétude | Statut |
 |-----------|------------|--------|
 | **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
-| **Dashboards** | 75% | 🟡 Bon (3 dashboards rôle-spécifiques, manque onboarding/nudges/planning du jour/tendances — cf. 7b) |
+| **Dashboards** | 85% | ✅ Bon (3 dashboards rôle-spécifiques + mobile aidant, manque onboarding/nudges) |
 | **Planning** | 97% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition interventions) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, conversations privées en cours) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 92% | ✅ Bon (bulletins v2, export planning PDF/Excel/iCal ✅ mergé, archivage avancé à faire) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~70% | ✅ Excellent (1942 tests / 102 fichiers, 8/8 hooks testés ✅) |
+| **Tests** | ~70% | ✅ Excellent (2084 tests / 116 fichiers, 8/8 hooks testés ✅) |
 | **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
 | **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
 
@@ -36,7 +36,38 @@
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-13 - Février/Mars 2026)
+## ✅ Réalisations Récentes (Semaines 6-14 - Février/Mars 2026)
+
+### Semaine 12 — 16 mars 2026 (PRs #158–#164)
+
+#### Dashboard aidant — Mobile + fixes (PR #163 ✅)
+
+Réorganisation complète du dashboard aidant avec layouts séparés desktop/mobile :
+- **Mobile** : ordre Timeline → ClockIn → Messages → PCH → Actions → Semaine → Stats
+- **Desktop** : Stats en bas, grille 2 colonnes
+- 3 nouveaux widgets : `CaregiverShiftTimeline`, `PchMiniWidget`, `WeekSummaryWidget`
+- Stats aidant enrichies : `shiftsToday`, `hoursThisMonth`, `pchMonthlyHours`, `pchRemaining`, `documentsToSign`
+
+#### Clock-in & garde 24h — Corrections (PR #163 ✅)
+
+- Fix clock-in utilisant l'heure prévue du shift au lieu de l'heure réelle
+- Fix `calculateShiftDuration` retournant 0 quand start===end (au lieu de 24h)
+- Heures de fin des segments de garde 24h désormais éditables
+- Validation rétroactive accepte les gardes 24h / présence nuit
+- Auto-dismiss du message succès après 8 secondes
+- WelcomeCard n'affiche plus les heures auxiliaire sur le dashboard aidant
+
+#### Profil auxiliaire — Champs administratifs (PR #164 ✅)
+
+Ajout de 3 champs au profil employé (auxiliaire de vie) :
+- **Date de naissance**, **N° sécurité sociale**, **IBAN**
+- Migration 037 : nouvelles colonnes sur `employees`
+- Validation Zod (format sécu 13-15 chiffres, format IBAN)
+- Section "Informations administratives" dans `EmployeeSection`
+
+#### Métriques session (16/03/2026)
+- Tests : 2026 → 2084 (+58 tests, 116 fichiers)
+- 37 migrations DB (était 36)
 
 ### Semaine 12-13 — 15-16 mars 2026 (PRs #158–#165)
 
