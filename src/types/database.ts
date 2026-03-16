@@ -43,6 +43,7 @@ export interface EmployeeDbRow {
   date_of_birth: string | null
   social_security_number: string | null
   iban: string | null
+  emergency_contacts: Array<{ name: string; phone: string; relationship: string }> | null
   profile?: ProfileDbRow
 }
 

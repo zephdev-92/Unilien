@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Box, Stack, Flex, Text } from '@chakra-ui/react'
+import { Box, Stack, Flex, Text, Button, IconButton } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton } from '@/components/ui'
 import { logger } from '@/lib/logger'
-import type { Employee, DriversLicense } from '@/types'
+import type { Employee, DriversLicense, EmergencyContact } from '@/types'
 import { QualificationsSubSection } from './QualificationsSubSection'
 import { LanguagesSubSection } from './LanguagesSubSection'
 import { DriversLicenseSubSection } from './DriversLicenseSubSection'
@@ -53,6 +53,9 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
     licenseType: employee?.driversLicense?.licenseType,
     hasVehicle: employee?.driversLicense?.hasVehicle || false,
   })
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(
+    employee?.emergencyContacts || []
+  )
 
   const {
     register,
@@ -88,6 +91,7 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
         dateOfBirth: data.dateOfBirth || undefined,
         socialSecurityNumber: data.socialSecurityNumber || undefined,
         iban: data.iban || undefined,
+        emergencyContacts,
       })
       setSuccessMessage('Informations mises à jour avec succès')
       setTimeout(() => setSuccessMessage(null), 3000)
@@ -206,6 +210,86 @@ export function EmployeeSection({ employee, onSave }: EmployeeSectionProps) {
           error={errors.maxDistanceKm?.message}
           {...register('maxDistanceKm', { valueAsNumber: true })}
         />
+      </Box>
+
+      {/* Contacts d'urgence */}
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6}>
+        <Flex justify="space-between" align="center" mb={2}>
+          <Text fontSize="xl" fontWeight="semibold">Contacts d&apos;urgence</Text>
+          <Button
+            variant="outline"
+            size="sm"
+            fontSize="xs"
+            fontWeight={600}
+            borderColor="border.default"
+            onClick={() => setEmergencyContacts([...emergencyContacts, { name: '', phone: '', relationship: '' }])}
+          >
+            + Ajouter
+          </Button>
+        </Flex>
+        <Text fontSize="sm" color="text.muted" mb={4}>
+          Personnes à prévenir en cas d&apos;incident pendant une intervention
+        </Text>
+
+        {emergencyContacts.length === 0 ? (
+          <Text fontSize="sm" color="text.muted" textAlign="center" py={4}>
+            Aucun contact d&apos;urgence. Cliquez sur &quot;+ Ajouter&quot; pour en créer un.
+          </Text>
+        ) : (
+          <Stack gap={4}>
+            {emergencyContacts.map((contact, index) => (
+              <Flex key={index} gap={3} align="flex-end" p={4} bg="bg.page" borderRadius="10px" borderWidth="1px" borderColor="border.default">
+                <Box flex={1}>
+                  <AccessibleInput
+                    label="Nom"
+                    placeholder="Prénom Nom"
+                    value={contact.name}
+                    onChange={(e) => {
+                      const updated = [...emergencyContacts]
+                      updated[index] = { ...updated[index], name: e.target.value }
+                      setEmergencyContacts(updated)
+                    }}
+                  />
+                </Box>
+                <Box flex={1}>
+                  <AccessibleInput
+                    label="Téléphone"
+                    type="tel"
+                    placeholder="+33 6 00 00 00 00"
+                    value={contact.phone}
+                    onChange={(e) => {
+                      const updated = [...emergencyContacts]
+                      updated[index] = { ...updated[index], phone: e.target.value }
+                      setEmergencyContacts(updated)
+                    }}
+                  />
+                </Box>
+                <Box flex={1}>
+                  <AccessibleInput
+                    label="Relation"
+                    placeholder="Ex : Mère, conjoint..."
+                    value={contact.relationship}
+                    onChange={(e) => {
+                      const updated = [...emergencyContacts]
+                      updated[index] = { ...updated[index], relationship: e.target.value }
+                      setEmergencyContacts(updated)
+                    }}
+                  />
+                </Box>
+                <IconButton
+                  aria-label="Supprimer ce contact"
+                  variant="ghost"
+                  size="sm"
+                  color="red.500"
+                  _hover={{ bg: 'red.50' }}
+                  onClick={() => setEmergencyContacts(emergencyContacts.filter((_, i) => i !== index))}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </IconButton>
+              </Flex>
+            ))}
+          </Stack>
+        )}
       </Box>
 
       {/* Bouton sauvegarder */}

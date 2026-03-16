@@ -344,6 +344,7 @@ export async function getEmployee(profileId: string): Promise<Employee | null> {
     dateOfBirth: data.date_of_birth || undefined,
     socialSecurityNumber: data.social_security_number || undefined,
     iban: data.iban || undefined,
+    emergencyContacts: data.emergency_contacts || [],
   }
 }
 
@@ -377,6 +378,11 @@ export async function upsertEmployee(profileId: string, data: Partial<Employee>)
     date_of_birth: data.dateOfBirth || null,
     social_security_number: data.socialSecurityNumber ? sanitizeText(data.socialSecurityNumber) : null,
     iban: data.iban ? sanitizeText(data.iban) : null,
+    emergency_contacts: (data.emergencyContacts || []).map(c => ({
+      name: sanitizeText(c.name),
+      phone: sanitizeText(c.phone),
+      relationship: sanitizeText(c.relationship),
+    })),
   }
 
   const { error } = await supabase
