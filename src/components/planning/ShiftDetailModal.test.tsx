@@ -201,7 +201,7 @@ describe('ShiftDetailModal', () => {
       })
     })
 
-    it('caregiver ne voit pas Valider', async () => {
+    it('caregiver voit Valider pour shift terminé', async () => {
       renderWithProviders(
         <ShiftDetailModal
           {...defaultProps}
@@ -210,7 +210,7 @@ describe('ShiftDetailModal', () => {
         />
       )
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /valider/i })).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /valider l'intervention/i })).toBeInTheDocument()
       })
     })
   })
