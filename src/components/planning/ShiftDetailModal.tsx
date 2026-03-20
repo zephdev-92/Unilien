@@ -177,10 +177,10 @@ export function ShiftDetailModal({
     (userRole === 'employer' || (userRole === 'caregiver' && caregiverCanEdit)) &&
     shift?.status === 'planned'
   const canValidate =
-    (userRole === 'employer' || userRole === 'employee') && shift?.status === 'completed'
+    (userRole === 'employer' || userRole === 'employee' || userRole === 'caregiver') && shift?.status === 'completed'
   const hasValidated = shift
     ? (userRole === 'employer' && shift.validatedByEmployer) ||
-      (userRole === 'employee' && shift.validatedByEmployee)
+      ((userRole === 'employee' || userRole === 'caregiver') && shift.validatedByEmployee)
     : false
 
   // Formulaire (react-hook-form)
@@ -326,7 +326,7 @@ export function ShiftDetailModal({
 
   // Validation du shift
   const handleValidate = async () => {
-    if (!shift || userRole === 'caregiver') return
+    if (!shift) return
     dispatch({ type: 'VALIDATE_START' })
     try {
       await validateShift(shift.id, userRole)

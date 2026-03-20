@@ -367,7 +367,7 @@ export async function deleteShift(shiftId: string): Promise<void> {
 
 export async function validateShift(
   shiftId: string,
-  role: 'employer' | 'employee'
+  role: 'employer' | 'employee' | 'caregiver'
 ): Promise<void> {
   const field = role === 'employer' ? 'validated_by_employer' : 'validated_by_employee'
 
