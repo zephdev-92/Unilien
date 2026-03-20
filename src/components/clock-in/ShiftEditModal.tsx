@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Box, Stack, Flex, Text, Input } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
+import { GhostButton, PrimaryButton } from '@/components/ui'
 import type { Shift } from '@/types'
 import { formatTime } from './clockInUtils'
 
@@ -105,22 +105,17 @@ export function ShiftEditModal({ shift, onSave, onClose }: ShiftEditModalProps) 
           )}
 
           <Flex gap={3} mt={2}>
-            <AccessibleButton
+            <PrimaryButton
               flex={1}
-              colorPalette="brand"
               onClick={handleSave}
               disabled={!canSubmit}
               loading={isSubmitting}
             >
               Enregistrer
-            </AccessibleButton>
-            <AccessibleButton
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+            </PrimaryButton>
+            <GhostButton onClick={onClose} disabled={isSubmitting}>
               Annuler
-            </AccessibleButton>
+            </GhostButton>
           </Flex>
         </Stack>
       </Box>

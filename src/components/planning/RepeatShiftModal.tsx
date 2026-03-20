@@ -8,7 +8,7 @@ import {
   Text,
   Separator,
 } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, GhostButton, PrimaryButton } from '@/components/ui'
 import { RepeatConfigSection } from './RepeatConfigSection'
 import { RepeatPreviewModal, type RepeatOccurrence } from './RepeatPreviewModal'
 import { useRepeatConfig } from '@/hooks/useRepeatConfig'
@@ -154,16 +154,15 @@ export function RepeatShiftModal({
 
               <Dialog.Footer p={6} borderTopWidth="1px">
                 <Flex gap={3} justify="flex-end" w="full">
-                  <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose}>
+                  <GhostButton onClick={onClose}>
                     Annuler
-                  </AccessibleButton>
-                  <AccessibleButton
-                    bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
+                  </GhostButton>
+                  <PrimaryButton
                     disabled={repeatConfig.generatedDates.length === 0}
                     onClick={handleOpenPreview}
                   >
                     Vérifier ({repeatConfig.generatedDates.length} date{repeatConfig.generatedDates.length > 1 ? 's' : ''})
-                  </AccessibleButton>
+                  </PrimaryButton>
                 </Flex>
               </Dialog.Footer>
             </Dialog.Content>

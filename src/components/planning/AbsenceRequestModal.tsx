@@ -11,7 +11,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
-import { AccessibleInput, AccessibleButton } from '@/components/ui'
+import { AccessibleInput, AccessibleButton, GhostButton, PrimaryButton } from '@/components/ui'
 import { PlanningModal } from './PlanningModal'
 import { logger } from '@/lib/logger'
 import { createAbsence, uploadJustification, validateJustificationFile } from '@/services/absenceService'
@@ -364,12 +364,12 @@ export function AbsenceRequestModal({
       large
       footer={
         <Flex gap={3} justify="flex-end">
-          <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose} disabled={isSubmitting}>
+          <GhostButton onClick={onClose} disabled={isSubmitting}>
             Annuler
-          </AccessibleButton>
-          <AccessibleButton type="submit" form="absence-request-form" bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} loading={isSubmitting}>
+          </GhostButton>
+          <PrimaryButton type="submit" form="absence-request-form" loading={isSubmitting}>
             Envoyer la demande
-          </AccessibleButton>
+          </PrimaryButton>
         </Flex>
       }
     >

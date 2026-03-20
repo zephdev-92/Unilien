@@ -47,6 +47,10 @@ vi.mock('@/components/profile/ProfileViewList', () => ({
   ProfileViewList: () => <div data-testid="profile-view-list" />,
 }))
 
+vi.mock('@/components/profile/ProfileSidebar', () => ({
+  ProfileSidebar: () => <div data-testid="profile-sidebar" />,
+}))
+
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: vi.fn(),
 }))
@@ -63,6 +67,10 @@ vi.mock('@/services/profileService', () => ({
   upsertEmployer: vi.fn(),
   getEmployee: vi.fn(),
   upsertEmployee: vi.fn(),
+}))
+
+vi.mock('@/services/caregiverService', () => ({
+  getCaregiver: vi.fn().mockResolvedValue(null),
 }))
 
 // --- Imports apres mocks ---

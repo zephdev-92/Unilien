@@ -6,7 +6,7 @@ import {
   Flex,
   Text,
 } from '@chakra-ui/react'
-import { AccessibleButton, StatusPill } from '@/components/ui'
+import { AccessibleButton, StatusPill, GhostButton, PrimaryButton } from '@/components/ui'
 import { validateShift } from '@/lib/compliance'
 import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
 import type { ComplianceResult } from '@/types'
@@ -129,18 +129,17 @@ export function RepeatPreviewModal({
 
             <Dialog.Footer p={6} borderTopWidth="1px">
               <Flex gap={3} justify="flex-end" w="full">
-                <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose} disabled={isSubmitting}>
+                <GhostButton onClick={onClose} disabled={isSubmitting}>
                   Annuler
-                </AccessibleButton>
-                <AccessibleButton
-                  bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
+                </GhostButton>
+                <PrimaryButton
                   loading={isSubmitting}
                   disabled={validOccurrences.length === 0 || isSubmitting}
                   onClick={() => onConfirm(validOccurrences)}
                 >
                   Créer {validOccurrences.length} intervention{validOccurrences.length > 1 ? 's' : ''}
                   {blockedCount > 0 && ` (${blockedCount} ignorée${blockedCount > 1 ? 's' : ''})`}
-                </AccessibleButton>
+                </PrimaryButton>
               </Flex>
             </Dialog.Footer>
           </Dialog.Content>

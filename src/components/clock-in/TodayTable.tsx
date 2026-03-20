@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Box, Flex, Text, Table, Button, NativeSelect } from '@chakra-ui/react'
+import { GhostButton, PrimaryButton } from '@/components/ui'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { calculateShiftDuration } from '@/lib/compliance'
@@ -241,13 +242,13 @@ export function TodayTable({
                     <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
                       <Flex justify="flex-end" gap={2}>
                         {!isEmployer && !isPastDate && shift._status === 'planned' && !activeShiftId && (
-                          <Button size="xs" bg="#3D5166" color="white" borderRadius="md" fontWeight="600" _hover={{ bg: '#2E3F50' }} onClick={() => onClockIn(shift)}>
+                          <PrimaryButton size="xs" onClick={() => onClockIn(shift)}>
                             Pointer
-                          </Button>
+                          </PrimaryButton>
                         )}
-                        <Button size="xs" variant="ghost" borderWidth="1.5px" borderColor="border.default" borderRadius="md" fontWeight="600" color="text.secondary" _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }} onClick={() => onModify?.(shift)}>
+                        <GhostButton size="xs" onClick={() => onModify?.(shift)}>
                           Modifier
-                        </Button>
+                        </GhostButton>
                         {isEmployer && isCompleted && !shift.validatedByEmployer && (
                           <Button size="xs" bg="#9BB23B" color="white" borderRadius="md" fontWeight="600" _hover={{ bg: '#8A9E34' }} onClick={() => onValidate?.(shift)}>
                             Valider

@@ -11,7 +11,7 @@ import {
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { AccessibleSelect, AccessibleButton } from '@/components/ui'
+import { AccessibleSelect, AccessibleButton, GhostButton, PrimaryButton } from '@/components/ui'
 import { updateLogEntry } from '@/services/logbookService'
 import type { LogEntryWithAuthor } from '@/services/logbookService'
 import { logger } from '@/lib/logger'
@@ -195,22 +195,17 @@ export function EditLogEntryModal({ entry, onClose, onSuccess }: EditLogEntryMod
 
             <Dialog.Footer p={6} borderTopWidth="1px">
               <Flex gap={3} justify="flex-end">
-                <AccessibleButton
-                  variant="outline"
-                  onClick={handleClose}
-                  disabled={isSubmitting}
-                >
+                <GhostButton onClick={handleClose} disabled={isSubmitting}>
                   Annuler
-                </AccessibleButton>
-                <AccessibleButton
+                </GhostButton>
+                <PrimaryButton
                   type="submit"
                   form="edit-log-entry-form"
-                  colorPalette="brand"
                   loading={isSubmitting}
                   loadingText="Enregistrement..."
                 >
                   Enregistrer
-                </AccessibleButton>
+                </PrimaryButton>
               </Flex>
             </Dialog.Footer>
           </Dialog.Content>

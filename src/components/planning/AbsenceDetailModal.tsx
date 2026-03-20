@@ -8,7 +8,7 @@ import {
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { AccessibleButton, StatusPill } from '@/components/ui'
+import { AccessibleButton, StatusPill, GhostButton } from '@/components/ui'
 import { PlanningModal } from './PlanningModal'
 import { updateAbsenceStatus, cancelAbsence } from '@/services/absenceService'
 import type { Absence, UserRole } from '@/types'
@@ -109,9 +109,9 @@ export function AbsenceDetailModal({
         </AccessibleButton>
       )}
       {!canEmployerAct && !canEmployeeCancel && (
-        <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose}>
+        <GhostButton onClick={onClose}>
           Fermer
-        </AccessibleButton>
+        </GhostButton>
       )}
     </Flex>
   )
