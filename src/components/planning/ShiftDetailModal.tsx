@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { shiftDetailSchema as shiftSchema, type ShiftDetailFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { AccessibleButton, StatusPill } from '@/components/ui'
+import { AccessibleButton, StatusPill, GhostButton, PrimaryButton } from '@/components/ui'
 import { ComplianceBadge } from '@/components/compliance'
 import { PlanningModal } from './PlanningModal'
 import { updateShift, deleteShift, validateShift } from '@/services/shiftService'
@@ -420,23 +420,23 @@ export function ShiftDetailModal({
           <Text fontSize="sm" color="green.600" alignSelf="center">Vous avez validé cette intervention</Text>
         )}
         {userRole === 'employee' && shift && shift.status === 'planned' && (
-          <AccessibleButton bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={() => navigate('/suivi-des-heures')} accessibleLabel="Aller au pointage pour cette intervention">
+          <PrimaryButton onClick={() => navigate('/suivi-des-heures')} accessibleLabel="Aller au pointage pour cette intervention">
             Pointer
-          </AccessibleButton>
+          </PrimaryButton>
         )}
         {canEdit && onRepeat && shift && shift.status === 'planned' && (
-          <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={() => onRepeat(shift)}>
+          <GhostButton onClick={() => onRepeat(shift)}>
             Répéter
-          </AccessibleButton>
+          </GhostButton>
         )}
         {canEdit && (
-          <AccessibleButton bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={() => dispatch({ type: 'START_EDITING' })}>
+          <PrimaryButton onClick={() => dispatch({ type: 'START_EDITING' })}>
             Modifier
-          </AccessibleButton>
+          </PrimaryButton>
         )}
-        <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose}>
+        <GhostButton onClick={onClose}>
           Fermer
-        </AccessibleButton>
+        </GhostButton>
       </Flex>
     </Flex>
   )

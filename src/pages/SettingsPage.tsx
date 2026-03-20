@@ -34,6 +34,7 @@ import type { Address, UserRole } from '@/types'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { GhostButton, PrimaryButton } from '@/components/ui'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -97,7 +98,12 @@ const NAV_SECTIONS: NavSection[] = [
 
 export function SettingsPage() {
   const { profile, userRole } = useAuth()
-  const [activePanel, setActivePanel] = useState<PanelId>('profil')
+  const initialPanel = (() => {
+    const hash = window.location.hash.replace('#', '') as PanelId
+    const validPanels: PanelId[] = ['profil', 'securite', 'abonnement', 'notifications', 'convention', 'pch', 'apparence', 'accessibilite', 'donnees']
+    return validPanels.includes(hash) ? hash : 'profil'
+  })()
+  const [activePanel, setActivePanel] = useState<PanelId>(initialPanel)
   const navRef = useRef<HTMLDivElement>(null)
   const [showPrev, setShowPrev] = useState(false)
   const [showNext, setShowNext] = useState(false)
@@ -504,9 +510,9 @@ function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: 
             )}
             <VStack gap={2} align="start">
               <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={handleAvatarUpload} />
-              <Button variant="ghost" size="sm" borderWidth="1.5px" borderColor="border.default" onClick={() => fileInputRef.current?.click()} disabled={saving}>
+              <GhostButton size="sm" onClick={() => fileInputRef.current?.click()} disabled={saving}>
                 Changer la photo
-              </Button>
+              </GhostButton>
               {avatarUrl && (
                 <Button variant="ghost" size="sm" color="red.600" borderWidth="1.5px" borderColor="red.200" _hover={{ bg: 'red.50', borderColor: 'red.500' }} onClick={handleAvatarDelete} disabled={saving}>
                   Supprimer
@@ -550,10 +556,10 @@ function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: 
             </Field.Root>
           </Grid>
           <HStack mt={5} gap={3} justify="flex-end">
-            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md" onClick={handleCancel} disabled={saving || !hasChanges}>Annuler</Button>
-            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }} onClick={handleSaveProfile} disabled={saving || !hasChanges}>
+            <GhostButton size="sm" onClick={handleCancel} disabled={saving || !hasChanges}>Annuler</GhostButton>
+            <PrimaryButton size="sm" onClick={handleSaveProfile} disabled={saving || !hasChanges}>
               {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </Button>
+            </PrimaryButton>
           </HStack>
         </Card.Body>
       </Card.Root>
@@ -676,9 +682,9 @@ function SecuritePanel() {
               </Field.Root>
             </Grid>
             <HStack justify="flex-end">
-              <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }} onClick={handleChangePassword} disabled={saving || !canSubmit}>
+              <PrimaryButton size="sm" onClick={handleChangePassword} disabled={saving || !canSubmit}>
                 {saving ? 'Mise à jour…' : 'Mettre à jour'}
-              </Button>
+              </PrimaryButton>
             </HStack>
           </VStack>
         </Card.Body>
@@ -1127,8 +1133,8 @@ function ConventionPanel() {
             </Field.Root>
           </Grid>
           <HStack mt={5} gap={3} justify="flex-end">
-            <Button variant="ghost" size="sm" fontWeight="600" borderWidth="1.5px" borderColor="border.default" borderRadius="md" onClick={handleReset}>Réinitialiser</Button>
-            <Button size="sm" fontWeight="600" borderRadius="md" px={5} bg="#3D5166" color="white" boxShadow="sm" _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }} _active={{ transform: 'translateY(0)' }} onClick={handleSave}>Enregistrer</Button>
+            <GhostButton size="sm" onClick={handleReset}>Réinitialiser</GhostButton>
+            <PrimaryButton size="sm" onClick={handleSave}>Enregistrer</PrimaryButton>
           </HStack>
         </Card.Body>
       </Card.Root>
@@ -1523,30 +1529,14 @@ function DonneesPanel({ userId }: { userId: string }) {
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={3} align="start">
-            <Button
-              variant="ghost" size="sm" w="fit-content"
-              borderWidth="1.5px" borderColor="border.default" borderRadius="md"
-              color="text.secondary" fontWeight="600"
-              _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
-              gap={2}
-              onClick={handleExportJSON}
-              disabled={exporting !== null}
-            >
+            <GhostButton size="sm" w="fit-content" gap={2} onClick={handleExportJSON} disabled={exporting !== null}>
               {downloadIcon}
               {exporting === 'json' ? 'Export en cours…' : 'Exporter toutes les données (JSON)'}
-            </Button>
-            <Button
-              variant="ghost" size="sm" w="fit-content"
-              borderWidth="1.5px" borderColor="border.default" borderRadius="md"
-              color="text.secondary" fontWeight="600"
-              _hover={{ borderColor: '#3D5166', color: '#3D5166', bg: '#EDF1F5' }}
-              gap={2}
-              onClick={handleExportCSV}
-              disabled={exporting !== null}
-            >
+            </GhostButton>
+            <GhostButton size="sm" w="fit-content" gap={2} onClick={handleExportCSV} disabled={exporting !== null}>
               {downloadIcon}
               {exporting === 'csv' ? 'Export en cours…' : 'Exporter le planning (CSV)'}
-            </Button>
+            </GhostButton>
           </VStack>
         </Card.Body>
       </Card.Root>

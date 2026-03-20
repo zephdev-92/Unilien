@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/dashboard'
 import { ProfileHero } from './ProfileHero'
 import { ProfileJumpNav } from './ProfileJumpNav'
 import { ProfileViewList } from './ProfileViewList'
+import { ProfileSidebar } from './ProfileSidebar'
 import {
   PersonalInfoSection,
   EmployerSection,
@@ -19,8 +20,9 @@ import {
   getEmployee,
   upsertEmployee,
 } from '@/services/profileService'
+import { getCaregiver } from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
-import type { Profile, Employer, Employee } from '@/types'
+import type { Profile, Employer, Employee, Caregiver } from '@/types'
 
 const ROLE_LABELS: Record<string, string> = {
   employer: 'Particulier employeur',
@@ -34,6 +36,7 @@ export function ProfilePage() {
 
   const [employer, setEmployer] = useState<Employer | null>(null)
   const [employee, setEmployee] = useState<Employee | null>(null)
+  const [caregiver, setCaregiverData] = useState<Caregiver | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -47,6 +50,9 @@ export function ProfilePage() {
       } else if (profile.role === 'employee') {
         const employeeData = await getEmployee(profile.id)
         setEmployee(employeeData)
+      } else if (profile.role === 'caregiver') {
+        const caregiverData = await getCaregiver(profile.id)
+        setCaregiverData(caregiverData)
       }
     } catch (error) {
       logger.error('Erreur chargement donnees:', error)
@@ -127,119 +133,139 @@ export function ProfilePage() {
 
   return (
     <DashboardLayout title="Profil">
-      <Box maxW="900px">
-        <Stack gap={6}>
-          {/* Hero */}
-          <ProfileHero
-            profile={profile}
-            isEditing={isEditing}
-            onToggleEdit={() => setIsEditing(!isEditing)}
-          />
+      <Stack gap={6}>
+        {/* Hero — full width */}
+        <ProfileHero
+          profile={profile}
+          isEditing={isEditing}
+          onToggleEdit={() => setIsEditing(!isEditing)}
+        />
 
-          {/* Jump nav */}
-          <ProfileJumpNav items={navItems} />
+        {/* Jump nav — full width */}
+        <ProfileJumpNav items={navItems} />
 
-          {/* Section: Mon profil */}
-          <Box id="section-profil" scrollMarginTop="140px">
-            <SectionTitle>Mon profil</SectionTitle>
-            {isEditing ? (
-              <PersonalInfoSection
-                profile={profile}
-                onSave={handleSaveProfile}
-                onAvatarChange={handleAvatarChange}
-              />
-            ) : (
-              <Box
-                bg="bg.surface"
-                borderRadius="12px"
-                borderWidth="1px"
-                borderColor="border.default"
-                overflow="hidden"
-              >
-                <Flex justify="space-between" align="center" px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
-                  <Text fontSize="md" fontWeight={700}>Informations personnelles</Text>
-                </Flex>
-                <Box px={6} py={5}>
-                  <ProfileViewList
-                    rows={[
-                      { label: 'Nom complet', value: `${profile.firstName} ${profile.lastName}` },
-                      { label: 'Email', value: profile.email },
-                      { label: 'Téléphone', value: profile.phone },
-                      { label: 'Rôle', value: ROLE_LABELS[profile.role] || profile.role },
-                    ]}
-                  />
-                </Box>
-              </Box>
-            )}
-          </Box>
-
-          {/* Section: Ma situation (employer) */}
-          {userRole === 'employer' && (
-            <>
-              <Box id="section-situation" scrollMarginTop="140px">
-                <SectionTitle>Ma situation</SectionTitle>
-                {isEditing ? (
-                  isLoadingData ? (
-                    <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
-                  ) : (
-                    <EmployerSituationEdit employer={employer ?? undefined} onSave={handleSaveEmployer} />
-                  )
-                ) : (
-                  <EmployerSituationView employer={employer} isLoading={isLoadingData} />
-                )}
-              </Box>
-
-              <Box id="section-urgence" scrollMarginTop="140px">
-                <SectionTitle>Contacts d&apos;urgence</SectionTitle>
-                {isEditing ? (
-                  isLoadingData ? (
-                    <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
-                  ) : (
-                    <EmergencyContactsEdit employer={employer ?? undefined} onSave={handleSaveEmployer} />
-                  )
-                ) : (
-                  <EmergencyContactsView employer={employer} isLoading={isLoadingData} />
-                )}
-              </Box>
-            </>
-          )}
-
-          {/* Section: Mon metier (employee) */}
-          {userRole === 'employee' && (
-            <Box id="section-metier" scrollMarginTop="140px">
-              <SectionTitle>Mon métier</SectionTitle>
+        {/* 2-column layout: content + sidebar */}
+        <Flex gap={8} align="flex-start" direction={{ base: 'column', lg: 'row' }}>
+          {/* Main content */}
+          <Box flex={1} minW={0}>
+            <Stack gap={6}>
+              {/* Section: Mon profil */}
+            <Box id="section-profil" scrollMarginTop="140px">
+              <SectionTitle>Mon profil</SectionTitle>
               {isEditing ? (
-                isLoadingData ? (
-                  <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
-                ) : (
-                  <EmployeeSection employee={employee ?? undefined} onSave={handleSaveEmployee} />
-                )
+                <PersonalInfoSection
+                  profile={profile}
+                  onSave={handleSaveProfile}
+                  onAvatarChange={handleAvatarChange}
+                />
               ) : (
-                <EmployeeViewMode employee={employee} isLoading={isLoadingData} />
-              )}
-            </Box>
-          )}
-
-          {/* Section: Mon profil aidant (caregiver) */}
-          {userRole === 'caregiver' && (
-            <Box id="section-aidant" scrollMarginTop="140px">
-              <SectionTitle>Mon profil aidant</SectionTitle>
-              {isEditing ? (
-                <CaregiverSection profileId={profile.id} />
-              ) : (
-                <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+                <Box
+                  bg="bg.surface"
+                  borderRadius="12px"
+                  borderWidth="1px"
+                  borderColor="border.default"
+                  overflow="hidden"
+                >
+                  <Flex justify="space-between" align="center" px={6} py={4} borderBottomWidth="1px" borderColor="border.default">
+                    <Text fontSize="md" fontWeight={700}>Informations personnelles</Text>
+                  </Flex>
                   <Box px={6} py={5}>
-                    <Text color="text.muted" fontSize="sm">
-                      Cliquez sur &quot;Modifier le profil&quot; pour éditer vos informations d&apos;aidant.
-                    </Text>
+                    <ProfileViewList
+                      rows={[
+                        { label: 'Nom complet', value: `${profile.firstName} ${profile.lastName}` },
+                        { label: 'Email', value: profile.email },
+                        { label: 'Téléphone', value: profile.phone },
+                        { label: 'Rôle', value: ROLE_LABELS[profile.role] || profile.role },
+                      ]}
+                    />
                   </Box>
                 </Box>
               )}
             </Box>
-          )}
 
-        </Stack>
-      </Box>
+            {/* Section: Ma situation (employer) */}
+            {userRole === 'employer' && (
+              <>
+                <Box id="section-situation" scrollMarginTop="140px">
+                  <SectionTitle>Ma situation</SectionTitle>
+                  {isEditing ? (
+                    isLoadingData ? (
+                      <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
+                    ) : (
+                      <EmployerSituationEdit employer={employer ?? undefined} onSave={handleSaveEmployer} />
+                    )
+                  ) : (
+                    <EmployerSituationView employer={employer} isLoading={isLoadingData} />
+                  )}
+                </Box>
+
+                <Box id="section-urgence" scrollMarginTop="140px">
+                  <SectionTitle>Contacts d&apos;urgence</SectionTitle>
+                  {isEditing ? (
+                    isLoadingData ? (
+                      <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
+                    ) : (
+                      <EmergencyContactsEdit employer={employer ?? undefined} onSave={handleSaveEmployer} />
+                    )
+                  ) : (
+                    <EmergencyContactsView employer={employer} isLoading={isLoadingData} />
+                  )}
+                </Box>
+              </>
+            )}
+
+            {/* Section: Mon metier (employee) */}
+            {userRole === 'employee' && (
+              <Box id="section-metier" scrollMarginTop="140px">
+                <SectionTitle>Mon métier</SectionTitle>
+                {isEditing ? (
+                  isLoadingData ? (
+                    <Center py={8}><Spinner size="lg" color="brand.500" /></Center>
+                  ) : (
+                    <EmployeeSection employee={employee ?? undefined} onSave={handleSaveEmployee} />
+                  )
+                ) : (
+                  <EmployeeViewMode employee={employee} isLoading={isLoadingData} />
+                )}
+              </Box>
+            )}
+
+            {/* Section: Mon profil aidant (caregiver) */}
+            {userRole === 'caregiver' && (
+              <Box id="section-aidant" scrollMarginTop="140px">
+                <SectionTitle>Mon profil aidant</SectionTitle>
+                {isEditing ? (
+                  <CaregiverSection profileId={profile.id} />
+                ) : (
+                  <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" overflow="hidden">
+                    <Box px={6} py={5}>
+                      <Text color="text.muted" fontSize="sm">
+                        Cliquez sur &quot;Modifier le profil&quot; pour éditer vos informations d&apos;aidant.
+                      </Text>
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+          </Stack>
+        </Box>
+
+        {/* Sidebar */}
+        <Box
+          w={{ base: '100%', lg: '300px' }}
+          flexShrink={0}
+          display={isLoadingData ? 'none' : 'block'}
+        >
+          <ProfileSidebar
+            profile={profile}
+            employer={employer}
+            employee={employee}
+            caregiver={caregiver}
+          />
+        </Box>
+      </Flex>
+      </Stack>
     </DashboardLayout>
   )
 }

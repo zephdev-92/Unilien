@@ -7,7 +7,7 @@ import {
   Textarea,
   Separator,
 } from '@chakra-ui/react'
-import { AccessibleInput, AccessibleSelect, AccessibleButton } from '@/components/ui'
+import { AccessibleInput, AccessibleSelect, AccessibleButton, GhostButton, PrimaryButton } from '@/components/ui'
 import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compliance'
 import { PlanningModal } from './PlanningModal'
 import type { ShiftType } from '@/types'
@@ -158,17 +158,16 @@ export function NewShiftModal({
         <Text fontSize="sm" color="text.muted">Validation en cours...</Text>
       )}
       <Flex gap={3} ml="auto">
-        <AccessibleButton variant="outline" bg="transparent" color="#3D5166" borderWidth="1.5px" borderColor="border.default" _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }} onClick={onClose} disabled={isSubmitting || isBatchSubmitting}>
+        <GhostButton onClick={onClose} disabled={isSubmitting || isBatchSubmitting}>
           Annuler
-        </AccessibleButton>
+        </GhostButton>
         {repeatConfig.isRepeatEnabled ? (
-          <AccessibleButton
-            bg="#3D5166" color="white" _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
+          <PrimaryButton
             disabled={isSubmitDisabled || repeatOccurrences.length === 0}
             onClick={() => setIsPreviewOpen(true)}
           >
             Vérifier ({repeatOccurrences.length} intervention{repeatOccurrences.length > 1 ? 's' : ''})
-          </AccessibleButton>
+          </PrimaryButton>
         ) : (
           <AccessibleButton
             type="submit"

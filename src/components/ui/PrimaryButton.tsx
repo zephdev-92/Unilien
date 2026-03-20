@@ -1,0 +1,21 @@
+import { forwardRef } from 'react'
+import { AccessibleButton, type AccessibleButtonProps } from './AccessibleButton'
+
+/**
+ * Bouton principal — style prototype (btn-primary)
+ * Fond slate-blue, texte blanc, hover plus foncé avec élévation
+ */
+export const PrimaryButton = forwardRef<HTMLButtonElement, AccessibleButtonProps>(
+  function PrimaryButton(props, ref) {
+    return (
+      <AccessibleButton
+        ref={ref}
+        bg="#3D5166"
+        color="white"
+        _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }}
+        _active={{ transform: 'translateY(0)' }}
+        {...props}
+      />
+    )
+  }
+)
