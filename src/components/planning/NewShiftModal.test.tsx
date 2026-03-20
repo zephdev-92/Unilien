@@ -163,7 +163,7 @@ describe('NewShiftModal', () => {
 
     await waitFor(() => {
       // Le select "Auxiliaire" doit être présent après chargement
-      const select = screen.getByRole('combobox', { name: /auxiliaire/i })
+      const select = screen.getByRole('combobox', { name: /intervenant/i })
       expect(select).toBeInTheDocument()
     })
   })
@@ -279,11 +279,11 @@ describe('NewShiftModal', () => {
 
     // Attendre que les contrats soient chargés et le select auxiliaire visible
     await waitFor(() => {
-      expect(screen.getByRole('combobox', { name: /auxiliaire/i })).toBeInTheDocument()
+      expect(screen.getByRole('combobox', { name: /intervenant/i })).toBeInTheDocument()
     })
 
     // Sélectionner l'auxiliaire
-    const auxiliaireSelect = screen.getByRole('combobox', { name: /auxiliaire/i })
+    const auxiliaireSelect = screen.getByRole('combobox', { name: /intervenant/i })
     await userEvent.selectOptions(auxiliaireSelect, 'c-1')
 
     // Soumettre le formulaire

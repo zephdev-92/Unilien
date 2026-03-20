@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   Stack,
@@ -7,11 +8,13 @@ import {
   Dialog,
   Portal,
   Flex,
+  Box,
   Text,
 } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { AccessibleButton } from '@/components/ui'
 import { NewContractModal } from './NewContractModal'
+import { NewCaregiverContractModal } from './NewCaregiverContractModal'
 import { AuxiliaryDetailModal } from './AuxiliaryDetailModal'
 import { AddCaregiverModal } from './AddCaregiverModal'
 import { EditCaregiverModal } from './EditCaregiverModal'
@@ -46,6 +49,8 @@ export function TeamPage() {
     caregiversError,
     isAddCaregiverOpen,
     setIsAddCaregiverOpen,
+    isNewCaregiverContractOpen,
+    setIsNewCaregiverContractOpen,
     selectedCaregiver,
     setSelectedCaregiver,
     caregiverToRemove,
@@ -55,9 +60,28 @@ export function TeamPage() {
     confirmRemoveCaregiver,
     cancelRemoveCaregiver,
     refreshCaregivers,
+    caregiverContractMap,
     activeTab,
     setActiveTab,
   } = useTeamPage()
+
+  // Pré-sélection aidant pour contrat
+  const [preselectedCaregiverId, setPreselectedCaregiverId] = useState<string | undefined>()
+
+  // Dropdown "Ajouter" — choix auxiliaire ou aidant
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false)
+  const addMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isAddMenuOpen) return
+    const handleClick = (e: MouseEvent) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setIsAddMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [isAddMenuOpen])
 
   if (isLoadingCurrentCaregiver || !profile) {
     return (
@@ -75,32 +99,110 @@ export function TeamPage() {
 
   const canViewAuxiliaries = isEmployer || !!currentCaregiver?.permissions?.canManageTeam
 
-  // Bouton "+ Ajouter" dans le header (topbar-right) comme le proto
-  // Bouton "+ Ajouter" topbar — même style que btn "Nouveau" messagerie
   const topbarAddButton = isEmployer ? (
-    <AccessibleButton
-      bg="brand.500"
-      color="white"
-      fontWeight={600}
-      borderRadius="6px"
-      _hover={{ bg: 'brand.600' }}
-      onClick={() => setIsNewContractOpen(true)}
-      aria-label="Ajouter un employé"
-      display="inline-flex"
-      alignItems="center"
-      gap={2}
-      px={3}
-      py={2}
-      size="sm"
-      minH="auto"
-      minW="auto"
-    >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={16} height={16} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      <Text as="span" display={{ base: 'none', sm: 'inline' }}>Ajouter</Text>
-    </AccessibleButton>
+    <Box position="relative" ref={addMenuRef}>
+      <AccessibleButton
+        bg="brand.500"
+        color="white"
+        fontWeight={600}
+        borderRadius="6px"
+        _hover={{ bg: 'brand.600' }}
+        onClick={() => setIsAddMenuOpen((v) => !v)}
+        aria-label="Ajouter un membre"
+        aria-expanded={isAddMenuOpen}
+        display="inline-flex"
+        alignItems="center"
+        gap={2}
+        px={3}
+        py={2}
+        size="sm"
+        minH="auto"
+        minW="auto"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={16} height={16} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        <Text as="span" display={{ base: 'none', sm: 'inline' }}>Ajouter</Text>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={12} height={12} aria-hidden="true">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </AccessibleButton>
+
+      {isAddMenuOpen && (
+        <Box
+          position="absolute"
+          right={0}
+          top="100%"
+          mt={1}
+          bg="bg.surface"
+          borderRadius="10px"
+          borderWidth="1px"
+          borderColor="border.default"
+          boxShadow="lg"
+          minW="220px"
+          zIndex={10}
+          py={1}
+        >
+          <Box
+            as="button"
+            w="full"
+            px={4}
+            py={3}
+            textAlign="left"
+            _hover={{ bg: 'brand.50' }}
+            onClick={() => { setIsAddMenuOpen(false); setIsNewContractOpen(true) }}
+            display="flex"
+            alignItems="center"
+            gap={3}
+            cursor="pointer"
+            bg="transparent"
+            border="none"
+          >
+            <Box color="brand.500" flexShrink={0}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </Box>
+            <Box>
+              <Text fontSize="sm" fontWeight={600} color="text.primary">Auxiliaire de vie</Text>
+              <Text fontSize="xs" color="text.muted">Contrat de travail (IDCC 3239)</Text>
+            </Box>
+          </Box>
+
+          <Box h="1px" bg="border.default" mx={3} />
+
+          <Box
+            as="button"
+            w="full"
+            px={4}
+            py={3}
+            textAlign="left"
+            _hover={{ bg: 'brand.50' }}
+            onClick={() => { setIsAddMenuOpen(false); setIsAddCaregiverOpen(true) }}
+            display="flex"
+            alignItems="center"
+            gap={3}
+            cursor="pointer"
+            bg="transparent"
+            border="none"
+          >
+            <Box color="brand.500" flexShrink={0}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </Box>
+            <Box>
+              <Text fontSize="sm" fontWeight={600} color="text.primary">Aidant familial</Text>
+              <Text fontSize="xs" color="text.muted">Avec ou sans dédommagement PCH</Text>
+            </Box>
+          </Box>
+        </Box>
+      )}
+    </Box>
   ) : undefined
 
   return (
@@ -154,6 +256,7 @@ export function TeamPage() {
               isLoading={isLoadingCaregivers}
               error={caregiversError}
               removeError={removeError}
+              caregiverContractMap={caregiverContractMap}
               onAdd={() => setIsAddCaregiverOpen(true)}
               onEdit={setSelectedCaregiver}
               onRemove={handleRemoveCaregiver}
@@ -181,6 +284,17 @@ export function TeamPage() {
         />
       )}
 
+      {isEmployer && (
+        <NewCaregiverContractModal
+          isOpen={isNewCaregiverContractOpen}
+          onClose={() => { setIsNewCaregiverContractOpen(false); setPreselectedCaregiverId(undefined) }}
+          employerId={profile?.id || ''}
+          caregivers={caregivers}
+          defaultCaregiverId={preselectedCaregiverId}
+          onSuccess={() => { setIsNewCaregiverContractOpen(false); setPreselectedCaregiverId(undefined) }}
+        />
+      )}
+
       <AddCaregiverModal
         isOpen={isAddCaregiverOpen}
         onClose={() => setIsAddCaregiverOpen(false)}
@@ -193,6 +307,11 @@ export function TeamPage() {
         onClose={() => setSelectedCaregiver(null)}
         caregiver={selectedCaregiver}
         onSuccess={refreshCaregivers}
+        onCreateContract={isEmployer ? (caregiverId: string) => {
+          setSelectedCaregiver(null)
+          setPreselectedCaregiverId(caregiverId)
+          setIsNewCaregiverContractOpen(true)
+        } : undefined}
       />
 
       {/* Dialog confirmation suppression aidant */}

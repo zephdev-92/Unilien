@@ -82,7 +82,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
       <Box
         bg="bg.surface"
         borderRadius="12px"
-        borderWidth="1px"
+        borderWidth="1.5px"
         borderColor="border.default"
         p={6}
         boxShadow="sm"
@@ -98,7 +98,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       p={6}
       boxShadow="sm"

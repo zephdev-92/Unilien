@@ -100,7 +100,7 @@ export function EmployeeDocumentsWidget({ employeeId }: EmployeeDocumentsWidgetP
       <Box
         bg="bg.surface"
         borderRadius="12px"
-        borderWidth="1px"
+        borderWidth="1.5px"
         borderColor="border.default"
         boxShadow="sm"
         p={4}
@@ -119,7 +119,7 @@ export function EmployeeDocumentsWidget({ employeeId }: EmployeeDocumentsWidgetP
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       boxShadow="sm"
       overflow="hidden"

@@ -89,6 +89,8 @@ const config = defineConfig({
         md: { value: '0 4px 16px rgba(78,100,120,.12)' },
         lg: { value: '0 8px 32px rgba(78,100,120,.16)' },
       },
+      // Note: les shadows sont aussi overridées dans semanticTokens.shadows
+      // car Chakra v3 résout boxShadow="sm" via semantic tokens, pas tokens bruts
       radii: {
         sm: { value: '6px' },
         md: { value: '10px' },
@@ -97,6 +99,12 @@ const config = defineConfig({
       },
     },
     semanticTokens: {
+      shadows: {
+        xs: { value: '0 1px 2px rgba(78,100,120,.06)' },
+        sm: { value: '0 2px 8px rgba(78,100,120,.09)' },
+        md: { value: '0 4px 16px rgba(78,100,120,.12)' },
+        lg: { value: '0 8px 32px rgba(78,100,120,.16)' },
+      },
       colors: {
         // Brand semantic tokens
         'brand.solid': { value: '{colors.brand.500}' },

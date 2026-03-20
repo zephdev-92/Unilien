@@ -96,7 +96,7 @@ export function EmployeeLeaveWidget({ employeeId }: EmployeeLeaveWidgetProps) {
       <Box
         bg="bg.surface"
         borderRadius="12px"
-        borderWidth="1px"
+        borderWidth="1.5px"
         borderColor="border.default"
         boxShadow="sm"
         p={4}
@@ -120,7 +120,7 @@ export function EmployeeLeaveWidget({ employeeId }: EmployeeLeaveWidgetProps) {
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       boxShadow="sm"
       overflow="hidden"

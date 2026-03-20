@@ -53,7 +53,7 @@ export function TeamWidget({ employerId }: TeamWidgetProps) {
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       p={6}
       boxShadow="sm"

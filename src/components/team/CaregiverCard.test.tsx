@@ -53,26 +53,18 @@ describe('CaregiverCard', () => {
       expect(screen.getByText('marie.dupont@example.com')).toBeInTheDocument()
     })
 
-    it('affiche le téléphone si fourni', () => {
-      const caregiver = makeCaregiver({
-        profile: {
-          firstName: 'Marie',
-          lastName: 'Dupont',
-          email: 'marie.dupont@example.com',
-          phone: '06 12 34 56 78',
-        },
-      })
-      renderWithProviders(
-        <CaregiverCard caregiver={caregiver} onEdit={vi.fn()} onRemove={vi.fn()} />
-      )
-      expect(screen.getByText('06 12 34 56 78')).toBeInTheDocument()
-    })
-
-    it('n\'affiche pas de téléphone si absent', () => {
+    it('affiche le label "Aidant familial"', () => {
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.queryByText(/06/)).not.toBeInTheDocument()
+      expect(screen.getByText('Aidant familial')).toBeInTheDocument()
+    })
+
+    it('affiche "Sans contrat" si pas de contrat', () => {
+      renderWithProviders(
+        <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
+      )
+      expect(screen.getByText('Sans contrat')).toBeInTheDocument()
     })
 
     it('affiche le lien de parenté (relationship) si fourni', () => {
@@ -122,11 +114,11 @@ describe('CaregiverCard', () => {
   })
 
   describe('Actions', () => {
-    it('affiche le bouton "Permissions"', () => {
+    it('affiche le bouton "Modifier"', () => {
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={vi.fn()} onRemove={vi.fn()} />
       )
-      expect(screen.getByRole('button', { name: /^permissions$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^modifier$/i })).toBeInTheDocument()
     })
 
     it('affiche le bouton "Retirer"', () => {
@@ -136,13 +128,13 @@ describe('CaregiverCard', () => {
       expect(screen.getByRole('button', { name: /^retirer$/i })).toBeInTheDocument()
     })
 
-    it('appelle onEdit au clic sur Permissions', async () => {
+    it('appelle onEdit au clic sur Modifier', async () => {
       const user = userEvent.setup()
       const onEdit = vi.fn()
       renderWithProviders(
         <CaregiverCard caregiver={makeCaregiver()} onEdit={onEdit} onRemove={vi.fn()} />
       )
-      await user.click(screen.getByRole('button', { name: /^permissions$/i }))
+      await user.click(screen.getByRole('button', { name: /^modifier$/i }))
       expect(onEdit).toHaveBeenCalledOnce()
     })
 

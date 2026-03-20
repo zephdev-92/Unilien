@@ -87,7 +87,7 @@ export function useShiftEditLogic({
 
     return {
       contractId: shift?.contractId || '',
-      employeeId: contract.employeeId,
+      employeeId: contract.employeeId || contract.caregiverId,
       date: new Date(watchedValues.date),
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,

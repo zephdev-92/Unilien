@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
-import type { Contract } from '@/types'
+import type { Contract, CaregiverContractStatus } from '@/types'
 import type {
   ContractDbRow,
   ContractWithEmployeeDbRow,
   ContractWithEmployerDbRow,
+  ContractWithCaregiverDbRow,
 } from '@/types/database'
 import {
   createContractCreatedNotification,
@@ -16,6 +17,10 @@ import { initializeLeaveBalanceWithOverride } from '@/services/leaveBalanceServi
 
 export interface ContractWithEmployee extends Contract {
   employee?: {
+    firstName: string
+    lastName: string
+  }
+  caregiver?: {
     firstName: string
     lastName: string
   }
@@ -32,9 +37,19 @@ interface ContractCreateData {
   initialTakenDays?: number
 }
 
+interface CaregiverContractCreateData {
+  startDate: Date
+  endDate?: Date
+  weeklyHours: number
+  pchHourlyRate: number
+  caregiverStatus: CaregiverContractStatus
+}
+
 interface ContractUpdateData {
   weeklyHours?: number
   hourlyRate?: number
+  pchHourlyRate?: number
+  caregiverStatus?: CaregiverContractStatus
   status?: 'active' | 'terminated' | 'suspended'
   endDate?: Date
 }
@@ -61,7 +76,8 @@ export async function getContractById(contractId: string): Promise<Contract | nu
 export async function getContractsForEmployer(
   employerId: string
 ): Promise<ContractWithEmployee[]> {
-  const { data, error } = await supabase
+  // Contrats employé
+  const { data: empData, error: empError } = await supabase
     .from('contracts')
     .select(`
       *,
@@ -74,14 +90,41 @@ export async function getContractsForEmployer(
     `)
     .eq('employer_id', employerId)
     .eq('status', 'active')
+    .eq('contract_category', 'employment')
     .order('created_at', { ascending: false })
 
-  if (error) {
-    logger.error('Erreur récupération contrats:', error)
-    return []
+  if (empError) {
+    logger.error('Erreur récupération contrats employé:', empError)
   }
 
-  return (data || []).map((row) => mapContractWithEmployeeFromDb(row as ContractWithEmployeeDbRow))
+  const employeeContracts = (empData || []).map((row) =>
+    mapContractWithEmployeeFromDb(row as ContractWithEmployeeDbRow)
+  )
+
+  // Contrats aidant PCH
+  const { data: cgData, error: cgError } = await supabase
+    .from('contracts')
+    .select(`
+      *,
+      caregiver_profile:profiles!caregiver_id(
+        first_name,
+        last_name
+      )
+    `)
+    .eq('employer_id', employerId)
+    .eq('status', 'active')
+    .eq('contract_category', 'caregiver_pch')
+    .order('created_at', { ascending: false })
+
+  if (cgError) {
+    logger.error('Erreur récupération contrats aidant:', cgError)
+  }
+
+  const caregiverContracts = (cgData || []).map((row) =>
+    mapContractWithCaregiverFromDb(row as ContractWithCaregiverDbRow)
+  )
+
+  return [...employeeContracts, ...caregiverContracts]
 }
 
 export async function getContractsForEmployee(
@@ -151,6 +194,7 @@ export async function createContract(
     .insert({
       employer_id: employerId,
       employee_id: employeeId,
+      contract_category: 'employment',
       contract_type: contractData.contractType,
       start_date: contractData.startDate.toISOString().split('T')[0],
       end_date: contractData.endDate?.toISOString().split('T')[0] || null,
@@ -209,6 +253,52 @@ export async function createContract(
   return mapContractFromDb(data as ContractDbRow)
 }
 
+export async function createCaregiverContract(
+  employerId: string,
+  caregiverId: string,
+  contractData: CaregiverContractCreateData
+): Promise<Contract> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .insert({
+      employer_id: employerId,
+      caregiver_id: caregiverId,
+      contract_category: 'caregiver_pch',
+      contract_type: 'CDI',
+      start_date: contractData.startDate.toISOString().split('T')[0],
+      end_date: contractData.endDate?.toISOString().split('T')[0] || null,
+      weekly_hours: contractData.weeklyHours,
+      hourly_rate: 0,
+      pch_hourly_rate: contractData.pchHourlyRate,
+      caregiver_status: contractData.caregiverStatus,
+      status: 'active',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    logger.error('Erreur création contrat aidant PCH:', error)
+    if (error.code === '23505') {
+      throw new Error('Un contrat actif existe déjà avec cet aidant')
+    }
+    throw new Error('Erreur lors de la création du contrat aidant')
+  }
+
+  // Notifier l'aidant du nouveau contrat
+  try {
+    const employerName = await getProfileName(employerId)
+    await createContractCreatedNotification(
+      caregiverId,
+      employerName,
+      'CDI'
+    )
+  } catch (err) {
+    logger.error('Erreur notification nouveau contrat aidant:', err)
+  }
+
+  return mapContractFromDb(data as ContractDbRow)
+}
+
 // ============================================================
 // UPDATE OPERATIONS
 // ============================================================
@@ -224,6 +314,12 @@ export async function updateContract(
   }
   if (updates.hourlyRate !== undefined) {
     dbUpdates.hourly_rate = updates.hourlyRate
+  }
+  if (updates.pchHourlyRate !== undefined) {
+    dbUpdates.pch_hourly_rate = updates.pchHourlyRate
+  }
+  if (updates.caregiverStatus !== undefined) {
+    dbUpdates.caregiver_status = updates.caregiverStatus
   }
   if (updates.status !== undefined) {
     dbUpdates.status = updates.status
@@ -428,6 +524,26 @@ export async function hasActiveContract(
   return (count || 0) > 0
 }
 
+export async function getActiveCaregiverContract(
+  employerId: string,
+  caregiverId: string
+): Promise<Contract | null> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('*')
+    .eq('employer_id', employerId)
+    .eq('caregiver_id', caregiverId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (error) {
+    logger.error('Erreur récupération contrat aidant:', error)
+    return null
+  }
+
+  return data ? mapContractFromDb(data as ContractDbRow) : null
+}
+
 // ============================================================
 // MAPPING FUNCTIONS
 // ============================================================
@@ -436,13 +552,17 @@ function mapContractFromDb(data: ContractDbRow): Contract {
   return {
     id: data.id,
     employerId: data.employer_id,
-    employeeId: data.employee_id,
+    employeeId: data.employee_id ?? undefined,
+    caregiverId: data.caregiver_id ?? undefined,
+    contractCategory: data.contract_category,
     contractType: data.contract_type,
     startDate: new Date(data.start_date),
     endDate: data.end_date ? new Date(data.end_date) : undefined,
     weeklyHours: data.weekly_hours,
     hourlyRate: data.hourly_rate,
     pasRate: data.pas_rate ?? 0,
+    pchHourlyRate: data.pch_hourly_rate ?? undefined,
+    caregiverStatus: data.caregiver_status ?? undefined,
     status: data.status,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
@@ -456,6 +576,18 @@ function mapContractWithEmployeeFromDb(data: ContractWithEmployeeDbRow): Contrac
       ? {
           firstName: data.employee_profile.profile.first_name || '',
           lastName: data.employee_profile.profile.last_name || '',
+        }
+      : undefined,
+  }
+}
+
+function mapContractWithCaregiverFromDb(data: ContractWithCaregiverDbRow): ContractWithEmployee {
+  return {
+    ...mapContractFromDb(data),
+    caregiver: data.caregiver_profile
+      ? {
+          firstName: data.caregiver_profile.first_name || '',
+          lastName: data.caregiver_profile.last_name || '',
         }
       : undefined,
   }

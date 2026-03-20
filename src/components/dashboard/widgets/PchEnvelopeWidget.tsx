@@ -88,7 +88,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
 
   if (isLoading) {
     return (
-      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" p={6} boxShadow="sm">
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1.5px" borderColor="border.default" p={6} boxShadow="sm">
         <Skeleton height="20px" width="60%" mb={4} />
         <Skeleton height="12px" mb={3} />
         <Skeleton height="8px" borderRadius="full" mb={4} />
@@ -122,7 +122,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       boxShadow="sm"
       overflow="hidden"

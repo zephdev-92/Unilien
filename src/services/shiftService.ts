@@ -17,24 +17,42 @@ export async function getShifts(
   endDate: Date
 ): Promise<Shift[]> {
   // Construire la requête selon le rôle
-  // Pour les employeurs, on JOIN aussi le profil de l'employé pour afficher son nom
-  const selectClause = role === 'employer'
-    ? `
+  // Pour les employeurs, on JOIN aussi le profil de l'employé/aidant pour afficher son nom
+  let selectClause: string
+  if (role === 'employer') {
+    selectClause = `
       *,
       contract:contracts!inner(
         id,
         employer_id,
         employee_id,
+        caregiver_id,
+        contract_category,
         employee:employees!employee_id(
           profile:profiles!profile_id(
             first_name,
             last_name,
             avatar_url
           )
+        ),
+        caregiver_profile:profiles!caregiver_id(
+          first_name,
+          last_name,
+          avatar_url
         )
       )
     `
-    : `
+  } else if (role === 'caregiver') {
+    selectClause = `
+      *,
+      contract:contracts!inner(
+        id,
+        employer_id,
+        caregiver_id
+      )
+    `
+  } else {
+    selectClause = `
       *,
       contract:contracts!inner(
         id,
@@ -42,6 +60,7 @@ export async function getShifts(
         employee_id
       )
     `
+  }
 
   let query = supabase
     .from('shifts')
@@ -56,6 +75,8 @@ export async function getShifts(
     query = query.eq('contract.employer_id', profileId)
   } else if (role === 'employee') {
     query = query.eq('contract.employee_id', profileId)
+  } else if (role === 'caregiver') {
+    query = query.eq('contract.caregiver_id', profileId)
   }
 
   const { data, error } = await query
@@ -69,8 +90,11 @@ export async function getShifts(
     const shift = mapShiftFromDb(row as ShiftDbRow)
     // Extraire l'employeeId et employeeName du JOIN contract
     const contractJoin = (row as Record<string, unknown>).contract as {
-      employee_id?: string
+      employee_id?: string | null
+      caregiver_id?: string | null
+      contract_category?: string
       employee?: { profile?: { first_name?: string; last_name?: string; avatar_url?: string } | null } | null
+      caregiver_profile?: { first_name?: string; last_name?: string; avatar_url?: string } | null
     } | null
     if (contractJoin?.employee_id) {
       shift.employeeId = contractJoin.employee_id
@@ -79,6 +103,15 @@ export async function getShifts(
       const p = contractJoin.employee.profile
       shift.employeeName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || undefined
       shift.employeeAvatarUrl = p.avatar_url || undefined
+    }
+    // Pour les contrats aidants PCH, récupérer le nom depuis caregiver_profile
+    if (contractJoin?.caregiver_id && contractJoin?.caregiver_profile) {
+      const p = contractJoin.caregiver_profile
+      if (!shift.employeeId) shift.employeeId = contractJoin.caregiver_id
+      if (!shift.employeeName) {
+        shift.employeeName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || undefined
+        shift.employeeAvatarUrl = p.avatar_url || undefined
+      }
     }
     return shift
   })

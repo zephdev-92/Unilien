@@ -123,7 +123,7 @@ export function useNewShiftForm({
 
     return {
       contractId: watchedValues.contractId,
-      employeeId: contract.employeeId,
+      employeeId: contract.employeeId || contract.caregiverId,
       date: new Date(watchedValues.date),
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,
@@ -213,12 +213,20 @@ export function useNewShiftForm({
     }
   }
 
-  const contractOptions = contracts.map((contract) => ({
-    value: contract.id,
-    label: contract.employee
-      ? `${contract.employee.firstName} ${contract.employee.lastName}`
-      : `Contrat ${contract.id.slice(0, 8)}`,
-  }))
+  const contractOptions = contracts.map((contract) => {
+    if (contract.caregiver) {
+      return {
+        value: contract.id,
+        label: `${contract.caregiver.firstName} ${contract.caregiver.lastName} (Aidant PCH)`,
+      }
+    }
+    return {
+      value: contract.id,
+      label: contract.employee
+        ? `${contract.employee.firstName} ${contract.employee.lastName}`
+        : `Contrat ${contract.id.slice(0, 8)}`,
+    }
+  })
 
   const isSubmitDisabled =
     isLoadingContracts ||

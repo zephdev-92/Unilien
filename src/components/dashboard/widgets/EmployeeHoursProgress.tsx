@@ -106,7 +106,7 @@ export function EmployeeHoursProgress({ employeeId }: EmployeeHoursProgressProps
       bg="bg.page"
       borderRadius="12px"
       p={4}
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
     >
       <Flex justify="space-between" align="center" mb={2}>

@@ -82,6 +82,7 @@ export async function getAuxiliariesForEmployer(
       )
     `)
     .eq('employer_id', employerId)
+    .eq('contract_category', 'employment')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -123,6 +124,7 @@ export async function getActiveAuxiliariesForEmployer(
       )
     `)
     .eq('employer_id', employerId)
+    .eq('contract_category', 'employment')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
 
