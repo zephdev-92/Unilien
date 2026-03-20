@@ -67,7 +67,7 @@ export function PchMiniWidget({ employerId }: PchMiniWidgetProps) {
 
   if (isLoading) {
     return (
-      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" boxShadow="sm" overflow="hidden">
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1.5px" borderColor="border.default" boxShadow="sm" overflow="hidden">
         <Flex px={4} py={3} borderBottomWidth="1px" borderColor="border.default" justify="space-between" align="center">
           <Skeleton h="16px" w="120px" />
           <Skeleton h="20px" w="70px" borderRadius="md" />
@@ -85,7 +85,7 @@ export function PchMiniWidget({ employerId }: PchMiniWidgetProps) {
   if (!data) return null
 
   return (
-    <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" boxShadow="sm" overflow="hidden">
+    <Box bg="bg.surface" borderRadius="12px" borderWidth="1.5px" borderColor="border.default" boxShadow="sm" overflow="hidden">
       <Flex px={4} py={3} borderBottomWidth="1px" borderColor="border.default" justify="space-between" align="center">
         <Text fontSize="15px" fontWeight="700" color="text.default">Enveloppe PCH</Text>
         <Text fontSize="xs" fontWeight="600" color="warm.500" bg="warm.50" px={2} py="2px" borderRadius="md">

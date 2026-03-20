@@ -1,5 +1,6 @@
 export { TeamPage } from './TeamPage'
 export { NewContractModal } from './NewContractModal'
+export { NewCaregiverContractModal } from './NewCaregiverContractModal'
 export { AuxiliaryDetailModal } from './AuxiliaryDetailModal'
 export { AddCaregiverModal } from './AddCaregiverModal'
 export { EditCaregiverModal } from './EditCaregiverModal'

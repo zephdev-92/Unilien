@@ -33,7 +33,7 @@ interface StatsWidgetProps {
 const STAT_CARD_PROPS = {
   bg: 'bg.surface',
   borderRadius: '12px',
-  borderWidth: '1px',
+  borderWidth: '1.5px',
   borderColor: 'border.default',
   p: 4,
   boxShadow: 'sm',

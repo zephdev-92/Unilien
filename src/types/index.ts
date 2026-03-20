@@ -150,17 +150,31 @@ export interface TimeSlot {
   endTime: string // "17:00"
 }
 
+// Catégorie contrat
+export type ContractCategory = 'employment' | 'caregiver_pch'
+export type CaregiverContractStatus = 'active' | 'full_time' | 'voluntary'
+
+// Taux PCH CNSA 2026
+export const PCH_RATES = {
+  active: 4.78,     // Aidant maintenant une activité pro (50% SMIC net)
+  full_time: 7.16,  // Aidant ayant cessé son activité (75% SMIC net)
+} as const
+
 // Contrat
 export interface Contract {
   id: string
   employerId: string
-  employeeId: string
+  employeeId?: string
+  caregiverId?: string
+  contractCategory: ContractCategory
   contractType: 'CDI' | 'CDD'
   startDate: Date
   endDate?: Date
   weeklyHours: number
   hourlyRate: number
-  pasRate: number  // Taux PAS (Prélèvement à la Source) — 0 par défaut
+  pasRate: number
+  pchHourlyRate?: number
+  caregiverStatus?: CaregiverContractStatus
   status: 'active' | 'terminated' | 'suspended'
   createdAt: Date
   updatedAt: Date

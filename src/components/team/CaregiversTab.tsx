@@ -13,12 +13,14 @@ import {
 import { AccessibleButton } from '@/components/ui'
 import { CaregiverCard } from './CaregiverCard'
 import type { CaregiverWithProfile } from '@/services/caregiverService'
+import type { Contract } from '@/types'
 
 interface CaregiversTabProps {
   caregivers: CaregiverWithProfile[]
   isLoading: boolean
   error: string | null
   removeError: string | null
+  caregiverContractMap?: Record<string, Contract>
   onAdd: () => void
   onEdit: (c: CaregiverWithProfile) => void
   onRemove: (c: CaregiverWithProfile) => void
@@ -72,6 +74,7 @@ export function CaregiversTab({
   isLoading,
   error,
   removeError,
+  caregiverContractMap = {},
   onAdd,
   onEdit,
   onRemove,
@@ -181,6 +184,7 @@ export function CaregiversTab({
             <Box key={caregiver.profileId} role="listitem">
               <CaregiverCard
                 caregiver={caregiver}
+                contract={caregiverContractMap[caregiver.profileId]}
                 onEdit={() => onEdit(caregiver)}
                 onRemove={() => onRemove(caregiver)}
               />

@@ -71,16 +71,23 @@ export interface AddressDb {
 // CONTRACT
 // ============================================================
 
+export type ContractCategory = 'employment' | 'caregiver_pch'
+export type CaregiverContractStatus = 'active' | 'full_time' | 'voluntary'
+
 export interface ContractDbRow {
   id: string
   employer_id: string
-  employee_id: string
+  employee_id: string | null
+  caregiver_id: string | null
+  contract_category: ContractCategory
   contract_type: 'CDI' | 'CDD'
   start_date: string
   end_date: string | null
   weekly_hours: number
   hourly_rate: number
   pas_rate: number
+  pch_hourly_rate: number | null
+  caregiver_status: CaregiverContractStatus | null
   status: 'active' | 'terminated' | 'suspended'
   created_at: string
   updated_at: string
@@ -97,6 +104,13 @@ export interface ContractWithEmployeeDbRow extends ContractDbRow {
       phone?: string
       avatar_url?: string
     }
+  }
+}
+
+export interface ContractWithCaregiverDbRow extends ContractDbRow {
+  caregiver_profile?: {
+    first_name?: string
+    last_name?: string
   }
 }
 

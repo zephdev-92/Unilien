@@ -46,7 +46,7 @@ export function DateNavigator({ selectedDate, onDateChange, shifts }: DateNaviga
     <Box
       bg="bg.surface"
       borderRadius="md"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       boxShadow="0 2px 8px rgba(78,100,120,.09)"
       p={3}
@@ -80,6 +80,18 @@ export function DateNavigator({ selectedDate, onDateChange, shifts }: DateNaviga
               bg={isSelected ? '#3D5166' : 'transparent'}
               color={isSelected ? 'white' : 'text.default'}
               _hover={isSelected ? {} : { bg: '#EDF1F5' }}
+              css={{
+                '&:focus, &:focus:not(:focus-visible)': {
+                  outline: 'none !important',
+                  boxShadow: 'none !important',
+                  borderRadius: '9999px !important',
+                },
+                '&:focus-visible': {
+                  outline: '2px solid var(--chakra-colors-brand-500) !important',
+                  outlineOffset: '2px',
+                  borderRadius: '9999px !important',
+                },
+              }}
               aria-label={`${format(date, 'EEEE d MMMM', { locale: fr })}${isToday ? " (aujourd'hui)" : ''}${hasPending ? ' — heures à valider' : ''}`}
               aria-pressed={isSelected}
             >

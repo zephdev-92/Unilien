@@ -7,9 +7,17 @@ import {
 } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import type { CaregiverWithProfile } from '@/services/caregiverService'
+import type { Contract } from '@/types'
+
+const caregiverStatusLabels: Record<string, string> = {
+  active: 'PCH actif',
+  full_time: 'PCH temps plein',
+  voluntary: 'Bénévole',
+}
 
 interface CaregiverCardProps {
   caregiver: CaregiverWithProfile
+  contract?: Contract
   onEdit: () => void
   onRemove: () => void
 }
@@ -26,7 +34,7 @@ function MetaRow({ icon, label, children }: { icon: React.ReactNode; label: stri
   )
 }
 
-export function CaregiverCard({ caregiver, onEdit, onRemove }: CaregiverCardProps) {
+export function CaregiverCard({ caregiver, contract, onEdit, onRemove }: CaregiverCardProps) {
   const { profile, permissions, relationship } = caregiver
 
   const permissionCount = [
@@ -37,6 +45,10 @@ export function CaregiverCard({ caregiver, onEdit, onRemove }: CaregiverCardProp
     permissions.canManageTeam,
     permissions.canExportData,
   ].filter(Boolean).length
+
+  const statusLabel = contract
+    ? caregiverStatusLabels[contract.caregiverStatus || ''] || 'Contrat actif'
+    : undefined
 
   return (
     <Box
@@ -66,15 +78,22 @@ export function CaregiverCard({ caregiver, onEdit, onRemove }: CaregiverCardProp
           />
           {profile.avatarUrl && <Avatar.Image src={profile.avatarUrl} />}
         </Avatar.Root>
-        {relationship ? (
-          <Tag.Root size="sm" colorPalette="purple" variant="subtle">
-            <Tag.Label>{relationship}</Tag.Label>
-          </Tag.Root>
-        ) : (
-          <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="brand.50" color="brand.500">
-            Aidant
-          </Box>
-        )}
+        <Flex gap={2} flexWrap="wrap" justify="flex-end">
+          {contract ? (
+            <Tag.Root size="sm" colorPalette="green" variant="subtle">
+              <Tag.Label>{statusLabel}</Tag.Label>
+            </Tag.Root>
+          ) : (
+            <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="gray.100" color="text.muted">
+              Sans contrat
+            </Box>
+          )}
+          {relationship && (
+            <Tag.Root size="sm" colorPalette="purple" variant="subtle">
+              <Tag.Label>{relationship}</Tag.Label>
+            </Tag.Root>
+          )}
+        </Flex>
       </Flex>
 
       {/* Card body */}
@@ -87,6 +106,47 @@ export function CaregiverCard({ caregiver, onEdit, onRemove }: CaregiverCardProp
         </Text>
 
         <Flex direction="column" gap={2}>
+          {contract && (
+            <>
+              <MetaRow
+                label="Heures"
+                icon={
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                }
+              >
+                {contract.weeklyHours}h / semaine
+              </MetaRow>
+              {contract.pchHourlyRate ? (
+                <MetaRow
+                  label="Taux"
+                  icon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  }
+                >
+                  {contract.pchHourlyRate}€/h
+                </MetaRow>
+              ) : null}
+              <MetaRow
+                label="Début"
+                icon={
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                }
+              >
+                {contract.startDate.toLocaleDateString('fr-FR')}
+              </MetaRow>
+            </>
+          )}
           <MetaRow
             label="Email"
             icon={
@@ -98,18 +158,6 @@ export function CaregiverCard({ caregiver, onEdit, onRemove }: CaregiverCardProp
           >
             {profile.email}
           </MetaRow>
-          {profile.phone && (
-            <MetaRow
-              label="Tél."
-              icon={
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
-                </svg>
-              }
-            >
-              {profile.phone}
-            </MetaRow>
-          )}
           <MetaRow
             label="Droits"
             icon={
@@ -141,7 +189,7 @@ export function CaregiverCard({ caregiver, onEdit, onRemove }: CaregiverCardProp
           minW="auto"
           _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
         >
-          Permissions
+          Modifier
         </AccessibleButton>
         <AccessibleButton
           variant="outline"

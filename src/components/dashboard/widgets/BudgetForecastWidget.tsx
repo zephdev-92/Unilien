@@ -57,7 +57,7 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
 
   if (isLoading) {
     return (
-      <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" boxShadow="sm" overflow="hidden">
+      <Box bg="bg.surface" borderRadius="12px" borderWidth="1.5px" borderColor="border.default" boxShadow="sm" overflow="hidden">
         <Box px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
           <Skeleton height="16px" width="50%" />
         </Box>
@@ -91,7 +91,7 @@ export function BudgetForecastWidget({ employerId }: BudgetForecastWidgetProps) 
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor={isOverBudget ? 'red.200' : 'border.default'}
       boxShadow="sm"
       overflow="hidden"

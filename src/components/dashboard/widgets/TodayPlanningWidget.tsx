@@ -139,7 +139,7 @@ export function TodayPlanningWidget({ employerId }: TodayPlanningWidgetProps) {
     <Box
       bg="bg.surface"
       borderRadius="12px"
-      borderWidth="1px"
+      borderWidth="1.5px"
       borderColor="border.default"
       boxShadow="sm"
       overflow="hidden"

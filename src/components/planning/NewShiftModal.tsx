@@ -206,9 +206,9 @@ export function NewShiftModal({
                     </Box>
                   ) : (
                     <AccessibleSelect
-                      label="Auxiliaire"
+                      label="Intervenant"
                       options={contractOptions}
-                      placeholder="Sélectionnez un auxiliaire"
+                      placeholder="Sélectionnez un intervenant"
                       error={errors.contractId?.message}
                       required
                       {...register('contractId')}

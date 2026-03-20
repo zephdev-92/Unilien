@@ -162,7 +162,7 @@ export function CaregiverShiftTimeline({ profileId, employerName }: CaregiverShi
   const capitalizedToday = todayLabel.charAt(0).toUpperCase() + todayLabel.slice(1)
 
   return (
-    <Box bg="bg.surface" borderRadius="12px" borderWidth="1px" borderColor="border.default" boxShadow="sm" overflow="hidden">
+    <Box bg="bg.surface" borderRadius="12px" borderWidth="1.5px" borderColor="border.default" boxShadow="sm" overflow="hidden">
       <Flex justify="space-between" align="center" px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
         <Box>
           <Text fontSize="15px" fontWeight="700" color="text.default">

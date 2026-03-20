@@ -157,6 +157,12 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
     return false
   }
 
+  // Adapter les labels selon le rôle
+  const getNavLabel = (item: NavItem): string => {
+    if (item.href === '/suivi-des-heures' && userRole !== 'employer') return 'Mes heures'
+    return item.label
+  }
+
   return (
     <Box h="100vh" bg="bg.page" overflow="hidden">
       {/* Development Banner */}
@@ -357,6 +363,18 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                 color="text.default"
                 transition="all 0.15s ease"
                 _hover={{ bg: 'bg.page', borderColor: 'brand.500' }}
+                css={{
+                  '&:focus, &:focus:not(:focus-visible)': {
+                    outline: 'none !important',
+                    boxShadow: 'none !important',
+                    borderRadius: '9999px !important',
+                  },
+                  '&:focus-visible': {
+                    outline: '2px solid var(--chakra-colors-brand-500) !important',
+                    outlineOffset: '2px',
+                    borderRadius: '9999px !important',
+                  },
+                }}
                 onClick={(e) => {
                   e.stopPropagation()
                   setIsUserMenuOpen(!isUserMenuOpen)
@@ -548,7 +566,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                             minH="40px"
                           >
                             <NavIcon name={item.icon} />
-                            <Text>{item.label}</Text>
+                            <Text>{getNavLabel(item)}</Text>
                           </Flex>
                         </RouterLink>
                       </Link>

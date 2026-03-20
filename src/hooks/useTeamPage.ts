@@ -11,6 +11,8 @@ import {
   type CaregiverWithProfile,
 } from '@/services/caregiverService'
 import { getAbsencesForEmployer } from '@/services/absenceService'
+import { getContractsForEmployer } from '@/services/contractService'
+import type { Contract } from '@/types'
 import { logger } from '@/lib/logger'
 import type { Caregiver } from '@/types'
 
@@ -45,6 +47,8 @@ export interface UseTeamPageReturn {
   caregiversError: string | null
   isAddCaregiverOpen: boolean
   setIsAddCaregiverOpen: (v: boolean) => void
+  isNewCaregiverContractOpen: boolean
+  setIsNewCaregiverContractOpen: (v: boolean) => void
   selectedCaregiver: CaregiverWithProfile | null
   setSelectedCaregiver: (c: CaregiverWithProfile | null) => void
   caregiverToRemove: CaregiverWithProfile | null
@@ -54,6 +58,9 @@ export interface UseTeamPageReturn {
   confirmRemoveCaregiver: () => Promise<void>
   cancelRemoveCaregiver: () => void
   refreshCaregivers: () => void
+
+  // Contrats aidants
+  caregiverContractMap: Record<string, Contract>
 
   // Tabs
   activeTab: string
@@ -75,11 +82,15 @@ export function useTeamPage(): UseTeamPageReturn {
   const [caregivers, setCaregivers] = useState<CaregiverWithProfile[]>([])
   const [isLoadingCaregivers, setIsLoadingCaregivers] = useState(true)
   const [isAddCaregiverOpen, setIsAddCaregiverOpen] = useState(false)
+  const [isNewCaregiverContractOpen, setIsNewCaregiverContractOpen] = useState(false)
   const [selectedCaregiver, setSelectedCaregiver] = useState<CaregiverWithProfile | null>(null)
   const [caregiversError, setCaregiversError] = useState<string | null>(null)
   const [caregiverToRemove, setCaregiverToRemove] = useState<CaregiverWithProfile | null>(null)
   const [isRemoving, setIsRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
+
+  // Contrats aidants (map caregiverId → contract)
+  const [caregiverContractMap, setCaregiverContractMap] = useState<Record<string, Contract>>({})
 
   // Tab state
   const [activeTab, setActiveTab] = useState<string>('auxiliaries')
@@ -130,10 +141,11 @@ export function useTeamPage(): UseTeamPageReturn {
         ? getAuxiliariesForEmployer(effectiveEmployerId)
         : Promise.resolve([])
 
-      const [auxResult, caregiverResult, absencesResult] = await Promise.allSettled([
+      const [auxResult, caregiverResult, absencesResult, contractsResult] = await Promise.allSettled([
         auxPromise,
         getCaregiversForEmployer(effectiveEmployerId),
         getAbsencesForEmployer(effectiveEmployerId),
+        getContractsForEmployer(effectiveEmployerId),
       ])
 
       if (cancelled) return
@@ -172,6 +184,17 @@ export function useTeamPage(): UseTeamPageReturn {
       } else {
         logger.error('Erreur chargement aidants:', caregiverResult.reason)
         setCaregiversError('Impossible de charger les aidants familiaux')
+      }
+
+      // Mapper les contrats aidants par caregiverId
+      if (contractsResult.status === 'fulfilled') {
+        const map: Record<string, Contract> = {}
+        for (const c of contractsResult.value) {
+          if (c.caregiverId && c.contractCategory === 'caregiver_pch' && c.status === 'active') {
+            map[c.caregiverId] = c
+          }
+        }
+        setCaregiverContractMap(map)
       }
 
       setIsLoadingAuxiliaries(false)
@@ -263,6 +286,8 @@ export function useTeamPage(): UseTeamPageReturn {
     caregiversError,
     isAddCaregiverOpen,
     setIsAddCaregiverOpen,
+    isNewCaregiverContractOpen,
+    setIsNewCaregiverContractOpen,
     selectedCaregiver,
     setSelectedCaregiver,
     caregiverToRemove,
@@ -272,6 +297,7 @@ export function useTeamPage(): UseTeamPageReturn {
     confirmRemoveCaregiver,
     cancelRemoveCaregiver,
     refreshCaregivers,
+    caregiverContractMap,
     activeTab,
     setActiveTab,
   }
