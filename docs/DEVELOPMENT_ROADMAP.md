@@ -1220,7 +1220,6 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 [x] Greeting chips — "Prochaine intervention à 14:00" + "3 alertes conformité" (badges) ✅
 [x] Greeting CTA — bouton "Voir le planning" (lien vers /planning) ✅
 [x] Greeting skeleton — skeleton loading sur le bloc greeting ✅
-[ ] Role switcher — barre de sélection employeur / employé / aidant en haut du dashboard (prototypage/démo)
 ```
 
 #### 7b.3 Action Nudges & Quick Actions
