@@ -1,6 +1,6 @@
 # Analyse de sécurité
 
-_Dernière mise à jour : 2026-02-11_
+_Dernière mise à jour : 2026-03-17_
 
 ## Objectif
 
@@ -12,7 +12,10 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 - ~~**P0 — Critique** : IDOR dans `send-push-notification`~~ ✅ Corrigé — la fonction edge utilise désormais `notificationId` (lookup DB) au lieu de `userId` brut + CORS restreint.
 - **P1 — Élevé** : CSP déployée en mode `Report-Only` — à basculer en enforcement après validation en production.
-- **P2 — Moyen** : stratégie de cache PWA potentiellement trop large pour des réponses API sensibles.
+- **P1 — Élevé** : RPC `create_notification` — tout utilisateur authentifié peut créer des notifications pour n'importe quel utilisateur, avec `action_url` non validé (redirection ouverte / phishing).
+- **P1 — Élevé** : Dépendance `vite-plugin-pwa` → `serialize-javascript` (CVE RCE, CVSS 8.1).
+- ~~**P2 — Moyen** : stratégie de cache PWA trop large~~ ✅ Corrigé — le cache ne porte plus que sur `storage/v1/` (avatars, justificatifs), pas sur `/rest/v1/`.
+- **P2 — Moyen** : `attachmentService` — `file.name` utilisé dans le chemin d'upload sans sanitisation (risque path traversal).
 
 ---
 
@@ -34,7 +37,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ### Protection XSS
 - **React échappe automatiquement** : tout contenu rendu via `{variable}` dans JSX est automatiquement échappé par React, empêchant les attaques XSS.
-- **Pas de `dangerouslySetInnerHTML`** : aucune utilisation de HTML brut dans l'application.
+- **`dangerouslySetInnerHTML`** : une seule utilisation dans `NavIcon.tsx` pour les chemins SVG — données issues d'un objet statique `PATHS[name]`, jamais d'entrée utilisateur. ✅
 
 ### Protection CSRF
 - **Architecture JWT** : Supabase utilise des tokens JWT en header `Authorization`, pas de cookies de session classiques, réduisant les risques CSRF.
@@ -94,9 +97,39 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ---
 
+### P1 — Élevé (nouveaux, audit 2026-03-17)
+
+#### 2. RPC `create_notification` — IDOR + action_url non validé
+
+**Constat**
+- La fonction RPC `create_notification` est exécutable par tout utilisateur authentifié (`GRANT EXECUTE TO authenticated`).
+- Aucune vérification que l'appelant a le droit de créer une notification pour `p_user_id` — tout utilisateur peut notifier n'importe quel autre.
+- Le paramètre `p_action_url` n'est pas validé : accepte `javascript:`, `//evil.com`, URLs absolues arbitraires.
+- L'URL est utilisée dans : `navigate(actionUrl)` (NotificationsPanel), `window.location.href` (pushService), `client.navigate()` / `openWindow()` (sw-push.js).
+
+**Impact**
+- **IDOR** : spam de notifications, harcèlement ciblé.
+- **Redirection ouverte / phishing** : une notification malveillante peut rediriger la victime vers un site de phishing ou exécuter du JavaScript via `javascript:`.
+
+**Recommandation**
+- Restreindre l'appel à `create_notification` : soit via une Edge Function qui vérifie les relations métier (employeur→employé, etc.), soit en ajoutant une logique PL/pgSQL qui valide que l'appelant peut notifier `p_user_id`.
+- Valider `p_action_url` : autoriser uniquement les chemins relatifs commençant par `/` (same-origin). Rejeter `javascript:`, `data:`, `//`, et les URLs absolues externes.
+
+#### 3. Dépendance `serialize-javascript` (CVE RCE)
+
+**Constat**
+- `npm audit` signale une vulnérabilité haute (CVSS 8.1) dans `serialize-javascript` (RCE via RegExp.flags / Date.prototype.toISOString).
+- Chaîne : `vite-plugin-pwa` → `workbox-build` → `@rollup/plugin-terser` → `serialize-javascript`.
+
+**Recommandation**
+- Suivre les mises à jour de `vite-plugin-pwa` et vérifier si une version corrigée est disponible.
+- En attendant : évaluer un downgrade vers une version sans la dépendance vulnérable, ou un `npm audit fix` si proposé.
+
+---
+
 ### P1 — Élevé (en cours)
 
-#### 2. CSP sur l'hébergement
+#### 4. CSP sur l'hébergement
 
 **Constat initial**
 - Les headers Netlify n'incluaient pas de `Content-Security-Policy`.
@@ -122,35 +155,29 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ### P2 — Moyen
 
-#### 3. CORS permissif sur la fonction edge
+#### 5. Path traversal dans `attachmentService`
 
 **Constat**
-- La fonction edge retourne `Access-Control-Allow-Origin: *`.
-
-**Impact**
-- N'ouvre pas directement la fonction sans token, mais élargit inutilement la surface d'appel cross-origin.
+- `uploadAttachment` utilise `file.name` (contrôlé par l'utilisateur) dans le chemin : `${conversationId}/${senderId}/${Date.now()}_${file.name}`.
+- Un nom comme `../../bucket/autre` pourrait tenter une écriture hors du dossier prévu.
 
 **Recommandation**
-- Restreindre les origines autorisées aux domaines applicatifs connus (prod + preview).
+- Sanitiser `file.name` : retirer `..`, `/`, `\`, caractères de contrôle ; limiter la longueur ; n'autoriser qu'alphanumériques, tirets, underscores et points pour l'extension.
 
-#### 4. Cache PWA sur endpoints API Supabase
+#### 6. ~~CORS permissif sur les fonctions edge~~ ✅ Corrigé
 
-**Constat**
-- `runtimeCaching` applique une stratégie `NetworkFirst` pour `https://*.supabase.co/rest/v1/*`.
+Les fonctions `send-push-notification` et `invite-employee` restreignent déjà les origines via `ALLOWED_ORIGINS` (unilien.fr, netlify.app, localhost).
 
-**Impact**
-- Risque de mise en cache locale de réponses API contenant des données potentiellement sensibles, selon les requêtes effectuées et le comportement offline.
+#### 7. ~~Cache PWA sur endpoints API~~ ✅ Corrigé
 
-**Recommandation**
-- Réduire le cache API aux seules routes non sensibles ou désactiver le cache pour les ressources utilisateurs.
-- Préférer des règles de cache explicitement listées (allowlist) plutôt qu'un pattern global.
+Le `vite.config.ts` ne met en cache que `https://*.supabase.co/storage/v1/*` (avatars, justificatifs). Les endpoints `/rest/v1/*` ne sont plus cachés.
 
-#### 5. Chiffrement des données sensibles
+#### 8. Chiffrement des données sensibles
 
 - Envisager le chiffrement côté client pour les données médicales (`handicap_type`, `specific_needs`).
 - Utiliser `pgsodium` de Supabase pour le chiffrement au repos.
 
-#### 6. Rate limiting
+#### 9. Rate limiting
 
 - Configurer des limites de requêtes sur les endpoints sensibles (auth, upload).
 - Utiliser les fonctionnalités de rate limiting de Supabase.
@@ -162,12 +189,45 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 | Priorité | Action | Effort estimé |
 |----------|--------|---------------|
 | ~~**P0 immédiat**~~ | ~~Corriger l'autorisation dans `send-push-notification`~~ | ✅ Fait |
-| **P1 court terme** | ~~Déployer une CSP monitorée~~ Report-Only déployée → valider puis enforcement | ✅ Phase 1 |
-| ~~**P2 court terme**~~ | ~~Restreindre CORS edge aux domaines connus~~ | ✅ Fait |
-| **P2 court terme** | Revoir les patterns de cache Workbox (allowlist) | Faible |
+| **P1 court terme** | Restreindre RPC `create_notification` + valider `action_url` | Moyen |
+| **P1 court terme** | Mettre à jour `vite-plugin-pwa` / résoudre vulnérabilité `serialize-javascript` | Moyen |
+| **P1 court terme** | CSP Report-Only → enforcement (après validation prod) | Faible |
+| ~~**P2 court terme**~~ | ~~Restreindre CORS edge~~ | ✅ Fait |
+| ~~**P2 court terme**~~ | ~~Cache PWA /rest/v1~~ | ✅ Fait |
+| **P2 court terme** | Sanitiser `file.name` dans `attachmentService` | Faible |
 | **P2 moyen terme** | Chiffrement données sensibles (`pgsodium`) | Élevé |
 | **P2 moyen terme** | Rate limiting endpoints sensibles | Moyen |
 | **P2 continu** | Audits RLS à chaque migration de schéma | Faible |
+
+---
+
+## Audit sécurité mars 2026 — Synthèse
+
+### Points forts confirmés
+
+| Domaine | État |
+|---------|------|
+| Sanitisation entrées | 8 services utilisent `sanitizeText` avant écriture DB : profile, caregiver, shift, liaison, logbook, notification, absence, push |
+| Services sans sanitisation | auxiliary, compliance, contract, document, leaveBalance, stats — read-only ou valeurs contrôlées (enums, UUIDs, dates) uniquement |
+| RLS Supabase | Toutes les tables protégées, policies cohérentes avec le métier |
+| Fonctions edge | CORS restreint, auth JWT obligatoire, rate limiting (send-push) |
+| Secrets | `.env` dans `.gitignore`, clés sensibles uniquement côté serveur (Deno.env) |
+| PWA cache | Uniquement `storage/v1/`, pas de cache sur `/rest/v1/` |
+
+### Services avec sanitisation
+
+- `profileService` : firstName, lastName, phone, adresse, handicap, CESU, IBAN, contacts
+- `caregiverService` : relationship, adresse, relationshipDetails, emergencyPhone, availabilityHours
+- `shiftService` : tasks, notes
+- `liaisonService` : content (messages)
+- `logbookService` : content
+- `notificationService.core` : title, message
+- `absenceService` : reason
+- `pushService` : user_agent
+
+### Note sur `invite-employee`
+
+- `firstName` et `lastName` du payload ne sont pas sanités avant stockage. Risque atténué par l'échappement React à l'affichage. Recommandation : ajouter `sanitizeText` pour défense en profondeur.
 
 ---
 
@@ -254,6 +314,9 @@ Le projet présente de solides fondamentaux de sécurité :
 - ✅ Logger centralisé avec redaction
 - ✅ Headers de sécurité de base (Netlify)
 
-**Priorité immédiate** : corriger la vulnérabilité IDOR dans `send-push-notification` (P0) et déployer une CSP (P1).
+**Priorités immédiates (P1)** :
+1. Restreindre et sécuriser le RPC `create_notification` (IDOR + validation `action_url`)
+2. Traiter la vulnérabilité `serialize-javascript` dans les dépendances
+3. Basculer la CSP en mode enforcement
 
 Le risque principal à moyen terme réside dans les données de santé (`handicap_type`, `specific_needs`) qui nécessitent une attention particulière en termes de conformité RGPD. Le chiffrement via `pgsodium` est recommandé pour une protection renforcée.

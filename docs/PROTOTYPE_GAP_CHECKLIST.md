@@ -1,37 +1,37 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 10 mars 2026
+**Derniere mise a jour** : 17 mars 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
 ---
 
-## 1. Page Settings (absente dans React)
+## 1. Page Settings
 
-Le prototype a une page Settings complete avec navigation horizontale et 7 panneaux.
-React n'a qu'une ProfilePage avec onglets.
+Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
-- [ ] Creer la page `/parametres` avec navigation par panneaux
-- [ ] **Panneau Profil** — formulaire infos personnelles (nom, email, tel, adresse, langue, format date)
-- [ ] **Panneau Securite** — changement mot de passe (actuel, nouveau, confirmation)
-- [ ] **Panneau Securite** — toggle 2FA avec explication
-- [ ] **Panneau Securite** — Danger Zone (bordure rouge) : bouton supprimer toutes les donnees
-- [ ] **Panneau Securite** — Danger Zone : bouton desactiver le compte (modale confirmation)
-- [ ] **Panneau Abonnement** (employeur) — carte plan actuel (nom, prix, date renouvellement, moyen paiement)
-- [ ] **Panneau Abonnement** — barres usage (employes X/X, bulletins, stockage)
-- [ ] **Panneau Abonnement** — grille 3 forfaits (Starter, Standard, Pro) avec features + CTA
-- [ ] **Panneau Notifications** — toggles par canal (email, SMS, push) par type de notification
-- [ ] **Panneau Notifications** — frequence/planning des notifications
-- [ ] **Panneau Convention** (employeur) — parametres convention IDCC 3239
-- [ ] **Panneau PCH** (aidant) — configuration PCH
-- [ ] **Panneau Apparence** — toggle dark/light mode
-- [ ] **Panneau Apparence** — selecteur taille police
+- [x] Creer la page `/parametres` avec navigation par panneaux ✅
+- [x] **Panneau Profil** — formulaire infos personnelles (nom, email, tel, adresse, langue, format date) ✅
+- [x] **Panneau Securite** — changement mot de passe (actuel, nouveau, confirmation) ✅
+- [ ] **Panneau Securite** — toggle 2FA avec explication _(badge "Bientot", disabled)_
+- [ ] **Panneau Securite** — Danger Zone (bordure rouge) : bouton supprimer toutes les donnees _(badge "Bientot", disabled)_
+- [ ] **Panneau Securite** — Danger Zone : bouton desactiver le compte (modale confirmation) _(badge "Bientot", disabled)_
+- [x] **Panneau Abonnement** (employeur) — carte plan actuel (nom, prix, date renouvellement, moyen paiement) ✅ _(UI-only, Stripe non integre)_
+- [x] **Panneau Abonnement** — barres usage (employes X/X, bulletins, stockage) ✅ _(UI-only, donnees statiques)_
+- [x] **Panneau Abonnement** — grille 3 forfaits (Starter, Standard, Pro) avec features + CTA ✅ _(UI-only)_
+- [x] **Panneau Notifications** — toggles par canal (push fonctionnel, email disabled "Bientot") ✅
+- [ ] **Panneau Notifications** — notifications email fonctionnelles _(attente backend SendGrid/Resend)_
+- [x] **Panneau Convention** (employeur) — parametres convention IDCC 3239 ✅ _(localStorage, TODO: migrer vers DB)_
+- [x] **Panneau PCH** (aidant) — configuration PCH ✅ _(localStorage)_
+- [ ] **Panneau Apparence** — toggle dark/light mode _(badge "Bientot", disabled)_
+- [x] **Panneau Apparence** — selecteur densite (confortable/compact) ✅ _(localStorage)_
 - [ ] **Panneau Apparence** — selecteur palette couleurs
-- [ ] **Panneau Accessibilite** — toggle contraste eleve
-- [ ] **Panneau Accessibilite** — controle echelle texte
-- [ ] **Panneau Accessibilite** — toggle optimisation lecteur ecran
-- [ ] **Panneau Accessibilite** — toggle police dyslexie
-- [ ] **Panneau Donnees** — export/suppression donnees personnelles
+- [x] **Panneau Accessibilite** — toggle contraste eleve ✅ _(Zustand + localStorage)_
+- [x] **Panneau Accessibilite** — controle echelle texte (slider 80-150%) ✅
+- [x] **Panneau Accessibilite** — toggle optimisation lecteur ecran ✅
+- [x] **Panneau Accessibilite** — toggle police dyslexie ✅
+- [x] **Panneau Donnees** — export JSON (7 tables) + CSV (planning) ✅
+- [ ] **Panneau Donnees** — toggles confidentialite (analytics, cookies) _(badge "Bientot", disabled)_
 
 ---
 
@@ -51,7 +51,7 @@ React n'a qu'une ProfilePage avec onglets.
 
 ---
 
-## 3. Clock-in — Elements manquants
+## 3. Clock-in — ✅ Termine
 
 - [x] **Horloge digitale** — grande horloge HH:MM:SS live avec mise a jour chaque seconde _(LiveClock.tsx)_
 - [x] **Affichage date** — date complete sous l'horloge _(LiveClock.tsx)_
@@ -62,7 +62,7 @@ React n'a qu'une ProfilePage avec onglets.
 
 ---
 
-## 4. Profile — Elements manquants
+## 4. Profile — ✅ Termine
 
 - [x] **Hero profil** — background colore, grand avatar 80x80, nom h1, role + badge convention _(ProfileHero.tsx)_
 - [x] **Hero profil** — tags : localisation, badge verifie, date inscription _(ProfileHero.tsx)_
@@ -75,12 +75,8 @@ React n'a qu'une ProfilePage avec onglets.
 - [x] **Contacts d'urgence** — section dediee avec formulaire contacts urgence _(ProfilePage.tsx — EmergencyContactsView/Edit)_
 
 ---
-- [ ] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in
 
----
-
-
-## 5. Compliance — Elements manquants
+## 5. Compliance — ✅ Termine
 
 - [x] **Score circulaire** — anneau SVG avec pourcentage au centre (ex: 87%) ✅
 - [x] **3 stat boxes** — points conformes (vert), alertes actives (rouge), avertissements (orange) ✅
@@ -94,7 +90,7 @@ React n'a qu'une ProfilePage avec onglets.
 
 ---
 
-## 6. Team — Elements manquants
+## 6. Team — ✅ Termine
 
 - [x] **Stats equipe** — 4 cards : employes actifs, inactifs, heures/semaine, contrats actifs ✅
 - [x] **Recherche employes** — input "Rechercher un employe..." avec filtre texte ✅
@@ -106,7 +102,7 @@ React n'a qu'une ProfilePage avec onglets.
 
 ---
 
-## 7. Logbook — Elements manquants
+## 7. Logbook — ✅ Termine
 
 - [x] **Recherche** — input "Rechercher dans le journal..." _(LogbookFilters.tsx)_
 - [x] **Filtre categories** — Observation, Incident, Alerte, Instruction en pills toggleables _(LogbookFilters.tsx)_
@@ -119,7 +115,7 @@ React n'a qu'une ProfilePage avec onglets.
 
 ---
 
-## 8. Landing — Elements manquants
+## 8. Landing — ✅ Termine
 
 - [x] **Nav fonctionnalites** — liens ancres : Fonctionnalites, Conformite, Tarifs, FAQ ✅ (PR #155)
 - [x] **Hero enrichi** — message risque legal ("8 000 euros aux Prud'hommes") avec emphase ✅ (PR #155)
@@ -135,12 +131,12 @@ React n'a qu'une ProfilePage avec onglets.
 
 ---
 
-## 9. Messaging (Liaison) — Elements manquants
+## 9. Messaging (Liaison) — ✅ Termine
 
 - [x] **Recherche conversations** — barre de recherche dans la liste des conversations ✅ (PR #137)
 - [x] **Pieces jointes** — bouton attacher fichier dans le compose (images, documents) ✅ (09/03/2026)
 - [x] **Labels groupes** — labels "General" et "Conversations" dans la liste ✅ (PR #137)
-- [ ] **Empty state desktop** — icone + "Selectionnez une conversation" quand aucune selectionnee
+- [x] **Empty state desktop** — icone + "Selectionnez une conversation" quand aucune selectionnee ✅ _(LiaisonPage.tsx l.657-667)_
 
 ---
 
@@ -148,37 +144,34 @@ React n'a qu'une ProfilePage avec onglets.
 
 - [ ] **Subject optgroups** — categoriser les sujets (Utilisation / Compte / Autre)
 - [ ] **Piece jointe** — input file (PDF, PNG, JPG, max 5 Mo)
-- [ ] **Etat succes** — animation checkmark + message de confirmation + bouton "Envoyer un autre"
-- [ ] **FAQ integree** — 4 questions depliables en bas de page
+- [x] **Etat succes** — animation checkmark + message de confirmation + bouton "Envoyer un autre" ✅ _(ContactPage.tsx l.155-167)_
+- [x] **FAQ integree** — questions en bas de page ✅ _(ContactPage.tsx l.262-281, affichage statique)_
 
 ---
 
-## 11. Planning — Elements manquants mineurs
+## 11. Planning — ✅ Termine
 
 - [x] **Sidebar filtres** — liste employes avec avatars, filtre type shift, filtre statut _(PlanningSidebar.tsx)_
 - [x] **Vue employe stats** — barre stats : heures effectuees/contractuelles, interventions, conges _(PlanningStatsBar.tsx)_
 - [x] **Chip prochaine intervention** — dans le topbar (vue employe) _(NextShiftChip)_
-- [x] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in _(ShiftDetailModal.tsx)_
+- [x] **Lien "Pointer"** — dans la modale detail shift (vue employe) vers clock-in ✅ _(ShiftDetailModal.tsx l.422-426)_
 
 ---
 
-## 12. Documents — Ecarts de structure
+## 12. Documents — ✅ Termine
 
-Le prototype a 4 onglets : Bulletins, Contrats, Absences, Export planning.
-React a 4 onglets : CESU, Bulletins, Documents, Planning.
-
-- [ ] **Onglet Contrats** — liste documents contrats avec download, statut pill "Actif"
-- [ ] **Onglet Absences** — tableau (employe, type, du, au, duree, statut, actions approuver/refuser)
-- [ ] **Tableau bulletins** — format tableau (employe, periode, heures, net, statut, actions)
+- [x] **Onglet Contrats** — liste documents contrats avec download, statut pill "Actif" ✅ _(ContractsSection.tsx)_
+- [x] **Onglet Absences** — tableau (employe, type, du, au, duree, statut, actions approuver/refuser) ✅ _(DocumentManagementSection.tsx)_
+- [x] **Tableau bulletins** — format tableau (employe, periode, heures, net, statut, actions) ✅ _(PayslipSection.tsx)_
 
 ---
 
 ## 13. Patterns UI globaux
 
-- [ ] **Skeleton loading dashboard** — skeletons sur greeting, nudges, stats, planning du jour
+- [x] **Skeleton loading dashboard** — skeletons sur greeting et action nudges ✅ _(partiel — widgets individuels)_
 - [ ] **Empty states onboarding** — variantes specifiques quand le compte est vide
 - [ ] **Toasts globaux** — verifier coherence avec le systeme du prototype (success/error/warning/info)
-- [ ] **Modales** — focus management, Escape ferme, clic backdrop ferme, aria-modal
+- [x] **Modales** — focus management, Escape ferme, clic backdrop ferme, aria-modal ✅ _(Chakra Dialog natif + aria-modal sur modales custom)_
 
 ---
 
@@ -186,17 +179,17 @@ React a 4 onglets : CESU, Bulletins, Documents, Planning.
 
 | Bloc | Items | Done | Priorite |
 |------|-------|------|----------|
-| Settings (page complete) | 20 | 0 | Haute |
-| Dashboard | 12 | 8 | Haute |
+| Settings | 22 | 15 | Moyenne (7 items "Bientot") |
+| Dashboard | 11 | 8 | Moyenne |
 | Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |
 | Profile | 9 | 9 | ✅ Termine |
 | Logbook | 8 | 8 | ✅ Termine |
-| Team | 7 | 6 | Moyenne |
+| Team | 7 | 7 | ✅ Termine |
 | Clock-in | 6 | 6 | ✅ Termine |
-| Contact | 4 | 0 | Basse |
-| Messaging | 4 | 3 | Basse |
+| Contact | 4 | 2 | Basse |
+| Messaging | 4 | 4 | ✅ Termine |
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
-| Patterns UI | 4 | 0 | Basse |
-| **Total** | **~101** | **67** | — |
+| Patterns UI | 4 | 2 | Basse |
+| **Total** | **102** | **88** | — |

@@ -418,6 +418,7 @@ export function HomePage() {
       </Flex>
 
       {/* ── Hero ── */}
+      <Box bg="white">
       <Grid
         templateColumns={{ base: '1fr', lg: '1fr 1fr' }}
         alignItems="center"
@@ -603,6 +604,7 @@ export function HomePage() {
           </Box>
         </GridItem>
       </Grid>
+      </Box>
 
       {/* ── Chiffres cles ── */}
       <Box py={8} bg="bg.page" borderTopWidth="1px" borderBottomWidth="1px" borderColor="border.default">
