@@ -69,7 +69,13 @@ export async function uploadAttachment(
     throw new Error(validation.error)
   }
 
-  const fileName = `${conversationId}/${senderId}/${Date.now()}_${file.name}`
+  // Sanitiser le nom de fichier pour prévenir le path traversal
+  const safeName = file.name
+    .replace(/^.*[/\\]/, '')   // Retirer tout chemin
+    .replace(/\.\./g, '')      // Retirer les séquences ..
+    .replace(/[/\\]/g, '_')    // Remplacer séparateurs restants
+    .slice(0, 200) || `file_${Date.now()}`
+  const fileName = `${conversationId}/${senderId}/${Date.now()}_${safeName}`
 
   const { error: uploadError } = await supabase.storage
     .from(ATTACHMENTS_BUCKET)
@@ -83,13 +89,19 @@ export async function uploadAttachment(
     throw new Error(`Erreur lors de l'upload de ${file.name}.`)
   }
 
-  const { data: urlData } = supabase.storage
+  // URL signée (bucket privé) — expire après 1h
+  const { data: urlData, error: signError } = await supabase.storage
     .from(ATTACHMENTS_BUCKET)
-    .getPublicUrl(fileName)
+    .createSignedUrl(fileName, 3600)
+
+  if (signError || !urlData?.signedUrl) {
+    logger.error('Erreur génération URL signée pièce jointe:', signError)
+    throw new Error('Erreur lors de la génération du lien.')
+  }
 
   return {
     id: crypto.randomUUID(),
-    url: urlData.publicUrl,
+    url: urlData.signedUrl,
     type: ALLOWED_TYPES[file.type] || 'document',
     name: file.name,
     size: file.size,

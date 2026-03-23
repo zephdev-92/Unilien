@@ -34,7 +34,7 @@ export async function getProfileById(
 ): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, role, first_name, last_name, email, phone, avatar_url, accessibility_settings, created_at, updated_at')
     .eq('id', userId)
     .maybeSingle()
 
@@ -238,7 +238,7 @@ export async function deleteAvatar(profileId: string): Promise<void> {
 export async function getEmployer(profileId: string): Promise<Employer | null> {
   const { data, error } = await supabase
     .from('employers')
-    .select('*')
+    .select('profile_id, address, cesu_number, pch_beneficiary, pch_monthly_amount, pch_type, pch_monthly_hours')
     .eq('profile_id', profileId)
     .maybeSingle()
 
@@ -303,7 +303,7 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
 export async function getEmployee(profileId: string): Promise<Employee | null> {
   const { data, error } = await supabase
     .from('employees')
-    .select('*')
+    .select('profile_id, qualifications, languages, max_distance_km, availability_template, drivers_license, address, date_of_birth, social_security_number, iban, emergency_contacts')
     .eq('profile_id', profileId)
     .maybeSingle()
 

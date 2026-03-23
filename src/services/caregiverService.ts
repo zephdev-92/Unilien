@@ -33,7 +33,7 @@ export {
 export async function getCaregiver(profileId: string): Promise<Caregiver | null> {
   const { data, error } = await supabase
     .from('caregivers')
-    .select('*')
+    .select('profile_id, employer_id, permissions, permissions_locked, relationship, relationship_details, legal_status, address, emergency_phone, availability_hours, can_replace_employer, created_at')
     .eq('profile_id', profileId)
     .maybeSingle()
 

@@ -34,7 +34,7 @@ export async function getConversations(
 ): Promise<Conversation[]> {
   const { data, error } = await supabase
     .from('conversations')
-    .select('*')
+    .select('id, employer_id, type, participant_ids, created_at, updated_at')
     .eq('employer_id', employerId)
     .order('updated_at', { ascending: false })
 
@@ -115,7 +115,7 @@ export async function getOrCreatePrivateConversation(
   // Chercher une conversation privée existante entre ces deux participants
   const { data: existing } = await supabase
     .from('conversations')
-    .select('*')
+    .select('id, employer_id, type, participant_ids, created_at, updated_at')
     .eq('employer_id', employerId)
     .eq('type', 'private')
     .contains('participant_ids', [userId, otherUserId])

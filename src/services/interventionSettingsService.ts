@@ -37,7 +37,7 @@ function mapFromDb(row: InterventionSettingsDbRow): InterventionSettings {
 export async function getInterventionSettings(profileId: string): Promise<InterventionSettings> {
   const { data, error } = await supabase
     .from('intervention_settings')
-    .select('*')
+    .select('profile_id, default_tasks, custom_tasks, shopping_list, created_at, updated_at')
     .eq('profile_id', profileId)
     .single()
 
