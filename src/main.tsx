@@ -1,8 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ChakraProvider } from '@chakra-ui/react'
 import { BrowserRouter } from 'react-router-dom'
-import { system } from './styles/theme'
+import { Provider } from '@/components/ui/provider'
 import { ErrorBoundary } from '@/components/ui'
 import App from './App'
 import './index.css'
@@ -18,12 +17,12 @@ try {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ChakraProvider value={system}>
+    <Provider>
       <BrowserRouter>
         <ErrorBoundary>
           <App />
         </ErrorBoundary>
       </BrowserRouter>
-    </ChakraProvider>
+    </Provider>
   </StrictMode>
 )

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
+import { Provider } from '@/components/ui/provider'
 import { TaskSelector } from './TaskSelector'
 import { DEFAULT_TASKS, COURSES_PREFIX } from '@/lib/constants/taskDefaults'
 
@@ -31,9 +31,9 @@ function renderTaskSelector(props: Partial<React.ComponentProps<typeof TaskSelec
     ...props,
   }
   const result = render(
-    <ChakraProvider value={defaultSystem}>
+    <Provider>
       <TaskSelector {...defaultProps} />
-    </ChakraProvider>,
+    </Provider>,
   )
   return { ...result, onChange: defaultProps.onChange }
 }

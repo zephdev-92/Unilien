@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
+import { Provider } from '@/components/ui/provider'
 import App from './App'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
@@ -49,11 +49,11 @@ vi.mock('@/pages/DocumentsPage', () => ({ default: () => <div data-testid="docum
 
 function renderApp(initialPath = '/') {
   return render(
-    <ChakraProvider value={defaultSystem}>
+    <Provider>
       <MemoryRouter initialEntries={[initialPath]}>
         <App />
       </MemoryRouter>
-    </ChakraProvider>
+    </Provider>
   )
 }
 

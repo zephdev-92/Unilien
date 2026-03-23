@@ -91,10 +91,11 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
             '@media (prefers-reduced-motion: reduce)': {
               animation: 'none',
             },
-            // Focus styles
+            // Focus styles — outline visible (WCAG 2.4.7)
             '&:focus-visible': {
-              boxShadow: '0 0 0 3px rgba(0, 86, 224, 0.6)',
-              outline: 'none',
+              outline: '3px solid',
+              outlineColor: 'blue.500',
+              outlineOffset: '2px',
             },
           }}
         >
