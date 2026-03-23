@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
+import { Provider } from '@/components/ui/provider'
 import { ForgotPasswordForm } from './ForgotPasswordForm'
 
 // Mock useAuth
@@ -18,9 +18,9 @@ vi.mock('@/hooks/useAuth', () => ({
 // Wrapper pour les tests
 function renderWithProviders(ui: React.ReactElement) {
   return render(
-    <ChakraProvider value={defaultSystem}>
+    <Provider>
       <BrowserRouter>{ui}</BrowserRouter>
-    </ChakraProvider>
+    </Provider>
   )
 }
 

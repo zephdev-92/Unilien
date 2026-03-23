@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 16 mars 2026 (2084 tests / 116 fichiers, employee emergency contacts, liaison fix)
-**Version**: 1.9.0
+**Dernière mise à jour**: 23 mars 2026 (2161 tests / 119 fichiers, security fixes, code quality, Chakra UI v3 Provider migration)
+**Version**: 1.10.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -14,29 +14,70 @@
 |-----------|------------|--------|
 | **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
 | **Dashboards** | 85% | ✅ Bon (3 dashboards rôle-spécifiques + mobile aidant, manque onboarding/nudges) |
-| **Planning** | 97% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition interventions) |
+| **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, conversations privées en cours) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 92% | ✅ Bon (bulletins v2, export planning PDF/Excel/iCal ✅ mergé, archivage avancé à faire) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~70% | ✅ Excellent (2084 tests / 116 fichiers, 8/8 hooks testés ✅) |
-| **Sécurité** | 94% | ✅ Excellent (routes protégées, sanitisation 8/13 services, fail-fast, FK fix, RLS audit, CSP headers) |
-| **Qualité code** | 96% | ✅ Excellent (ErrorBoundary sur chaque route, code splitting, 0 `as any`, 0 `eslint-disable` type, useReducer patterns, composants décomposés < 300 lignes) |
+| **Tests** | ~70% | ✅ Excellent (2161 tests / 119 fichiers, 8/8 hooks testés ✅) |
+| **Sécurité** | 97% | ✅ Excellent (RLS renforcé, URL validation 5 couches, signed URLs, CSP enforced, IDOR fix, path traversal fix) |
+| **Qualité code** | 98% | ✅ Excellent (0 `select('*')`, 0 Supabase direct dans composants, Provider snippet v3, 0 `as any`, 0 `eslint-disable` type) |
 
 ### Métriques Clés
 
-- **Fichiers source**: ~190 fichiers TS/TSX (hors tests)
-- **Tests**: 2084 tests / 116 fichiers (70%+ coverage)
-- **Migrations DB**: 38 migrations
-- **Composants UI**: ~88 composants
-- **Services**: 19 services
-- **Hooks**: 20 hooks custom
-- **Routes**: 16 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
+- **Fichiers source**: ~262 fichiers TS/TSX (hors tests)
+- **Tests**: 2161 tests / 119 fichiers (70%+ coverage)
+- **Migrations DB**: 41 migrations
+- **Composants UI**: ~134 composants
+- **Services**: 25 services
+- **Hooks**: 23 hooks custom
+- **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
 
 ## ✅ Réalisations Récentes (Semaines 6-14 - Février/Mars 2026)
+
+### Semaine 14 — 23 mars 2026 (PRs #180–#181)
+
+#### TaskSelector & intervention settings (PR #180 ✅)
+
+Sélecteur de tâches riche pour les interventions, remplaçant le simple textarea :
+- **12 tâches IDCC prédéfinies** avec filtre de recherche
+- **Liste de courses imbriquée** : quantités, marques, notes, autocomplete clavier (ARIA combobox)
+- **Tâches personnalisées** : limite 20, déduplication case-insensitive
+- **Panneau Paramètres > Interventions** : tâches par défaut + liste courses type (employer only)
+- **Store Zustand** avec double persistance localStorage + Supabase (debounced)
+- Migration `040` : tables `intervention_settings` + `shopping_article_history`
+- Intégration dans `NewShiftModal`, `ShiftEditForm`, `ShiftDetailModal`, `ShiftDetailView`
+- 77 nouveaux tests (fonctions pures, service, composant)
+
+#### Audit règles .claude/rules — Sécurité & qualité code (PR #181 ✅)
+
+Audit complet du codebase contre les 6 fichiers de règles (`.claude/rules/`). Corrections appliquées :
+
+**Code quality** :
+- 16 `select('*')` remplacés par des sélections explicites de colonnes dans 12 services
+- 2 nouveaux services extraits : `nudgeService.ts`, `dataExportService.ts` (suppression imports Supabase directs dans composants)
+- Fix bug latent : requête payslips filtrait sur colonne inexistante `period_start` → corrigé en `year`/`month`
+
+**Sécurité (11 vulnérabilités corrigées — 3 critiques, 3 hautes, 5 moyennes)** :
+- Migration `041_security_fixes.sql` : RLS renforcé (caregiver auto-élévation, IDOR notifications, profils exposés, conversations non autorisées)
+- URL validation 5 couches : RPC SQL, service, NotificationsPanel, pushService, sw-push.js
+- Signed URLs pour buckets privés (justifications, attachments) — remplacement `getPublicUrl`
+- CSP enforced (`Content-Security-Policy` au lieu de `Report-Only`)
+- Path traversal fix dans `attachmentService.ts` (sanitisation nom fichier)
+- Champ `legal_status` aidant verrouillé côté UI (disabled)
+
+**Chakra UI v3 conventions** :
+- Création `src/components/ui/provider.tsx` (snippet Provider v3)
+- Migration `ChakraProvider` → `Provider` dans `main.tsx`, `test/helpers.tsx` et 5 fichiers de test
+- Fix `NotificationBell.tsx` : `outline: 'none'` → outline visible (WCAG AAA)
+
+#### Métriques session (23/03/2026)
+- Tests : 2084 → 2161 (+77 tests, 119 fichiers)
+- 41 migrations DB (était 38)
+- ~80 hex hardcodés identifiés → backlog Q2 (migration design tokens sémantiques)
 
 ### Semaine 12 — 16 mars 2026 (PRs #158–#164)
 
@@ -1701,6 +1742,7 @@ npx playwright install
 - 🟢 2FA
 
 **Semaines 19-22**:
+- 🟡 Chakra UI v3 : migration hex hardcodés → design tokens sémantiques (~80 occurrences / ~20 fichiers — dark mode ready)
 - 🟢 UI/UX améliorations
 - 🟢 Onboarding
 - 🟢 Performance optimization

@@ -10,7 +10,7 @@
 import React from 'react'
 import { render, type RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
+import { Provider } from '@/components/ui/provider'
 
 interface TestProvidersProps {
   children: React.ReactNode
@@ -18,9 +18,9 @@ interface TestProvidersProps {
 
 function TestProviders({ children }: TestProvidersProps) {
   return (
-    <ChakraProvider value={defaultSystem}>
+    <Provider>
       <BrowserRouter>{children}</BrowserRouter>
-    </ChakraProvider>
+    </Provider>
   )
 }
 
