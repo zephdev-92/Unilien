@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   Box,
   Stack,
@@ -22,6 +22,7 @@ import { useNewShiftForm } from '@/hooks/useNewShiftForm'
 import { useRepeatConfig } from '@/hooks/useRepeatConfig'
 import { createShifts } from '@/services/shiftService'
 import { SHIFT_TYPE_LABELS } from './shiftTypeLabels'
+import { TaskSelector } from './TaskSelector'
 import { logger } from '@/lib/logger'
 
 const SHIFT_TYPE_OPTIONS = [
@@ -93,6 +94,12 @@ export function NewShiftModal({
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false)
+  const [tasksArray, setTasksArray] = useState<string[]>([])
+
+  const handleTasksChange = useCallback((tasks: string[]) => {
+    setTasksArray(tasks)
+    setValue('tasks', tasks.join('\n'))
+  }, [setValue])
 
   const buildShiftData = () => ({
     contractId: watchedValues.contractId ?? '',
@@ -390,35 +397,12 @@ export function NewShiftModal({
                   <Separator />
 
                   {/* Tâches */}
-                  <Box>
-                    <Text fontWeight="600" fontSize="sm" color="text.default" mb={1}>
-                      Tâches prévues
-                    </Text>
-                    <Textarea
-                      placeholder={'Une tâche par ligne\nEx: Aide au lever\nPréparation du petit-déjeuner'}
-                      rows={4}
-                      fontSize="sm"
-                      borderWidth="1.5px"
-                      borderColor="border.default"
-                      borderRadius="10px"
-                      bg="bg.page"
-                      p="10px 12px"
-                      minH="80px"
-                      css={{
-                        '&:focus': {
-                          borderColor: 'var(--chakra-colors-brand-500)',
-                          boxShadow: '0 0 0 3px rgba(78,100,120,.12)',
-                          background: 'var(--chakra-colors-bg-surface, #fff)',
-                        },
-                        transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
-                        resize: 'vertical',
-                      }}
-                      {...register('tasks')}
-                    />
-                    <Text fontSize="xs" color="text.muted" mt={1}>
-                      Une tâche par ligne
-                    </Text>
-                  </Box>
+                  <TaskSelector
+                    value={tasksArray}
+                    onChange={handleTasksChange}
+                    prefillFromSettings
+                  />
+                  <input type="hidden" {...register('tasks')} />
 
                   {/* Notes */}
                   <Box>

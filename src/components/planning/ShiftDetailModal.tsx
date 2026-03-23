@@ -189,6 +189,7 @@ export function ShiftDetailModal({
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<ShiftFormData>({
     resolver: zodResolver(shiftSchema),
@@ -476,6 +477,8 @@ export function ShiftDetailModal({
           isCheckingCompliance={isCheckingCompliance}
           contract={contract}
           submitError={submitError}
+          initialTasks={shift?.tasks ?? []}
+          setValue={setValue}
           onShiftTypeChange={(t) => dispatch({ type: 'SET_SHIFT_TYPE', shiftType: t })}
           onNightActionChange={(v) => dispatch({ type: 'SET_HAS_NIGHT_ACTION', value: v })}
           onNightInterventionsChange={(n) => dispatch({ type: 'SET_NIGHT_INTERVENTIONS', count: n })}

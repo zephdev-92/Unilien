@@ -4,13 +4,15 @@
  */
 
 import type React from 'react'
+import { useState, useCallback } from 'react'
 import { Box, Stack, Flex, Text, Textarea, Separator } from '@chakra-ui/react'
-import type { UseFormRegister, FieldErrors } from 'react-hook-form'
+import type { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { AccessibleInput, AccessibleSelect } from '@/components/ui'
 import { ComplianceAlert, PaySummary } from '@/components/compliance'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
+import { TaskSelector } from './TaskSelector'
 import type { Shift, Contract, ComplianceResult, ComputedPay } from '@/types'
 import type { ShiftDetailFormData } from '@/lib/validation/shiftSchemas'
 
@@ -52,6 +54,9 @@ interface ShiftEditFormProps {
   contract: Contract | null
   // Erreur submit
   submitError: string | null
+  // Tasks
+  initialTasks: string[]
+  setValue: UseFormSetValue<ShiftDetailFormData>
   // Dispatchers
   onShiftTypeChange: (type: Shift['shiftType']) => void
   onNightActionChange: (value: boolean) => void
@@ -79,11 +84,20 @@ export function ShiftEditForm({
   hasWarnings,
   contract,
   submitError,
+  initialTasks,
+  setValue,
   onShiftTypeChange,
   onNightActionChange,
   onNightInterventionsChange,
   onAcknowledgeWarnings,
 }: ShiftEditFormProps) {
+  const [tasksArray, setTasksArray] = useState<string[]>(initialTasks)
+
+  const handleTasksChange = useCallback((tasks: string[]) => {
+    setTasksArray(tasks)
+    setValue('tasks', tasks.join('\n'))
+  }, [setValue])
+
   return (
     <form id="edit-shift-form" onSubmit={onSubmit}>
       <Stack gap={4}>
@@ -213,18 +227,11 @@ export function ShiftEditForm({
         <Separator />
 
         {/* Tâches */}
-        <Box>
-          <Text fontWeight="medium" fontSize="md" mb={2}>
-            Tâches prévues
-          </Text>
-          <Textarea
-            placeholder="Une tâche par ligne"
-            rows={4}
-            size="lg"
-            borderWidth="2px"
-            {...register('tasks')}
-          />
-        </Box>
+        <TaskSelector
+          value={tasksArray}
+          onChange={handleTasksChange}
+        />
+        <input type="hidden" {...register('tasks')} />
 
         {/* Notes */}
         <Box>

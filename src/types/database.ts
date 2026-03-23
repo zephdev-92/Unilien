@@ -340,3 +340,32 @@ export interface PayslipDbRow {
   generated_at: string
   created_at: string
 }
+
+// ============================================================
+// INTERVENTION SETTINGS
+// ============================================================
+
+export interface ShoppingItemDb {
+  name: string
+  brand: string
+  quantity: number
+  note: string
+}
+
+export interface InterventionSettingsDbRow {
+  profile_id: string
+  default_tasks: string[]
+  custom_tasks: string[]
+  shopping_list: ShoppingItemDb[]
+  created_at: string
+  updated_at: string
+}
+
+export interface ShoppingArticleHistoryDbRow {
+  id: string
+  profile_id: string
+  name: string
+  brand: string
+  use_count: number
+  last_used_at: string
+}

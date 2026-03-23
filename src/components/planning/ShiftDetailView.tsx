@@ -11,6 +11,7 @@ import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
 import { sanitizeText } from '@/lib/sanitize'
+import { COURSES_PREFIX, parseShoppingItemString } from '@/lib/constants/taskDefaults'
 import { SHIFT_TYPE_LABELS } from '@/lib/constants/statusMaps'
 import type { Shift, Contract } from '@/types'
 
@@ -154,11 +155,45 @@ export function ShiftDetailView({
       {shift.tasks.length > 0 && (
         <DetailRow label="Tâches">
           <Stack gap={1}>
-            {shift.tasks.map((task, index) => (
-              <Flex key={index} align="center" gap={2}>
-                <Box w="5px" h="5px" borderRadius="full" bg="brand.500" flexShrink={0} />
-                <Text fontSize="14px">{sanitizeText(task)}</Text>
-              </Flex>
+            {shift.tasks.filter(t => !t.startsWith(COURSES_PREFIX)).map((task, index) => (
+              <Box key={index}>
+                <Flex align="center" gap={2}>
+                  <Box w="5px" h="5px" borderRadius="full" bg="brand.500" flexShrink={0} />
+                  <Text fontSize="14px">{sanitizeText(task)}</Text>
+                </Flex>
+                {task === 'Courses' && (
+                  <Stack gap={0} ml={5} mt={1} pl={3} borderLeftWidth="2px" borderColor="brand.200">
+                    {shift.tasks
+                      .filter(t => t.startsWith(COURSES_PREFIX))
+                      .map((item, i) => {
+                        const parsed = parseShoppingItemString(item.slice(COURSES_PREFIX.length))
+                        return (
+                          <Flex key={i} align="center" gap={2} py="2px">
+                            <Box w="4px" h="4px" borderRadius="full" bg="brand.300" flexShrink={0} />
+                            <Text fontSize="13px" color="text.muted">
+                              {sanitizeText(parsed.name)}
+                              {parsed.brand && (
+                                <Text as="span" fontSize="xs" fontStyle="italic" ml={1}>
+                                  {sanitizeText(parsed.brand)}
+                                </Text>
+                              )}
+                              {parsed.quantity > 1 && (
+                                <Text as="span" fontSize="xs" fontWeight="600" ml={1}>
+                                  x{parsed.quantity}
+                                </Text>
+                              )}
+                              {parsed.note && (
+                                <Text as="span" fontSize="xs" color="text.muted" fontStyle="italic" ml={1}>
+                                  — {sanitizeText(parsed.note)}
+                                </Text>
+                              )}
+                            </Text>
+                          </Flex>
+                        )
+                      })}
+                  </Stack>
+                )}
+              </Box>
             ))}
           </Stack>
         </DetailRow>

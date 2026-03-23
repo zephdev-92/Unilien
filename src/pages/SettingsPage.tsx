@@ -35,6 +35,8 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { GhostButton, PrimaryButton } from '@/components/ui'
+import { useInterventionSettings } from '@/hooks/useInterventionSettings'
+import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ type PanelId =
   | 'securite'
   | 'abonnement'
   | 'notifications'
+  | 'interventions'
   | 'convention'
   | 'pch'
   | 'apparence'
@@ -82,6 +85,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Application',
     items: [
       { id: 'notifications', label: 'Notifications', icon: <NavIcon><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" /></NavIcon> },
+      { id: 'interventions', label: 'Interventions', icon: <NavIcon><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></NavIcon>, roles: ['employer'] },
       { id: 'convention', label: 'Convention', icon: <NavIcon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></NavIcon>, roles: ['employer'] },
       { id: 'pch', label: 'PCH', icon: <NavIcon><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></NavIcon>, roles: ['caregiver'] },
       { id: 'apparence', label: 'Apparence', icon: <NavIcon><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></NavIcon> },
@@ -291,6 +295,7 @@ export function SettingsPage() {
           {activePanel === 'securite' && <SecuritePanel />}
           {activePanel === 'abonnement' && <AbonnementPanel />}
           {activePanel === 'notifications' && <NotificationsPanel userId={profile.id} />}
+          {activePanel === 'interventions' && <InterventionsPanel />}
           {activePanel === 'convention' && <ConventionPanel />}
           {activePanel === 'pch' && <PchPanel />}
           {activePanel === 'apparence' && <ApparencePanel />}
@@ -1047,6 +1052,246 @@ const CONVENTION_DEFAULTS = {
   ruleBreak: true, ruleDailyMax: true, ruleOvertime: true, ruleNight: true,
   majDimanche: 30, majFerie: 60, majNuit: 25, majSupp: 25,
 }
+
+// ── Panneau Interventions ─────────────────────────────────────────────────────
+
+function InterventionsPanel() {
+  const {
+    defaultTasks, customTasks, shoppingList,
+    saveDefaultTasks, addCustomTask, removeCustomTask,
+    addShoppingItem, removeShoppingItem, updateShoppingItem,
+  } = useInterventionSettings()
+
+  const [newTask, setNewTask] = useState('')
+  const [newItemName, setNewItemName] = useState('')
+  const [newItemBrand, setNewItemBrand] = useState('')
+  const [newItemNote, setNewItemNote] = useState('')
+  const [feedback, setFeedback] = useState<string | null>(null)
+
+  const showFeedback = (msg: string) => {
+    setFeedback(msg)
+    setTimeout(() => setFeedback(null), 3000)
+  }
+
+  const toggleTask = (task: string) => {
+    const next = defaultTasks.includes(task)
+      ? defaultTasks.filter(t => t !== task)
+      : [...defaultTasks, task]
+    saveDefaultTasks(next)
+  }
+
+  const handleAddCustom = () => {
+    const trimmed = newTask.trim()
+    if (!trimmed) return
+    addCustomTask(trimmed)
+    setNewTask('')
+    showFeedback(`"${trimmed}" ajoutée`)
+  }
+
+  const handleAddShoppingItem = () => {
+    const name = newItemName.trim()
+    if (!name) return
+    const brand = newItemBrand.trim()
+    const note = newItemNote.trim()
+    addShoppingItem({ name, brand, quantity: 1, note })
+    setNewItemName('')
+    setNewItemBrand('')
+    setNewItemNote('')
+  }
+
+  return (
+    <VStack gap={6} align="stretch">
+      <PanelHeader
+        title="Interventions"
+        subtitle="Configurez vos tâches habituelles et votre liste de courses type. Ces préférences seront pré-remplies dans chaque nouvelle intervention."
+      />
+
+      {feedback && (
+        <Box px={4} py={3} borderRadius="md" bg="green.50" borderWidth="1px" borderColor="green.200">
+          <Text fontSize="sm" color="green.700">{feedback}</Text>
+        </Box>
+      )}
+
+      {/* Tâches habituelles */}
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Tâches habituelles</Card.Title>
+          <Text fontSize="sm" color="text.muted" mt={1}>
+            Cochez les tâches que vous réalisez régulièrement. Elles seront pré-sélectionnées dans le formulaire d'intervention.
+          </Text>
+        </Card.Header>
+        <Card.Body p={4}>
+          <VStack gap={0} align="stretch">
+            {DEFAULT_TASKS.map(task => (
+              <HStack
+                key={task}
+                as="label"
+                gap={3}
+                py={2}
+                px={3}
+                cursor="pointer"
+                borderRadius="md"
+                _hover={{ bg: 'bg.muted' }}
+                transition="background 0.15s"
+              >
+                <Switch.Root
+                  size="sm"
+                  checked={defaultTasks.includes(task)}
+                  onCheckedChange={() => toggleTask(task)}
+                >
+                  <Switch.HiddenInput />
+                  <Switch.Control>
+                    <Switch.Thumb />
+                  </Switch.Control>
+                </Switch.Root>
+                <Text fontSize="sm" fontWeight={defaultTasks.includes(task) ? '600' : '400'}>
+                  {task}
+                </Text>
+              </HStack>
+            ))}
+          </VStack>
+
+          <Separator my={4} />
+
+          {/* Tâches personnalisées */}
+          <Text fontSize="sm" fontWeight="600" color="text.muted" mb={2}>
+            Tâches personnalisées
+          </Text>
+          {customTasks.length > 0 && (
+            <HStack gap={2} flexWrap="wrap" mb={3}>
+              {customTasks.map(task => (
+                <Badge
+                  key={task}
+                  px={3} py={1}
+                  borderRadius="full"
+                  variant="subtle"
+                  colorPalette="brand"
+                  fontSize="xs"
+                  fontWeight="500"
+                >
+                  {task}
+                  <Box
+                    as="button" type="button"
+                    ml={2} fontSize="xs" fontWeight="700"
+                    opacity={0.6} _hover={{ opacity: 1 }}
+                    onClick={() => removeCustomTask(task)}
+                  >✕</Box>
+                </Badge>
+              ))}
+            </HStack>
+          )}
+          <HStack gap={2}>
+            <Input
+              size="sm"
+              placeholder="Ajouter une tâche personnalisée…"
+              value={newTask}
+              onChange={e => setNewTask(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() } }}
+              borderRadius="md"
+            />
+            <GhostButton size="sm" onClick={handleAddCustom}>+ Ajouter</GhostButton>
+          </HStack>
+        </Card.Body>
+      </Card.Root>
+
+      {/* Liste de courses */}
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Liste de courses type</Card.Title>
+          <Text fontSize="sm" color="text.muted" mt={1}>
+            Créez votre liste d'articles habituels. Elle sera pré-remplie quand "Courses" est sélectionné dans une intervention.
+          </Text>
+        </Card.Header>
+        <Card.Body p={4}>
+          {shoppingList.length > 0 && (
+            <VStack gap={2} align="stretch" mb={4}>
+              {shoppingList.map(item => (
+                <HStack
+                  key={`${item.name}-${item.brand}`}
+                  gap={3}
+                  px={3} py={2}
+                  bg="bg.muted"
+                  borderWidth="1px"
+                  borderColor="border.default"
+                  borderRadius="md"
+                  fontSize="sm"
+                  _hover={{ borderColor: 'brand.300', bg: 'brand.subtle' }}
+                  transition="all 0.12s"
+                >
+                  <VStack gap={0} align="start" flex={1}>
+                    <HStack gap={2}>
+                      <Text fontWeight="600">{item.name}</Text>
+                      {item.brand && (
+                        <Text fontSize="xs" color="text.muted" fontStyle="italic">{item.brand}</Text>
+                      )}
+                    </HStack>
+                    {item.note && (
+                      <Text fontSize="xs" color="text.muted">{item.note}</Text>
+                    )}
+                  </VStack>
+                  <HStack gap={1}>
+                    <Box
+                      as="button" type="button"
+                      w="22px" h="22px" borderRadius="full"
+                      bg="gray.100" fontSize="xs" fontWeight="bold"
+                      display="flex" alignItems="center" justifyContent="center"
+                      _hover={{ bg: 'gray.200' }}
+                      onClick={() => updateShoppingItem(item.name, item.brand, { quantity: Math.max(1, (item.quantity || 1) - 1) })}
+                    >-</Box>
+                    <Text fontSize="xs" fontWeight="600" minW="22px" textAlign="center">
+                      x{item.quantity || 1}
+                    </Text>
+                    <Box
+                      as="button" type="button"
+                      w="22px" h="22px" borderRadius="full"
+                      bg="gray.100" fontSize="xs" fontWeight="bold"
+                      display="flex" alignItems="center" justifyContent="center"
+                      _hover={{ bg: 'gray.200' }}
+                      onClick={() => updateShoppingItem(item.name, item.brand, { quantity: (item.quantity || 1) + 1 })}
+                    >+</Box>
+                  </HStack>
+                  <Box
+                    as="button" type="button"
+                    fontSize="xs" color="text.muted"
+                    opacity={0.5} _hover={{ opacity: 1, color: 'red.500' }}
+                    onClick={() => removeShoppingItem(item)}
+                  >&#10005;</Box>
+                </HStack>
+              ))}
+            </VStack>
+          )}
+          <HStack gap={2}>
+            <Input
+              size="sm"
+              placeholder="Article (ex : Lait, Bananes…)"
+              value={newItemName}
+              onChange={e => setNewItemName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('settings-brand-input')?.focus() } }}
+              borderRadius="md"
+              flex={2}
+            />
+            <Input
+              id="settings-brand-input"
+              size="sm"
+              placeholder="Marque (optionnel)"
+              value={newItemBrand}
+              onChange={e => setNewItemBrand(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddShoppingItem() } }}
+              borderRadius="md"
+              flex={1}
+            />
+            <PrimaryButton size="sm" onClick={handleAddShoppingItem}>+ Ajouter</PrimaryButton>
+          </HStack>
+          <Text fontSize="xs" color="text.muted" mt={2}>
+            Les articles ajoutés dans le formulaire d'intervention seront aussi mémorisés ici.
+          </Text>
+        </Card.Body>
+      </Card.Root>
+    </VStack>
+  )
+}
+
+// ── Panneau Convention ────────────────────────────────────────────────────────
 
 function loadConventionSettings() {
   try {
