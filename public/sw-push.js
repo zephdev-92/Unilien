@@ -96,6 +96,18 @@ self.addEventListener('notificationclick', (event) => {
     targetUrl = data.actionUrl
   }
 
+  // Validation URL — same-origin uniquement (défense en profondeur)
+  try {
+    const u = new URL(targetUrl, self.location.origin)
+    if (u.origin !== self.location.origin || !u.pathname.startsWith('/')) {
+      targetUrl = '/'
+    } else {
+      targetUrl = u.href
+    }
+  } catch {
+    targetUrl = '/'
+  }
+
   // Ouvrir ou focus sur la fenêtre de l'app
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })

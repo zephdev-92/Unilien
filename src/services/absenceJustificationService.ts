@@ -94,9 +94,15 @@ export async function uploadJustification(
     throw new Error("Erreur lors de l'upload du justificatif.")
   }
 
-  const { data: urlData } = supabase.storage
+  // Utiliser une URL signée (bucket privé) — expire après 1h
+  const { data: urlData, error: signError } = await supabase.storage
     .from(JUSTIFICATIONS_BUCKET)
-    .getPublicUrl(fileName)
+    .createSignedUrl(fileName, 3600)
 
-  return { url: urlData.publicUrl }
+  if (signError || !urlData?.signedUrl) {
+    logger.error('Erreur génération URL signée justificatif:', signError)
+    throw new Error('Erreur lors de la génération du lien de téléchargement.')
+  }
+
+  return { url: urlData.signedUrl }
 }

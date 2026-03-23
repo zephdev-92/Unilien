@@ -239,7 +239,7 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
         </Stack>
       </Box>
 
-      {/* Statut juridique */}
+      {/* Statut juridique — lecture seule (modifiable uniquement par l'employeur) */}
       <Box
         bg="bg.surface"
         borderRadius="12px"
@@ -251,13 +251,14 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
           Statut juridique
         </Text>
         <Text fontSize="sm" color="text.muted" mb={4}>
-          Indiquez si vous avez un pouvoir légal sur la personne aidée
+          Ce champ est défini par l'employeur ou le responsable légal
         </Text>
 
         <AccessibleSelect
           label="Statut"
-          helperText="Important pour déterminer vos droits et responsabilités"
+          helperText="Seul l'employeur peut modifier ce champ"
           options={legalStatusOptions}
+          disabled
           {...register('legalStatus')}
         />
       </Box>

@@ -239,12 +239,12 @@ describe('absenceService', () => {
 
   describe('uploadJustification', () => {
     const mockUpload = vi.fn()
-    const mockGetPublicUrl = vi.fn()
+    const mockCreateSignedUrl = vi.fn()
 
     beforeEach(() => {
       mockStorage.mockReturnValue({
         upload: mockUpload,
-        getPublicUrl: mockGetPublicUrl,
+        createSignedUrl: mockCreateSignedUrl,
       })
     })
 
@@ -253,13 +253,15 @@ describe('absenceService', () => {
       Object.defineProperty(file, 'size', { value: 1 * 1024 * 1024 })
 
       mockUpload.mockResolvedValue({ error: null })
-      mockGetPublicUrl.mockReturnValue({
-        data: { publicUrl: 'https://storage.example.com/justifications/emp-456/arret.pdf' },
+      mockCreateSignedUrl.mockResolvedValue({
+        data: { signedUrl: 'https://storage.example.com/justifications/emp-456/arret.pdf?token=xxx' },
+        error: null,
       })
 
       const result = await uploadJustification('emp-456', file)
 
       expect(result.url).toContain('storage.example.com')
+      expect(result.url).toContain('token=')
       expect(mockUpload).toHaveBeenCalled()
       expect(mockStorage).toHaveBeenCalledWith('justifications')
     })
@@ -289,7 +291,7 @@ describe('absenceService', () => {
       Object.defineProperty(file, 'size', { value: 100 * 1024 })
 
       mockUpload.mockResolvedValue({ error: null })
-      mockGetPublicUrl.mockReturnValue({ data: { publicUrl: 'https://example.com/f.pdf' } })
+      mockCreateSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://example.com/f.pdf?token=xxx' }, error: null })
 
       await uploadJustification('emp-456', file, {
         absenceType: 'sick',
@@ -306,7 +308,7 @@ describe('absenceService', () => {
       Object.defineProperty(file, 'size', { value: 100 * 1024 })
 
       mockUpload.mockResolvedValue({ error: null })
-      mockGetPublicUrl.mockReturnValue({ data: { publicUrl: 'https://example.com/f.pdf' } })
+      mockCreateSignedUrl.mockResolvedValue({ data: { signedUrl: 'https://example.com/f.pdf?token=xxx' }, error: null })
 
       await uploadJustification('emp-456', file, {
         absenceType: 'family_event',

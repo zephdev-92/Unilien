@@ -280,7 +280,7 @@ export function NotificationsPanel({
     if (!notification.isRead) {
       onMarkAsRead(notification.id)
     }
-    if (notification.actionUrl) {
+    if (notification.actionUrl && notification.actionUrl.startsWith('/')) {
       navigate(notification.actionUrl)
       onClose()
     }

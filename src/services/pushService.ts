@@ -374,14 +374,21 @@ export function showLocalNotification(payload: PushNotificationPayload): void {
     data: payload.data,
   })
 
-  // Gestion du clic
+  // Gestion du clic — validation URL (same-origin uniquement)
   notification.onclick = (event) => {
     event.preventDefault()
     notification.close()
 
     if (payload.data?.url) {
-      window.focus()
-      window.location.href = payload.data.url
+      try {
+        const u = new URL(payload.data.url, window.location.origin)
+        if (u.origin === window.location.origin && u.pathname.startsWith('/')) {
+          window.focus()
+          window.location.href = u.href
+        }
+      } catch {
+        // URL invalide — ignorer
+      }
     }
   }
 }
