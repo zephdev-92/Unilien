@@ -32,7 +32,7 @@ import { useAccessibilityStore } from '@/stores/authStore'
 import { updateProfile, uploadAvatar, deleteAvatar, validateAvatarFile, getEmployer, upsertEmployer, getEmployee, upsertEmployee } from '@/services/profileService'
 import type { Address, UserRole } from '@/types'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
-import { supabase } from '@/lib/supabase/client'
+import { exportUserDataJSON, exportUserShiftsCSV } from '@/services/dataExportService'
 import { logger } from '@/lib/logger'
 import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
@@ -1689,26 +1689,7 @@ function DonneesPanel({ userId }: { userId: string }) {
     setExporting('json')
     setFeedback(null)
     try {
-      const queries: { table: string; filter: string; col: string }[] = [
-        { table: 'profiles', filter: 'id', col: 'eq' },
-        { table: 'shifts', filter: 'employer_id', col: 'or_employee' },
-        { table: 'absences', filter: 'employee_id', col: 'or_employer' },
-        { table: 'contracts', filter: 'employer_id', col: 'or_employee' },
-        { table: 'logbook_entries', filter: 'user_id', col: 'eq' },
-        { table: 'liaison_messages', filter: 'sender_id', col: 'eq' },
-        { table: 'documents', filter: 'user_id', col: 'eq' },
-      ]
-      const data: Record<string, unknown[]> = {}
-      for (const q of queries) {
-        let query = supabase.from(q.table).select('*')
-        if (q.col === 'eq') {
-          query = query.eq(q.filter, userId)
-        } else {
-          query = query.or(`employee_id.eq.${userId},employer_id.eq.${userId}`)
-        }
-        const { data: rows, error } = await query
-        if (!error && rows) data[q.table] = rows
-      }
+      const data = await exportUserDataJSON(userId)
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -1729,14 +1710,12 @@ function DonneesPanel({ userId }: { userId: string }) {
     setExporting('csv')
     setFeedback(null)
     try {
-      const { data: shifts } = await supabase.from('shifts').select('*').or(`employee_id.eq.${userId},employer_id.eq.${userId}`)
-      if (!shifts || shifts.length === 0) {
+      const csv = await exportUserShiftsCSV(userId)
+      if (!csv) {
         setFeedback({ type: 'error', msg: 'Aucune intervention à exporter.' })
         setExporting(null)
         return
       }
-      const headers = Object.keys(shifts[0])
-      const csv = [headers.join(';'), ...shifts.map((r) => headers.map((h) => String(r[h] ?? '')).join(';'))].join('\n')
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')

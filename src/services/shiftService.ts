@@ -120,7 +120,7 @@ export async function getShifts(
 export async function getShiftById(shiftId: string): Promise<Shift | null> {
   const { data, error } = await supabase
     .from('shifts')
-    .select('*')
+    .select('id, contract_id, date, start_time, end_time, break_duration, tasks, notes, has_night_action, shift_type, night_interventions_count, is_requalified, effective_hours, guard_segments, computed_pay, status, validated_by_employer, validated_by_employee, late_entry, created_at, updated_at')
     .eq('id', shiftId)
     .single()
 

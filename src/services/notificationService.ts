@@ -30,7 +30,7 @@ export async function getNotifications(
 ): Promise<Notification[]> {
   let query = supabase
     .from('notifications')
-    .select('*')
+    .select('id, user_id, type, priority, title, message, data, action_url, is_read, is_dismissed, created_at, read_at, expires_at')
     .eq('user_id', userId)
     .eq('is_dismissed', false)
     .order('created_at', { ascending: false })

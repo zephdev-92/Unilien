@@ -61,7 +61,7 @@ interface ContractUpdateData {
 export async function getContractById(contractId: string): Promise<Contract | null> {
   const { data, error } = await supabase
     .from('contracts')
-    .select('*')
+    .select('id, employer_id, employee_id, caregiver_id, contract_category, contract_type, start_date, end_date, weekly_hours, hourly_rate, pas_rate, pch_hourly_rate, caregiver_status, status, created_at, updated_at')
     .eq('id', contractId)
     .single()
 
@@ -530,7 +530,7 @@ export async function getActiveCaregiverContract(
 ): Promise<Contract | null> {
   const { data, error } = await supabase
     .from('contracts')
-    .select('*')
+    .select('id, employer_id, employee_id, caregiver_id, contract_category, contract_type, start_date, end_date, weekly_hours, hourly_rate, pas_rate, pch_hourly_rate, caregiver_status, status, created_at, updated_at')
     .eq('employer_id', employerId)
     .eq('caregiver_id', caregiverId)
     .eq('status', 'active')

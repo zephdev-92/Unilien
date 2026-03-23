@@ -18,7 +18,7 @@ export async function getLeaveBalance(
 ): Promise<LeaveBalance | null> {
   const { data, error } = await supabase
     .from('leave_balances')
-    .select('*')
+    .select('id, employee_id, employer_id, contract_id, leave_year, acquired_days, taken_days, adjustment_days, is_manual_init, created_at, updated_at')
     .eq('contract_id', contractId)
     .eq('leave_year', leaveYear)
     .maybeSingle()
@@ -42,7 +42,7 @@ export async function getLeaveBalancesForEmployee(
 ): Promise<LeaveBalance[]> {
   const { data, error } = await supabase
     .from('leave_balances')
-    .select('*')
+    .select('id, employee_id, employer_id, contract_id, leave_year, acquired_days, taken_days, adjustment_days, is_manual_init, created_at, updated_at')
     .eq('employee_id', employeeId)
     .order('leave_year', { ascending: false })
 
@@ -63,7 +63,7 @@ export async function getLeaveBalancesForEmployer(
 ): Promise<LeaveBalance[]> {
   const { data, error } = await supabase
     .from('leave_balances')
-    .select('*')
+    .select('id, employee_id, employer_id, contract_id, leave_year, acquired_days, taken_days, adjustment_days, is_manual_init, created_at, updated_at')
     .eq('employer_id', employerId)
     .order('leave_year', { ascending: false })
 

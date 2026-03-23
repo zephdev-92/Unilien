@@ -29,7 +29,7 @@ export async function getAbsencesForEmployee(
 ): Promise<Absence[]> {
   const { data, error } = await supabase
     .from('absences')
-    .select('*')
+    .select('id, employee_id, absence_type, start_date, end_date, reason, justification_url, status, business_days_count, justification_due_date, family_event_type, leave_year, created_at')
     .eq('employee_id', employeeId)
     .order('created_at', { ascending: false })
 
@@ -62,7 +62,7 @@ export async function getAbsencesForEmployer(
 
   const { data, error } = await supabase
     .from('absences')
-    .select('*')
+    .select('id, employee_id, absence_type, start_date, end_date, reason, justification_url, status, business_days_count, justification_due_date, family_event_type, leave_year, created_at')
     .in('employee_id', employeeIds)
     .order('created_at', { ascending: false })
 
@@ -95,7 +95,7 @@ export async function getPendingAbsencesForEmployer(
 
   const { data, error } = await supabase
     .from('absences')
-    .select('*')
+    .select('id, employee_id, absence_type, start_date, end_date, reason, justification_url, status, business_days_count, justification_due_date, family_event_type, leave_year, created_at')
     .in('employee_id', employeeIds)
     .eq('status', 'pending')
     .order('created_at', { ascending: false })

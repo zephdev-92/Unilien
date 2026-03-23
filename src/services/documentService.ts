@@ -76,7 +76,7 @@ export async function getDocumentsForEmployer(
   // Récupérer les absences
   const { data: absences, error } = await supabase
     .from('absences')
-    .select('*')
+    .select('id, employee_id, absence_type, start_date, end_date, reason, justification_url, status, business_days_count, justification_due_date, family_event_type, leave_year, created_at')
     .in('employee_id', employeeIds)
     .order('created_at', { ascending: false })
 

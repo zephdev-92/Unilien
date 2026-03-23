@@ -168,7 +168,7 @@ export async function getPayslipsHistory(
 ): Promise<Payslip[]> {
   let query = supabase
     .from('payslips')
-    .select('*')
+    .select('id, employer_id, employee_id, contract_id, year, month, period_label, gross_pay, net_pay, total_hours, pas_rate, is_exempt_patronal_ss, storage_path, storage_url, generated_at, created_at')
     .eq('employer_id', employerId)
     .order('year', { ascending: false })
     .order('month', { ascending: false })

@@ -81,7 +81,7 @@ export async function getNotificationPreferences(
 ): Promise<NotificationPreferences> {
   const { data, error } = await supabase
     .from('notification_preferences')
-    .select('*')
+    .select('user_id, email_enabled, push_enabled, compliance_alerts, shift_reminders, message_notifications, reminder_hours_before')
     .eq('user_id', userId)
     .single()
 
@@ -176,7 +176,7 @@ export async function createNotification(
     p_message: sanitizeText(params.message),
     p_priority: params.priority || 'normal',
     p_data: params.data || {},
-    p_action_url: params.actionUrl || null,
+    p_action_url: params.actionUrl && params.actionUrl.startsWith('/') ? params.actionUrl : null,
   })
 
   if (error) {

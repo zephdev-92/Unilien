@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Box, Flex, Text, Skeleton } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { supabase } from '@/lib/supabase/client'
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns'
+import { startOfWeek, endOfWeek, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
+import { getUnvalidatedShiftsCount, getMissingPayslipEmployees } from '@/services/nudgeService'
 
 interface Nudge {
   id: string
@@ -51,27 +51,15 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
 
       try {
         const now = new Date()
-        const monthStart = startOfMonth(now)
-        const monthEnd = endOfMonth(now)
         const weekStart = startOfWeek(now, { weekStartsOn: 1 })
         const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
         const monthLabel = format(now, 'MMMM yyyy', { locale: fr })
         const weekLabel = format(weekStart, "'Semaine du' d MMMM", { locale: fr })
 
         // 1. Shifts completed but not validated by employer this week
-        const { count: unvalidatedCount } = await supabase
-          .from('shifts')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'completed')
-          .eq('validated_by_employer', false)
-          .gte('date', weekStart.toISOString().split('T')[0])
-          .lte('date', weekEnd.toISOString().split('T')[0])
-          .in(
-            'contract_id',
-            (await supabase.from('contracts').select('id').eq('employer_id', employerId).eq('status', 'active')).data?.map((c) => c.id) ?? []
-          )
+        const unvalidatedCount = await getUnvalidatedShiftsCount(employerId, weekStart, weekEnd)
 
-        if (unvalidatedCount && unvalidatedCount > 0) {
+        if (unvalidatedCount > 0) {
           result.push({
             id: 'validate-hours',
             title: `Valider les heures de la semaine`,
@@ -83,43 +71,21 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
         }
 
         // 2. Active employees without payslip for current month
-        const { data: activeContracts } = await supabase
-          .from('contracts')
-          .select('id, employees!inner(profiles!inner(first_name, last_name))')
-          .eq('employer_id', employerId)
-          .eq('status', 'active')
+        const { count: missingCount, names: nameStr } = await getMissingPayslipEmployees(
+          employerId,
+          now.getFullYear(),
+          now.getMonth() + 1
+        )
 
-        if (activeContracts && activeContracts.length > 0) {
-          const contractIds = activeContracts.map((c) => c.id)
-
-          const { data: existingPayslips } = await supabase
-            .from('payslips')
-            .select('contract_id')
-            .in('contract_id', contractIds)
-            .gte('period_start', monthStart.toISOString().split('T')[0])
-            .lte('period_start', monthEnd.toISOString().split('T')[0])
-
-          const payslipContractIds = new Set(existingPayslips?.map((p) => p.contract_id) ?? [])
-          const missing = activeContracts.filter((c) => !payslipContractIds.has(c.id))
-
-          if (missing.length > 0) {
-            const names = missing
-              .slice(0, 2)
-              .map((c) => {
-                const emp = c.employees as unknown as { profiles: { first_name: string; last_name: string } }
-                return `${emp.profiles.first_name} ${emp.profiles.last_name.charAt(0)}.`
-              })
-            const nameStr = names.join(', ') + (missing.length > 2 ? ` +${missing.length - 2}` : '')
-
-            result.push({
-              id: 'generate-payslips',
-              title: `${missing.length} bulletin${missing.length > 1 ? 's' : ''} de paie à générer`,
-              subtitle: `${monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)} — ${nameStr}`,
-              href: '/documents',
-              color: 'orange',
-              icon: DocumentIcon,
-            })
-          }
+        if (missingCount > 0) {
+          result.push({
+            id: 'generate-payslips',
+            title: `${missingCount} bulletin${missingCount > 1 ? 's' : ''} de paie à générer`,
+            subtitle: `${monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)} — ${nameStr}`,
+            href: '/documents',
+            color: 'orange',
+            icon: DocumentIcon,
+          })
         }
       } catch (err) {
         logger.error('Erreur chargement nudges:', err)
