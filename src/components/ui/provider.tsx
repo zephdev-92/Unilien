@@ -2,6 +2,7 @@
 
 import { ChakraProvider } from "@chakra-ui/react"
 import { system } from "@/styles/theme"
+import { Toaster } from "@/lib/ToasterProvider"
 import type { ReactNode } from "react"
 
 interface ProviderProps {
@@ -9,5 +10,10 @@ interface ProviderProps {
 }
 
 export function Provider({ children }: ProviderProps) {
-  return <ChakraProvider value={system}>{children}</ChakraProvider>
+  return (
+    <ChakraProvider value={system}>
+      {children}
+      <Toaster />
+    </ChakraProvider>
+  )
 }

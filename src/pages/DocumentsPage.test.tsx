@@ -17,19 +17,10 @@ vi.mock('@/components/dashboard', () => ({
   ),
 }))
 
-vi.mock('@/lib/export', () => ({
-  getMonthlyDeclarationData: vi.fn(),
-  generateCesuCsv: vi.fn(),
-  generateCesuSummary: vi.fn(),
-  generateCesuPdf: vi.fn(),
-  downloadExport: vi.fn(),
-  MONTHS_FR: [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
-  ],
-}))
-
 vi.mock('@/components/documents', () => ({
+  CesuDeclarationSection: ({ employerId }: { employerId: string }) => (
+    <div data-testid="cesu-section" data-employer-id={employerId} />
+  ),
   ContractsSection: ({ employerId }: { employerId: string }) => (
     <div data-testid="contracts-section" data-employer-id={employerId} />
   ),
@@ -40,7 +31,7 @@ vi.mock('@/components/documents', () => ({
   PlanningExportSection: () => <div data-testid="planning-export-section" />,
 }))
 
-// ── Imports après mocks ────────────────────────────────────────────────────────
+// ── Imports apres mocks ────────────────────────────────────────────────────────
 
 import { useAuth } from '@/hooks/useAuth'
 import { getCaregiver } from '@/services/caregiverService'
@@ -79,35 +70,30 @@ function createMockCaregiver(overrides: Partial<Caregiver> = {}): Caregiver {
 describe('DocumentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Par défaut : getCaregiver ne résout jamais (simule le chargement en cours)
     mockGetCaregiver.mockReturnValue(new Promise(() => {}))
   })
 
-  // 1. Spinner si profile est null
   it('affiche un Spinner quand profile est null', () => {
     mockUseAuth.mockReturnValue({ profile: null } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     expect(screen.getByTestId('layout')).toBeInTheDocument()
-    expect(screen.queryByText('Documents et Déclarations')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('doc-section')).not.toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
-  // 2. Un employé peut accéder à la page (onglet Planning visible)
-  it('affiche la page pour un role=employee (acces planning)', async () => {
+  it('affiche la page pour un role=employee', async () => {
     const profile = createMockProfile({ role: 'employee' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Documents et Déclarations')).toBeInTheDocument()
+      expect(screen.getByRole('tablist')).toBeInTheDocument()
     })
   })
 
-  // 3. Redirection si caregiver sans canExportData
-  it('redirige vers /tableau-de-bord si caregiver sans canExportData', async () => {
+  it('redirige si caregiver sans canExportData', async () => {
     const profile = createMockProfile({ id: 'caregiver-1', role: 'caregiver' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
     mockGetCaregiver.mockResolvedValue(createMockCaregiver({ permissions: noPermissions }))
@@ -115,36 +101,29 @@ describe('DocumentsPage', () => {
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      expect(screen.queryByText('Documents et Déclarations')).not.toBeInTheDocument()
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
     })
   })
 
-  // 4. Spinner pendant isLoadingCaregiver (role=caregiver, promise non résolue)
   it('affiche un Spinner pendant le chargement de l\'aidant', () => {
     const profile = createMockProfile({ id: 'caregiver-1', role: 'caregiver' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-    // mockGetCaregiver déjà configuré comme promise infinie dans beforeEach
 
     renderWithProviders(<DocumentsPage />)
 
     expect(screen.getByTestId('layout')).toBeInTheDocument()
-    expect(screen.queryByText('Documents et Déclarations')).not.toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 
-  // 5. Affiche le contenu complet pour un employeur (titre + tabs)
-  it('affiche le titre et les onglets de navigation pour un employeur', async () => {
+  it('affiche les 5 onglets pour un employeur', async () => {
     const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Documents et Déclarations')).toBeInTheDocument()
+      expect(screen.getByRole('tablist')).toBeInTheDocument()
     })
-
-    // Certains labels apparaissent dans le tab trigger ET le Card.Title
-    const tabs = screen.getByRole('tablist')
-    expect(tabs).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Bulletins de paie' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Contrats' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Absences' })).toBeInTheDocument()
@@ -152,77 +131,34 @@ describe('DocumentsPage', () => {
     expect(screen.getByRole('tab', { name: 'Déclarations CESU' })).toBeInTheDocument()
   })
 
-  // 6. Les boutons de sélection de mois sont présents pour un employeur
-  it('affiche les boutons de sélection de mois pour un employeur', async () => {
+  it('rend les sections avec le bon employerId pour un employeur', async () => {
     const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Documents et Déclarations')).toBeInTheDocument()
-    })
-
-    // Vérifie la présence de quelques mois — .slice(0, 3) sur le nom du mois
-    // 'Janvier' → 'Jan', 'Février' → 'Fév', 'Juillet' → 'Jui', 'Décembre' → 'Déc'
-    expect(screen.getByText('Jan')).toBeInTheDocument()
-    expect(screen.getByText('Fév')).toBeInTheDocument()
-    // Juin et Juillet donnent tous deux 'Jui' — on vérifie qu'il y en a au moins 2
-    expect(screen.getAllByText('Jui').length).toBeGreaterThanOrEqual(2)
-    expect(screen.getByText('Déc')).toBeInTheDocument()
-  })
-
-  // 7. Les boutons de sélection d'année sont présents pour un employeur
-  it('affiche les boutons de sélection d\'année pour un employeur', async () => {
-    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
-    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-
-    renderWithProviders(<DocumentsPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Documents et Déclarations')).toBeInTheDocument()
-    })
-
-    const currentYear = new Date().getFullYear()
-    expect(screen.getByText(String(currentYear))).toBeInTheDocument()
-    expect(screen.getByText(String(currentYear - 1))).toBeInTheDocument()
-    expect(screen.getByText(String(currentYear - 2))).toBeInTheDocument()
-  })
-
-  // 8. DocumentManagementSection est rendu dans l'onglet documents pour un employeur
-  it('rend DocumentManagementSection avec l\'employerId correct pour un employeur', async () => {
-    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
-    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-
-    renderWithProviders(<DocumentsPage />)
-
-    await waitFor(() => {
-      const docSection = screen.getByTestId('doc-section')
-      expect(docSection).toBeInTheDocument()
-      expect(docSection).toHaveAttribute('data-employer-id', 'employer-99')
+      expect(screen.getByTestId('doc-section')).toHaveAttribute('data-employer-id', 'employer-99')
+      expect(screen.getByTestId('contracts-section')).toHaveAttribute('data-employer-id', 'employer-99')
+      expect(screen.getByTestId('cesu-section')).toHaveAttribute('data-employer-id', 'employer-99')
     })
   })
 
-  // 9. DocumentManagementSection utilise l'employerId du caregiver, pas du profil
-  it('rend DocumentManagementSection avec l\'employerId du caregiver pour un aidant avec accès', async () => {
+  it('rend les sections avec l\'employerId du caregiver pour un aidant avec acces', async () => {
     const profile = createMockProfile({ id: 'caregiver-1', role: 'caregiver' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-    const caregiver = createMockCaregiver({
-      employerId: 'employer-42',
-      permissions: exportPermissions,
-    })
-    mockGetCaregiver.mockResolvedValue(caregiver)
+    mockGetCaregiver.mockResolvedValue(
+      createMockCaregiver({ employerId: 'employer-42', permissions: exportPermissions })
+    )
 
     renderWithProviders(<DocumentsPage />)
 
     await waitFor(() => {
-      const docSection = screen.getByTestId('doc-section')
-      expect(docSection).toBeInTheDocument()
-      expect(docSection).toHaveAttribute('data-employer-id', 'employer-42')
+      expect(screen.getByTestId('doc-section')).toHaveAttribute('data-employer-id', 'employer-42')
+      expect(screen.getByTestId('cesu-section')).toHaveAttribute('data-employer-id', 'employer-42')
     })
   })
 
-  // 10. getCaregiver est appelé avec le profile.id quand role=caregiver
   it('appelle getCaregiver avec le profile.id quand role=caregiver', async () => {
     const profile = createMockProfile({ id: 'caregiver-5', role: 'caregiver' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
@@ -237,65 +173,12 @@ describe('DocumentsPage', () => {
     })
   })
 
-  // 11. Pas d'appel à getCaregiver pour un employeur
-  it('n\'appelle pas getCaregiver quand le rôle est employer', () => {
+  it('n\'appelle pas getCaregiver quand le role est employer', () => {
     const profile = createMockProfile({ id: 'employer-1', role: 'employer' })
     mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
 
     renderWithProviders(<DocumentsPage />)
 
     expect(mockGetCaregiver).not.toHaveBeenCalled()
-  })
-
-  // 12. Le bouton de génération d'aperçu est présent
-  it('affiche le bouton de génération d\'aperçu pour un employeur', async () => {
-    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
-    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-
-    renderWithProviders(<DocumentsPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText(/Générer l'aperçu pour/)).toBeInTheDocument()
-    })
-  })
-
-  // 13. La description de la page est affichée
-  it('affiche la description de la page pour un employeur', async () => {
-    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
-    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-
-    renderWithProviders(<DocumentsPage />)
-
-    await waitFor(() => {
-      expect(
-        screen.getByText(/Gérez vos documents et générez les fichiers pour vos déclarations CESU/)
-      ).toBeInTheDocument()
-    })
-  })
-
-  // 14. L'onglet "Absences" affiche le sous-titre de gestion des absences
-  it('affiche le sous-titre de gestion des absences dans l\'onglet absences', async () => {
-    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
-    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-
-    renderWithProviders(<DocumentsPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Gestion des absences')).toBeInTheDocument()
-    })
-  })
-
-  // 15. L'onglet "Contrats" rend ContractsSection avec le bon employerId
-  it('rend ContractsSection avec l\'employerId correct pour un employeur', async () => {
-    const profile = createMockProfile({ id: 'employer-99', role: 'employer' })
-    mockUseAuth.mockReturnValue({ profile } as ReturnType<typeof useAuth>)
-
-    renderWithProviders(<DocumentsPage />)
-
-    await waitFor(() => {
-      const contractsSection = screen.getByTestId('contracts-section')
-      expect(contractsSection).toBeInTheDocument()
-      expect(contractsSection).toHaveAttribute('data-employer-id', 'employer-99')
-    })
   })
 })
