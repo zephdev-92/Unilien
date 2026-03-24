@@ -55,7 +55,7 @@
     "vitest": "^4.0.17"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.55.2"
+    "@rollup/rollup-win32-x64-msvc": "^4.60.0"
   },
   "overrides": {
     "serialize-javascript": "^7.0.3"
