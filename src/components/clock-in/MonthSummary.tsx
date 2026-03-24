@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Box, Flex, Text } from '@chakra-ui/react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { getShiftDurationMinutes } from '@/lib/compliance'
 import type { Shift } from '@/types'
 import { formatHours } from './clockInUtils'
 
@@ -28,7 +28,7 @@ export function MonthSummary({ todayShifts, historyShifts, monthlyGoalHours = 40
 
     let totalMin = 0
     for (const s of allShifts) {
-      totalMin += calculateShiftDuration(s.startTime, s.endTime, s.breakDuration)
+      totalMin += getShiftDurationMinutes(s)
     }
 
     const totalHours = totalMin / 60

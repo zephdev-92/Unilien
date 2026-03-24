@@ -1,5 +1,5 @@
 import { Box, Flex, Text } from '@chakra-ui/react'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { getShiftDurationMinutes } from '@/lib/compliance'
 import type { Shift } from '@/types'
 import { formatTime, formatHours } from './clockInUtils'
 
@@ -39,9 +39,7 @@ export function EmployeeDaySchedule({ todayShifts }: EmployeeDayScheduleProps) {
           <Flex direction="column" gap={3}>
             {sorted.map((shift, idx) => {
               const pill = statusPill(shift.status)
-              const durationMin = shift.status === 'completed'
-                ? calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
-                : calculateShiftDuration(shift.startTime, shift.endTime, 0)
+              const durationMin = getShiftDurationMinutes(shift)
               const isActive = shift.status !== 'completed' && shift.status !== 'planned'
 
               return (

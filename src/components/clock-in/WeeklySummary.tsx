@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Box, Flex, Text } from '@chakra-ui/react'
 import { startOfWeek, addDays, format, isToday } from 'date-fns'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { getShiftDurationMinutes } from '@/lib/compliance'
 import type { Shift } from '@/types'
 import { formatHours } from './clockInUtils'
 
@@ -28,7 +28,7 @@ export function WeeklySummary({ todayShifts, historyShifts, title, weeklyGoalHou
         (s) => format(new Date(s.date), 'yyyy-MM-dd') === dateStr
       )
       const totalMin = dayShifts.reduce(
-        (acc, s) => acc + calculateShiftDuration(s.startTime, s.endTime, s.breakDuration),
+        (acc, s) => acc + getShiftDurationMinutes(s),
         0
       )
       return { label, date, hours: totalMin / 60, isToday: isToday(date) }

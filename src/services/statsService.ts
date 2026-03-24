@@ -79,7 +79,7 @@ export async function getEmployerStats(employerId: string): Promise<EmployerStat
   // Récupérer les shifts de ce mois
   const { data: shiftsThisMonth } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status, date, contract_id')
+    .select('start_time, end_time, break_duration, status, date, contract_id, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
@@ -88,7 +88,7 @@ export async function getEmployerStats(employerId: string): Promise<EmployerStat
   // Récupérer les shifts du mois dernier
   const { data: shiftsLastMonth } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status')
+    .select('start_time, end_time, break_duration, status, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(lastMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(lastMonthEnd, 'yyyy-MM-dd'))
@@ -165,7 +165,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
   // Récupérer les shifts de ce mois
   const { data: shiftsThisMonth } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status, contract_id, date')
+    .select('start_time, end_time, break_duration, status, contract_id, date, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
@@ -174,7 +174,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
   // Récupérer les shifts du mois dernier
   const { data: shiftsLastMonth } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status')
+    .select('start_time, end_time, break_duration, status, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(lastMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(lastMonthEnd, 'yyyy-MM-dd'))
@@ -220,7 +220,9 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
   for (const shift of (shiftsThisMonth || [])) {
     const contract = contracts?.find(c => c.id === shift.contract_id)
     if (contract) {
-      const hours = calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
+      const hours = (shift.shift_type === 'guard_24h' && shift.effective_hours != null)
+        ? shift.effective_hours
+        : calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
       estimatedRevenue += hours * (contract.hourly_rate || 0)
     }
   }
@@ -329,7 +331,7 @@ export async function getCaregiverStats(caregiverId: string): Promise<CaregiverS
   const { data: monthShiftsWithHours } = contractIds.length > 0
     ? await supabase
         .from('shifts')
-        .select('start_time, end_time')
+        .select('start_time, end_time, shift_type, effective_hours')
         .in('contract_id', contractIds)
         .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
         .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
@@ -338,9 +340,13 @@ export async function getCaregiverStats(caregiverId: string): Promise<CaregiverS
 
   let hoursThisMonth = 0
   for (const s of monthShiftsWithHours || []) {
-    const [sh, sm] = (s.start_time as string).split(':').map(Number)
-    const [eh, em] = (s.end_time as string).split(':').map(Number)
-    hoursThisMonth += (eh * 60 + em - sh * 60 - sm) / 60
+    if ((s as { shift_type?: string }).shift_type === 'guard_24h' && (s as { effective_hours?: number | null }).effective_hours != null) {
+      hoursThisMonth += (s as { effective_hours: number }).effective_hours
+    } else {
+      const [sh, sm] = (s.start_time as string).split(':').map(Number)
+      const [eh, em] = (s.end_time as string).split(':').map(Number)
+      hoursThisMonth += (eh * 60 + em - sh * 60 - sm) / 60
+    }
   }
 
   // PCH : enveloppe de l'employeur
@@ -410,7 +416,7 @@ export async function getEmployerBudgetForecast(employerId: string): Promise<Bud
 
   const { data: shifts } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status')
+    .select('start_time, end_time, break_duration, status, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(thisMonthStart, 'yyyy-MM-dd'))
     .lte('date', format(thisMonthEnd, 'yyyy-MM-dd'))
@@ -444,9 +450,12 @@ export async function getEmployerBudgetForecast(employerId: string): Promise<Bud
  * Calcule le total d'heures depuis une liste de shifts
  */
 function calculateTotalHours(
-  shifts: Array<{ start_time: string; end_time: string; break_duration: number | null }>
+  shifts: Array<{ start_time: string; end_time: string; break_duration: number | null; shift_type?: string; effective_hours?: number | null }>
 ): number {
   return shifts.reduce((total, shift) => {
+    if (shift.shift_type === 'guard_24h' && shift.effective_hours != null) {
+      return total + shift.effective_hours
+    }
     const duration = calculateShiftDuration(
       shift.start_time,
       shift.end_time,

@@ -214,11 +214,9 @@ function buildEmployeeData(
 
   const planningShifts: PlanningShiftEntry[] = shifts.map((s) => {
     const shiftDate = parseISO(s.date)
-    const effectiveMinutes = calculateShiftDuration(
-      s.start_time,
-      s.end_time,
-      s.break_duration || 0
-    )
+    const effectiveMinutes = (s.shift_type === 'guard_24h' && s.effective_hours != null)
+      ? s.effective_hours * 60
+      : calculateShiftDuration(s.start_time, s.end_time, s.break_duration || 0)
     const effectiveHours = effectiveMinutes / 60
     const isSundayShift = isSunday(shiftDate)
     const isHolidayShift = isPublicHoliday(shiftDate)
