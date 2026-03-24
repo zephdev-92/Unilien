@@ -107,7 +107,7 @@ serve(async (req: Request) => {
           role: 'employee',
           invited_by: employerId,
         },
-        redirectTo: `${Deno.env.get('SITE_URL') || 'https://unilien.fr'}/reinitialisation`,
+        redirectTo: `${Deno.env.get('SITE_URL') || 'https://unilien.netlify.app'}/reinitialisation`,
       },
     )
 

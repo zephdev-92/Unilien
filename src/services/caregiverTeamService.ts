@@ -95,6 +95,51 @@ export async function searchCaregiverByEmail(
 }
 
 // ============================================
+// INVITE
+// ============================================
+
+/**
+ * Invite un nouvel aidant par email via Edge Function.
+ * Crée le compte, envoie le mail d'invitation, retourne l'ID utilisateur.
+ */
+export async function inviteCaregiverByEmail(
+  email: string,
+  firstName: string,
+  lastName: string,
+  employerId: string,
+): Promise<{ userId: string }> {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session?.access_token) {
+    throw new Error('Session expirée. Veuillez vous reconnecter.')
+  }
+
+  const response = await supabase.functions.invoke('invite-caregiver', {
+    body: { email, firstName, lastName, employerId },
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  })
+
+  if (response.error) {
+    // Try to extract the real error from the response
+    const errorData = response.data as { error?: string } | null
+    const message = errorData?.error || response.error.message || "Erreur lors de l'invitation"
+    throw new Error(message)
+  }
+
+  const result = response.data as { success?: boolean; userId?: string; error?: string }
+
+  if (result.error) {
+    throw new Error(result.error)
+  }
+
+  if (!result.userId) {
+    throw new Error("Erreur inattendue: aucun identifiant utilisateur retourné")
+  }
+
+  return { userId: result.userId }
+}
+
+// ============================================
 // WRITE
 // ============================================
 
