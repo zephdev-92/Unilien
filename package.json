@@ -23,11 +23,11 @@
     "@types/jspdf": "^2.0.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.36.0",
-    "jspdf": "^4.1.0",
+    "jspdf": "^4.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.72.0",
-    "react-router-dom": "^7.13.1",
+    "react-router-dom": "^7.13.2",
     "xlsx": "npm:@e965/xlsx@^0.20.3",
     "zod": "^4.3.5",
     "zustand": "^5.0.12"
