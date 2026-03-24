@@ -253,11 +253,9 @@ function calculateEmployeeDeclaration(
   for (let i = 0; i < shifts.length; i++) {
     const shift = shifts[i]
     const shiftDate = new Date(shift.date)
-    const effectiveMinutes = calculateShiftDuration(
-      shift.start_time,
-      shift.end_time,
-      shift.break_duration || 0
-    )
+    const effectiveMinutes = (shift.shift_type === 'guard_24h' && shift.effective_hours != null)
+      ? shift.effective_hours * 60
+      : calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0)
     const effectiveHours = effectiveMinutes / 60
     const shiftNightHours = calculateNightHours(shiftDate, shift.start_time, shift.end_time)
     const isSundayShift = isSunday(shiftDate)

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Box, Flex, Text } from '@chakra-ui/react'
 import { format, isToday, isFuture } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { getShiftDurationMinutes } from '@/lib/compliance'
 import { supabase } from '@/lib/supabase/client'
 import type { Shift, Absence } from '@/types'
 
@@ -194,7 +194,7 @@ export function PlanningStatsBar({ shifts, role, pchMonthlyHours, employeeId }: 
   const stats = useMemo(() => {
     const completed = shifts.filter((s) => s.status === 'completed')
     const totalMinutes = completed.reduce(
-      (acc, s) => acc + calculateShiftDuration(s.startTime, s.endTime, s.breakDuration),
+      (acc, s) => acc + getShiftDurationMinutes(s),
       0
     )
     const totalHours = Math.round(totalMinutes / 60 * 10) / 10

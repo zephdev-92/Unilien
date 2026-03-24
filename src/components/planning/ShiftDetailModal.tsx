@@ -250,6 +250,9 @@ export function ShiftDetailModal({
   // Durée brute en mode lecture (sans compliance check)
   const displayDuration = useMemo(() => {
     if (!shift) return 0
+    if (shift.shiftType === 'guard_24h' && shift.effectiveHours != null) {
+      return shift.effectiveHours
+    }
     const start = shift.startTime.split(':').map(Number)
     const end = shift.endTime.split(':').map(Number)
     let hours = end[0] - start[0] + (end[1] - start[1]) / 60

@@ -76,10 +76,14 @@ export function ShiftDetailView({
       {/* Horaires */}
       <DetailRow label="Horaires">
         <Text fontWeight="600" fontSize="15px">
-          {shift.startTime} - {shift.endTime}
+          {shift.shiftType === 'guard_24h'
+            ? `${shift.startTime.slice(0, 5)} → +24h`
+            : `${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)}`}
         </Text>
         <Text fontSize="12px" color="text.muted" mt="2px">
-          {displayDuration.toFixed(1)}h
+          {shift.shiftType === 'guard_24h'
+            ? `${displayDuration.toFixed(1)}h travail effectif`
+            : `${displayDuration.toFixed(1)}h`}
           {shift.breakDuration > 0 && ` (pause ${shift.breakDuration} min)`}
         </Text>
       </DetailRow>

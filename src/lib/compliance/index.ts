@@ -40,6 +40,7 @@ export {
   shiftsOverlap,
   groupShiftsByDay,
   calculateTotalHours,
+  getShiftDurationMinutes,
 } from './utils'
 
 // Validations individuelles

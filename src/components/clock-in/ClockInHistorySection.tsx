@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Box, Flex, Text, Badge, Stack, Center, Spinner } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
-import { calculateNightHours, calculateShiftDuration } from '@/lib/compliance'
+import { calculateNightHours, getShiftDurationMinutes } from '@/lib/compliance'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Shift } from '@/types'
 import { formatTime, formatDayLabel, formatHours } from './clockInUtils'
@@ -29,7 +29,7 @@ function StatItem({ label, value, icon }: { label: string; value: string; icon: 
  * Ligne d'intervention dans l'historique
  */
 function HistoryShiftRow({ shift }: { shift: Shift }) {
-  const durationMin = calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
+  const durationMin = getShiftDurationMinutes(shift)
   const nightHours = useMemo(() => {
     try {
       return calculateNightHours(new Date(shift.date), shift.startTime, shift.endTime)
@@ -203,7 +203,7 @@ export function HistorySection({
         <Stack gap={4}>
           {historyByDay.map(({ date, dateStr, shifts }) => {
             const dayTotalMin = shifts.reduce(
-              (acc, s) => acc + calculateShiftDuration(s.startTime, s.endTime, s.breakDuration),
+              (acc, s) => acc + getShiftDurationMinutes(s),
               0
             )
             return (

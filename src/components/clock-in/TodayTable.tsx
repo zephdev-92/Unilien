@@ -3,7 +3,7 @@ import { Box, Flex, Text, Table, Button, NativeSelect } from '@chakra-ui/react'
 import { GhostButton, PrimaryButton } from '@/components/ui'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { getShiftDurationMinutes } from '@/lib/compliance'
 import type { Shift, UserRole } from '@/types'
 import { formatTime, formatHours } from './clockInUtils'
 
@@ -170,7 +170,7 @@ export function TodayTable({
                 const isActive = shift._status === 'active'
                 const isCompleted = shift._status === 'completed'
                 const durationMin = isCompleted
-                  ? calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
+                  ? getShiftDurationMinutes(shift)
                   : 0
 
                 return (

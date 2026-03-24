@@ -258,6 +258,19 @@ export function getEffectiveHours(
 }
 
 /**
+ * Durée brute d'un shift en minutes — gère les gardes 24h via effectiveHours
+ * À utiliser dans les composants d'affichage au lieu de calculateShiftDuration
+ */
+export function getShiftDurationMinutes(
+  shift: { startTime: string; endTime: string; breakDuration: number; shiftType?: string; effectiveHours?: number }
+): number {
+  if (shift.shiftType === 'guard_24h' && shift.effectiveHours != null) {
+    return shift.effectiveHours * 60
+  }
+  return calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)
+}
+
+/**
  * Calcule le total d'heures effectives (pondérées par type)
  */
 export function calculateTotalEffectiveHours(

@@ -52,13 +52,16 @@ export function EmployeeHoursProgress({ employeeId }: EmployeeHoursProgressProps
         // Get completed/planned shifts this month
         const { data: shifts } = await supabase
           .from('shifts')
-          .select('start_time, end_time, break_duration, status')
+          .select('start_time, end_time, break_duration, status, shift_type, effective_hours')
           .in('contract_id', contractIds)
           .gte('date', monthStart)
           .lte('date', monthEnd)
           .in('status', ['completed', 'planned'])
 
         const totalHours = (shifts || []).reduce((sum, s) => {
+          if (s.shift_type === 'guard_24h' && s.effective_hours != null) {
+            return sum + s.effective_hours
+          }
           const dur = calculateShiftDuration(s.start_time, s.end_time, s.break_duration || 0)
           return sum + dur / 60
         }, 0)

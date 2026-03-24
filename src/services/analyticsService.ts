@@ -92,7 +92,7 @@ export async function getEmployerAnalytics(
   // Récupérer tous les shifts de la période
   const { data: allShifts } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status, date, contract_id')
+    .select('start_time, end_time, break_duration, status, date, contract_id, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(rangeStart, 'yyyy-MM-dd'))
     .lte('date', format(rangeEnd, 'yyyy-MM-dd'))
@@ -226,7 +226,7 @@ export async function getEmployeeAnalytics(
 
   const { data: allShifts } = await supabase
     .from('shifts')
-    .select('start_time, end_time, break_duration, status, date, contract_id')
+    .select('start_time, end_time, break_duration, status, date, contract_id, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', format(rangeStart, 'yyyy-MM-dd'))
     .lte('date', format(rangeEnd, 'yyyy-MM-dd'))
@@ -257,7 +257,9 @@ export async function getEmployeeAnalytics(
     for (const shift of [...completed, ...planned]) {
       const contract = contracts?.find(c => c.id === shift.contract_id)
       if (contract) {
-        const hours = calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
+        const hours = (shift.shift_type === 'guard_24h' && shift.effective_hours != null)
+          ? shift.effective_hours
+          : calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
         revenue += hours * (contract.hourly_rate || 0)
       }
     }
@@ -307,9 +309,12 @@ export async function getEmployeeAnalytics(
 }
 
 function calculateTotalHours(
-  shifts: Array<{ start_time: string; end_time: string; break_duration: number | null }>,
+  shifts: Array<{ start_time: string; end_time: string; break_duration: number | null; shift_type?: string; effective_hours?: number | null }>,
 ): number {
   return shifts.reduce((total, shift) => {
+    if (shift.shift_type === 'guard_24h' && shift.effective_hours != null) {
+      return total + shift.effective_hours
+    }
     const duration = calculateShiftDuration(
       shift.start_time,
       shift.end_time,
