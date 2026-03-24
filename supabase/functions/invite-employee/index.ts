@@ -66,13 +66,10 @@ serve(async (req: Request) => {
     )
 
     // Verify the caller is actually the employer
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } },
-    )
-    const { data: { user: caller } } = await userClient.auth.getUser()
-    if (!caller || caller.id !== employerId) {
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !caller || caller.id !== employerId) {
+      console.error('Auth check failed:', authError?.message, 'caller:', caller?.id, 'employerId:', employerId)
       return new Response(
         JSON.stringify({ error: 'Unauthorized: caller must be the employer' }),
         { status: 403, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } },
