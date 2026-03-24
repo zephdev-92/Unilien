@@ -33,7 +33,7 @@ export function CompliancePage() {
   if (!profile || isLoadingCaregiver) {
     return (
       <DashboardLayout title="Conformité">
-        <Center py={12}>
+        <Center py={12} role="status" aria-live="polite">
           <Spinner size="xl" color="brand.500" />
         </Center>
       </DashboardLayout>

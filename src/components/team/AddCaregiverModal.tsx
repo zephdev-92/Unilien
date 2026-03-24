@@ -202,6 +202,7 @@ export function AddCaregiverModal({
                     <Input
                       type="email"
                       placeholder="email@exemple.com"
+                      aria-label="Rechercher un aidant par email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -278,6 +279,7 @@ export function AddCaregiverModal({
                         borderRadius="10px"
                         borderColor="border.default"
                         bg="bg.surface"
+                        aria-label="Statut juridique"
                         value={legalStatus}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                           handleLegalStatusChange(e.target.value as CaregiverLegalStatus | 'none')
