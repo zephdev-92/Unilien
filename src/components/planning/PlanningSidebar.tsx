@@ -200,8 +200,8 @@ export function PlanningSidebar({
                   px="8px"
                   py="2px"
                   borderRadius="8px"
-                  bg="#F3F6F9"
-                  color="#6B7A8D"
+                  bg="bg.page"
+                  color="text.inactive"
                 >
                   {emp.shiftCount}
                 </Text>

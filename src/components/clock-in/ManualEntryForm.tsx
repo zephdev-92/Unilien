@@ -145,14 +145,14 @@ export function ManualEntryForm({ onSubmit, employees }: ManualEntryFormProps) {
               size="sm"
               w="100%"
               mt={1}
-              bg="#3D5166"
+              bg="brand.500"
               color="white"
               fontWeight="600"
               borderRadius="md"
               boxShadow="sm"
               disabled={!canSubmit}
               loading={isSubmitting}
-              _hover={{ bg: '#2E3F50', boxShadow: 'md', transform: 'translateY(-1px)' }}
+              _hover={{ bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
               _active={{ transform: 'translateY(0)' }}
             >
               Enregistrer

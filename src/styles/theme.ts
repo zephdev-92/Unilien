@@ -69,8 +69,12 @@ const config = defineConfig({
         // Warning
         warning: {
           50: { value: '#FFF8E1' },
-          500: { value: '#7D4E00' },    // blanc: 7.0:1 AAA
+          100: { value: '#FEF3C7' },   // amber-bg — badges rétroactifs, alertes
+          300: { value: '#F59E0B' },   // amber-dot — points d'anomalie
+          500: { value: '#7D4E00' },   // blanc: 7.0:1 AAA
           600: { value: '#5C3900' },
+          700: { value: '#B45309' },   // amber-text — texte warning moyen
+          800: { value: '#92400E' },   // amber-text-dark — texte warning foncé
         },
         // Error = danger
         error: {
@@ -125,12 +129,15 @@ const config = defineConfig({
         'bg.page': { value: '#F3F6F9' },
         'bg.surface': { value: '#FFFFFF' },
         'bg.surface.hover': { value: '#F8FAFC' },
+        'bg.muted': { value: '#F0F4F8' },     // fond gris très léger (cards off, timelines)
+        'bg.input': { value: '#F7F8FA' },      // fond input désactivé / lecture seule
         'border.default': { value: '#D8E3ED' },
         'border.strong': { value: '#B0C4D3' },
         // Text (prototype --c-text*)
         'text.default': { value: '#323538' },
         'text.secondary': { value: '{colors.brand.500}' },
         'text.muted': { value: '{colors.brand.500}' },
+        'text.inactive': { value: '#6B7A8D' }, // texte inactif / désactivé
       },
     },
   },

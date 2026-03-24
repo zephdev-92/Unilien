@@ -220,14 +220,14 @@ export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShow
             px={4} py="6px"
             borderRadius="6px"
             borderWidth="1.5px"
-            borderColor="#D8E3ED"
+            borderColor="border.default"
             bg="transparent"
-            color="#3D5166"
+            color="brand.500"
             fontSize="13px"
             fontWeight="600"
             cursor="pointer"
             whiteSpace="nowrap"
-            _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+            _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
             onClick={() => setShowHelp(false)}
             role="button"
             aria-label="Retour au tableau de bord"
@@ -327,7 +327,7 @@ export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShow
                 height: '32px',
                 padding: '0 8px',
                 borderRadius: '6px',
-                border: '1px solid #E2E8F0',
+                border: '1px solid var(--chakra-colors-border-default)',
                 fontSize: '14px',
                 backgroundColor: 'white',
               }}
@@ -345,7 +345,7 @@ export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShow
                   height: '32px',
                   padding: '0 8px',
                   borderRadius: '6px',
-                  border: '1px solid #E2E8F0',
+                  border: '1px solid var(--chakra-colors-border-default)',
                   fontSize: '14px',
                   backgroundColor: 'white',
                 }}
@@ -456,7 +456,7 @@ function ScoreRing({ score }: { score: number }) {
         height="80"
         aria-label={`Score de conformité : ${score}%`}
       >
-        <circle cx="40" cy="40" r={radius} fill="none" stroke="#E2E8F0" strokeWidth="8" />
+        <circle cx="40" cy="40" r={radius} fill="none" stroke="var(--chakra-colors-border-default)" strokeWidth="8" />
         <circle
           cx="40"
           cy="40"
@@ -548,14 +548,14 @@ function AlertCard({
           px={4} py="6px"
           borderRadius="6px"
           borderWidth="1.5px"
-          borderColor="#D8E3ED"
+          borderColor="border.default"
           bg="transparent"
-          color="#3D5166"
+          color="brand.500"
           fontSize="13px"
           fontWeight="600"
           cursor="pointer"
           whiteSpace="nowrap"
-          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
           role="button"
           aria-label="Corriger l'alerte"
         >
@@ -568,14 +568,14 @@ function AlertCard({
           px={4} py="6px"
           borderRadius="6px"
           borderWidth="1.5px"
-          borderColor="#D8E3ED"
+          borderColor="border.default"
           bg="transparent"
-          color="#3D5166"
+          color="brand.500"
           fontSize="13px"
           fontWeight="600"
           cursor="pointer"
           whiteSpace="nowrap"
-          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
           onClick={onIgnore}
           role="button"
           aria-label="Ignorer l'alerte"

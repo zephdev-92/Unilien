@@ -94,15 +94,15 @@ export function RepeatConfigSection({
                         py="4px"
                         px="12px"
                         borderWidth="1.5px"
-                        borderColor={isActive ? '#3D5166' : 'border.default'}
+                        borderColor={isActive ? 'brand.500' : 'border.default'}
                         borderRadius="6px"
-                        bg={isActive ? '#3D5166' : 'transparent'}
-                        color={isActive ? 'white' : '#3D5166'}
+                        bg={isActive ? 'brand.500' : 'transparent'}
+                        color={isActive ? 'white' : 'brand.500'}
                         fontSize="12px"
                         fontWeight="600"
                         cursor="pointer"
                         transition="background 0.15s, border-color 0.15s, color 0.15s"
-                        _hover={isActive ? {} : { borderColor: '#3D5166', color: '#3D5166' }}
+                        _hover={isActive ? {} : { borderColor: 'brand.500', color: 'brand.500' }}
                         onClick={() => toggleDayOfWeek(idx)}
                         aria-label={`${isActive ? 'Désélectionner' : 'Sélectionner'} ${label}`}
                         aria-pressed={isActive}
@@ -151,8 +151,8 @@ export function RepeatConfigSection({
 
             {/* Preview — proto: repeat-preview */}
             {generatedDates.length > 0 && (
-              <Box p={3} bg="#F3F6F9" borderRadius="8px" borderWidth="1px" borderColor="border.default">
-                <Text fontSize="13px" fontWeight="600" color="#3D5166">
+              <Box p={3} bg="bg.page" borderRadius="8px" borderWidth="1px" borderColor="border.default">
+                <Text fontSize="13px" fontWeight="600" color="brand.500">
                   {summary}
                 </Text>
                 {generatedDates.length <= 5 && (

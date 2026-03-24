@@ -95,7 +95,7 @@ export function AbsenceDetailModal({
     <Flex gap={3} justify="flex-end" w="full">
       {canEmployerAct && (
         <>
-          <AccessibleButton variant="outline" bg="transparent" color="#991B1B" borderWidth="1.5px" borderColor="#FECACA" _hover={{ borderColor: '#991B1B', bg: '#FEF2F2' }} onClick={handleReject} disabled={isSubmitting}>
+          <AccessibleButton variant="outline" bg="transparent" color="danger.500" borderWidth="1.5px" borderColor="danger.100" _hover={{ borderColor: 'danger.500', bg: 'danger.50' }} onClick={handleReject} disabled={isSubmitting}>
             Refuser
           </AccessibleButton>
           <AccessibleButton bg="#16a34a" color="white" _hover={{ bg: '#15803d', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }} onClick={handleApprove} loading={isSubmitting}>
@@ -104,7 +104,7 @@ export function AbsenceDetailModal({
         </>
       )}
       {canEmployeeCancel && (
-        <AccessibleButton variant="outline" bg="transparent" color="#991B1B" borderWidth="1.5px" borderColor="#FECACA" _hover={{ borderColor: '#991B1B', bg: '#FEF2F2' }} onClick={handleCancel} loading={isSubmitting}>
+        <AccessibleButton variant="outline" bg="transparent" color="danger.500" borderWidth="1.5px" borderColor="danger.100" _hover={{ borderColor: 'danger.500', bg: 'danger.50' }} onClick={handleCancel} loading={isSubmitting}>
           Annuler ma demande
         </AccessibleButton>
       )}

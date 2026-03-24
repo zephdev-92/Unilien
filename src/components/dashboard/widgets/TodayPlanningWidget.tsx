@@ -40,18 +40,18 @@ function formatTime(time: string): string {
 
 /** Proto tag colors by shift type */
 const TAG_STYLES: Record<Shift['shiftType'], { bg: string; color: string }> = {
-  effective: { bg: '#EDF1F5', color: '#3D5166' },
-  presence_day: { bg: '#EFF4DC', color: '#3A5210' },
-  presence_night: { bg: '#EFF4DC', color: '#3A5210' },
-  guard_24h: { bg: '#F2EDE5', color: '#4A3D2B' },
+  effective: { bg: 'brand.50', color: 'brand.500' },
+  presence_day: { bg: 'accent.50', color: 'accent.700' },
+  presence_night: { bg: 'accent.50', color: 'accent.700' },
+  guard_24h: { bg: 'warm.50', color: 'warm.600' },
 }
 
 /** Proto status-pill styles with dot color */
 const STATUS_STYLES: Record<Shift['status'], { bg: string; color: string; dot: string }> = {
-  planned: { bg: '#F2EDE5', color: '#4A3D2B', dot: '#5E5038' },
-  completed: { bg: '#EFF4DC', color: '#3A5210', dot: '#9BB23B' },
-  cancelled: { bg: '#F0F4F8', color: '#3D5166', dot: '#3D5166' },
-  absent: { bg: '#FEF2F2', color: '#991B1B', dot: '#991B1B' },
+  planned: { bg: 'warm.50', color: 'warm.600', dot: 'warm.500' },
+  completed: { bg: 'accent.50', color: 'accent.700', dot: 'accent.500' },
+  cancelled: { bg: 'bg.muted', color: 'brand.500', dot: 'brand.500' },
+  absent: { bg: 'danger.50', color: 'danger.500', dot: 'danger.500' },
 }
 
 export function TodayPlanningWidget({ employerId }: TodayPlanningWidgetProps) {

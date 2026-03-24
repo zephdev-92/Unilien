@@ -44,7 +44,7 @@ function ElapsedTimer({ clockInTime }: { clockInTime: string }) {
       fontFamily="heading"
       fontSize="42px"
       fontWeight="800"
-      color="#9BB23B"
+      color="accent.500"
       letterSpacing="-0.02em"
       lineHeight="1"
       aria-live="polite"
@@ -141,10 +141,10 @@ export function EmployeeClockWidget({
               gap={2}
               px={4}
               py={2.5}
-              bg="#EDF1F5"
+              bg="brand.50"
               borderRadius="md"
               fontSize="sm"
-              color="#3D5166"
+              color="brand.500"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={18} height={18} aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <Text as="span" fontSize="sm">
@@ -161,7 +161,7 @@ export function EmployeeClockWidget({
           {firstPlannedShift && (
             <Button
               onClick={() => onClockIn(firstPlannedShift)}
-              bg="#9BB23B"
+              bg="accent.500"
               color="white"
               borderRadius="full"
               px={10}
@@ -186,7 +186,7 @@ export function EmployeeClockWidget({
           <Flex
             align="center"
             gap={3}
-            bg="#F7F8FA"
+            bg="bg.input"
             px={5}
             py={3}
             borderRadius="full"
@@ -195,7 +195,7 @@ export function EmployeeClockWidget({
           >
             <Flex
               w="36px" h="36px" borderRadius="full"
-              bg="#9BB23B" color="white"
+              bg="accent.500" color="white"
               align="center" justify="center"
               fontSize="13px" fontWeight="700"
               flexShrink={0}
@@ -229,7 +229,7 @@ export function EmployeeClockWidget({
               borderColor="border.default"
               borderRadius="md"
               resize="vertical"
-              _focus={{ borderColor: '#3D5166', boxShadow: '0 0 0 3px rgba(61,81,102,.12)' }}
+              _focus={{ borderColor: 'brand.500', boxShadow: '0 0 0 3px rgba(61,81,102,.12)' }}
               css={{ minHeight: '60px' }}
             />
           </Box>
@@ -237,7 +237,7 @@ export function EmployeeClockWidget({
           <Button
             onClick={onClockOut}
             loading={isSubmitting}
-            bg="#991B1B"
+            bg="danger.500"
             color="white"
             borderRadius="full"
             px={10}
@@ -261,7 +261,7 @@ export function EmployeeClockWidget({
             fontWeight="500"
             onClick={onCancel}
             disabled={isSubmitting}
-            _hover={{ color: '#3D5166' }}
+            _hover={{ color: 'brand.500' }}
           >
             Annuler
           </Button>

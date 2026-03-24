@@ -77,9 +77,9 @@ export function DateNavigator({ selectedDate, onDateChange, shifts }: DateNaviga
               cursor="pointer"
               position="relative"
               transition="all 0.15s"
-              bg={isSelected ? '#3D5166' : 'transparent'}
+              bg={isSelected ? 'brand.500' : 'transparent'}
               color={isSelected ? 'white' : 'text.default'}
-              _hover={isSelected ? {} : { bg: '#EDF1F5' }}
+              _hover={isSelected ? {} : { bg: 'brand.50' }}
               css={{
                 '&:focus, &:focus:not(:focus-visible)': {
                   outline: 'none !important',
@@ -108,7 +108,7 @@ export function DateNavigator({ selectedDate, onDateChange, shifts }: DateNaviga
                   w="5px"
                   h="5px"
                   borderRadius="full"
-                  bg="#F59E0B"
+                  bg="warning.300"
                   aria-hidden="true"
                 />
               )}
@@ -120,7 +120,7 @@ export function DateNavigator({ selectedDate, onDateChange, shifts }: DateNaviga
                   w="6px"
                   h="6px"
                   borderRadius="full"
-                  bg={isSelected ? 'white' : '#3D5166'}
+                  bg={isSelected ? 'white' : 'brand.500'}
                   aria-hidden="true"
                 />
               )}

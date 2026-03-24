@@ -140,7 +140,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
         {isOver && (
           <Flex
             px={3} py="4px" borderRadius="full" fontSize="12px" fontWeight="700"
-            bg="#FEF2F2" color="#991B1B" borderWidth="1px" borderColor="#FCA5A5"
+            bg="danger.50" color="danger.500" borderWidth="1px" borderColor="danger.200"
           >
             Dépassement
           </Flex>
@@ -148,7 +148,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
         {isWarning && !isOver && (
           <Flex
             px={3} py="4px" borderRadius="10px" fontSize="12px" fontWeight="700"
-            bg="#FEF9C3" color="#B45309"
+            bg="warning.100" color="warning.700"
           >
             Proche du plafond
           </Flex>
@@ -183,8 +183,8 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
             <Text fontSize="sm" fontWeight="500" color="text.default">{plannedHours}h</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text fontSize="sm" fontWeight="700" color="#3D5166">Total projeté</Text>
-            <Text fontSize="sm" fontWeight="700" color="#3D5166">{projectedHours}h</Text>
+            <Text fontSize="sm" fontWeight="700" color="brand.500">Total projeté</Text>
+            <Text fontSize="sm" fontWeight="700" color="brand.500">{projectedHours}h</Text>
           </Flex>
         </Stack>
 
@@ -193,9 +193,9 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
           <Box
             textAlign="center" py={3} px={2}
             borderRadius="10px" borderWidth="1px" borderColor="border.default"
-            bg="#F3F6F9"
+            bg="bg.page"
           >
-            <Text fontSize="lg" fontWeight="800" color="#3D5166">
+            <Text fontSize="lg" fontWeight="800" color="brand.500">
               {fmt(envelopePch)} €
             </Text>
             <Text fontSize="xs" color="text.muted">Enveloppe allouée</Text>
@@ -203,9 +203,9 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
           <Box
             textAlign="center" py={3} px={2}
             borderRadius="10px" borderWidth="1px" borderColor="border.default"
-            bg="#F3F6F9"
+            bg="bg.page"
           >
-            <Text fontSize="lg" fontWeight="800" color="#5E5038">
+            <Text fontSize="lg" fontWeight="800" color="warm.500">
               {fmt(consumed)} €
             </Text>
             <Text fontSize="xs" color="text.muted">Coût mensuel estimé</Text>
@@ -213,9 +213,9 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
           <Box
             textAlign="center" py={3} px={2}
             borderRadius="10px" borderWidth="1px" borderColor="border.default"
-            bg={resteACharge > 0 ? '#FEF2F2' : '#EFF4DC'}
+            bg={resteACharge > 0 ? 'danger.50' : 'accent.50'}
           >
-            <Text fontSize="lg" fontWeight="800" color={resteACharge > 0 ? '#991B1B' : '#3A5210'}>
+            <Text fontSize="lg" fontWeight="800" color={resteACharge > 0 ? 'danger.500' : 'accent.700'}>
               {resteACharge > 0 ? `${fmt(resteACharge)} €` : 'Couvert'}
             </Text>
             <Text fontSize="xs" color="text.muted">Reste à charge</Text>

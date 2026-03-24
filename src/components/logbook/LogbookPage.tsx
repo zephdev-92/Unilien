@@ -241,10 +241,10 @@ export function LogbookPage() {
       align="center"
       gap={1}
       px={4} py="6px"
-      bg="#3D5166" color="white"
+      bg="brand.500" color="white"
       borderRadius="6px"
       fontSize="13px" fontWeight="700"
-      _hover={{ bg: '#2E3F50' }}
+      _hover={{ bg: 'brand.600' }}
       onClick={() => setIsNewEntryModalOpen(true)}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width={14} height={14} aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -264,13 +264,13 @@ export function LogbookPage() {
             mb={3}
             px={3}
             py={2}
-            bg="#EDF1F5"
+            bg="brand.50"
             borderRadius="8px"
             fontSize="13px"
             fontWeight="600"
-            color="#3D5166"
+            color="brand.500"
           >
-            <Box w="6px" h="6px" borderRadius="50%" bg="#3D5166" flexShrink={0} />
+            <Box w="6px" h="6px" borderRadius="50%" bg="brand.500" flexShrink={0} />
             {unreadCount} note{unreadCount > 1 ? 's' : ''} non lue{unreadCount > 1 ? 's' : ''}
           </Flex>
         )}

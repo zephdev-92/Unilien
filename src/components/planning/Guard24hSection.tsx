@@ -49,7 +49,7 @@ export function Guard24hSection({
   return (
     <Box
       p={4}
-      bg="#F3F6F9"
+      bg="bg.page"
       borderRadius="8px"
       borderWidth="1px"
       borderColor="border.default"
@@ -116,10 +116,10 @@ export function Guard24hSection({
                     fontSize: '14px',
                     fontWeight: 700,
                     padding: '2px 4px',
-                    border: isLast ? 'none' : '1.5px solid #D8E3ED',
+                    border: isLast ? 'none' : '1.5px solid var(--chakra-colors-border-default)',
                     borderRadius: '4px',
                     background: isLast ? 'transparent' : 'white',
-                    color: '#3D5166',
+                    color: 'var(--chakra-colors-brand-500)',
                     width: '80px',
                     cursor: isLast ? 'default' : 'pointer',
                   }}
@@ -134,10 +134,10 @@ export function Guard24hSection({
                   fontSize: '13px',
                   fontWeight: 500,
                   padding: '6px 8px',
-                  border: '1.5px solid #D8E3ED',
+                  border: '1.5px solid var(--chakra-colors-border-default)',
                   borderRadius: '6px',
                   background: 'white',
-                  color: '#3D5166',
+                  color: 'var(--chakra-colors-brand-500)',
                   cursor: 'pointer',
                   width: '100%',
                 }}
@@ -157,11 +157,11 @@ export function Guard24hSection({
                     style={{
                       width: '50px',
                       padding: '4px 6px',
-                      border: '1px solid #D8E3ED',
+                      border: '1px solid var(--chakra-colors-border-default)',
                       borderRadius: '4px',
                       fontSize: '12px',
                       textAlign: 'center',
-                      background: '#F3F6F9',
+                      background: 'var(--chakra-colors-bg-page)',
                     }}
                   />
                   <Text fontSize="12px" color="text.muted">min</Text>
@@ -188,7 +188,7 @@ export function Guard24hSection({
                 cursor="pointer"
                 flexShrink={0}
                 transition="all 0.15s"
-                _hover={{ bg: '#F3F6F9', color: 'text.default' }}
+                _hover={{ bg: 'bg.page', color: 'text.default' }}
                 onClick={() => onAddSegment(i)}
                 title="Diviser ce segment"
                 aria-label={`Diviser le segment ${i + 1}`}
@@ -214,7 +214,7 @@ export function Guard24hSection({
                 cursor={canDelete ? 'pointer' : 'not-allowed'}
                 flexShrink={0}
                 transition="all 0.15s"
-                _hover={canDelete ? { bg: '#FEF2F2', color: '#DC2626', borderColor: '#FECACA' } : {}}
+                _hover={canDelete ? { bg: 'danger.50', color: '#DC2626', borderColor: 'danger.100' } : {}}
                 onClick={() => { if (canDelete) onRemoveSegment(i) }}
                 disabled={!canDelete}
                 title="Supprimer ce segment"
@@ -236,9 +236,9 @@ export function Guard24hSection({
         borderColor="border.default"
         mb={4}
       >
-        <Text fontSize="14px" color="#3D5166">
+        <Text fontSize="14px" color="brand.500">
           Travail effectif :{' '}
-          <Text as="span" fontWeight="bold" color={(effectiveHoursComputed ?? 0) > 12 ? '#DC2626' : '#3D5166'}>
+          <Text as="span" fontWeight="bold" color={(effectiveHoursComputed ?? 0) > 12 ? '#DC2626' : 'brand.500'}>
             {(effectiveHoursComputed ?? 0).toFixed(1)}h
           </Text>
           {' '}/ 12h max
@@ -247,10 +247,10 @@ export function Guard24hSection({
           variant="outline"
           size="sm"
           bg="transparent"
-          color="#3D5166"
+          color="brand.500"
           borderWidth="1.5px"
           borderColor="border.default"
-          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
           onClick={() => onAddSegment(guardSegments.length - 1)}
           accessibleLabel="Ajouter un segment"
         >

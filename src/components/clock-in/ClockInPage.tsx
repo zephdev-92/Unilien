@@ -224,13 +224,13 @@ export function ClockInPage() {
                 </Box>
                 <Box>
                   <Text fontSize="sm" color="text.muted" fontWeight="500">À valider</Text>
-                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="#4A3D2B">
+                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="warm.600">
                     {completedShifts.filter((s) => !s.validatedByEmployer).length}
                   </Text>
                 </Box>
                 <Box>
                   <Text fontSize="sm" color="text.muted" fontWeight="500">Validées</Text>
-                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="#3A5210">
+                  <Text fontSize="2xl" fontWeight="900" fontFamily="heading" color="accent.700">
                     {completedShifts.filter((s) => s.validatedByEmployer).length}
                   </Text>
                 </Box>
@@ -240,14 +240,14 @@ export function ClockInPage() {
 
           {/* Messages */}
           {successMessage && (
-            <Flex role="status" aria-live="polite" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="#9BB23B" bg="#EFF4DC" color="text.default">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#3A5210" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <Flex role="status" aria-live="polite" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="accent.500" bg="accent.50" color="text.default">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--chakra-colors-accent-700)" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
               <Text fontSize="sm" fontWeight="500">{successMessage}</Text>
             </Flex>
           )}
 
           {error && (
-            <Flex role="alert" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="#991B1B" bg="#FEF2F2" color="#991B1B">
+            <Flex role="alert" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="danger.500" bg="danger.50" color="danger.500">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               <Text fontSize="sm" fontWeight="500">{error}</Text>
             </Flex>

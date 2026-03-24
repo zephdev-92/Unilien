@@ -10,9 +10,9 @@ export const PrimaryButton = forwardRef<HTMLButtonElement, AccessibleButtonProps
     return (
       <AccessibleButton
         ref={ref}
-        bg="#3D5166"
+        bg="brand.500"
         color="white"
-        _hover={{ bg: '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }}
+        _hover={{ bg: 'brand.600', transform: 'translateY(-1px)', boxShadow: 'md' }}
         _active={{ transform: 'translateY(0)' }}
         {...props}
       />

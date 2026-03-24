@@ -97,11 +97,11 @@ export function MonthSummary({ todayShifts, historyShifts, monthlyGoalHours = 40
         </Flex>
 
         <Box mt={3}>
-          <Box h="8px" bg="#D8E3ED" borderRadius="full" overflow="hidden">
+          <Box h="8px" bg="border.default" borderRadius="full" overflow="hidden">
             <Box
               h="100%"
               borderRadius="full"
-              bg="#3D5166"
+              bg="brand.500"
               w={`${Math.max(data.pct, 1)}%`}
               transition="width 0.6s ease"
               role="progressbar"

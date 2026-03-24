@@ -15,9 +15,9 @@ function pad(n: number): string {
 
 export function ClockInWidget({ hasActiveShift = false, activeShiftLabel, variant = 'default' }: ClockInWidgetProps) {
   const gradient = variant === 'warm'
-    ? 'linear-gradient(135deg, #5E5038, #8A7A60)'
+    ? 'linear-gradient(135deg, var(--chakra-colors-warm-500), var(--chakra-colors-warm-400))'
     : 'linear-gradient(135deg, var(--chakra-colors-brand-500), var(--chakra-colors-brand-700, #2a3d52))'
-  const ctaColor = variant === 'warm' ? '#5E5038' : 'accent.700'
+  const ctaColor = variant === 'warm' ? 'warm.500' : 'accent.700'
   const noActiveLabel = variant === 'warm' ? 'Pas de temps d\'aide en cours' : 'Pas d\'intervention en cours'
   const statusLabel = variant === 'warm' ? 'Temps d\'aide en cours' : 'Intervention en cours'
   const linkLabel = variant === 'warm' ? 'Mon planning' : 'Voir mes heures'

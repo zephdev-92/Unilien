@@ -144,7 +144,7 @@ export function RetroactiveEntryForm({
               borderRadius="md"
               borderWidth="1px"
               borderColor="border.default"
-              bg="#FAFBFC"
+              bg="bg.input"
             >
               <Flex align="center" gap={3} mb={3} flexWrap="wrap">
                 <Text fontSize="sm" fontWeight="600" color="text.default">
@@ -181,11 +181,11 @@ export function RetroactiveEntryForm({
                 </Box>
                 <Button
                   size="sm"
-                  bg="#9BB23B"
+                  bg="accent.500"
                   color="white"
                   borderRadius="md"
                   fontWeight="600"
-                  _hover={{ bg: '#8A9E34' }}
+                  _hover={{ bg: 'accent.600' }}
                   onClick={() => handleSubmit(shift.id)}
                   disabled={isSubmitting || isThisSubmitting}
                   loading={isThisSubmitting}
@@ -195,7 +195,7 @@ export function RetroactiveEntryForm({
               </Flex>
 
               {error && (
-                <Text fontSize="xs" color="#991B1B" mt={2}>
+                <Text fontSize="xs" color="danger.500" mt={2}>
                   {error}
                 </Text>
               )}
@@ -210,7 +210,7 @@ export function RetroactiveEntryForm({
             borderRadius="md"
             borderWidth="1px"
             borderColor="#D1E7DD"
-            bg="#EFF4DC"
+            bg="accent.50"
           >
             <Flex align="center" justify="space-between" flexWrap="wrap" gap={2}>
               <Text fontSize="sm" fontWeight="500" color="text.default">
@@ -225,8 +225,8 @@ export function RetroactiveEntryForm({
                   borderRadius="full"
                   fontSize="xs"
                   fontWeight="700"
-                  bg="#EFF4DC"
-                  color="#3A5210"
+                  bg="accent.50"
+                  color="accent.700"
                 >
                   Terminé
                 </Flex>
@@ -239,8 +239,8 @@ export function RetroactiveEntryForm({
                     borderRadius="full"
                     fontSize="xs"
                     fontWeight="700"
-                    bg="#FEF3C7"
-                    color="#92400E"
+                    bg="warning.100"
+                    color="warning.800"
                   >
                     Rétroactif
                   </Flex>

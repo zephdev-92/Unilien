@@ -284,9 +284,9 @@ export function PlanningPage() {
       <Flex
         display={{ base: 'none', md: 'flex' }}
         gap="2px"
-        bg="#F3F6F9"
+        bg="bg.page"
         borderWidth="1.5px"
-        borderColor="#D8E3ED"
+        borderColor="border.default"
         borderRadius="10px"
         p="3px"
       >
@@ -298,7 +298,7 @@ export function PlanningPage() {
           fontSize="14px"
           fontWeight="600"
           bg={viewMode === 'week' ? 'white' : 'transparent'}
-          color={viewMode === 'week' ? '#3D5166' : '#6B7A8D'}
+          color={viewMode === 'week' ? 'brand.500' : 'text.inactive'}
           boxShadow={viewMode === 'week' ? '0 1px 2px rgba(78,100,120,.06)' : 'none'}
           transition="background 0.15s, color 0.15s"
           cursor="pointer"
@@ -314,7 +314,7 @@ export function PlanningPage() {
           fontSize="14px"
           fontWeight="600"
           bg={viewMode === 'month' ? 'white' : 'transparent'}
-          color={viewMode === 'month' ? '#3D5166' : '#6B7A8D'}
+          color={viewMode === 'month' ? 'brand.500' : 'text.inactive'}
           boxShadow={viewMode === 'month' ? '0 1px 2px rgba(78,100,120,.06)' : 'none'}
           transition="background 0.15s, color 0.15s"
           cursor="pointer"
@@ -455,7 +455,7 @@ export function PlanningPage() {
                 px="7px" py="7px"
                 borderRadius="6px"
                 borderWidth="1.5px" borderColor="border.default"
-                bg="transparent" color="#3D5166"
+                bg="transparent" color="brand.500"
                 _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
                 onClick={goToPrevious}
                 aria-label={viewMode === 'week' ? 'Semaine précédente' : 'Mois précédent'}
@@ -470,7 +470,7 @@ export function PlanningPage() {
                 px="7px" py="7px"
                 borderRadius="6px"
                 borderWidth="1.5px" borderColor="border.default"
-                bg="transparent" color="#3D5166"
+                bg="transparent" color="brand.500"
                 _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
                 onClick={goToNext}
                 aria-label={viewMode === 'week' ? 'Semaine suivante' : 'Mois suivant'}
@@ -481,7 +481,7 @@ export function PlanningPage() {
                 as="button"
                 px={4} py="7px"
                 borderWidth="1.5px" borderColor="border.default" borderRadius="6px"
-                fontSize="13px" fontWeight="600" color="#3D5166"
+                fontSize="13px" fontWeight="600" color="brand.500"
                 bg="transparent"
                 _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
                 onClick={goToToday}

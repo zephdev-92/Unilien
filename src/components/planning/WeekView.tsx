@@ -37,13 +37,13 @@ function formatTimeShort(time: string): string {
 
 /** Proto shift type → background & border colors */
 const SHIFT_BG: Record<string, { bg: string; border: string }> = {
-  effective: { bg: '#EDF1F5', border: '#3D5166' },
-  presence_day: { bg: '#EFF4DC', border: '#9BB23B' },
-  presence_night: { bg: '#EFF4DC', border: '#9BB23B' },
-  guard_24h: { bg: '#F2EDE5', border: '#5E5038' },
+  effective: { bg: 'brand.50', border: 'brand.500' },
+  presence_day: { bg: 'accent.50', border: 'accent.500' },
+  presence_night: { bg: 'accent.50', border: 'accent.500' },
+  guard_24h: { bg: 'warm.50', border: 'warm.500' },
 }
 
-const ABSENCE_BG = { bg: '#FEF2F2', border: '#991B1B' }
+const ABSENCE_BG = { bg: 'danger.50', border: 'danger.500' }
 
 const SHIFT_TYPE_SHORT: Record<string, string> = {
   effective: 'Travail effectif',
@@ -213,7 +213,7 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
                 fontFamily="heading"
                 fontSize="18px"
                 fontWeight="800"
-                bg={isCurrentDay ? '#3D5166' : 'transparent'}
+                bg={isCurrentDay ? 'brand.500' : 'transparent'}
                 color={isCurrentDay ? 'white' : 'text.default'}
               >
                 {format(day, 'd')}

@@ -352,10 +352,10 @@ function ToggleRow({
         <Switch.HiddenInput aria-label={label} />
         <Switch.Control
           borderRadius="full"
-          bg={checked ? '#9BB23B' : '#D8E3ED'}
+          bg={checked ? 'accent.500' : 'border.default'}
           css={{
-            '&[data-state=checked]': { background: '#9BB23B' },
-            '&[data-state=unchecked]': { background: '#D8E3ED' },
+            '&[data-state=checked]': { background: 'var(--chakra-colors-accent-500)' },
+            '&[data-state=unchecked]': { background: 'var(--chakra-colors-border-default)' },
           }}
         >
           <Switch.Thumb />
@@ -1601,7 +1601,7 @@ function AccessibilitePanel() {
               <Box py={3} borderBottomWidth="1px" borderColor="border.default">
                 <HStack justify="space-between" mb={2}>
                   <Text fontSize="sm" color="text.muted">Taille du texte</Text>
-                  <Text fontSize="sm" fontWeight="600" color="#3D5166">{settings.textScale}%</Text>
+                  <Text fontSize="sm" fontWeight="600" color="brand.500">{settings.textScale}%</Text>
                 </HStack>
                 <input
                   type="range"
@@ -1611,7 +1611,7 @@ function AccessibilitePanel() {
                   value={settings.textScale}
                   onChange={(e) => updateSettings({ textScale: Number(e.target.value) })}
                   aria-label="Taille du texte en pourcentage"
-                  style={{ width: '100%', accentColor: '#3D5166' }}
+                  style={{ width: '100%', accentColor: 'var(--chakra-colors-brand-500)' }}
                 />
                 <HStack justify="space-between" mt={1}>
                   <Text fontSize="xs" color="text.muted">80%</Text>

@@ -65,11 +65,11 @@ export function CompliancePage() {
         borderWidth="1.5px"
         borderColor="border.default"
         bg="transparent"
-        color="#3D5166"
+        color="brand.500"
         fontSize="13px"
         fontWeight="600"
         cursor="pointer"
-        _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+        _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
         onClick={() => setShowHelp(true)}
         role="button"
         aria-label="Aide"
@@ -83,12 +83,12 @@ export function CompliancePage() {
         gap={1}
         px={3} py="6px"
         borderRadius="6px"
-        bg="#3D5166"
+        bg="brand.500"
         color="white"
         fontSize="13px"
         fontWeight="700"
         cursor="pointer"
-        _hover={{ bg: '#2E3F50' }}
+        _hover={{ bg: 'brand.600' }}
         onClick={() => refreshRef.current?.()}
         role="button"
         aria-label="Actualiser"
