@@ -177,6 +177,7 @@ export function NewContractModal({
                             </Text>
                             <Input
                               placeholder="Prenom"
+                              aria-label="Prénom"
                               value={inviteFirstName}
                               onChange={(e) => setInviteFirstName(e.target.value)}
                               size="sm"
@@ -189,6 +190,7 @@ export function NewContractModal({
                             </Text>
                             <Input
                               placeholder="Nom"
+                              aria-label="Nom de famille"
                               value={inviteLastName}
                               onChange={(e) => setInviteLastName(e.target.value)}
                               size="sm"

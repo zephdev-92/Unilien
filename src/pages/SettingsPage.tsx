@@ -140,7 +140,7 @@ export function SettingsPage() {
   if (!profile) {
     return (
       <DashboardLayout title="Paramètres">
-        <Center py={12}><Spinner size="lg" color="brand.500" /></Center>
+        <Center py={12} role="status" aria-live="polite"><Spinner size="lg" color="brand.500" /></Center>
       </DashboardLayout>
     )
   }
@@ -1175,6 +1175,7 @@ function InterventionsPanel() {
                     ml={2} fontSize="xs" fontWeight="700"
                     opacity={0.6} _hover={{ opacity: 1 }}
                     onClick={() => removeCustomTask(task)}
+                    aria-label={`Retirer la tâche ${task}`}
                   >✕</Box>
                 </Badge>
               ))}
@@ -1188,6 +1189,7 @@ function InterventionsPanel() {
               onChange={e => setNewTask(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() } }}
               borderRadius="md"
+              aria-label="Ajouter une tâche personnalisée"
             />
             <GhostButton size="sm" onClick={handleAddCustom}>+ Ajouter</GhostButton>
           </HStack>
@@ -1237,6 +1239,7 @@ function InterventionsPanel() {
                       display="flex" alignItems="center" justifyContent="center"
                       _hover={{ bg: 'gray.200' }}
                       onClick={() => updateShoppingItem(item.name, item.brand, { quantity: Math.max(1, (item.quantity || 1) - 1) })}
+                      aria-label={`Diminuer la quantité de ${item.name}`}
                     >-</Box>
                     <Text fontSize="xs" fontWeight="600" minW="22px" textAlign="center">
                       x{item.quantity || 1}
@@ -1248,6 +1251,7 @@ function InterventionsPanel() {
                       display="flex" alignItems="center" justifyContent="center"
                       _hover={{ bg: 'gray.200' }}
                       onClick={() => updateShoppingItem(item.name, item.brand, { quantity: (item.quantity || 1) + 1 })}
+                      aria-label={`Augmenter la quantité de ${item.name}`}
                     >+</Box>
                   </HStack>
                   <Box
@@ -1255,6 +1259,7 @@ function InterventionsPanel() {
                     fontSize="xs" color="text.muted"
                     opacity={0.5} _hover={{ opacity: 1, color: 'red.500' }}
                     onClick={() => removeShoppingItem(item)}
+                    aria-label={`Retirer l'article ${item.name}`}
                   >&#10005;</Box>
                 </HStack>
               ))}
@@ -1269,6 +1274,7 @@ function InterventionsPanel() {
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('settings-brand-input')?.focus() } }}
               borderRadius="md"
               flex={2}
+              aria-label="Nom de l'article"
             />
             <Input
               id="settings-brand-input"
@@ -1279,6 +1285,7 @@ function InterventionsPanel() {
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddShoppingItem() } }}
               borderRadius="md"
               flex={1}
+              aria-label="Marque de l'article"
             />
             <PrimaryButton size="sm" onClick={handleAddShoppingItem}>+ Ajouter</PrimaryButton>
           </HStack>
@@ -1526,7 +1533,7 @@ function ApparencePanel() {
           <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Densité de l'interface</Card.Title>
         </Card.Header>
         <Card.Body p={4}>
-          <HStack gap={4}>
+          <HStack gap={4} role="radiogroup" aria-label="Densité de l'interface">
             {(['comfortable', 'compact'] as const).map((d) => (
               <Box
                 key={d}
@@ -1537,8 +1544,16 @@ function ApparencePanel() {
                 p={4}
                 cursor="pointer"
                 onClick={() => update({ density: d })}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault()
+                    update({ density: d })
+                  }
+                }}
                 role="radio"
                 aria-checked={settings.density === d}
+                aria-label={d === 'comfortable' ? 'Confortable' : 'Compact'}
+                tabIndex={0}
                 transition="border-color 0.15s ease"
               >
                 <Text fontWeight="medium" fontSize="sm" mb={1}>

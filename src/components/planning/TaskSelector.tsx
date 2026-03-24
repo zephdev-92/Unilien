@@ -98,6 +98,7 @@ function QuantityControl({
         display="flex" alignItems="center" justifyContent="center"
         _hover={{ bg: 'gray.200' }}
         onClick={() => onChange(Math.max(1, quantity - 1))}
+        aria-label="Diminuer la quantité"
       >-</Box>
       <Text fontSize="xs" fontWeight="600" minW="18px" textAlign="center">
         x{quantity}
@@ -109,6 +110,7 @@ function QuantityControl({
         display="flex" alignItems="center" justifyContent="center"
         _hover={{ bg: 'gray.200' }}
         onClick={() => onChange(quantity + 1)}
+        aria-label="Augmenter la quantité"
       >+</Box>
     </Flex>
   )
@@ -389,6 +391,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
         borderRadius="8px"
         fontSize="xs"
         mb={2}
+        aria-label="Filtrer les tâches"
       />
 
       <Box
@@ -477,6 +480,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                           transition="all 0.12s"
                           onClick={() => removeShoppingItem(formatted)}
                           title="Retirer de la liste"
+                          aria-label={`Retirer l'article ${item.name}`}
                         >&#10005;</Box>
                       </Flex>
                     ))}
@@ -498,6 +502,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                           borderRadius="8px"
                           fontSize="xs"
                           role="combobox"
+                          aria-label="Nom de l'article"
                           aria-expanded={showSuggestions && articleSuggestions.length > 0}
                           aria-activedescendant={suggestionIndex >= 0 ? `suggestion-${suggestionIndex}` : undefined}
                         />
@@ -554,6 +559,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                         borderRadius="8px"
                         fontSize="xs"
                         flex={1}
+                        aria-label="Marque de l'article"
                       />
                     </Flex>
                     <Flex gap={2} mt={1}>
@@ -567,6 +573,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                         borderRadius="8px"
                         fontSize="xs"
                         flex={1}
+                        aria-label="Note pour l'article"
                       />
                       <Box
                         as="button" type="button"
@@ -576,6 +583,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                         onClick={addShoppingItem}
                         _hover={{ bg: 'brand.600' }}
                         flexShrink={0}
+                        aria-label="Ajouter l'article"
                       >+</Box>
                     </Flex>
                   </Box>
@@ -609,6 +617,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                   fontSize="xs" color="red.400" px={1}
                   onClick={() => removeCustomTask(task)}
                   _hover={{ color: 'red.600' }}
+                  aria-label={`Retirer la tâche ${task}`}
                 >&#10005;</Box>
               </Flex>
             ))}
@@ -626,6 +635,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
             borderRadius="8px"
             fontSize="sm"
             disabled={customTasks.length >= MAX_CUSTOM_TASKS}
+            aria-label="Ajouter une tâche personnalisée"
           />
           <Box
             as="button" type="button"
@@ -637,6 +647,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
             _hover={{ bg: customTasks.length >= MAX_CUSTOM_TASKS ? 'gray.300' : 'brand.600' }}
             flexShrink={0}
             cursor={customTasks.length >= MAX_CUSTOM_TASKS ? 'not-allowed' : 'pointer'}
+            aria-label="Ajouter la tâche personnalisée"
           >+</Box>
         </Flex>
       </Box>

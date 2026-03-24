@@ -43,7 +43,7 @@ function AccessibilityApplier() {
 function LoadingPage() {
   return (
     <Center minH="100vh">
-      <Box textAlign="center">
+      <Box textAlign="center" role="status" aria-live="polite">
         <Spinner size="xl" color="brand.500" borderWidth="4px" mb={4} />
         <Text fontSize="lg" color="gray.600">
           Chargement...
