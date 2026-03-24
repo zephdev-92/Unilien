@@ -79,7 +79,7 @@ export function AnomaliesPanel({ todayShifts, historyShifts }: AnomaliesPanelPro
       </Box>
       <Box p={4}>
         {anomalies.length === 0 ? (
-          <Text fontSize="sm" color="#3D5166">Aucune anomalie détectée.</Text>
+          <Text fontSize="sm" color="brand.500">Aucune anomalie détectée.</Text>
         ) : (
           <Stack gap={3}>
             {anomalies.map((anomaly) => (
@@ -91,9 +91,9 @@ export function AnomaliesPanel({ todayShifts, historyShifts }: AnomaliesPanelPro
                 py={2.5}
                 borderRadius="md"
                 borderLeftWidth="3px"
-                borderLeftColor={anomaly.severity === 'danger' ? '#991B1B' : '#3D5166'}
-                bg={anomaly.severity === 'danger' ? '#FEF2F2' : '#EDF1F5'}
-                color={anomaly.severity === 'danger' ? '#991B1B' : '#3D5166'}
+                borderLeftColor={anomaly.severity === 'danger' ? 'danger.500' : 'brand.500'}
+                bg={anomaly.severity === 'danger' ? 'danger.50' : 'brand.50'}
+                color={anomaly.severity === 'danger' ? 'danger.500' : 'brand.500'}
               >
                 <Box flexShrink={0} mt="1px">
                   {anomaly.severity === 'danger' ? (

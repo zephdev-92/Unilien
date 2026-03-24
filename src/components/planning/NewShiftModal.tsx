@@ -179,7 +179,7 @@ export function NewShiftModal({
           <AccessibleButton
             type="submit"
             form="new-shift-form"
-            bg={hasErrors ? 'gray.400' : '#3D5166'} color="white" _hover={{ bg: hasErrors ? 'gray.400' : '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
+            bg={hasErrors ? 'gray.400' : 'brand.500'} color="white" _hover={{ bg: hasErrors ? 'gray.400' : 'brand.600', transform: 'translateY(-1px)', boxShadow: 'md' }} _active={{ transform: 'translateY(0)' }}
             loading={isSubmitting}
             disabled={isSubmitDisabled}
           >

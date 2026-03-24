@@ -449,7 +449,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                         css={{
                           animation: lastAddedItem === formatted ? 'fadeInGreen 0.4s ease' : undefined,
                           '@keyframes fadeInGreen': {
-                            '0%': { background: 'var(--chakra-colors-green-50, #f0fff4)' },
+                            '0%': { background: 'var(--chakra-colors-green-50)' },
                             '100%': { background: 'transparent' },
                           },
                         }}

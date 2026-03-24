@@ -381,19 +381,19 @@ export function ShiftDetailModal({
           onClick={handleCancelEdit}
           disabled={isSubmitting}
           bg="transparent"
-          color="#3D5166"
+          color="brand.500"
           borderWidth="1.5px"
           borderColor="border.default"
-          _hover={{ borderColor: '#3D5166', bg: '#EDF1F5' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
         >
           Annuler
         </AccessibleButton>
         <AccessibleButton
           type="submit"
           form="edit-shift-form"
-          bg={hasErrors ? 'gray.400' : '#3D5166'}
+          bg={hasErrors ? 'gray.400' : 'brand.500'}
           color="white"
-          _hover={{ bg: hasErrors ? 'gray.400' : '#2E3F50', transform: 'translateY(-1px)', boxShadow: 'md' }}
+          _hover={{ bg: hasErrors ? 'gray.400' : 'brand.600', transform: 'translateY(-1px)', boxShadow: 'md' }}
           _active={{ transform: 'translateY(0)' }}
           loading={isSubmitting}
           disabled={!isDirty || hasErrors || isCheckingCompliance || (hasWarnings && !acknowledgeWarnings)}

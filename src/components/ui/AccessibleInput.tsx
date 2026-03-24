@@ -99,7 +99,7 @@ export const AccessibleInput = forwardRef<HTMLInputElement, AccessibleInputProps
                 background: 'var(--chakra-colors-bg-surface, #fff)',
               },
               '&[aria-invalid=true]': {
-                borderColor: 'var(--chakra-colors-danger-500, #991B1B)',
+                borderColor: 'var(--chakra-colors-danger-500)',
                 boxShadow: '0 0 0 3px rgba(220,38,38,.12)',
               },
               transition: 'border-color 0.15s ease, box-shadow 0.15s ease',

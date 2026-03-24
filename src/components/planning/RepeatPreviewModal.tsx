@@ -170,7 +170,7 @@ function OccurrenceRow({ result }: { result: OccurrenceResult }) {
           <>
             <StatusPill variant="danger" size="sm">Conflit</StatusPill>
             {complianceResult.errors[0] && (
-              <Text fontSize="xs" color="#991B1B" maxW="180px" truncate>
+              <Text fontSize="xs" color="danger.500" maxW="180px" truncate>
                 {complianceResult.errors[0].message}
               </Text>
             )}

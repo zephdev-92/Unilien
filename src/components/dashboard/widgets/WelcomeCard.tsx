@@ -85,8 +85,8 @@ export function WelcomeCard({
 
   const isCaregiver = profile.role === 'caregiver'
   const gradient = isCaregiver
-    ? 'linear-gradient(135deg, #5E5038, #8A7A60)'
-    : 'linear-gradient(135deg, #3D5166, #5A6190)'
+    ? 'linear-gradient(135deg, var(--chakra-colors-warm-500), var(--chakra-colors-warm-400))'
+    : `linear-gradient(135deg, var(--chakra-colors-brand-500), #5A6190)`
 
   if (loading) {
     return (

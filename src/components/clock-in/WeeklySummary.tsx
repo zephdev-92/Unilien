@@ -59,8 +59,8 @@ export function WeeklySummary({ todayShifts, historyShifts, title, weeklyGoalHou
             borderRadius="sm"
             fontSize="xs"
             fontWeight="600"
-            bg="#EDF1F5"
-            color="#3D5166"
+            bg="brand.50"
+            color="brand.500"
           >
             {formatHours(weekData.totalHours)} / ~{weeklyGoalHours}h
           </Flex>
@@ -73,18 +73,18 @@ export function WeeklySummary({ todayShifts, historyShifts, title, weeklyGoalHou
               <Text
                 fontSize="xs"
                 fontWeight="700"
-                color={day.isToday ? '#3D5166' : 'text.muted'}
+                color={day.isToday ? 'brand.500' : 'text.muted'}
                 w="28px"
                 flexShrink={0}
               >
                 {day.label}
               </Text>
-              <Box flex={1} bg="#D8E3ED" borderRadius="full" h="8px">
+              <Box flex={1} bg="border.default" borderRadius="full" h="8px">
                 {day.hours > 0 && (
                   <Box
                     h="100%"
                     borderRadius="full"
-                    bg={day.isToday ? '#9BB23B' : '#3D5166'}
+                    bg={day.isToday ? 'accent.500' : 'brand.500'}
                     w={`${Math.max((day.hours / weekData.maxHours) * 100, 4)}%`}
                     maxW="100%"
                     transition="width 0.3s"

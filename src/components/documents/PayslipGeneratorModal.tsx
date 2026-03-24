@@ -215,7 +215,7 @@ export function PayslipGeneratorModal({
                 onClick={handleGenerate}
                 loading={isGenerating}
                 disabled={!selectedEmployeeId || employees.length === 0}
-                style={{ backgroundColor: '#4E6478', color: 'white' }}
+                style={{ backgroundColor: 'var(--chakra-colors-brand-400)', color: 'white' }}
               >
                 Télécharger le PDF
               </Button>

@@ -9,12 +9,12 @@ interface EmployeeDayScheduleProps {
 
 function statusPill(status: string) {
   if (status === 'completed') {
-    return { label: 'Terminé', bg: '#EFF4DC', color: '#3A5210' }
+    return { label: 'Terminé', bg: 'accent.50', color: 'accent.700' }
   }
   if (status === 'planned') {
-    return { label: 'À venir', bg: '#F2EDE5', color: '#4A3D2B' }
+    return { label: 'À venir', bg: 'warm.50', color: 'warm.600' }
   }
-  return { label: 'En cours', bg: '#F2EDE5', color: '#4A3D2B' }
+  return { label: 'En cours', bg: 'warm.50', color: 'warm.600' }
 }
 
 export function EmployeeDaySchedule({ todayShifts }: EmployeeDayScheduleProps) {
@@ -49,7 +49,7 @@ export function EmployeeDaySchedule({ todayShifts }: EmployeeDayScheduleProps) {
                   {idx > 0 && <Box h="1px" bg="border.default" mb={3} />}
                   <Flex gap={3} align="flex-start">
                     <Box flexShrink={0} textAlign="right" minW="44px">
-                      <Text fontSize="11px" fontWeight="700" color={isActive ? '#9BB23B' : '#3D5166'}>
+                      <Text fontSize="11px" fontWeight="700" color={isActive ? 'accent.500' : 'brand.500'}>
                         {formatTime(shift.startTime)}
                       </Text>
                       <Text fontSize="11px" color="text.muted">

@@ -91,8 +91,8 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
               minHeight: '44px',
               fontSize: 'var(--chakra-fontSizes-sm)',
               borderWidth: '1.5px',
-              borderColor: 'var(--chakra-colors-border-default, #D8E3ED)',
-              background: 'var(--chakra-colors-bg-page, #F3F6F9)',
+              borderColor: 'var(--chakra-colors-border-default)',
+              background: 'var(--chakra-colors-bg-page)',
               borderRadius: '10px',
               '&:focus': {
                 borderColor: 'var(--chakra-colors-brand-500)',
@@ -100,7 +100,7 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
                 background: 'var(--chakra-colors-bg-surface, #fff)',
               },
               '&[aria-invalid=true]': {
-                borderColor: 'var(--chakra-colors-danger-500, #991B1B)',
+                borderColor: 'var(--chakra-colors-danger-500)',
                 boxShadow: '0 0 0 3px rgba(220,38,38,.12)',
               },
               transition: 'border-color 0.15s ease, box-shadow 0.15s ease',

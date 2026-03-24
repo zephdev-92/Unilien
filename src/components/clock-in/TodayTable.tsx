@@ -152,15 +152,15 @@ export function TodayTable({
         <Box overflowX="auto">
           <Table.Root size="sm">
             <Table.Header>
-              <Table.Row css={{ background: '#F3F6F9' }}>
+              <Table.Row css={{ background: 'var(--chakra-colors-bg-page)' }}>
                 {isEmployer && (
-                  <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Employé</Table.ColumnHeader>
+                  <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="brand.500">Employé</Table.ColumnHeader>
                 )}
-                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Début</Table.ColumnHeader>
-                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Fin</Table.ColumnHeader>
-                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Durée</Table.ColumnHeader>
-                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166">Statut</Table.ColumnHeader>
-                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="#3D5166" textAlign="right">
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="brand.500">Début</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="brand.500">Fin</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="brand.500">Durée</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="brand.500">Statut</Table.ColumnHeader>
+                <Table.ColumnHeader px={4} py="10px" fontSize="xs" fontWeight="700" textTransform="uppercase" letterSpacing="0.06em" color="brand.500" textAlign="right">
                   <Text srOnly>Actions</Text>
                 </Table.ColumnHeader>
               </Table.Row>
@@ -176,10 +176,10 @@ export function TodayTable({
                 return (
                   <Table.Row
                     key={shift.id}
-                    css={{ '&:hover': { background: '#F3F6F9' }, '&:last-child td': { borderBottom: 'none' } }}
+                    css={{ '&:hover': { background: 'var(--chakra-colors-bg-page)' }, '&:last-child td': { borderBottom: 'none' } }}
                   >
                     {isEmployer && (
-                      <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                      <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
                         <Flex align="center" gap={2}>
                           {shift.employeeAvatarUrl ? (
                             <Box
@@ -192,7 +192,7 @@ export function TodayTable({
                           ) : (
                             <Flex
                               w="28px" h="28px" borderRadius="full"
-                              bg="#3D5166" color="white"
+                              bg="brand.500" color="white"
                               align="center" justify="center"
                               fontSize="xs" fontWeight="700" flexShrink={0}
                               aria-hidden="true"
@@ -200,46 +200,46 @@ export function TodayTable({
                               {(shift.employeeName || 'A').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </Flex>
                           )}
-                          <Text fontSize="sm" fontWeight="500" color="#323538">{shift.employeeName || 'Auxiliaire'}</Text>
+                          <Text fontSize="sm" fontWeight="500" color="text.default">{shift.employeeName || 'Auxiliaire'}</Text>
                         </Flex>
                       </Table.Cell>
                     )}
-                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
-                      <Text fontSize="sm" color="#323538">{formatTime(shift.startTime)}</Text>
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+                      <Text fontSize="sm" color="text.default">{formatTime(shift.startTime)}</Text>
                     </Table.Cell>
-                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
-                      <Text fontSize="sm" color="#323538">{isCompleted ? formatTime(shift.endTime) : '—'}</Text>
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+                      <Text fontSize="sm" color="text.default">{isCompleted ? formatTime(shift.endTime) : '—'}</Text>
                     </Table.Cell>
-                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
                       {isActive && clockInTime ? (
                         <ElapsedDuration clockInTime={clockInTime} />
                       ) : isCompleted ? (
-                        <Text fontSize="sm" color="#323538">{formatHours(durationMin / 60)}</Text>
+                        <Text fontSize="sm" color="text.default">{formatHours(durationMin / 60)}</Text>
                       ) : (
-                        <Text fontSize="sm" color="#3D5166">—</Text>
+                        <Text fontSize="sm" color="brand.500">—</Text>
                       )}
                     </Table.Cell>
-                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
                       {isActive && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#F2EDE5" color="#4A3D2B">En cours</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warm.50" color="warm.600">En cours</Flex>
                       )}
                       {isCompleted && isEmployer && !shift.validatedByEmployer && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#F2EDE5" color="#4A3D2B">À valider</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warm.50" color="warm.600">À valider</Flex>
                       )}
                       {isCompleted && isEmployer && shift.validatedByEmployer && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#EFF4DC" color="#3A5210">Validé</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="accent.50" color="accent.700">Validé</Flex>
                       )}
                       {isCompleted && !isEmployer && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#EFF4DC" color="#3A5210">Terminé</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="accent.50" color="accent.700">Terminé</Flex>
                       )}
                       {shift._status === 'planned' && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#EDF1F5" color="#3D5166">Prévu</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="brand.50" color="brand.500">Prévu</Flex>
                       )}
                       {shift.lateEntry && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="#FEF3C7" color="#92400E" ml={1}>Rétroactif</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warning.100" color="warning.800" ml={1}>Rétroactif</Flex>
                       )}
                     </Table.Cell>
-                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="#D8E3ED">
+                    <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
                       <Flex justify="flex-end" gap={2}>
                         {!isEmployer && !isPastDate && shift._status === 'planned' && !activeShiftId && (
                           <PrimaryButton size="xs" onClick={() => onClockIn(shift)}>
@@ -250,7 +250,7 @@ export function TodayTable({
                           Modifier
                         </GhostButton>
                         {isEmployer && isCompleted && !shift.validatedByEmployer && (
-                          <Button size="xs" bg="#9BB23B" color="white" borderRadius="md" fontWeight="600" _hover={{ bg: '#8A9E34' }} onClick={() => onValidate?.(shift)}>
+                          <Button size="xs" bg="accent.500" color="white" borderRadius="md" fontWeight="600" _hover={{ bg: 'accent.600' }} onClick={() => onValidate?.(shift)}>
                             Valider
                           </Button>
                         )}
@@ -270,7 +270,7 @@ export function TodayTable({
           <Text
             as="a"
             href="/liaison?to=general"
-            color="#3D5166"
+            color="brand.500"
             fontWeight="600"
             _hover={{ textDecoration: 'underline' }}
           >

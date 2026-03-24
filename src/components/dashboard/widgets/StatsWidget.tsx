@@ -43,7 +43,7 @@ const ICON_BG_COLORS: Record<StatIconColor, { bg: string; color: string }> = {
   blue: { bg: 'brand.50', color: 'brand.500' },
   green: { bg: 'accent.50', color: 'accent.700' },
   orange: { bg: 'warm.50', color: 'warm.500' },
-  warn: { bg: '#FEF9C3', color: '#B45309' },
+  warn: { bg: 'warning.100', color: 'warning.700' },
 }
 
 const ICON_NAV_NAMES: Record<StatIconType, string> = {
