@@ -18,6 +18,7 @@ export type { CaregiverWithProfile } from './caregiverTeamService'
 export {
   getCaregiversForEmployer,
   searchCaregiverByEmail,
+  inviteCaregiverByEmail,
   addCaregiverToEmployer,
   updateCaregiver,
   removeCaregiverFromEmployer,

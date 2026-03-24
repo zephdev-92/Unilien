@@ -460,15 +460,20 @@ export async function inviteEmployeeByEmail(
 ): Promise<{ userId: string }> {
   const { data: { session } } = await supabase.auth.getSession()
 
+  if (!session?.access_token) {
+    throw new Error('Session expirée. Veuillez vous reconnecter.')
+  }
+
   const response = await supabase.functions.invoke('invite-employee', {
     body: { email, firstName, lastName, employerId },
-    headers: session?.access_token
-      ? { Authorization: `Bearer ${session.access_token}` }
-      : undefined,
+    headers: { Authorization: `Bearer ${session.access_token}` },
   })
 
   if (response.error) {
-    throw new Error(response.error.message || "Erreur lors de l'invitation")
+    // Try to extract the real error from the response
+    const errorData = response.data as { error?: string } | null
+    const message = errorData?.error || response.error.message || "Erreur lors de l'invitation"
+    throw new Error(message)
   }
 
   const result = response.data as { success?: boolean; userId?: string; error?: string }
@@ -477,7 +482,11 @@ export async function inviteEmployeeByEmail(
     throw new Error(result.error)
   }
 
-  return { userId: result.userId! }
+  if (!result.userId) {
+    throw new Error("Erreur inattendue: aucun identifiant utilisateur retourné")
+  }
+
+  return { userId: result.userId }
 }
 
 /**

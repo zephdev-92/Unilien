@@ -13,8 +13,10 @@ import {
 import { AccessibleButton } from '@/components/ui'
 import {
   searchCaregiverByEmail,
+  inviteCaregiverByEmail,
   addCaregiverToEmployer,
 } from '@/services/caregiverService'
+import { logger } from '@/lib/logger'
 import type { CaregiverPermissions, CaregiverLegalStatus } from '@/types'
 
 // ============================================
@@ -84,6 +86,14 @@ export function AddCaregiverModal({
     email: string
   } | null>(null)
 
+  // Invitation flow
+  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [isInviting, setIsInviting] = useState(false)
+  const [inviteSuccess, setInviteSuccess] = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteFirstName, setInviteFirstName] = useState('')
+  const [inviteLastName, setInviteLastName] = useState('')
+
   // Quand le statut juridique change, mettre à jour les permissions
   const handleLegalStatusChange = (newStatus: CaregiverLegalStatus | 'none') => {
     setLegalStatus(newStatus)
@@ -105,6 +115,12 @@ export function AddCaregiverModal({
     setPermissionsLocked(false)
     setFoundCaregiver(null)
     setError(null)
+    setShowInviteForm(false)
+    setIsInviting(false)
+    setInviteSuccess(false)
+    setInviteError(null)
+    setInviteFirstName('')
+    setInviteLastName('')
   }
 
   const handleClose = () => {
@@ -121,12 +137,15 @@ export function AddCaregiverModal({
     setIsSearching(true)
     setError(null)
     setFoundCaregiver(null)
+    setShowInviteForm(false)
+    setInviteSuccess(false)
 
     try {
       const result = await searchCaregiverByEmail(email.trim())
 
       if (!result) {
-        setError('Aucun aidant trouvé avec cet email. L\'utilisateur doit d\'abord créer un compte avec le rôle "Aidant familial".')
+        setError('Aucun aidant trouvé avec cet email.')
+        setShowInviteForm(true)
         return
       }
 
@@ -135,6 +154,38 @@ export function AddCaregiverModal({
       setError('Erreur lors de la recherche')
     } finally {
       setIsSearching(false)
+    }
+  }
+
+  const handleInvite = async () => {
+    if (!inviteFirstName.trim() || !inviteLastName.trim() || !email.trim()) {
+      setInviteError('Veuillez renseigner le prénom et le nom.')
+      return
+    }
+
+    setIsInviting(true)
+    setInviteError(null)
+
+    try {
+      const { userId } = await inviteCaregiverByEmail(
+        email.trim(),
+        inviteFirstName.trim(),
+        inviteLastName.trim(),
+        employerId,
+      )
+
+      setInviteSuccess(true)
+      setFoundCaregiver({
+        profileId: userId,
+        firstName: inviteFirstName.trim(),
+        lastName: inviteLastName.trim(),
+        email: email.trim(),
+      })
+    } catch (err) {
+      logger.error('Erreur invitation aidant:', err)
+      setInviteError(err instanceof Error ? err.message : "Erreur lors de l'envoi de l'invitation")
+    } finally {
+      setIsInviting(false)
     }
   }
 
@@ -220,12 +271,12 @@ export function AddCaregiverModal({
                     </AccessibleButton>
                   </Flex>
                   <Text fontSize="sm" color="text.muted" mt={1}>
-                    L'aidant doit avoir un compte Unilien avec le rôle "Aidant familial"
+                    Si l'aidant n'a pas de compte, vous pourrez l'inviter par email
                   </Text>
                 </Box>
 
-                {/* Erreur */}
-                {error && (
+                {/* Erreur (sans invite form) */}
+                {error && !showInviteForm && (
                   <Box
                     bg="red.50"
                     borderWidth="1px"
@@ -235,6 +286,111 @@ export function AddCaregiverModal({
                   >
                     <Text color="red.700" fontSize="sm">
                       {error}
+                    </Text>
+                  </Box>
+                )}
+
+                {/* Invitation form — shown when no account found */}
+                {showInviteForm && !inviteSuccess && (
+                  <Box
+                    p={5}
+                    bg="brand.50"
+                    borderRadius="12px"
+                    borderWidth="1px"
+                    borderColor="brand.200"
+                  >
+                    <Flex align="center" gap={2} mb={3}>
+                      <Box color="brand.600" flexShrink={0}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                          <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                      </Box>
+                      <Text fontWeight="semibold" color="brand.700">
+                        Inviter par email
+                      </Text>
+                    </Flex>
+                    <Text fontSize="sm" color="brand.700" mb={4}>
+                      Aucun compte trouvé pour <strong>{email}</strong>.
+                      Renseignez le nom de l'aidant pour lui envoyer une invitation.
+                      Il recevra un email pour créer son mot de passe.
+                    </Text>
+
+                    <Stack gap={3}>
+                      <Flex gap={3}>
+                        <Box flex={1}>
+                          <Text fontSize="sm" fontWeight="medium" mb={1}>
+                            Prénom *
+                          </Text>
+                          <Input
+                            placeholder="Prénom"
+                            aria-label="Prénom de l'aidant"
+                            value={inviteFirstName}
+                            onChange={(e) => setInviteFirstName(e.target.value)}
+                            size="sm"
+                            autoComplete="given-name"
+                          />
+                        </Box>
+                        <Box flex={1}>
+                          <Text fontSize="sm" fontWeight="medium" mb={1}>
+                            Nom *
+                          </Text>
+                          <Input
+                            placeholder="Nom"
+                            aria-label="Nom de famille de l'aidant"
+                            value={inviteLastName}
+                            onChange={(e) => setInviteLastName(e.target.value)}
+                            size="sm"
+                            autoComplete="family-name"
+                          />
+                        </Box>
+                      </Flex>
+
+                      {inviteError && (
+                        <Box p={3} bg="red.50" borderRadius="10px">
+                          <Text fontSize="sm" color="red.700">{inviteError}</Text>
+                        </Box>
+                      )}
+
+                      <AccessibleButton
+                        colorPalette="brand"
+                        size="sm"
+                        onClick={handleInvite}
+                        loading={isInviting}
+                        loadingText="Envoi..."
+                        disabled={!inviteFirstName.trim() || !inviteLastName.trim()}
+                      >
+                        Envoyer l'invitation
+                      </AccessibleButton>
+                    </Stack>
+                  </Box>
+                )}
+
+                {/* Invitation success */}
+                {inviteSuccess && foundCaregiver && (
+                  <Box
+                    p={5}
+                    bg="green.50"
+                    borderRadius="12px"
+                    borderWidth="1px"
+                    borderColor="green.200"
+                  >
+                    <Flex align="center" gap={2} mb={2}>
+                      <Box color="green.600" flexShrink={0}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="18" height="18">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </Box>
+                      <Text fontWeight="semibold" color="green.800">
+                        Invitation envoyée
+                      </Text>
+                    </Flex>
+                    <Text fontSize="sm" color="green.700" mb={3}>
+                      Un email a été envoyé à <strong>{email}</strong>.
+                      {foundCaregiver.firstName} {foundCaregiver.lastName} pourra créer son mot de passe et accéder à Unilien.
+                    </Text>
+                    <Text fontSize="sm" color="green.700">
+                      Vous pouvez maintenant configurer les permissions et ajouter l'aidant.
                     </Text>
                   </Box>
                 )}
