@@ -1,6 +1,6 @@
 /**
  * Section "Contrats" dans la page Documents.
- * Affiche la liste des contrats actifs avec statut et informations clés.
+ * Pattern doc-list : icône SVG + doc-info (nom + meta) + actions (télécharger + statut pill).
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -9,11 +9,13 @@ import {
   HStack,
   Text,
   Badge,
+  Button,
   Spinner,
   Center,
   Alert,
   EmptyState,
   Box,
+  Icon,
 } from '@chakra-ui/react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -34,6 +36,29 @@ const STATUS_COLORS: Record<string, string> = {
   active: 'green',
   terminated: 'red',
   suspended: 'orange',
+}
+
+function DocIcon() {
+  return (
+    <Icon asChild boxSize="20px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+      </svg>
+    </Icon>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <Icon asChild boxSize="16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    </Icon>
+  )
 }
 
 export function ContractsSection({ employerId }: Props) {
@@ -80,7 +105,7 @@ export function ContractsSection({ employerId }: Props) {
         <EmptyState.Content>
           <EmptyState.Title>Aucun contrat</EmptyState.Title>
           <EmptyState.Description>
-            Aucun contrat actif trouvé. Ajoutez un employé depuis la page Équipe.
+            Ajoutez un employe depuis la page Equipe pour creer son contrat de travail.
           </EmptyState.Description>
         </EmptyState.Content>
       </EmptyState.Root>
@@ -88,55 +113,62 @@ export function ContractsSection({ employerId }: Props) {
   }
 
   return (
-    <VStack gap={3} align="stretch">
+    <VStack gap={0} align="stretch">
       {contracts.map((contract) => (
         <Box
           key={contract.id}
-          p={4}
-          borderWidth="1px"
+          py={4}
+          px={4}
+          borderBottomWidth="1px"
           borderColor="border.default"
-          borderRadius="12px"
-          _hover={{ bg: 'bg.page' }}
+          _last={{ borderBottomWidth: 0 }}
         >
-          <HStack justify="space-between" align="center" flexWrap="wrap" gap={3}>
-            <HStack gap={3} flex={1} minW="200px">
-              {/* Icône document */}
-              <Box
-                w="40px"
-                h="40px"
-                borderRadius="10px"
-                bg="brand.50"
-                color="brand.600"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                flexShrink={0}
-                fontSize="lg"
-              >
-                📄
-              </Box>
-
-              {/* Infos contrat */}
-              <VStack align="start" gap={0}>
-                <Text fontWeight="semibold" fontSize="sm">
-                  Contrat {contract.contractType}
-                  {contract.employee && ` — ${contract.employee.firstName} ${contract.employee.lastName}`}
-                </Text>
-                <Text fontSize="xs" color="text.muted">
-                  {contract.weeklyHours}h/semaine · Depuis le{' '}
-                  {format(contract.startDate, 'd MMMM yyyy', { locale: fr })}
-                  {contract.endDate && ` · Fin le ${format(contract.endDate, 'd MMMM yyyy', { locale: fr })}`}
-                </Text>
-              </VStack>
-            </HStack>
-
-            {/* Statut */}
-            <Badge
-              colorPalette={STATUS_COLORS[contract.status] || 'gray'}
-              variant="subtle"
+          <HStack gap={4} align="center" flexWrap="wrap">
+            {/* Doc icon */}
+            <Box
+              w="40px"
+              h="40px"
+              borderRadius="10px"
+              bg="brand.50"
+              color="brand.600"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              flexShrink={0}
             >
-              {STATUS_LABELS[contract.status] || contract.status}
-            </Badge>
+              <DocIcon />
+            </Box>
+
+            {/* Doc info */}
+            <VStack align="start" gap={0} flex={1} minW="200px">
+              <Text fontWeight="semibold" fontSize="sm">
+                Contrat {contract.contractType}
+                {contract.employee && ` — ${contract.employee.firstName} ${contract.employee.lastName}`}
+              </Text>
+              <Text fontSize="xs" color="text.muted">
+                {contract.weeklyHours}h/semaine · Signe le{' '}
+                {format(contract.startDate, 'd MMM yyyy', { locale: fr })}
+                {contract.endDate && ` · Fin le ${format(contract.endDate, 'd MMM yyyy', { locale: fr })}`}
+              </Text>
+            </VStack>
+
+            {/* Doc actions */}
+            <HStack gap={3} flexShrink={0}>
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label={`Telecharger contrat ${contract.employee?.firstName ?? ''} ${contract.employee?.lastName ?? ''}`}
+              >
+                <DownloadIcon />
+                Telecharger
+              </Button>
+              <Badge
+                colorPalette={STATUS_COLORS[contract.status] || 'gray'}
+                variant="subtle"
+              >
+                {STATUS_LABELS[contract.status] || contract.status}
+              </Badge>
+            </HStack>
           </HStack>
         </Box>
       ))}

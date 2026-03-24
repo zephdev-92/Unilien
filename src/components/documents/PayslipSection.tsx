@@ -1,19 +1,20 @@
 /**
  * Section "Bulletins de paie" dans la page Documents.
  *
- * Structure (alignée sur le prototype) :
- *  1. Tableau récapitulatif de tous les bulletins (Employé, Période, Heures, Net, Statut, Actions)
- *  2. Formulaire de génération (sélection employé, période, taux PAS, etc.)
+ * Structure (alignee sur le prototype) :
+ *  1. Toolbar : filtres employe/periode a gauche, bouton "Generer" a droite
+ *  2. Status-hint avec legende des pills
+ *  3. Tableau recapitulatif (Employe, Periode, Heures, Net, Statut, Actions)
+ *  4. Formulaire de generation dans un Dialog
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Box,
   VStack,
   HStack,
   Text,
   Button,
-  Card,
   Badge,
   Alert,
   Spinner,
@@ -23,9 +24,11 @@ import {
   NativeSelect,
   Input,
   Field,
-  Separator,
   EmptyState,
+  Dialog,
+  CloseButton,
 } from '@chakra-ui/react'
+import { toaster } from '@/lib/toaster'
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import {
   getPayslipData,
@@ -53,28 +56,32 @@ export function PayslipSection({ employerId }: Props) {
   const currentYear = new Date().getFullYear()
   const currentMonth = new Date().getMonth() + 1
 
-  // ── Contrats actifs ───────────────────────────────────────────────────────
+  // ── Contrats actifs
   const [contracts, setContracts] = useState<ContractWithEmployee[]>([])
   const [selectedContractId, setSelectedContractId] = useState<string>('')
 
-  // ── Période ───────────────────────────────────────────────────────────────
+  // ── Periode
   const [selectedYear, setSelectedYear] = useState(currentYear)
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
-  // ── Taux PAS ─────────────────────────────────────────────────────────────
+  // ── Taux PAS
   const [pasRateInput, setPasRateInput] = useState('0')
 
-  // ── Exemption patronale ──────────────────────────────────────────────────
+  // ── Exemption patronale
   const [isExemptPatronal, setIsExemptPatronal] = useState(false)
 
-  // ── États UI ─────────────────────────────────────────────────────────────
+  // ── Etats UI
   const [isGenerating, setIsGenerating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [dialogError, setDialogError] = useState<string | null>(null)
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
 
-  // ── Tous les bulletins (tableau récapitulatif) ─────────────────────────
+  // ── Tous les bulletins (tableau recapitulatif)
   const [allPayslips, setAllPayslips] = useState<Payslip[]>([])
   const [isLoadingAll, setIsLoadingAll] = useState(false)
+
+  // ── Filtres toolbar
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string>('')
+  const [filterPeriod, setFilterPeriod] = useState<string>('')
 
   const years = [currentYear, currentYear - 1, currentYear - 2]
 
@@ -90,7 +97,7 @@ export function PayslipSection({ employerId }: Props) {
     })
   }, [employerId])
 
-  // Mettre à jour le taux PAS quand le contrat change
+  // Mettre a jour le taux PAS quand le contrat change
   useEffect(() => {
     const contract = contracts.find((c) => c.id === selectedContractId)
     if (contract) {
@@ -99,7 +106,7 @@ export function PayslipSection({ employerId }: Props) {
     }
   }, [selectedContractId, contracts])
 
-  // Charger tous les bulletins (sans filtre employé)
+  // Charger tous les bulletins
   const loadAllPayslips = useCallback(async () => {
     setIsLoadingAll(true)
     const list = await getPayslipsHistory(employerId)
@@ -111,18 +118,50 @@ export function PayslipSection({ employerId }: Props) {
     loadAllPayslips()
   }, [loadAllPayslips])
 
-  // ── Helpers ─────────────────────────────────────────────────────────────
+  // ── Helpers
 
-  // Trouver le nom de l'employé à partir de son ID
   const getEmployeeName = (employeeId: string): string => {
     const contract = contracts.find((c) => c.employeeId === employeeId)
     if (contract?.employee) {
       return `${contract.employee.firstName} ${contract.employee.lastName}`
     }
-    return 'Employé inconnu'
+    return 'Employe inconnu'
   }
 
-  // ── Génération ────────────────────────────────────────────────────────────
+  // Options employes uniques pour le filtre
+  const employeeFilterOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const p of allPayslips) {
+      if (!seen.has(p.employeeId)) {
+        seen.set(p.employeeId, getEmployeeName(p.employeeId))
+      }
+    }
+    return Array.from(seen, ([id, name]) => ({ id, name }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPayslips, contracts])
+
+  // Periodes uniques pour le filtre
+  const periodFilterOptions = useMemo(() => {
+    const periods = new Set<string>()
+    for (const p of allPayslips) {
+      periods.add(p.periodLabel)
+    }
+    return Array.from(periods)
+  }, [allPayslips])
+
+  // Bulletins filtres
+  const filteredPayslips = useMemo(() => {
+    let result = allPayslips
+    if (filterEmployeeId) {
+      result = result.filter((p) => p.employeeId === filterEmployeeId)
+    }
+    if (filterPeriod) {
+      result = result.filter((p) => p.periodLabel === filterPeriod)
+    }
+    return result
+  }, [allPayslips, filterEmployeeId, filterPeriod])
+
+  // ── Generation
 
   const selectedContract = contracts.find((c) => c.id === selectedContractId)
   const pasRateDecimal = Math.min(1, Math.max(0, parseFloat(pasRateInput || '0') / 100))
@@ -131,8 +170,7 @@ export function PayslipSection({ employerId }: Props) {
     if (!selectedContract) return
 
     setIsGenerating(true)
-    setError(null)
-    setSuccessMsg(null)
+    setDialogError(null)
 
     try {
       const payslipData = await getPayslipData(
@@ -145,18 +183,23 @@ export function PayslipSection({ employerId }: Props) {
       )
 
       if (!payslipData) {
-        setError('Aucune donnée trouvée pour cette période')
+        setDialogError('Aucune donnee trouvee pour cette periode')
         return
       }
 
       const result = generatePayslipPdf(payslipData)
 
       if (!result.success) {
-        setError(result.error ?? 'Erreur lors de la génération du PDF')
+        setDialogError(result.error ?? 'Erreur lors de la generation du PDF')
         return
       }
 
       downloadExport(result)
+
+      const employeeName = selectedContract.employee
+        ? `${selectedContract.employee.firstName} ${selectedContract.employee.lastName}`
+        : 'Employe'
+      const periodLabel = `${MONTHS_FR[selectedMonth - 1]} ${selectedYear}`
 
       if (saveToStorage) {
         const storagePath = await uploadPayslipPdf(
@@ -179,14 +222,24 @@ export function PayslipSection({ employerId }: Props) {
           storageUrl,
         })
 
-        setSuccessMsg('Bulletin généré, téléchargé et sauvegardé dans l\'historique.')
         await loadAllPayslips()
+        toaster.create({
+          title: 'Bulletin de paie',
+          description: `${employeeName} — ${periodLabel} genere et sauvegarde`,
+          type: 'success',
+        })
       } else {
-        setSuccessMsg('Bulletin généré et téléchargé.')
+        toaster.create({
+          title: 'Bulletin de paie',
+          description: `${employeeName} — ${periodLabel} telecharge`,
+          type: 'success',
+        })
       }
+
+      setShowGenerateDialog(false)
     } catch (err) {
-      logger.error('Erreur génération bulletin:', err)
-      setError('Une erreur est survenue lors de la génération.')
+      logger.error('Erreur generation bulletin:', err)
+      setDialogError('Une erreur est survenue lors de la generation.')
     } finally {
       setIsGenerating(false)
     }
@@ -196,13 +249,22 @@ export function PayslipSection({ employerId }: Props) {
     if (!payslip.storagePath) return
     const url = await getPayslipSignedUrl(payslip.storagePath)
     if (!url) {
-      setError('Impossible de générer le lien de téléchargement.')
+      toaster.create({
+        title: 'Erreur',
+        description: 'Impossible de generer le lien de telechargement.',
+        type: 'error',
+      })
       return
     }
     const a = document.createElement('a')
     a.href = url
     a.download = `bulletin_${payslip.periodLabel.toLowerCase().replace(/\s+/g, '_')}.pdf`
     a.click()
+    toaster.create({
+      title: 'Bulletin de paie',
+      description: `${payslip.periodLabel} telecharge`,
+      type: 'success',
+    })
   }
 
   const handleDelete = async (payslipId: string) => {
@@ -210,255 +272,302 @@ export function PayslipSection({ employerId }: Props) {
     await loadAllPayslips()
   }
 
-  // ── Rendu ─────────────────────────────────────────────────────────────────
+  // ── Rendu
 
   if (contracts.length === 0) {
     return (
       <Alert.Root status="info">
         <Alert.Indicator />
-        <Alert.Title>Aucun contrat actif trouvé pour générer un bulletin.</Alert.Title>
+        <Alert.Title>Aucun contrat actif trouve pour generer un bulletin.</Alert.Title>
       </Alert.Root>
     )
   }
 
   return (
-    <VStack gap={6} align="stretch">
-      {/* ── Tableau récapitulatif de tous les bulletins ── */}
-      <Box>
-        <HStack justify="space-between" mb={3}>
-          <Text fontWeight="semibold" fontSize="sm" color="text.muted">
-            Bulletins sauvegardés
-          </Text>
-          <Badge colorPalette="brand" variant="subtle">
-            {allPayslips.length} bulletin{allPayslips.length > 1 ? 's' : ''}
-          </Badge>
+    <VStack gap={4} align="stretch">
+      {/* ── Toolbar ── */}
+      <HStack justify="space-between" flexWrap="wrap" gap={3}>
+        <HStack gap={3} flexWrap="wrap">
+          <NativeSelect.Root size="sm" width="auto" minW="180px">
+            <NativeSelect.Field
+              value={filterEmployeeId}
+              onChange={(e) => setFilterEmployeeId(e.target.value)}
+              aria-label="Filtrer par employe"
+            >
+              <option value="">Tous les employes</option>
+              {employeeFilterOptions.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+
+          <NativeSelect.Root size="sm" width="auto" minW="160px">
+            <NativeSelect.Field
+              value={filterPeriod}
+              onChange={(e) => setFilterPeriod(e.target.value)}
+              aria-label="Filtrer par periode"
+            >
+              <option value="">Toutes les periodes</option>
+              {periodFilterOptions.map((period) => (
+                <option key={period} value={period}>{period}</option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
         </HStack>
 
-        {isLoadingAll ? (
-          <Center py={6}>
-            <Spinner />
-          </Center>
-        ) : allPayslips.length === 0 ? (
-          <EmptyState.Root>
-            <EmptyState.Content>
-              <EmptyState.Title>Aucun bulletin</EmptyState.Title>
-              <EmptyState.Description>
-                Générez votre premier bulletin de paie avec le formulaire ci-dessous
-              </EmptyState.Description>
-            </EmptyState.Content>
-          </EmptyState.Root>
-        ) : (
-          <Box overflowX="auto">
-            <Table.Root size="sm">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeader>Employé</Table.ColumnHeader>
-                  <Table.ColumnHeader>Période</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="right">Heures</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="right">Net à payer</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {allPayslips.map((p) => (
-                  <Table.Row key={p.id}>
-                    <Table.Cell>
-                      <Text fontWeight="medium" fontSize="sm">
-                        {getEmployeeName(p.employeeId)}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text fontSize="sm">{p.periodLabel}</Text>
-                    </Table.Cell>
-                    <Table.Cell textAlign="right">
-                      <Text fontSize="sm">
-                        {p.totalHours.toFixed(2).replace('.', ',')} h
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell textAlign="right">
-                      <Text fontWeight="bold" fontSize="sm">
-                        {p.netPay.toFixed(2).replace('.', ',')} €
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell textAlign="center">
-                      <Badge
-                        colorPalette={p.storagePath ? 'green' : 'orange'}
-                        variant="subtle"
-                        size="sm"
-                      >
-                        {p.storagePath ? 'Envoyé' : 'À envoyer'}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell textAlign="center">
-                      <HStack gap={1} justify="center">
-                        {p.storagePath && (
-                          <IconButton
-                            aria-label="Télécharger"
-                            size="xs"
-                            variant="ghost"
-                            colorPalette="brand"
-                            title="Télécharger le PDF"
-                            onClick={() => handleReDownload(p)}
-                          >
-                            ↓
-                          </IconButton>
-                        )}
+        <Button
+          size="sm"
+          colorPalette="brand"
+          onClick={() => {
+            setDialogError(null)
+            setShowGenerateDialog(true)
+          }}
+        >
+          Generer un bulletin de paie
+        </Button>
+      </HStack>
+
+      {/* ── Status hint ── */}
+      <Text fontSize="xs" color="text.muted">
+        <Badge colorPalette="green" variant="subtle" size="sm">Envoye</Badge>
+        {' = bulletin deja transmis · '}
+        <Badge colorPalette="orange" variant="subtle" size="sm">A envoyer</Badge>
+        {' = a verifier avant l\'envoi.'}
+      </Text>
+
+      {/* ── Tableau recapitulatif ── */}
+      {isLoadingAll ? (
+        <Center py={6}>
+          <Spinner />
+        </Center>
+      ) : filteredPayslips.length === 0 ? (
+        <EmptyState.Root>
+          <EmptyState.Content>
+            <EmptyState.Title>Aucun bulletin</EmptyState.Title>
+            <EmptyState.Description>
+              Les bulletins apparaitront ici une fois generes.
+            </EmptyState.Description>
+          </EmptyState.Content>
+        </EmptyState.Root>
+      ) : (
+        <Box overflowX="auto">
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Employe</Table.ColumnHeader>
+                <Table.ColumnHeader>Periode</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="right">Heures</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="right">Net a payer</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {filteredPayslips.map((p) => (
+                <Table.Row key={p.id}>
+                  <Table.Cell>
+                    <Text fontWeight="medium" fontSize="sm">
+                      {getEmployeeName(p.employeeId)}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <Text fontSize="sm">{p.periodLabel}</Text>
+                  </Table.Cell>
+                  <Table.Cell textAlign="right">
+                    <Text fontSize="sm">
+                      {p.totalHours.toFixed(2).replace('.', ',')} h
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell textAlign="right">
+                    <Text fontWeight="bold" fontSize="sm">
+                      {p.netPay.toFixed(2).replace('.', ',')} €
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell textAlign="center">
+                    <Badge
+                      colorPalette={p.storagePath ? 'green' : 'orange'}
+                      variant="subtle"
+                      size="sm"
+                    >
+                      {p.storagePath ? 'Envoye' : 'A envoyer'}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell textAlign="center">
+                    <HStack gap={1} justify="center">
+                      {p.storagePath && (
                         <IconButton
-                          aria-label="Supprimer"
+                          aria-label="Telecharger"
                           size="xs"
                           variant="ghost"
-                          colorPalette="red"
-                          title="Supprimer ce bulletin"
-                          onClick={() => handleDelete(p.id)}
+                          colorPalette="brand"
+                          title="Telecharger le PDF"
+                          onClick={() => handleReDownload(p)}
                         >
-                          ✕
+                          ↓
                         </IconButton>
-                      </HStack>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Box>
-        )}
-      </Box>
+                      )}
+                      <IconButton
+                        aria-label="Supprimer"
+                        size="xs"
+                        variant="ghost"
+                        colorPalette="red"
+                        title="Supprimer ce bulletin"
+                        onClick={() => handleDelete(p.id)}
+                      >
+                        ✕
+                      </IconButton>
+                    </HStack>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        </Box>
+      )}
 
-      <Separator />
+      {/* ── Dialog de generation ── */}
+      <Dialog.Root open={showGenerateDialog} onOpenChange={(e) => setShowGenerateDialog(e.open)}>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content maxW="lg">
+            <Dialog.Header>
+              <Dialog.Title>Generer un bulletin de paie</Dialog.Title>
+              <Dialog.CloseTrigger asChild>
+                <CloseButton />
+              </Dialog.CloseTrigger>
+            </Dialog.Header>
 
-      {/* ── Formulaire de génération ── */}
-      <Card.Root>
-        <Card.Body>
-          <VStack gap={5} align="stretch">
-            <Text fontWeight="semibold" fontSize="md">Générer un bulletin de paie</Text>
+            <Dialog.Body>
+              <VStack gap={5} align="stretch">
+                {/* Employe */}
+                <Field.Root>
+                  <Field.Label>Employe</Field.Label>
+                  <NativeSelect.Root>
+                    <NativeSelect.Field
+                      value={selectedContractId}
+                      onChange={(e) => setSelectedContractId(e.target.value)}
+                    >
+                      {contracts.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.employee
+                            ? `${c.employee.firstName} ${c.employee.lastName}`
+                            : `Contrat ${c.contractType}`}{' '}
+                          — {c.contractType}
+                        </option>
+                      ))}
+                    </NativeSelect.Field>
+                    <NativeSelect.Indicator />
+                  </NativeSelect.Root>
+                </Field.Root>
 
-            {/* Employé */}
-            <Field.Root>
-              <Field.Label>Employé</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  value={selectedContractId}
-                  onChange={(e) => setSelectedContractId(e.target.value)}
-                >
-                  {contracts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.employee
-                        ? `${c.employee.firstName} ${c.employee.lastName}`
-                        : `Contrat ${c.contractType}`}{' '}
-                      — {c.contractType}
-                    </option>
-                  ))}
-                </NativeSelect.Field>
-                <NativeSelect.Indicator />
-              </NativeSelect.Root>
-            </Field.Root>
+                {/* Periode */}
+                <HStack gap={4} flexWrap="wrap">
+                  <Field.Root flex={2}>
+                    <Field.Label>Mois</Field.Label>
+                    <NativeSelect.Root>
+                      <NativeSelect.Field
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                      >
+                        {MONTHS_FR.map((m, i) => (
+                          <option key={i + 1} value={i + 1}>{m}</option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
 
-            {/* Période */}
-            <HStack gap={4} flexWrap="wrap">
-              <Field.Root flex={2}>
-                <Field.Label>Mois</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  >
-                    {MONTHS_FR.map((m, i) => (
-                      <option key={i + 1} value={i + 1}>{m}</option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field.Root>
+                  <Field.Root flex={1}>
+                    <Field.Label>Annee</Field.Label>
+                    <NativeSelect.Root>
+                      <NativeSelect.Field
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      >
+                        {years.map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </NativeSelect.Field>
+                      <NativeSelect.Indicator />
+                    </NativeSelect.Root>
+                  </Field.Root>
+                </HStack>
 
-              <Field.Root flex={1}>
-                <Field.Label>Année</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field.Root>
-            </HStack>
+                {/* Taux PAS */}
+                <HStack gap={4} align="flex-end">
+                  <Field.Root flex={1}>
+                    <Field.Label>Taux PAS (%)</Field.Label>
+                    <Field.HelperText>Pre-rempli depuis le contrat</Field.HelperText>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.01}
+                      value={pasRateInput}
+                      onChange={(e) => setPasRateInput(e.target.value)}
+                    />
+                  </Field.Root>
+                  <Field.Root flex={1}>
+                    <Field.Label>Exoneration patronale SS</Field.Label>
+                    <Field.HelperText>Art. L241-10 CSS</Field.HelperText>
+                    <Button
+                      size="sm"
+                      variant={isExemptPatronal ? 'solid' : 'outline'}
+                      colorPalette={isExemptPatronal ? 'green' : 'gray'}
+                      onClick={() => setIsExemptPatronal((v) => !v)}
+                      alignSelf="flex-start"
+                      mt={1}
+                    >
+                      {isExemptPatronal ? 'Activee' : 'Desactivee'}
+                    </Button>
+                  </Field.Root>
+                </HStack>
 
-            {/* Taux PAS */}
-            <HStack gap={4} align="flex-end">
-              <Field.Root flex={1}>
-                <Field.Label>Taux PAS (%)</Field.Label>
-                <Field.HelperText>Prélèvement à la Source — pré-rempli depuis le contrat</Field.HelperText>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.01}
-                  value={pasRateInput}
-                  onChange={(e) => setPasRateInput(e.target.value)}
-                />
-              </Field.Root>
-              <Field.Root flex={1}>
-                <Field.Label>Exonération patronale SS</Field.Label>
-                <Field.HelperText>Art. L241-10 CSS — Éligible AGED/AGED+</Field.HelperText>
+                {/* Messages */}
+                {dialogError && (
+                  <Alert.Root status="error">
+                    <Alert.Indicator />
+                    <Alert.Title>{dialogError}</Alert.Title>
+                  </Alert.Root>
+                )}
+              </VStack>
+            </Dialog.Body>
+
+            <Dialog.Footer>
+              <HStack gap={3} flexWrap="wrap" width="100%">
                 <Button
-                  size="sm"
-                  variant={isExemptPatronal ? 'solid' : 'outline'}
-                  colorPalette={isExemptPatronal ? 'green' : 'gray'}
-                  onClick={() => setIsExemptPatronal((v) => !v)}
-                  alignSelf="flex-start"
-                  mt={1}
+                  variant="outline"
+                  colorPalette="gray"
+                  onClick={() => setShowGenerateDialog(false)}
                 >
-                  {isExemptPatronal ? 'Activée' : 'Désactivée'}
+                  Annuler
                 </Button>
-              </Field.Root>
-            </HStack>
-
-            <Separator />
-
-            {/* Messages */}
-            {error && (
-              <Alert.Root status="error">
-                <Alert.Indicator />
-                <Alert.Title>{error}</Alert.Title>
-              </Alert.Root>
-            )}
-            {successMsg && (
-              <Alert.Root status="success">
-                <Alert.Indicator />
-                <Alert.Title>{successMsg}</Alert.Title>
-              </Alert.Root>
-            )}
-
-            {/* Boutons */}
-            <HStack gap={3} flexWrap="wrap">
-              <Button
-                colorPalette="brand"
-                size="lg"
-                flex={1}
-                onClick={() => handleGenerate(true)}
-                loading={isGenerating}
-                loadingText="Génération…"
-              >
-                Générer et sauvegarder
-              </Button>
-              <Button
-                variant="outline"
-                colorPalette="brand"
-                size="lg"
-                flex={1}
-                onClick={() => handleGenerate(false)}
-                loading={isGenerating}
-                disabled={isGenerating}
-              >
-                Générer (sans sauvegarder)
-              </Button>
-            </HStack>
-          </VStack>
-        </Card.Body>
-      </Card.Root>
+                <Button
+                  variant="outline"
+                  colorPalette="brand"
+                  flex={1}
+                  onClick={() => handleGenerate(false)}
+                  loading={isGenerating}
+                  disabled={isGenerating}
+                >
+                  Generer (sans sauvegarder)
+                </Button>
+                <Button
+                  colorPalette="brand"
+                  flex={1}
+                  onClick={() => handleGenerate(true)}
+                  loading={isGenerating}
+                  loadingText="Generation…"
+                >
+                  Generer et sauvegarder
+                </Button>
+              </HStack>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Dialog.Root>
     </VStack>
   )
 }

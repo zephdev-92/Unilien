@@ -1,11 +1,6 @@
 /**
  * Section "Export du planning" dans la page Documents.
- *
- * Fonctionnalités :
- *  - Sélection mois + année
- *  - [Employeur/aidant] sélection employé ou "Tous"
- *  - Choix du format : PDF | Excel | iCal
- *  - Génération + téléchargement
+ * Alignee sur le prototype : card max-width 560px, radio-card format grid.
  */
 
 import { useState, useEffect } from 'react'
@@ -21,6 +16,8 @@ import {
   Center,
   NativeSelect,
   Field,
+  Icon,
+  Separator,
 } from '@chakra-ui/react'
 import { MONTHS_FR } from '@/lib/export/types'
 import {
@@ -33,21 +30,60 @@ import {
 } from '@/lib/export'
 import { getContractsForEmployer } from '@/services/contractService'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import type { PlanningExportFormat } from '@/lib/export'
 
 interface Props {
-  /** ID de l'employeur (toujours requis, même pour un employé) */
   employerId: string
-  /** Rôle du profil connecté */
   profileRole: 'employer' | 'employee' | 'caregiver'
-  /** ID du profil connecté (utilisé si role=employee pour filtrer) */
   profileId: string
 }
 
 interface EmployeeOption {
-  value: string // employee_id
+  value: string
   label: string
 }
+
+const FORMAT_OPTIONS: { value: PlanningExportFormat; label: string; icon: React.ReactNode }[] = [
+  {
+    value: 'pdf',
+    label: 'PDF',
+    icon: (
+      <Icon asChild boxSize="24px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      </Icon>
+    ),
+  },
+  {
+    value: 'excel',
+    label: 'Excel',
+    icon: (
+      <Icon asChild boxSize="24px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18M3 15h18M9 3v18" />
+        </svg>
+      </Icon>
+    ),
+  },
+  {
+    value: 'ical',
+    label: 'iCal',
+    icon: (
+      <Icon asChild boxSize="24px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      </Icon>
+    ),
+  },
+]
 
 export function PlanningExportSection({ employerId, profileRole, profileId }: Props) {
   const currentYear = new Date().getFullYear()
@@ -67,7 +103,6 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
 
   const canSelectEmployee = profileRole === 'employer' || profileRole === 'caregiver'
 
-  // Charger la liste des employés pour employeur/aidant
   useEffect(() => {
     if (!canSelectEmployee) return
 
@@ -78,12 +113,12 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
           value: c.employeeId,
           label: c.employee
             ? `${c.employee.firstName} ${c.employee.lastName}`
-            : `Employé (${c.contractType})`,
+            : `Employe (${c.contractType})`,
         }))
         setEmployees(opts)
       })
       .catch((err) => {
-        logger.error('Erreur chargement employés:', err)
+        logger.error('Erreur chargement employes:', err)
       })
       .finally(() => setIsLoadingEmployees(false))
   }, [employerId, canSelectEmployee])
@@ -104,12 +139,12 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
       }
 
       if (!planningData) {
-        setError('Aucune donnée disponible pour cette période')
+        setError('Aucune donnee disponible pour cette periode')
         return
       }
 
       if (planningData.employees.length === 0) {
-        setError('Aucune intervention ni absence pour cette période')
+        setError('Aucune intervention ni absence pour cette periode')
         return
       }
 
@@ -127,14 +162,21 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
       }
 
       if (!result.success) {
-        setError(result.error ?? 'Erreur lors de la génération')
+        setError(result.error ?? 'Erreur lors de la generation')
         return
       }
 
       downloadExport(result)
+
+      const formatLabels = { pdf: 'PDF', excel: 'Excel', ical: 'iCal' }
+      toaster.create({
+        title: 'Export planning telecharge',
+        description: `Fichier ${formatLabels[selectedFormat]} pret`,
+        type: 'success',
+      })
     } catch (err) {
       logger.error('Erreur export planning:', err)
-      setError('Une erreur est survenue lors de la génération')
+      setError('Une erreur est survenue lors de la generation')
     } finally {
       setIsGenerating(false)
     }
@@ -149,13 +191,37 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
   }
 
   return (
-    <VStack gap={6} align="stretch">
+    <Box maxW="560px">
       <Card.Root>
+        <Card.Header>
+          <Card.Title>Export du planning</Card.Title>
+          <Card.Description>
+            Telechargez le planning dans le format de votre choix.
+          </Card.Description>
+        </Card.Header>
+
         <Card.Body>
           <VStack gap={5} align="stretch">
-            <Text fontWeight="semibold" fontSize="md">Exporter le planning</Text>
+            {/* Employe (employeur/aidant uniquement) */}
+            {canSelectEmployee && employees.length > 0 && (
+              <Field.Root>
+                <Field.Label>Employe</Field.Label>
+                <NativeSelect.Root>
+                  <NativeSelect.Field
+                    value={selectedEmployeeId}
+                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                  >
+                    <option value="all">Tous les employes</option>
+                    {employees.map((e) => (
+                      <option key={e.value} value={e.value}>{e.label}</option>
+                    ))}
+                  </NativeSelect.Field>
+                  <NativeSelect.Indicator />
+                </NativeSelect.Root>
+              </Field.Root>
+            )}
 
-            {/* Période */}
+            {/* Periode */}
             <HStack gap={4} flexWrap="wrap">
               <Field.Root flex={2}>
                 <Field.Label>Mois</Field.Label>
@@ -173,7 +239,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
               </Field.Root>
 
               <Field.Root flex={1}>
-                <Field.Label>Année</Field.Label>
+                <Field.Label>Annee</Field.Label>
                 <NativeSelect.Root>
                   <NativeSelect.Field
                     value={selectedYear}
@@ -188,47 +254,46 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
               </Field.Root>
             </HStack>
 
-            {/* Sélection employé (employeur/aidant uniquement) */}
-            {canSelectEmployee && employees.length > 0 && (
-              <Field.Root>
-                <Field.Label>Employé</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={selectedEmployeeId}
-                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                  >
-                    <option value="all">Tous les employés</option>
-                    {employees.map((e) => (
-                      <option key={e.value} value={e.value}>{e.label}</option>
-                    ))}
-                  </NativeSelect.Field>
-                  <NativeSelect.Indicator />
-                </NativeSelect.Root>
-              </Field.Root>
-            )}
-
-            {/* Format */}
+            {/* Format d'export — radio card grid */}
             <Box>
-              <Text fontSize="sm" fontWeight="medium" mb={2}>Format d'export</Text>
+              <Text fontSize="sm" fontWeight="medium" mb={3}>Format d'export</Text>
               <HStack gap={3}>
-                {(['pdf', 'excel', 'ical'] as PlanningExportFormat[]).map((fmt) => (
-                  <Button
-                    key={fmt}
-                    size="sm"
-                    variant={selectedFormat === fmt ? 'solid' : 'outline'}
-                    colorPalette={selectedFormat === fmt ? 'brand' : 'gray'}
-                    onClick={() => setSelectedFormat(fmt)}
+                {FORMAT_OPTIONS.map((fmt) => (
+                  <Box
+                    key={fmt.value}
+                    as="button"
+                    type="button"
                     flex={1}
+                    p={4}
+                    borderWidth="2px"
+                    borderColor={selectedFormat === fmt.value ? 'brand.500' : 'border.default'}
+                    borderRadius="12px"
+                    bg={selectedFormat === fmt.value ? 'brand.50' : 'transparent'}
+                    cursor="pointer"
+                    textAlign="center"
+                    transition="all 0.15s"
+                    _hover={{ borderColor: 'brand.300', bg: 'bg.page' }}
+                    onClick={() => setSelectedFormat(fmt.value)}
+                    aria-pressed={selectedFormat === fmt.value}
                   >
-                    {fmt === 'pdf' && 'PDF'}
-                    {fmt === 'excel' && 'Excel'}
-                    {fmt === 'ical' && 'iCal'}
-                  </Button>
+                    <VStack gap={2}>
+                      <Box color={selectedFormat === fmt.value ? 'brand.600' : 'text.muted'}>
+                        {fmt.icon}
+                      </Box>
+                      <Text
+                        fontSize="sm"
+                        fontWeight={selectedFormat === fmt.value ? 'semibold' : 'medium'}
+                        color={selectedFormat === fmt.value ? 'brand.700' : 'text.default'}
+                      >
+                        {fmt.label}
+                      </Text>
+                    </VStack>
+                  </Box>
                 ))}
               </HStack>
             </Box>
 
-            {/* Messages */}
+            {/* Erreur */}
             {error && (
               <Alert.Root status="error">
                 <Alert.Indicator />
@@ -236,32 +301,21 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
               </Alert.Root>
             )}
 
+            <Separator />
+
             {/* Bouton principal */}
             <Button
               colorPalette="brand"
               size="lg"
               onClick={handleGenerate}
               loading={isGenerating}
-              loadingText="Génération en cours…"
+              loadingText="Generation en cours…"
             >
-              Générer et télécharger
+              Exporter
             </Button>
-
-            {/* Aide */}
-            <Alert.Root status="info">
-              <Alert.Indicator />
-              <Box>
-                <Alert.Title>À propos des formats</Alert.Title>
-                <Alert.Description>
-                  Le <strong>PDF</strong> génère une grille calendrier, une page par employé.
-                  L'<strong>Excel</strong> inclut un onglet résumé et un onglet détaillé par employé.
-                  L'<strong>iCal</strong> (.ics) est importable dans Google Calendar, Apple Calendar ou Outlook.
-                </Alert.Description>
-              </Box>
-            </Alert.Root>
           </VStack>
         </Card.Body>
       </Card.Root>
-    </VStack>
+    </Box>
   )
 }

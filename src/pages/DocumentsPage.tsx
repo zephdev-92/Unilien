@@ -1,69 +1,49 @@
 /**
- * Page Documents - Export des déclarations CESU et gestion des documents
+ * Page Documents - Bulletins, contrats, absences, export planning, declarations CESU
  */
 
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
-  Box,
   Container,
-  Heading,
-  Text,
   VStack,
-  HStack,
-  Card,
-  Button,
-  Badge,
   Spinner,
   Center,
   Alert,
-  Separator,
-  Grid,
   Tabs,
 } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard'
 import { useAuth } from '@/hooks/useAuth'
-import { logger } from '@/lib/logger'
-import {
-  getMonthlyDeclarationData,
-  generateCesuCsv,
-  generateCesuSummary,
-  generateCesuPdf,
-  downloadExport,
-  MONTHS_FR,
-  type ExportFormat,
-  type MonthlyDeclarationData,
-} from '@/lib/export'
 import { getCaregiver } from '@/services/caregiverService'
-import { ContractsSection, DocumentManagementSection, PayslipSection, PlanningExportSection } from '@/components/documents'
+import {
+  CesuDeclarationSection,
+  ContractsSection,
+  DocumentManagementSection,
+  PayslipSection,
+  PlanningExportSection,
+} from '@/components/documents'
 import type { Caregiver } from '@/types'
 
 export function DocumentsPage() {
   const { profile } = useAuth()
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [previewData, setPreviewData] = useState<MonthlyDeclarationData | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [caregiver, setCaregiver] = useState<Caregiver | null>(null)
-  const [isLoadingCaregiver, setIsLoadingCaregiver] = useState(false)
+  const [isLoadingCaregiver, setIsLoadingCaregiver] = useState(
+    () => profile?.role === 'caregiver'
+  )
 
-  // Charger les données de l'aidant si nécessaire
   useEffect(() => {
-    if (profile?.role === 'caregiver') {
-      setIsLoadingCaregiver(true)
-      getCaregiver(profile.id)
-        .then(setCaregiver)
-        .finally(() => setIsLoadingCaregiver(false))
-    }
+    if (profile?.role !== 'caregiver') return
+    let cancelled = false
+    getCaregiver(profile.id)
+      .then((data) => { if (!cancelled) setCaregiver(data) })
+      .finally(() => { if (!cancelled) setIsLoadingCaregiver(false) })
+    return () => { cancelled = true }
   }, [profile?.id, profile?.role])
 
-  // ID de l'employeur pour les exports
   const effectiveEmployerId = profile?.role === 'employer'
     ? profile.id
     : caregiver?.employerId
 
-  // Vérifier si l'utilisateur peut exporter
   const canExport = profile?.role === 'employer' ||
     (profile?.role === 'caregiver' && caregiver?.permissions?.canExportData)
 
@@ -77,95 +57,14 @@ export function DocumentsPage() {
     )
   }
 
-  // Employeurs, aidants avec canExportData ou employés peuvent accéder
   if (!profile || (!canExport && profile.role !== 'employee')) {
     return <Navigate to="/tableau-de-bord" replace />
-  }
-
-  // Générer les années disponibles (année actuelle et 2 précédentes)
-  const currentYear = new Date().getFullYear()
-  const years = [currentYear, currentYear - 1, currentYear - 2]
-
-  // Mois - première ligne (Jan-Juin)
-  const monthsFirstRow = MONTHS_FR.slice(0, 6)
-  // Mois - deuxième ligne (Jul-Déc)
-  const monthsSecondRow = MONTHS_FR.slice(6, 12)
-
-  // Générer l'aperçu des données
-  const handleGeneratePreview = async () => {
-    if (!effectiveEmployerId) {
-      setError('Impossible de déterminer l\'employeur')
-      return
-    }
-
-    setIsGenerating(true)
-    setError(null)
-    setPreviewData(null)
-
-    try {
-      const data = await getMonthlyDeclarationData(effectiveEmployerId, {
-        format: 'summary',
-        year: selectedYear,
-        month: selectedMonth,
-      })
-
-      if (!data) {
-        setError('Aucune donnée disponible pour cette période')
-        return
-      }
-
-      if (data.employees.length === 0) {
-        setError('Aucune intervention enregistrée pour cette période')
-        return
-      }
-
-      setPreviewData(data)
-    } catch (err) {
-      setError('Erreur lors de la génération des données')
-      logger.error(err)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  // Télécharger le fichier
-  const handleDownload = (format: ExportFormat) => {
-    if (!previewData) return
-
-    let result
-    switch (format) {
-      case 'pdf':
-        result = generateCesuPdf(previewData)
-        break
-      case 'csv':
-        result = generateCesuCsv(previewData)
-        break
-      default:
-        result = generateCesuSummary(previewData)
-    }
-
-    if (result.success) {
-      downloadExport(result)
-    } else {
-      setError(result.error || 'Erreur lors du téléchargement')
-    }
   }
 
   return (
     <DashboardLayout title="Documents">
       <Container maxW="container.xl" py={6}>
         <VStack gap={6} align="stretch">
-          {/* En-tête */}
-          <Box>
-            <Heading size="xl" mb={2}>
-              Documents et Déclarations
-            </Heading>
-            <Text color="text.muted">
-              Gérez vos documents et générez les fichiers pour vos déclarations CESU
-            </Text>
-          </Box>
-
-          {/* Navigation par onglets */}
           <Tabs.Root defaultValue="payslips" variant="enclosed">
             <Tabs.List>
               <Tabs.Trigger value="payslips">
@@ -185,364 +84,56 @@ export function DocumentsPage() {
               </Tabs.Trigger>
             </Tabs.List>
 
-            {/* Onglet Déclarations CESU */}
-            <Tabs.Content value="declarations" pt={6}>
-              <VStack gap={6} align="stretch">
-                {/* Sélection de la période */}
-                <Card.Root>
-                  <Card.Body>
-                    <VStack gap={6} align="stretch">
-                      {/* Période */}
-                      <Box>
-                        <Text fontWeight="semibold" mb={3}>
-                          Période à déclarer
-                        </Text>
-                        <HStack gap={4}>
-                          {/* Mois */}
-                          <Box flex={2}>
-                            <Text fontSize="sm" color="text.muted" mb={2}>
-                              Mois
-                            </Text>
-                            <HStack gap={2} flexWrap="wrap">
-                              {monthsFirstRow.map((month, index) => (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant={selectedMonth === index + 1 ? 'solid' : 'ghost'}
-                                  colorPalette={selectedMonth === index + 1 ? 'brand' : 'gray'}
-                                  onClick={() => setSelectedMonth(index + 1)}
-                                >
-                                  {month.slice(0, 3)}
-                                </Button>
-                              ))}
-                            </HStack>
-                            <HStack gap={2} flexWrap="wrap" mt={2}>
-                              {monthsSecondRow.map((month, index) => (
-                                <Button
-                                  key={index + 6}
-                                  size="sm"
-                                  variant={selectedMonth === index + 7 ? 'solid' : 'ghost'}
-                                  colorPalette={selectedMonth === index + 7 ? 'brand' : 'gray'}
-                                  onClick={() => setSelectedMonth(index + 7)}
-                                >
-                                  {month.slice(0, 3)}
-                                </Button>
-                              ))}
-                            </HStack>
-                          </Box>
-
-                          {/* Année */}
-                          <Box flex={1}>
-                            <Text fontSize="sm" color="text.muted" mb={2}>
-                              Année
-                            </Text>
-                            <VStack gap={2}>
-                              {years.map((year) => (
-                                <Button
-                                  key={year}
-                                  size="sm"
-                                  variant={selectedYear === year ? 'solid' : 'ghost'}
-                                  colorPalette={selectedYear === year ? 'brand' : 'gray'}
-                                  onClick={() => setSelectedYear(year)}
-                                  width="100%"
-                                >
-                                  {year}
-                                </Button>
-                              ))}
-                            </VStack>
-                          </Box>
-                        </HStack>
-                      </Box>
-
-                      <Separator />
-
-                      {/* Bouton de génération */}
-                      <Button
-                        colorPalette="brand"
-                        size="lg"
-                        onClick={handleGeneratePreview}
-                        loading={isGenerating}
-                        loadingText="Génération en cours..."
-                      >
-                        Générer l'aperçu pour {MONTHS_FR[selectedMonth - 1]} {selectedYear}
-                      </Button>
-                    </VStack>
-                  </Card.Body>
-                </Card.Root>
-
-                {/* Message d'erreur */}
-                {error && (
-                  <Alert.Root status="warning">
-                    <Alert.Indicator />
-                    <Alert.Title>{error}</Alert.Title>
-                  </Alert.Root>
-                )}
-
-                {/* Aperçu et téléchargement */}
-                {previewData && (
-                  <Card.Root>
-                    <Card.Header>
-                      <HStack justify="space-between">
-                        <Box>
-                          <Card.Title>
-                            Récapitulatif CESU - {previewData.periodLabel}
-                          </Card.Title>
-                          <Card.Description>
-                            {previewData.totalEmployees} employé{previewData.totalEmployees > 1 ? 's' : ''} •{' '}
-                            {previewData.totalHours.toFixed(2).replace('.', ',')} heures
-                          </Card.Description>
-                        </Box>
-                        <Badge colorPalette="green" size="lg">
-                          Prêt à exporter
-                        </Badge>
-                      </HStack>
-                    </Card.Header>
-
-                    <Card.Body>
-                      <VStack gap={6} align="stretch">
-                        {/* Résumé employeur */}
-                        <Box p={4} bg="bg.page" borderRadius="10px">
-                          <Text fontWeight="semibold" mb={2}>
-                            Employeur
-                          </Text>
-                          <Text>
-                            {previewData.employerFirstName} {previewData.employerLastName}
-                          </Text>
-                          <Text fontSize="sm" color="text.muted">
-                            {previewData.employerAddress}
-                          </Text>
-                          {previewData.cesuNumber && (
-                            <Text fontSize="sm" color="text.muted">
-                              N° CESU: {previewData.cesuNumber}
-                            </Text>
-                          )}
-                        </Box>
-
-                        {/* Tableau des employés */}
-                        <Box>
-                          <Text fontWeight="semibold" mb={3}>
-                            Détail par employé
-                          </Text>
-                          <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
-                            {previewData.employees.map((employee) => {
-                              const totalMajorations = employee.sundayMajoration + employee.holidayMajoration +
-                                employee.nightMajoration + employee.overtimeMajoration
-
-                              return (
-                                <Card.Root key={employee.employeeId} variant="outline">
-                                  <Card.Body p={4}>
-                                    <HStack justify="space-between" mb={3}>
-                                      <Text fontWeight="semibold">
-                                        {employee.firstName} {employee.lastName}
-                                      </Text>
-                                      <Badge>{employee.contractType}</Badge>
-                                    </HStack>
-
-                                    <Grid templateColumns="1fr 1fr" gap={2} fontSize="sm">
-                                      <Text color="text.muted">Heures totales:</Text>
-                                      <Text fontWeight="medium" textAlign="right">
-                                        {employee.totalHours.toFixed(2).replace('.', ',')} h
-                                      </Text>
-
-                                      <Text color="text.muted">Interventions:</Text>
-                                      <Text fontWeight="medium" textAlign="right">
-                                        {employee.shiftsCount}
-                                      </Text>
-
-                                      <Text color="text.muted">Salaire de base:</Text>
-                                      <Text fontWeight="medium" textAlign="right">
-                                        {employee.basePay.toFixed(2).replace('.', ',')} €
-                                      </Text>
-
-                                      {totalMajorations > 0 && (
-                                        <>
-                                          <Text color="text.muted">Majorations:</Text>
-                                          <Text fontWeight="medium" textAlign="right">
-                                            {totalMajorations.toFixed(2).replace('.', ',')} €
-                                          </Text>
-                                        </>
-                                      )}
-
-                                      <Separator gridColumn="span 2" my={1} />
-
-                                      <Text fontWeight="semibold">Total brut:</Text>
-                                      <Text fontWeight="bold" textAlign="right" color="brand.600">
-                                        {employee.totalGrossPay.toFixed(2).replace('.', ',')} €
-                                      </Text>
-                                    </Grid>
-                                  </Card.Body>
-                                </Card.Root>
-                              )
-                            })}
-                          </Grid>
-                        </Box>
-
-                        {/* Total général */}
-                        <Box p={4} bg="brand.50" borderRadius="10px">
-                          <HStack justify="space-between">
-                            <Box>
-                              <Text fontWeight="semibold">Total général</Text>
-                              <Text fontSize="sm" color="text.muted">
-                                {previewData.totalHours.toFixed(2).replace('.', ',')} heures travaillées
-                              </Text>
-                            </Box>
-                            <Text fontSize="2xl" fontWeight="bold" color="brand.600">
-                              {previewData.totalGrossPay.toFixed(2).replace('.', ',')} €
-                            </Text>
-                          </HStack>
-                        </Box>
-
-                        <Separator />
-
-                        {/* Boutons de téléchargement */}
-                        <Box>
-                          <Text fontWeight="semibold" mb={3}>
-                            Télécharger
-                          </Text>
-                          <VStack gap={3}>
-                            <Button
-                              colorPalette="brand"
-                              size="lg"
-                              width="100%"
-                              onClick={() => handleDownload('pdf')}
-                            >
-                              Document PDF
-                              <Text fontSize="xs" ml={2} opacity={0.8}>
-                                (recommandé)
-                              </Text>
-                            </Button>
-                            <HStack gap={4} width="100%">
-                              <Button
-                                variant="outline"
-                                colorPalette="brand"
-                                size="lg"
-                                flex={1}
-                                onClick={() => handleDownload('csv')}
-                              >
-                                Fichier CSV
-                                <Text fontSize="xs" ml={2} opacity={0.8}>
-                                  (tableur)
-                                </Text>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                colorPalette="gray"
-                                size="lg"
-                                flex={1}
-                                onClick={() => handleDownload('summary')}
-                              >
-                                Texte
-                                <Text fontSize="xs" ml={2} opacity={0.8}>
-                                  (copier-coller)
-                                </Text>
-                              </Button>
-                            </HStack>
-                          </VStack>
-                        </Box>
-
-                        {/* Aide */}
-                        <Alert.Root status="info">
-                          <Alert.Indicator />
-                          <Box>
-                            <Alert.Title>Comment déclarer ?</Alert.Title>
-                            <Alert.Description>
-                              Rendez-vous sur{' '}
-                              <Text as="span" fontWeight="semibold">cesu.urssaf.fr</Text>
-                              {' '}et utilisez le fichier CSV ou les informations du récapitulatif
-                              pour remplir votre déclaration mensuelle.
-                            </Alert.Description>
-                          </Box>
-                        </Alert.Root>
-                      </VStack>
-                    </Card.Body>
-                  </Card.Root>
-                )}
-              </VStack>
-            </Tabs.Content>
-
-            {/* Onglet Bulletins de paie */}
             <Tabs.Content value="payslips" pt={6}>
-              <Card.Root>
-                <Card.Header>
-                  <Card.Title>Bulletins de paie</Card.Title>
-                  <Card.Description>
-                    Consultez, générez et téléchargez les bulletins de paie
-                  </Card.Description>
-                </Card.Header>
-                <Card.Body>
-                  {effectiveEmployerId ? (
-                    <PayslipSection employerId={effectiveEmployerId} />
-                  ) : (
-                    <Alert.Root status="warning">
-                      <Alert.Indicator />
-                      <Alert.Title>Impossible de charger les bulletins</Alert.Title>
-                    </Alert.Root>
-                  )}
-                </Card.Body>
-              </Card.Root>
+              {effectiveEmployerId ? (
+                <PayslipSection employerId={effectiveEmployerId} />
+              ) : (
+                <Alert.Root status="warning">
+                  <Alert.Indicator />
+                  <Alert.Title>Impossible de charger les bulletins</Alert.Title>
+                </Alert.Root>
+              )}
             </Tabs.Content>
 
-            {/* Onglet Contrats */}
             <Tabs.Content value="contracts" pt={6}>
-              <Card.Root>
-                <Card.Header>
-                  <Card.Title>Contrats</Card.Title>
-                  <Card.Description>
-                    Liste des contrats de travail de vos employés
-                  </Card.Description>
-                </Card.Header>
-                <Card.Body>
-                  {effectiveEmployerId ? (
-                    <ContractsSection employerId={effectiveEmployerId} />
-                  ) : (
-                    <Alert.Root status="warning">
-                      <Alert.Indicator />
-                      <Alert.Title>Impossible de charger les contrats</Alert.Title>
-                    </Alert.Root>
-                  )}
-                </Card.Body>
-              </Card.Root>
+              {effectiveEmployerId ? (
+                <ContractsSection employerId={effectiveEmployerId} />
+              ) : (
+                <Alert.Root status="warning">
+                  <Alert.Indicator />
+                  <Alert.Title>Impossible de charger les contrats</Alert.Title>
+                </Alert.Root>
+              )}
             </Tabs.Content>
 
-            {/* Onglet Absences */}
             <Tabs.Content value="absences" pt={6}>
-              <Card.Root>
-                <Card.Header>
-                  <Card.Title>Gestion des absences</Card.Title>
-                  <Card.Description>
-                    Consultez et gérez les demandes d'absence de vos employés
-                  </Card.Description>
-                </Card.Header>
-                <Card.Body>
-                  {effectiveEmployerId ? (
-                    <DocumentManagementSection employerId={effectiveEmployerId} />
-                  ) : (
-                    <Alert.Root status="warning">
-                      <Alert.Indicator />
-                      <Alert.Title>Impossible de charger les absences</Alert.Title>
-                    </Alert.Root>
-                  )}
-                </Card.Body>
-              </Card.Root>
+              {effectiveEmployerId ? (
+                <DocumentManagementSection employerId={effectiveEmployerId} />
+              ) : (
+                <Alert.Root status="warning">
+                  <Alert.Indicator />
+                  <Alert.Title>Impossible de charger les absences</Alert.Title>
+                </Alert.Root>
+              )}
             </Tabs.Content>
 
-            {/* Onglet Export Planning */}
             <Tabs.Content value="planning" pt={6}>
-              <Card.Root>
-                <Card.Header>
-                  <Card.Title>Export planning</Card.Title>
-                  <Card.Description>
-                    Exportez le planning mensuel en PDF, Excel ou iCal
-                  </Card.Description>
-                </Card.Header>
-                <Card.Body>
-                  <PlanningExportSection
-                    employerId={effectiveEmployerId ?? ''}
-                    profileRole={profile.role as 'employer' | 'employee' | 'caregiver'}
-                    profileId={profile.id}
-                  />
-                </Card.Body>
-              </Card.Root>
+              <PlanningExportSection
+                employerId={effectiveEmployerId ?? ''}
+                profileRole={profile.role as 'employer' | 'employee' | 'caregiver'}
+                profileId={profile.id}
+              />
+            </Tabs.Content>
+
+            <Tabs.Content value="declarations" pt={6}>
+              {effectiveEmployerId ? (
+                <CesuDeclarationSection employerId={effectiveEmployerId} />
+              ) : (
+                <Alert.Root status="warning">
+                  <Alert.Indicator />
+                  <Alert.Title>Impossible de charger les declarations</Alert.Title>
+                </Alert.Root>
+              )}
             </Tabs.Content>
           </Tabs.Root>
         </VStack>

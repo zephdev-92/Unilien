@@ -106,18 +106,18 @@ describe('PlanningExportSection', () => {
     profileId: 'employer-1',
   }
 
-  it('affiche les selecteurs de periode et le bouton de generation', async () => {
+  it('affiche le titre et le bouton exporter', async () => {
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
     await waitFor(() => {
-      expect(screen.getByText('Exporter le planning')).toBeInTheDocument()
+      expect(screen.getByText('Export du planning')).toBeInTheDocument()
     })
-    expect(screen.getByText('Générer et télécharger')).toBeInTheDocument()
+    expect(screen.getByText('Exporter')).toBeInTheDocument()
   })
 
   it('affiche la selection employe pour un employeur', async () => {
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
     await waitFor(() => {
-      expect(screen.getByText('Tous les employés')).toBeInTheDocument()
+      expect(screen.getByText('Tous les employes')).toBeInTheDocument()
       expect(screen.getByText('Marie Curie')).toBeInTheDocument()
     })
   })
@@ -131,25 +131,24 @@ describe('PlanningExportSection', () => {
       />
     )
     await waitFor(() => {
-      expect(screen.queryByText('Tous les employés')).not.toBeInTheDocument()
+      expect(screen.queryByText('Tous les employes')).not.toBeInTheDocument()
     })
   })
 
-  it('affiche les boutons de format PDF Excel iCal', async () => {
+  it('affiche les options de format PDF Excel iCal', async () => {
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
     await waitFor(() => {
-      // Ces textes apparaissent aussi dans l'alerte info (strong) → getAllByText
-      expect(screen.getAllByText('PDF').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('Excel').length).toBeGreaterThan(0)
-      expect(screen.getAllByText('iCal').length).toBeGreaterThan(0)
+      expect(screen.getByText('PDF')).toBeInTheDocument()
+      expect(screen.getByText('Excel')).toBeInTheDocument()
+      expect(screen.getByText('iCal')).toBeInTheDocument()
     })
   })
 
-  it('genere et telecharge en PDF au clic sur Generer', async () => {
+  it('genere et telecharge en PDF au clic sur Exporter', async () => {
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
 
-    await waitFor(() => screen.getByText('Générer et télécharger'))
-    await userEvent.click(screen.getByText('Générer et télécharger'))
+    await waitFor(() => screen.getByText('Exporter'))
+    await userEvent.click(screen.getByText('Exporter'))
 
     await waitFor(() => {
       expect(mockGetPlanningExportData).toHaveBeenCalled()
@@ -161,11 +160,11 @@ describe('PlanningExportSection', () => {
     mockGetPlanningExportData.mockResolvedValueOnce(null)
 
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
-    await waitFor(() => screen.getByText('Générer et télécharger'))
-    await userEvent.click(screen.getByText('Générer et télécharger'))
+    await waitFor(() => screen.getByText('Exporter'))
+    await userEvent.click(screen.getByText('Exporter'))
 
     await waitFor(() => {
-      expect(screen.getByText('Aucune donnée disponible pour cette période')).toBeInTheDocument()
+      expect(screen.getByText('Aucune donnee disponible pour cette periode')).toBeInTheDocument()
     })
   })
 
@@ -178,18 +177,21 @@ describe('PlanningExportSection', () => {
       />
     )
 
-    await waitFor(() => screen.getByText('Générer et télécharger'))
-    await userEvent.click(screen.getByText('Générer et télécharger'))
+    await waitFor(() => screen.getByText('Exporter'))
+    await userEvent.click(screen.getByText('Exporter'))
 
     await waitFor(() => {
       expect(mockGetPlanningExportDataForEmployee).toHaveBeenCalledWith('emp-1', expect.any(Object))
     })
   })
 
-  it('affiche lalerte info sur les formats', async () => {
+  it('permet de changer le format dexport', async () => {
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
-    await waitFor(() => {
-      expect(screen.getByText('À propos des formats')).toBeInTheDocument()
-    })
+    await waitFor(() => screen.getByText('Excel'))
+    await userEvent.click(screen.getByText('Excel'))
+
+    // Le bouton Excel devrait maintenant etre selectionne (aria-pressed)
+    const excelButton = screen.getByText('Excel').closest('button')
+    expect(excelButton).toHaveAttribute('aria-pressed', 'true')
   })
 })

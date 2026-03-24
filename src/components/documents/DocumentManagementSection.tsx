@@ -1,9 +1,9 @@
 /**
- * Section de gestion des absences — format tableau
- * Colonnes : Employé, Type, Du, Au, Durée, Statut, Actions
+ * Section de gestion des absences — format toolbar + tableau unique
+ * Alignee sur le prototype : toolbar (filtre employe) + data-table
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   VStack,
   HStack,
@@ -12,24 +12,21 @@ import {
   Spinner,
   Center,
   Alert,
-  Grid,
-  Card,
-  Tabs,
   Button,
   EmptyState,
   Box,
   Table,
+  NativeSelect,
 } from '@chakra-ui/react'
 import { format, differenceInCalendarDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import {
   getDocumentsForEmployer,
-  getDocumentStatsForEmployer,
   type DocumentWithEmployee,
-  type DocumentStats,
 } from '@/services/documentService'
 import { updateAbsenceStatus } from '@/services/absenceService'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import {
   ABSENCE_TYPE_LABELS,
   ABSENCE_TYPE_COLORS,
@@ -37,37 +34,23 @@ import {
   ABSENCE_STATUS_COLORS as STATUS_COLORS,
 } from '@/lib/constants/statusMaps'
 
-// ============================================
-// TYPES
-// ============================================
-
 interface DocumentManagementSectionProps {
   employerId: string
 }
 
-// ============================================
-// COMPONENT
-// ============================================
-
 export function DocumentManagementSection({ employerId }: DocumentManagementSectionProps) {
   const [documents, setDocuments] = useState<DocumentWithEmployee[]>([])
-  const [stats, setStats] = useState<DocumentStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('all')
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string>('')
 
-  // Charger les documents
   const loadDocuments = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const [docs, docStats] = await Promise.all([
-        getDocumentsForEmployer(employerId),
-        getDocumentStatsForEmployer(employerId),
-      ])
+      const docs = await getDocumentsForEmployer(employerId)
       setDocuments(docs)
-      setStats(docStats)
     } catch (err) {
       logger.error('Erreur chargement documents:', err)
       setError('Erreur lors du chargement des documents')
@@ -80,35 +63,43 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
     loadDocuments()
   }, [loadDocuments])
 
-  // Filtrer les documents selon l'onglet actif
-  const filteredDocuments = documents.filter((doc) => {
-    switch (activeTab) {
-      case 'pending':
-        return doc.absence.status === 'pending'
-      case 'approved':
-        return doc.absence.status === 'approved'
-      case 'rejected':
-        return doc.absence.status === 'rejected'
-      default:
-        return true
+  // Liste unique des employes pour le filtre
+  const employeeOptions = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const doc of documents) {
+      if (!seen.has(doc.employee.id)) {
+        seen.set(doc.employee.id, `${doc.employee.firstName} ${doc.employee.lastName}`)
+      }
     }
-  })
+    return Array.from(seen, ([id, name]) => ({ id, name }))
+  }, [documents])
 
-  // Gérer l'approbation/refus d'une absence
+  // Filtrage par employe
+  const filteredDocuments = filterEmployeeId
+    ? documents.filter((doc) => doc.employee.id === filterEmployeeId)
+    : documents
+
   const handleStatusUpdate = async (absenceId: string, status: 'approved' | 'rejected') => {
     setProcessingId(absenceId)
     try {
       await updateAbsenceStatus(absenceId, status)
       await loadDocuments()
+      toaster.create({
+        title: status === 'approved' ? 'Absence approuvee' : 'Absence refusee',
+        type: status === 'approved' ? 'success' : 'info',
+      })
     } catch (err) {
-      logger.error('Erreur mise à jour statut:', err)
-      setError('Erreur lors de la mise à jour du statut')
+      logger.error('Erreur mise a jour statut:', err)
+      toaster.create({
+        title: 'Erreur',
+        description: 'Erreur lors de la mise a jour du statut',
+        type: 'error',
+      })
     } finally {
       setProcessingId(null)
     }
   }
 
-  // Ouvrir un justificatif
   const openJustification = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -122,32 +113,25 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   }
 
   return (
-    <VStack gap={6} align="stretch">
-      {/* Statistiques */}
-      {stats && (
-        <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>
-          <StatCard
-            label="Total absences"
-            value={stats.totalAbsences}
-            colorScheme="gray"
-          />
-          <StatCard
-            label="En attente"
-            value={stats.pendingAbsences}
-            colorScheme="yellow"
-          />
-          <StatCard
-            label="Approuvées"
-            value={stats.approvedAbsences}
-            colorScheme="green"
-          />
-          <StatCard
-            label="Justificatifs"
-            value={stats.withJustification}
-            colorScheme="blue"
-          />
-        </Grid>
-      )}
+    <VStack gap={4} align="stretch">
+      {/* Toolbar */}
+      <HStack justify="space-between" flexWrap="wrap" gap={3}>
+        <HStack gap={3}>
+          <NativeSelect.Root size="sm" width="auto" minW="180px">
+            <NativeSelect.Field
+              value={filterEmployeeId}
+              onChange={(e) => setFilterEmployeeId(e.target.value)}
+              aria-label="Filtrer par employe"
+            >
+              <option value="">Tous les employes</option>
+              {employeeOptions.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </NativeSelect.Field>
+            <NativeSelect.Indicator />
+          </NativeSelect.Root>
+        </HStack>
+      </HStack>
 
       {/* Message d'erreur */}
       {error && (
@@ -157,172 +141,116 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
         </Alert.Root>
       )}
 
-      {/* Onglets de filtrage */}
-      <Tabs.Root
-        value={activeTab}
-        onValueChange={(e) => setActiveTab(e.value)}
-        variant="enclosed"
-      >
-        <Tabs.List>
-          <Tabs.Trigger value="all">
-            Tous ({documents.length})
-          </Tabs.Trigger>
-          <Tabs.Trigger value="pending">
-            En attente ({stats?.pendingAbsences || 0})
-          </Tabs.Trigger>
-          <Tabs.Trigger value="approved">
-            Approuvées ({stats?.approvedAbsences || 0})
-          </Tabs.Trigger>
-          <Tabs.Trigger value="rejected">
-            Refusées ({stats?.rejectedAbsences || 0})
-          </Tabs.Trigger>
-        </Tabs.List>
+      {/* Tableau */}
+      {filteredDocuments.length === 0 ? (
+        <EmptyState.Root>
+          <EmptyState.Content>
+            <EmptyState.Title>Aucune absence</EmptyState.Title>
+            <EmptyState.Description>
+              Les absences (conges, arrets maladie) apparaitront ici.
+            </EmptyState.Description>
+          </EmptyState.Content>
+        </EmptyState.Root>
+      ) : (
+        <Box overflowX="auto">
+          <Table.Root size="sm">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Employe</Table.ColumnHeader>
+                <Table.ColumnHeader>Type</Table.ColumnHeader>
+                <Table.ColumnHeader>Du</Table.ColumnHeader>
+                <Table.ColumnHeader>Au</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="center">Duree</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
+                <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {filteredDocuments.map((doc) => {
+                const { absence, employee } = doc
+                const isPending = absence.status === 'pending'
+                const days = differenceInCalendarDays(absence.endDate, absence.startDate) + 1
 
-        <Tabs.Content value={activeTab} pt={4}>
-          {filteredDocuments.length === 0 ? (
-            <EmptyState.Root>
-              <EmptyState.Content>
-                <EmptyState.Title>Aucune absence</EmptyState.Title>
-                <EmptyState.Description>
-                  {activeTab === 'pending'
-                    ? 'Aucune absence en attente de validation'
-                    : activeTab === 'approved'
-                    ? 'Aucune absence approuvée'
-                    : activeTab === 'rejected'
-                    ? 'Aucune absence refusée'
-                    : 'Aucune absence enregistrée pour vos employés'}
-                </EmptyState.Description>
-              </EmptyState.Content>
-            </EmptyState.Root>
-          ) : (
-            <Box overflowX="auto">
-              <Table.Root size="sm">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>Employé</Table.ColumnHeader>
-                    <Table.ColumnHeader>Type</Table.ColumnHeader>
-                    <Table.ColumnHeader>Du</Table.ColumnHeader>
-                    <Table.ColumnHeader>Au</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="center">Durée</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
+                return (
+                  <Table.Row key={absence.id}>
+                    <Table.Cell>
+                      <Text fontWeight="medium" fontSize="sm">
+                        {employee.firstName} {employee.lastName}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Badge colorPalette={ABSENCE_TYPE_COLORS[absence.absenceType]} variant="subtle" size="sm">
+                        {ABSENCE_TYPE_LABELS[absence.absenceType]}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text fontSize="sm">
+                        {format(absence.startDate, 'd MMM yyyy', { locale: fr })}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text fontSize="sm">
+                        {format(absence.endDate, 'd MMM yyyy', { locale: fr })}
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell textAlign="center">
+                      <Text fontSize="sm">
+                        {days} j
+                      </Text>
+                    </Table.Cell>
+                    <Table.Cell textAlign="center">
+                      <Badge colorPalette={STATUS_COLORS[absence.status]} variant="subtle" size="sm">
+                        {STATUS_LABELS[absence.status]}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell textAlign="center">
+                      <HStack gap={1} justify="center" flexWrap="wrap">
+                        {absence.justificationUrl && (
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            colorPalette="brand"
+                            onClick={() => openJustification(absence.justificationUrl!)}
+                          >
+                            Justificatif
+                          </Button>
+                        )}
+                        {isPending && (
+                          <>
+                            <Button
+                              size="xs"
+                              colorPalette="green"
+                              onClick={() => handleStatusUpdate(absence.id, 'approved')}
+                              loading={processingId === absence.id}
+                              disabled={processingId === absence.id}
+                            >
+                              Approuver
+                            </Button>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              colorPalette="red"
+                              onClick={() => handleStatusUpdate(absence.id, 'rejected')}
+                              loading={processingId === absence.id}
+                              disabled={processingId === absence.id}
+                            >
+                              Refuser
+                            </Button>
+                          </>
+                        )}
+                        {!isPending && !absence.justificationUrl && (
+                          <Text fontSize="xs" color="text.muted">—</Text>
+                        )}
+                      </HStack>
+                    </Table.Cell>
                   </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {filteredDocuments.map((doc) => {
-                    const { absence, employee } = doc
-                    const isPending = absence.status === 'pending'
-                    const days = differenceInCalendarDays(absence.endDate, absence.startDate) + 1
-
-                    return (
-                      <Table.Row key={absence.id}>
-                        <Table.Cell>
-                          <Text fontWeight="medium" fontSize="sm">
-                            {employee.firstName} {employee.lastName}
-                          </Text>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Badge colorPalette={ABSENCE_TYPE_COLORS[absence.absenceType]} variant="subtle" size="sm">
-                            {ABSENCE_TYPE_LABELS[absence.absenceType]}
-                          </Badge>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Text fontSize="sm">
-                            {format(absence.startDate, 'd MMM yyyy', { locale: fr })}
-                          </Text>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Text fontSize="sm">
-                            {format(absence.endDate, 'd MMM yyyy', { locale: fr })}
-                          </Text>
-                        </Table.Cell>
-                        <Table.Cell textAlign="center">
-                          <Text fontSize="sm">
-                            {days} j
-                          </Text>
-                        </Table.Cell>
-                        <Table.Cell textAlign="center">
-                          <Badge colorPalette={STATUS_COLORS[absence.status]} variant="subtle" size="sm">
-                            {STATUS_LABELS[absence.status]}
-                          </Badge>
-                        </Table.Cell>
-                        <Table.Cell textAlign="center">
-                          <HStack gap={1} justify="center" flexWrap="wrap">
-                            {absence.justificationUrl && (
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                colorPalette="brand"
-                                onClick={() => openJustification(absence.justificationUrl!)}
-                              >
-                                Justificatif
-                              </Button>
-                            )}
-                            {isPending && (
-                              <>
-                                <Button
-                                  size="xs"
-                                  colorPalette="green"
-                                  onClick={() => handleStatusUpdate(absence.id, 'approved')}
-                                  loading={processingId === absence.id}
-                                  disabled={processingId === absence.id}
-                                >
-                                  Approuver
-                                </Button>
-                                <Button
-                                  size="xs"
-                                  variant="ghost"
-                                  colorPalette="red"
-                                  onClick={() => handleStatusUpdate(absence.id, 'rejected')}
-                                  loading={processingId === absence.id}
-                                  disabled={processingId === absence.id}
-                                >
-                                  Refuser
-                                </Button>
-                              </>
-                            )}
-                            {!isPending && !absence.justificationUrl && (
-                              <Text fontSize="xs" color="text.muted">—</Text>
-                            )}
-                          </HStack>
-                        </Table.Cell>
-                      </Table.Row>
-                    )
-                  })}
-                </Table.Body>
-              </Table.Root>
-            </Box>
-          )}
-        </Tabs.Content>
-      </Tabs.Root>
+                )
+              })}
+            </Table.Body>
+          </Table.Root>
+        </Box>
+      )}
     </VStack>
-  )
-}
-
-// ============================================
-// SUB-COMPONENTS
-// ============================================
-
-interface StatCardProps {
-  label: string
-  value: number
-  colorScheme: string
-}
-
-function StatCard({ label, value, colorScheme }: StatCardProps) {
-  return (
-    <Card.Root variant="outline">
-      <Card.Body p={4}>
-        <VStack gap={1}>
-          <Text fontSize="2xl" fontWeight="bold" color={`${colorScheme}.600`}>
-            {value}
-          </Text>
-          <Text fontSize="sm" color="text.muted">
-            {label}
-          </Text>
-        </VStack>
-      </Card.Body>
-    </Card.Root>
   )
 }
 
