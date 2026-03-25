@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { Box, Flex, Text } from '@chakra-ui/react'
 import { PrimaryButton } from './PrimaryButton'
@@ -26,11 +26,7 @@ function saveConsent() {
 }
 
 export function CookieConsentBanner() {
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (!getConsent()) setVisible(true)
-  }, [])
+  const [visible, setVisible] = useState(() => !getConsent())
 
   if (!visible) return null
 
