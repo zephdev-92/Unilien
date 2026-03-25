@@ -31,6 +31,12 @@ vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
+const mockToasterError = vi.fn()
+const mockToasterSuccess = vi.fn()
+vi.mock('@/lib/toaster', () => ({
+  toaster: { error: (...args: unknown[]) => mockToasterError(...args), success: (...args: unknown[]) => mockToasterSuccess(...args) },
+}))
+
 const computedPay = {
   basePay: 0, sundayMajoration: 0, holidayMajoration: 0,
   nightMajoration: 0, overtimeMajoration: 0, presenceResponsiblePay: 0,
@@ -163,7 +169,7 @@ describe('useClockIn — retroactive validation', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.error).toBe('Cette intervention est déjà validée')
+      expect(mockToasterError).toHaveBeenCalledWith({ title: 'Cette intervention est déjà validée' })
     })
 
     expect(mockUpdateShift).not.toHaveBeenCalled()
@@ -192,7 +198,7 @@ describe('useClockIn — retroactive validation', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.error).toBe('La saisie rétroactive est limitée à 7 jours')
+      expect(mockToasterError).toHaveBeenCalledWith({ title: 'La saisie rétroactive est limitée à 7 jours' })
     })
 
     expect(mockUpdateShift).not.toHaveBeenCalled()

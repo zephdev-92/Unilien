@@ -11,6 +11,7 @@ import { useClockIn } from '@/hooks/useClockIn'
 import { createShift, updateShift, validateShift } from '@/services/shiftService'
 import { getContractsForEmployer } from '@/services/contractService'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import type { Shift } from '@/types'
 import { LiveClock } from './LiveClock'
 import { EmployeeClockWidget } from './EmployeeClockWidget'
@@ -35,8 +36,6 @@ export function ClockInPage() {
     step,
     isLoadingShifts,
     isSubmitting,
-    error,
-    successMessage,
     todayShifts,
     historyShifts,
     plannedShifts,
@@ -95,13 +94,25 @@ export function ClockInPage() {
     shiftId: string,
     updates: { startTime: string; endTime: string }
   ) => {
-    await updateShift(shiftId, updates)
-    await loadAllShifts()
+    try {
+      await updateShift(shiftId, updates)
+      await loadAllShifts()
+      toaster.success({ title: 'Intervention modifiée avec succès' })
+    } catch (err) {
+      logger.error('Erreur modification shift:', err)
+      toaster.error({ title: 'Erreur lors de la modification' })
+    }
   }, [loadAllShifts])
 
   const handleValidate = useCallback(async (shift: Shift) => {
-    await validateShift(shift.id, 'employer')
-    await loadAllShifts()
+    try {
+      await validateShift(shift.id, 'employer')
+      await loadAllShifts()
+      toaster.success({ title: 'Intervention validée' })
+    } catch (err) {
+      logger.error('Erreur validation shift:', err)
+      toaster.error({ title: 'Erreur lors de la validation' })
+    }
   }, [loadAllShifts])
 
   const handleManualEntry = useCallback(async (data: {
@@ -123,16 +134,22 @@ export function ClockInPage() {
       contractId = existingShift.contractId
     }
 
-    await createShift(contractId, {
-      date: new Date(data.date),
-      startTime: data.startTime,
-      endTime: data.endTime,
-      breakDuration: 0,
-      tasks: [],
-      shiftType: 'effective',
-    })
+    try {
+      await createShift(contractId, {
+        date: new Date(data.date),
+        startTime: data.startTime,
+        endTime: data.endTime,
+        breakDuration: 0,
+        tasks: [],
+        shiftType: 'effective',
+      })
 
-    await loadAllShifts()
+      await loadAllShifts()
+      toaster.success({ title: 'Intervention ajoutée avec succès' })
+    } catch (err) {
+      logger.error('Erreur saisie manuelle:', err)
+      toaster.error({ title: err instanceof Error ? err.message : "Erreur lors de l'ajout" })
+    }
   }, [profile, todayShifts, historyShifts, loadAllShifts])
 
   // Employer: déduire les employés uniques des shifts pour le résumé
@@ -236,21 +253,6 @@ export function ClockInPage() {
                 </Box>
               </Flex>
             </Box>
-          )}
-
-          {/* Messages */}
-          {successMessage && (
-            <Flex role="status" aria-live="polite" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="accent.500" bg="accent.50" color="text.default">
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--chakra-colors-accent-700)" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              <Text fontSize="sm" fontWeight="500">{successMessage}</Text>
-            </Flex>
-          )}
-
-          {error && (
-            <Flex role="alert" align="center" gap={2.5} px={3} py={2.5} borderRadius="md" borderLeftWidth="3px" borderLeftColor="danger.500" bg="danger.50" color="danger.500">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={16} height={16} aria-hidden="true" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <Text fontSize="sm" fontWeight="500">{error}</Text>
-            </Flex>
           )}
 
           {isLoadingShifts && (

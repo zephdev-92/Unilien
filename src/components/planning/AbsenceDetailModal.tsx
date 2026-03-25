@@ -11,6 +11,7 @@ import { fr } from 'date-fns/locale'
 import { AccessibleButton, StatusPill, GhostButton } from '@/components/ui'
 import { PlanningModal } from './PlanningModal'
 import { updateAbsenceStatus, cancelAbsence } from '@/services/absenceService'
+import { toaster } from '@/lib/toaster'
 import type { Absence, UserRole } from '@/types'
 import {
   ABSENCE_TYPE_LABELS as absenceTypeLabels,
@@ -49,6 +50,7 @@ export function AbsenceDetailModal({
     setSubmitError(null)
     try {
       await updateAbsenceStatus(absence.id, 'approved')
+      toaster.success({ title: 'Absence approuvée' })
       onSuccess()
       onClose()
     } catch (error) {
@@ -63,6 +65,7 @@ export function AbsenceDetailModal({
     setSubmitError(null)
     try {
       await updateAbsenceStatus(absence.id, 'rejected')
+      toaster.success({ title: 'Absence refusée' })
       onSuccess()
       onClose()
     } catch (error) {
@@ -79,6 +82,7 @@ export function AbsenceDetailModal({
     setSubmitError(null)
     try {
       await cancelAbsence(absence.id, userId)
+      toaster.success({ title: 'Absence annulée' })
       onSuccess()
       onClose()
     } catch (error) {

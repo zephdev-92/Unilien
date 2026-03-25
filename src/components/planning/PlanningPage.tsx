@@ -31,6 +31,7 @@ import { getShifts } from '@/services/shiftService'
 import { getAbsencesForEmployee, getAbsencesForEmployer } from '@/services/absenceService'
 import { getCaregiver, getShiftsForCaregiver } from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import {
   getPlanningExportData,
   getPlanningExportDataForEmployee,
@@ -255,8 +256,10 @@ export function PlanningPage() {
         : generatePlanningIcal(data)
 
       downloadExport(result)
+      toaster.success({ title: `Planning exporté en ${fmt.toUpperCase()}` })
     } catch (error) {
       logger.error('Erreur export planning:', error)
+      toaster.error({ title: 'Erreur lors de l\'export du planning' })
     }
   }, [profile, currentDate, isEmployee])
 

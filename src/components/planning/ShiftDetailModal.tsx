@@ -13,6 +13,7 @@ import { AccessibleButton, StatusPill, GhostButton, PrimaryButton } from '@/comp
 import { ComplianceBadge } from '@/components/compliance'
 import { PlanningModal } from './PlanningModal'
 import { updateShift, deleteShift, validateShift } from '@/services/shiftService'
+import { toaster } from '@/lib/toaster'
 import { logger } from '@/lib/logger'
 import type { Shift, UserRole } from '@/types'
 import { SHIFT_STATUS_VARIANTS as statusVariants, SHIFT_STATUS_LABELS as statusLabels } from '@/lib/constants/statusMaps'
@@ -299,6 +300,7 @@ export function ShiftDetailModal({
         status: data.status,
       })
 
+      toaster.success({ title: 'Intervention modifiée avec succès' })
       onSuccess()
       dispatch({ type: 'SUBMIT_SUCCESS' })
     } catch (error) {
@@ -316,6 +318,7 @@ export function ShiftDetailModal({
     dispatch({ type: 'DELETE_START' })
     try {
       await deleteShift(shift.id)
+      toaster.success({ title: 'Intervention supprimée' })
       dispatch({ type: 'DELETE_SUCCESS' })
       onSuccess()
       onClose()
@@ -334,6 +337,7 @@ export function ShiftDetailModal({
     dispatch({ type: 'VALIDATE_START' })
     try {
       await validateShift(shift.id, userRole)
+      toaster.success({ title: 'Intervention validée' })
       dispatch({ type: 'VALIDATE_SUCCESS' })
       onSuccess()
     } catch (error) {
