@@ -435,13 +435,13 @@ export function AbsenceRequestModal({
                   align="flex-start"
                   gap={2}
                   p={3}
-                  bg={selectedValue === opt.value ? 'brand.50' : 'bg.page'}
+                  bg={selectedValue === opt.value ? 'brand.subtle' : 'bg.page'}
                   borderWidth="2px"
                   borderColor={selectedValue === opt.value ? 'brand.500' : 'border.default'}
                   borderRadius="10px"
                   cursor="pointer"
                   transition="all 0.15s"
-                  _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+                  _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
                   onClick={() => setSelectedValue(opt.value)}
                 >
                   <input
@@ -512,7 +512,7 @@ export function AbsenceRequestModal({
                 borderColor={fileError ? 'red.500' : justificationFile ? 'green.300' : 'border.default'}
                 borderRadius="12px"
                 p={4}
-                bg={fileError ? 'red.50' : justificationFile ? 'green.50' : 'bg.page'}
+                bg={fileError ? 'red.50' : justificationFile ? 'accent.subtle' : 'bg.page'}
                 transition="all 0.2s"
               >
                 {!justificationFile ? (

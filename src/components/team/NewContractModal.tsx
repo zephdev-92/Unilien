@@ -147,7 +147,7 @@ export function NewContractModal({
                   {showInviteForm && !inviteSuccess && (
                     <Box
                       p={5}
-                      bg="brand.50"
+                      bg="brand.subtle"
                       borderRadius="12px"
                       borderWidth="1px"
                       borderColor="brand.200"
@@ -223,7 +223,7 @@ export function NewContractModal({
                   {inviteSuccess && foundEmployee && (
                     <Box
                       p={5}
-                      bg="green.50"
+                      bg="accent.subtle"
                       borderRadius="12px"
                       borderWidth="1px"
                       borderColor="green.200"
@@ -261,7 +261,7 @@ export function NewContractModal({
               {step === 1 && foundEmployee && (
                 <form id="contract-form" onSubmit={contractForm.handleSubmit(onSubmitContract)}>
                   <Stack gap={4}>
-                    <Box p={4} bg="green.50" borderRadius="10px">
+                    <Box p={4} bg="accent.subtle" borderRadius="10px">
                       <Flex justify="space-between" align="center">
                         <Box>
                           <Text fontWeight="semibold" color="green.700">

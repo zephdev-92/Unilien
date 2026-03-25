@@ -164,7 +164,7 @@ export function EmployeeDocumentsWidget({ employeeId }: EmployeeDocumentsWidgetP
               fontWeight="700"
               textDecoration="none"
               transition="all 0.15s"
-              _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+              _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
             >
               <NavIcon name={doc.type === 'contract' ? 'shield' : 'file'} size={16} />
               <Text flex={1} truncate>
@@ -175,7 +175,7 @@ export function EmployeeDocumentsWidget({ employeeId }: EmployeeDocumentsWidgetP
                   as="span"
                   fontSize="10px"
                   fontWeight="600"
-                  bg="accent.50"
+                  bg="accent.subtle"
                   color="accent.700"
                   px="12px"
                   py="4px"

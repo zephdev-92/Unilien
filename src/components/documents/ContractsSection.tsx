@@ -129,7 +129,7 @@ export function ContractsSection({ employerId }: Props) {
               w="40px"
               h="40px"
               borderRadius="10px"
-              bg="brand.50"
+              bg="brand.subtle"
               color="brand.600"
               display="flex"
               alignItems="center"

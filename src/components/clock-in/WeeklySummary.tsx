@@ -59,7 +59,7 @@ export function WeeklySummary({ todayShifts, historyShifts, title, weeklyGoalHou
             borderRadius="sm"
             fontSize="xs"
             fontWeight="600"
-            bg="brand.50"
+            bg="brand.subtle"
             color="brand.500"
           >
             {formatHours(weekData.totalHours)} / ~{weeklyGoalHours}h

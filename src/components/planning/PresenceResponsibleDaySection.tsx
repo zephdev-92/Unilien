@@ -29,7 +29,7 @@ export function PresenceResponsibleDaySection({ mode = 'edit', durationHours, ef
   return (
     <Box
       p={isView ? 3 : 4}
-      bg="brand.50"
+      bg="brand.subtle"
       borderRadius={isView ? 'md' : 'lg'}
       borderWidth="1px"
       borderColor="brand.200"

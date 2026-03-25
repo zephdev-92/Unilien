@@ -127,7 +127,7 @@ export function RecentLogsWidget({ employerId }: RecentLogsWidgetProps) {
             <Box
               key={log.id}
               p={4}
-              bg={log.importance === 'urgent' ? 'danger.50' : 'bg.page'}
+              bg={log.importance === 'urgent' ? 'danger.subtle' : 'bg.page'}
               borderRadius="10px"
               borderLeftWidth="4px"
               borderLeftColor={log.importance === 'urgent' ? 'danger.500' : 'border.default'}

@@ -42,7 +42,7 @@ function AddCard({ onClick }: { onClick: () => void }) {
       minH={{ base: '120px', sm: '280px' }}
       cursor="pointer"
       transition="border-color 0.2s, background 0.2s"
-      _hover={{ borderColor: 'brand.400', bg: 'brand.50' }}
+      _hover={{ borderColor: 'brand.400', bg: 'brand.subtle' }}
       w="full"
     >
       <Box

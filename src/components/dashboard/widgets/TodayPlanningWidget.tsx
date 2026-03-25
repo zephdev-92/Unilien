@@ -40,18 +40,18 @@ function formatTime(time: string): string {
 
 /** Proto tag colors by shift type */
 const TAG_STYLES: Record<Shift['shiftType'], { bg: string; color: string }> = {
-  effective: { bg: 'brand.50', color: 'brand.500' },
-  presence_day: { bg: 'accent.50', color: 'accent.700' },
-  presence_night: { bg: 'accent.50', color: 'accent.700' },
-  guard_24h: { bg: 'warm.50', color: 'warm.600' },
+  effective: { bg: 'brand.subtle', color: 'brand.500' },
+  presence_day: { bg: 'accent.subtle', color: 'accent.700' },
+  presence_night: { bg: 'accent.subtle', color: 'accent.700' },
+  guard_24h: { bg: 'warm.subtle', color: 'warm.600' },
 }
 
 /** Proto status-pill styles with dot color */
 const STATUS_STYLES: Record<Shift['status'], { bg: string; color: string; dot: string }> = {
-  planned: { bg: 'warm.50', color: 'warm.600', dot: 'warm.500' },
-  completed: { bg: 'accent.50', color: 'accent.700', dot: 'accent.500' },
+  planned: { bg: 'warm.subtle', color: 'warm.600', dot: 'warm.500' },
+  completed: { bg: 'accent.subtle', color: 'accent.700', dot: 'accent.500' },
   cancelled: { bg: 'bg.muted', color: 'brand.500', dot: 'brand.500' },
-  absent: { bg: 'danger.50', color: 'danger.500', dot: 'danger.500' },
+  absent: { bg: 'danger.subtle', color: 'danger.500', dot: 'danger.500' },
 }
 
 export function TodayPlanningWidget({ employerId }: TodayPlanningWidgetProps) {

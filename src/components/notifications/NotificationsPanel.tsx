@@ -127,7 +127,7 @@ function NotificationItem({
   return (
     <Box
       as="article"
-      bg={notification.isRead ? 'white' : 'blue.50'}
+      bg={notification.isRead ? 'bg.surface' : 'brand.subtle'}
       borderRadius="10px"
       p={3}
       borderLeftWidth="3px"
@@ -138,7 +138,7 @@ function NotificationItem({
       css={{
         transition: 'background-color 0.2s',
         '&:hover': {
-          bg: notification.isRead ? 'gray.50' : 'blue.100',
+          bg: notification.isRead ? 'var(--chakra-colors-bg-surface-hover)' : 'var(--chakra-colors-brand-muted)',
         },
       }}
     >

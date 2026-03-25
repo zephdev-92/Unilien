@@ -75,7 +75,7 @@ export function ProfileCompletionWidget({ profile, employer, employee, caregiver
   const percentageColor =
     percentage >= 80 ? 'success.600' : percentage >= 50 ? 'warning.600' : 'danger.600'
   const percentageBg =
-    percentage >= 80 ? 'success.50' : percentage >= 50 ? 'warning.50' : 'danger.50'
+    percentage >= 80 ? 'success.subtle' : percentage >= 50 ? 'warning.subtle' : 'danger.subtle'
   const barColor =
     percentage >= 80 ? 'success.500' : percentage >= 50 ? 'warning.500' : 'danger.500'
 
@@ -98,7 +98,7 @@ export function ProfileCompletionWidget({ profile, employer, employee, caregiver
       {/* Body */}
       <Box px={5} py={4}>
         {/* Progress bar */}
-        <Box h="8px" bg="gray.100" borderRadius="full" overflow="hidden" mb={4}>
+        <Box h="8px" bg="bg.muted" borderRadius="full" overflow="hidden" mb={4}>
           <Box
             h="100%"
             w={`${percentage}%`}
@@ -120,7 +120,7 @@ export function ProfileCompletionWidget({ profile, employer, employee, caregiver
                 h="20px"
                 borderRadius="full"
                 flexShrink={0}
-                bg={item.done ? 'success.50' : 'warning.50'}
+                bg={item.done ? 'success.subtle' : 'warning.subtle'}
                 color={item.done ? 'success.600' : 'warning.600'}
                 fontSize="11px"
                 fontWeight={700}

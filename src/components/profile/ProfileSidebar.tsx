@@ -98,7 +98,7 @@ function PchWidget({ caregiver }: { caregiver: Caregiver }) {
     >
       <Flex px={5} py={4} borderBottomWidth="1px" borderColor="border.default" justify="space-between" align="center">
         <Text fontSize="sm" fontWeight={700}>Mon enveloppe PCH</Text>
-        <Box fontSize="11px" fontWeight={600} px="8px" py="2px" borderRadius="full" bg="warning.50" color="warning.600">
+        <Box fontSize="11px" fontWeight={600} px="8px" py="2px" borderRadius="full" bg="warning.subtle" color="warning.600">
           2025–2026
         </Box>
       </Flex>

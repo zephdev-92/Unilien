@@ -418,7 +418,7 @@ export function HomePage() {
       </Flex>
 
       {/* ── Hero ── */}
-      <Box bg="white">
+      <Box bg="bg.surface">
       <Grid
         templateColumns={{ base: '1fr', lg: '1fr 1fr' }}
         alignItems="center"
@@ -633,19 +633,19 @@ export function HomePage() {
             <Box maxW="900px" mx="auto">
               <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
                 <PainPointCard
-                  iconBg="danger.50"
+                  iconBg="danger.subtle"
                   icon={<WarningTwoIcon width={24} height={24} />}
                   title="J'ai peur de faire une erreur couteuse"
                   description="Le droit du travail evolue. Une regle oubliee peut se transformer en litige a 8 000 euros d'indemnites."
                 />
                 <PainPointCard
-                  iconBg="warm.50"
+                  iconBg="warm.subtle"
                   icon={<CalendarIcon width={24} height={24} />}
                   title="Excel est inutilisable avec ma pathologie"
                   description="Les outils generiques ne sont pas adaptes a la gestion depuis un fauteuil roulant ou avec des troubles moteurs."
                 />
                 <PainPointCard
-                  iconBg="brand.50"
+                  iconBg="brand.subtle"
                   icon={<TimeIcon width={24} height={24} />}
                   title="Je ne sais jamais si mon planning est legal"
                   description="Les 11h de repos, la pause de 20 min, les 10h max par jour... Impossible de tout memoriser."
@@ -688,7 +688,7 @@ export function HomePage() {
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                   }
-                  iconBg="danger.50"
+                  iconBg="danger.subtle"
                   title="Bouclier IDCC 3239"
                   description="Blocage automatique des infractions : repos, pauses, amplitude, heures supplémentaires."
                 />
@@ -723,7 +723,7 @@ export function HomePage() {
                       <line x1="14" y1="1" x2="14" y2="4" />
                     </svg>
                   }
-                  iconBg="warm.50"
+                  iconBg="warm.subtle"
                   title="Notifications multi-canal"
                   description="Push, in-app, email (bientôt SMS). Rappels d&apos;intervention, alertes conformité."
                 />
@@ -764,7 +764,7 @@ export function HomePage() {
                 gap={3}
                 py={3}
                 px={4}
-                bg="danger.50"
+                bg="danger.subtle"
                 borderRadius="md"
                 borderLeftWidth="3px"
                 borderLeftColor="danger.500"
@@ -787,7 +787,7 @@ export function HomePage() {
                 gap={3}
                 py={3}
                 px={4}
-                bg="warm.50"
+                bg="warm.subtle"
                 borderRadius="md"
                 borderLeftWidth="3px"
                 borderLeftColor="warm.600"
@@ -909,7 +909,7 @@ export function HomePage() {
                       w="36px"
                       h="36px"
                       borderRadius="full"
-                      bg="warm.50"
+                      bg="warm.subtle"
                       color="warm.600"
                       align="center"
                       justify="center"

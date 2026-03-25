@@ -40,9 +40,9 @@ const STAT_CARD_PROPS = {
 } as const
 
 const ICON_BG_COLORS: Record<StatIconColor, { bg: string; color: string }> = {
-  blue: { bg: 'brand.50', color: 'brand.500' },
-  green: { bg: 'accent.50', color: 'accent.700' },
-  orange: { bg: 'warm.50', color: 'warm.500' },
+  blue: { bg: 'brand.subtle', color: 'brand.500' },
+  green: { bg: 'accent.subtle', color: 'accent.700' },
+  orange: { bg: 'warm.subtle', color: 'warm.500' },
   warn: { bg: 'warning.100', color: 'warning.700' },
 }
 

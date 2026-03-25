@@ -146,7 +146,7 @@ export function HistorySection({
       {!isLoading && historyStats.shiftCount > 0 && (
         <Box
           p={4}
-          bg="brand.50"
+          bg="brand.subtle"
           borderRadius="12px"
           borderWidth="1px"
           borderColor="blue.100"

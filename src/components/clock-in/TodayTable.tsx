@@ -221,19 +221,19 @@ export function TodayTable({
                     </Table.Cell>
                     <Table.Cell px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
                       {isActive && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warm.50" color="warm.600">En cours</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warm.subtle" color="warm.600">En cours</Flex>
                       )}
                       {isCompleted && isEmployer && !shift.validatedByEmployer && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warm.50" color="warm.600">À valider</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warm.subtle" color="warm.600">À valider</Flex>
                       )}
                       {isCompleted && isEmployer && shift.validatedByEmployer && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="accent.50" color="accent.700">Validé</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="accent.subtle" color="accent.700">Validé</Flex>
                       )}
                       {isCompleted && !isEmployer && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="accent.50" color="accent.700">Terminé</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="accent.subtle" color="accent.700">Terminé</Flex>
                       )}
                       {shift._status === 'planned' && (
-                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="brand.50" color="brand.500">Prévu</Flex>
+                        <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="brand.subtle" color="brand.500">Prévu</Flex>
                       )}
                       {shift.lateEntry && (
                         <Flex as="span" display="inline-flex" px="10px" py="3px" borderRadius="full" fontSize="xs" fontWeight="700" bg="warning.100" color="warning.800" ml={1}>Rétroactif</Flex>

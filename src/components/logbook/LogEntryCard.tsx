@@ -112,7 +112,7 @@ export function LogEntryCard({
         flex={1}
         p={4}
         mb={2}
-        bg={entry.importance === 'urgent' ? 'danger.50' : isUnread ? 'brand.50' : 'bg.surface'}
+        bg={entry.importance === 'urgent' ? 'danger.subtle' : isUnread ? 'brand.subtle' : 'bg.surface'}
         borderRadius="12px"
         borderWidth="1px"
         borderColor={entry.importance === 'urgent' ? 'danger.100' : isUnread ? 'brand.100' : 'border.default'}

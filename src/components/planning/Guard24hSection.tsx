@@ -214,7 +214,7 @@ export function Guard24hSection({
                 cursor={canDelete ? 'pointer' : 'not-allowed'}
                 flexShrink={0}
                 transition="all 0.15s"
-                _hover={canDelete ? { bg: 'danger.50', color: '#DC2626', borderColor: 'danger.100' } : {}}
+                _hover={canDelete ? { bg: 'danger.subtle', color: '#DC2626', borderColor: 'danger.100' } : {}}
                 onClick={() => { if (canDelete) onRemoveSegment(i) }}
                 disabled={!canDelete}
                 title="Supprimer ce segment"
@@ -250,7 +250,7 @@ export function Guard24hSection({
           color="brand.500"
           borderWidth="1.5px"
           borderColor="border.default"
-          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
           onClick={() => onAddSegment(guardSegments.length - 1)}
           accessibleLabel="Ajouter un segment"
         >

@@ -285,7 +285,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
                   {...register('cesuNumber')}
                 />
 
-                <Box p={3} bg="brand.50" borderRadius="10px" borderWidth="1px" borderColor="brand.200">
+                <Box p={3} bg="brand.subtle" borderRadius="10px" borderWidth="1px" borderColor="brand.200">
                   <Text fontSize="sm" color="brand.700">
                     <Text as="span" fontWeight="medium">Convention applicable :</Text>{' '}
                     IDCC 3239 — Convention collective du particulier employeur
@@ -347,7 +347,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
               {pchRate !== null && (
                 <Box
                   p={3}
-                  bg="brand.50"
+                  bg="brand.subtle"
                   borderRadius="10px"
                   borderWidth="1px"
                   borderColor="brand.200"

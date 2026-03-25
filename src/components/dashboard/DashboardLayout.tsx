@@ -227,7 +227,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
               borderWidth="1.5px"
               borderColor="border.default"
               color="brand.500"
-              _hover={{ bg: 'brand.50', borderColor: 'brand.100', color: 'brand.600' }}
+              _hover={{ bg: 'brand.subtle', borderColor: 'brand.muted', color: 'brand.600' }}
             >
               {isSidebarOpen ? '✕' : '☰'}
             </IconButton>
@@ -238,6 +238,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
               w="32px"
               flexShrink={0}
               display={{ base: 'block', lg: 'none' }}
+              css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
             />
             <Image
               src="/Logo_Unilien.svg"
@@ -246,6 +247,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
               objectFit="contain"
               flexShrink={0}
               display={{ base: 'none', lg: 'block' }}
+              css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
             />
             <Box
               display={{ base: 'none', lg: 'block' }}
@@ -321,7 +323,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
               borderWidth="1.5px"
               borderColor="border.default"
               color="brand.500"
-              _hover={{ bg: 'brand.50', borderColor: 'brand.100' }}
+              _hover={{ bg: 'brand.subtle', borderColor: 'brand.muted' }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </IconButton>
@@ -471,7 +473,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                       fontSize="sm"
                       fontWeight="600"
                       color="danger.500"
-                      _hover={{ bg: 'danger.50' }}
+                      _hover={{ bg: 'danger.subtle' }}
                       role="menuitem"
                       onClick={signOut}
                     >
@@ -549,13 +551,13 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                             px={5}
                             py="10px"
                             borderRadius="6px"
-                            bg={isActive ? 'color-mix(in srgb, var(--chakra-colors-brand-500) 12%, transparent)' : 'transparent'}
-                            color={isActive ? 'brand.500' : 'brand.400'}
+                            bg={isActive ? 'color-mix(in srgb, var(--chakra-colors-brand-500) 30%, transparent)' : 'transparent'}
+                            color={isActive ? 'brand.fg' : 'text.muted'}
                             fontWeight={isActive ? 'bold' : '500'}
                             fontSize="sm"
                             transition="background 0.15s ease, color 0.15s ease"
                             _hover={{
-                              bg: 'brand.50',
+                              bg: 'bg.surface.hover',
                               color: 'text.default',
                             }}
                             _focusVisible={{
@@ -606,7 +608,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
               onClick={signOut}
               color="brand.500"
               borderRadius="10px"
-              _hover={{ bg: 'brand.50' }}
+              _hover={{ bg: 'brand.subtle' }}
             >
               <NavIcon name="signout" size={16} />
             </IconButton>

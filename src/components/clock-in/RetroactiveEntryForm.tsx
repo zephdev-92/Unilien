@@ -210,7 +210,7 @@ export function RetroactiveEntryForm({
             borderRadius="md"
             borderWidth="1px"
             borderColor="#D1E7DD"
-            bg="accent.50"
+            bg="accent.subtle"
           >
             <Flex align="center" justify="space-between" flexWrap="wrap" gap={2}>
               <Text fontSize="sm" fontWeight="500" color="text.default">
@@ -225,7 +225,7 @@ export function RetroactiveEntryForm({
                   borderRadius="full"
                   fontSize="xs"
                   fontWeight="700"
-                  bg="accent.50"
+                  bg="accent.subtle"
                   color="accent.700"
                 >
                   Terminé

@@ -140,7 +140,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
         {isOver && (
           <Flex
             px={3} py="4px" borderRadius="full" fontSize="12px" fontWeight="700"
-            bg="danger.50" color="danger.500" borderWidth="1px" borderColor="danger.200"
+            bg="danger.subtle" color="danger.500" borderWidth="1px" borderColor="danger.200"
           >
             Dépassement
           </Flex>
@@ -213,7 +213,7 @@ export function PchEnvelopeWidget({ employerId }: PchEnvelopeWidgetProps) {
           <Box
             textAlign="center" py={3} px={2}
             borderRadius="10px" borderWidth="1px" borderColor="border.default"
-            bg={resteACharge > 0 ? 'danger.50' : 'accent.50'}
+            bg={resteACharge > 0 ? 'danger.subtle' : 'accent.subtle'}
           >
             <Text fontSize="lg" fontWeight="800" color={resteACharge > 0 ? 'danger.500' : 'accent.700'}>
               {resteACharge > 0 ? `${fmt(resteACharge)} €` : 'Couvert'}

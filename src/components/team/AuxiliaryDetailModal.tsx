@@ -415,7 +415,7 @@ export function AuxiliaryDetailModal({
               <Dialog.Footer p={6} borderTopWidth="1px" borderColor="border.default">
                 {confirmTerminate ? (
                   <Stack gap={3} w="full">
-                    <Box p={4} bg="danger.50" borderRadius="10px" borderWidth="1px" borderColor="danger.100">
+                    <Box p={4} bg="danger.subtle" borderRadius="10px" borderWidth="1px" borderColor="danger.100">
                       <Text color="danger.500" fontWeight={600} fontSize="sm">
                         Êtes-vous sûr de vouloir mettre fin à ce contrat ?
                       </Text>
@@ -453,7 +453,7 @@ export function AuxiliaryDetailModal({
                         variant="outline"
                         borderColor="danger.500"
                         color="danger.500"
-                        _hover={{ bg: 'danger.50' }}
+                        _hover={{ bg: 'danger.subtle' }}
                         onClick={() => setConfirmTerminate(true)}
                       >
                         Mettre fin au contrat
@@ -463,7 +463,7 @@ export function AuxiliaryDetailModal({
                           variant="outline"
                           borderColor="warning.500"
                           color="warning.500"
-                          _hover={{ bg: 'warning.50' }}
+                          _hover={{ bg: 'warning.subtle' }}
                           onClick={handleSuspend}
                           loading={isSuspending}
                         >
@@ -475,7 +475,7 @@ export function AuxiliaryDetailModal({
                           variant="outline"
                           borderColor="accent.700"
                           color="accent.700"
-                          _hover={{ bg: 'success.50' }}
+                          _hover={{ bg: 'success.subtle' }}
                           onClick={handleResume}
                           loading={isResuming}
                         >

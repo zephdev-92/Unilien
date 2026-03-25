@@ -156,7 +156,7 @@ export function ResetPasswordForm() {
         <Flex
           align="center"
           gap={2}
-          bg="accent.50"
+          bg="accent.subtle"
           borderRadius="10px"
           px={3}
           py={2}

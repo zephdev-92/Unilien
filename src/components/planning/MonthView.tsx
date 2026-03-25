@@ -135,7 +135,7 @@ export function MonthView({
               borderRightWidth="1px"
               borderBottomWidth="1px"
               borderColor="border.default"
-              bg={isCurrentDay ? 'brand.50' : isCurrentMonth ? 'white' : 'gray.50'}
+              bg={isCurrentDay ? 'brand.subtle' : isCurrentMonth ? 'white' : 'gray.50'}
               minH="100px"
               _last={{ borderRightWidth: 0 }}
               opacity={isCurrentMonth ? 1 : 0.5}

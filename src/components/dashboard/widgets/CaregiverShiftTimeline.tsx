@@ -87,8 +87,8 @@ const DOT_COLORS: Record<DotStatus, { bg: string; border: string; opacity?: numb
 
 const STATUS_LABELS: Record<DotStatus, { text: string; bg: string; color: string; dotColor: string }> = {
   done: { text: 'Terminé', bg: 'bg.muted', color: 'text.muted', dotColor: 'text.muted' },
-  active: { text: 'En cours', bg: 'warm.50', color: 'warm.500', dotColor: 'warm.500' },
-  upcoming: { text: 'À venir', bg: 'warm.50', color: 'warm.500', dotColor: 'warm.500' },
+  active: { text: 'En cours', bg: 'warm.subtle', color: 'warm.500', dotColor: 'warm.500' },
+  upcoming: { text: 'À venir', bg: 'warm.subtle', color: 'warm.500', dotColor: 'warm.500' },
 }
 
 export function CaregiverShiftTimeline({ profileId, employerName }: CaregiverShiftTimelineProps) {
@@ -182,7 +182,7 @@ export function CaregiverShiftTimeline({ profileId, employerName }: CaregiverShi
           borderRadius="6px"
           px="16px"
           py="7px"
-          _hover={{ borderColor: 'warm.500', color: 'warm.500', bg: 'warm.50' }}
+          _hover={{ borderColor: 'warm.500', color: 'warm.500', bg: 'warm.subtle' }}
         >
           <RouterLink to="/planning">Voir le planning</RouterLink>
         </AccessibleButton>
@@ -238,7 +238,7 @@ export function CaregiverShiftTimeline({ profileId, employerName }: CaregiverShi
                     <Flex gap="8px" align="center" flexWrap="wrap">
                       <Text
                         as="span" fontSize="11px" fontWeight="600"
-                        bg={dot === 'active' ? 'warm.50' : 'bg.muted'}
+                        bg={dot === 'active' ? 'warm.subtle' : 'bg.muted'}
                         color={dot === 'active' ? 'warm.500' : undefined}
                         px="12px" py="4px" borderRadius="6px"
                       >

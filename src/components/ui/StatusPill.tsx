@@ -3,11 +3,11 @@ import { Flex, Box, Text } from '@chakra-ui/react'
 type StatusVariant = 'active' | 'pending' | 'off' | 'danger' | 'success'
 
 const VARIANT_STYLES: Record<StatusVariant, { bg: string; color: string; dot: string }> = {
-  active:  { bg: 'brand.50', color: 'brand.500', dot: 'brand.500' },
-  pending: { bg: 'warm.50', color: 'warm.600', dot: 'warm.500' },
+  active:  { bg: 'brand.subtle', color: 'brand.500', dot: 'brand.500' },
+  pending: { bg: 'warm.subtle', color: 'warm.600', dot: 'warm.500' },
   off:     { bg: 'bg.muted', color: 'text.inactive', dot: 'text.inactive' },
-  danger:  { bg: 'danger.50', color: 'danger.500', dot: 'danger.500' },
-  success: { bg: 'accent.50', color: 'accent.700', dot: 'accent.500' },
+  danger:  { bg: 'danger.subtle', color: 'danger.500', dot: 'danger.500' },
+  success: { bg: 'accent.subtle', color: 'accent.700', dot: 'accent.500' },
 }
 
 interface StatusPillProps {

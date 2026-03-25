@@ -222,10 +222,10 @@ export function SpotlightSearch({ spotlight }: SpotlightSearchProps) {
                         mx={2}
                         borderRadius="8px"
                         cursor="pointer"
-                        bg={isActive ? 'brand.50' : 'transparent'}
+                        bg={isActive ? 'brand.subtle' : 'transparent'}
                         color={isActive ? 'brand.600' : 'text.default'}
                         transition="background 0.1s ease"
-                        _hover={{ bg: 'brand.50' }}
+                        _hover={{ bg: 'brand.subtle' }}
                         onClick={() => selectResult(result)}
                         onMouseEnter={() => setActiveIndex(idx)}
                       >

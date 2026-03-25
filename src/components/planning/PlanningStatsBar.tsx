@@ -41,8 +41,8 @@ const ShieldIcon = () => (
 // --- Couleurs icônes (proto: blue, green, warn) ---
 
 const iconColors = {
-  blue: { bg: 'brand.50', color: 'brand.500' },
-  green: { bg: 'green.50', color: 'green.600' },
+  blue: { bg: 'brand.subtle', color: 'brand.500' },
+  green: { bg: 'accent.subtle', color: 'green.600' },
   warn: { bg: 'orange.50', color: 'orange.500' },
 } as const
 
@@ -342,7 +342,7 @@ export function NextShiftChip({ shifts }: { shifts: Shift[] }) {
       gap={2}
       px={3}
       py={1.5}
-      bg="brand.50"
+      bg="brand.subtle"
       borderRadius="full"
       borderWidth="1px"
       borderColor="brand.200"

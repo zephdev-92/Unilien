@@ -261,8 +261,8 @@ export function SettingsPage() {
                       size="sm"
                       justifyContent="flex-start"
                       fontWeight={activePanel === item.id ? '700' : '500'}
-                      color={activePanel === item.id ? 'brand.500' : 'text.muted'}
-                      bg={activePanel === item.id ? 'brand.subtle' : 'transparent'}
+                      color={activePanel === item.id ? 'brand.fg' : 'text.muted'}
+                      bg={activePanel === item.id ? 'color-mix(in srgb, var(--chakra-colors-brand-500) 30%, transparent)' : 'transparent'}
                       onClick={() => setActivePanel(item.id)}
                       whiteSpace="nowrap"
                       gap={2}
@@ -352,10 +352,8 @@ function ToggleRow({
         <Switch.HiddenInput aria-label={label} />
         <Switch.Control
           borderRadius="full"
-          bg={checked ? 'accent.500' : 'border.default'}
           css={{
-            '&[data-state=checked]': { background: 'var(--chakra-colors-accent-500)' },
-            '&[data-state=unchecked]': { background: 'var(--chakra-colors-border-default)' },
+            '&[data-state=checked]': { background: '#9BB23B !important' },
           }}
         >
           <Switch.Thumb />
@@ -486,7 +484,7 @@ function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: 
       />
 
       {feedback && (
-        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'green.50' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
+        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'accent.subtle' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
           <Text fontSize="sm" color={feedback.type === 'success' ? 'green.700' : 'red.700'}>{feedback.msg}</Text>
         </Box>
       )}
@@ -658,7 +656,7 @@ function SecuritePanel() {
       />
 
       {feedback && (
-        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'green.50' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
+        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'accent.subtle' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
           <Text fontSize="sm" color={feedback.type === 'success' ? 'green.700' : 'red.700'}>{feedback.msg}</Text>
         </Box>
       )}
@@ -840,7 +838,7 @@ function AbonnementPanel() {
               <Box
                 key={plan.name}
                 borderWidth="2px"
-                borderColor={plan.isCurrent ? 'brand.500' : 'gray.200'}
+                borderColor={plan.isCurrent ? 'brand.500' : 'border.default'}
                 borderRadius="12px"
                 p={5}
                 position="relative"
@@ -1107,8 +1105,8 @@ function InterventionsPanel() {
       />
 
       {feedback && (
-        <Box px={4} py={3} borderRadius="md" bg="green.50" borderWidth="1px" borderColor="green.200">
-          <Text fontSize="sm" color="green.700">{feedback}</Text>
+        <Box px={4} py={3} borderRadius="md" bg="accent.subtle" borderWidth="1px" borderColor="accent.muted">
+          <Text fontSize="sm" color="accent.fg">{feedback}</Text>
         </Box>
       )}
 
@@ -1140,7 +1138,12 @@ function InterventionsPanel() {
                   onCheckedChange={() => toggleTask(task)}
                 >
                   <Switch.HiddenInput />
-                  <Switch.Control>
+                  <Switch.Control
+                    borderRadius="full"
+                    css={{
+                      '&[data-state=checked]': { background: '#9BB23B !important' },
+                    }}
+                  >
                     <Switch.Thumb />
                   </Switch.Control>
                 </Switch.Root>
@@ -1235,9 +1238,9 @@ function InterventionsPanel() {
                     <Box
                       as="button" type="button"
                       w="22px" h="22px" borderRadius="full"
-                      bg="gray.100" fontSize="xs" fontWeight="bold"
+                      bg="border.default" color="text.default" fontSize="xs" fontWeight="bold"
                       display="flex" alignItems="center" justifyContent="center"
-                      _hover={{ bg: 'gray.200' }}
+                      _hover={{ bg: 'brand.subtle', borderColor: 'brand.solid' }}
                       onClick={() => updateShoppingItem(item.name, item.brand, { quantity: Math.max(1, (item.quantity || 1) - 1) })}
                       aria-label={`Diminuer la quantité de ${item.name}`}
                     >-</Box>
@@ -1247,9 +1250,9 @@ function InterventionsPanel() {
                     <Box
                       as="button" type="button"
                       w="22px" h="22px" borderRadius="full"
-                      bg="gray.100" fontSize="xs" fontWeight="bold"
+                      bg="border.default" color="text.default" fontSize="xs" fontWeight="bold"
                       display="flex" alignItems="center" justifyContent="center"
-                      _hover={{ bg: 'gray.200' }}
+                      _hover={{ bg: 'brand.subtle', borderColor: 'brand.solid' }}
                       onClick={() => updateShoppingItem(item.name, item.brand, { quantity: (item.quantity || 1) + 1 })}
                       aria-label={`Augmenter la quantité de ${item.name}`}
                     >+</Box>
@@ -1341,8 +1344,8 @@ function ConventionPanel() {
       />
 
       {feedback && (
-        <Box px={4} py={3} borderRadius="md" bg="green.50" borderWidth="1px" borderColor="green.200">
-          <Text fontSize="sm" color="green.700">{feedback}</Text>
+        <Box px={4} py={3} borderRadius="md" bg="accent.subtle" borderWidth="1px" borderColor="accent.muted">
+          <Text fontSize="sm" color="accent.fg">{feedback}</Text>
         </Box>
       )}
 
@@ -1499,6 +1502,10 @@ function ApparencePanel() {
       const next = { ...prev, ...patch }
       localStorage.setItem(APPARENCE_STORAGE_KEY, JSON.stringify(next))
       if (next.density !== prev.density) applyDensity(next.density)
+      if (next.darkMode !== prev.darkMode) {
+        if (next.darkMode) document.documentElement.classList.add('dark')
+        else document.documentElement.classList.remove('dark')
+      }
       return next
     })
   }
@@ -1510,12 +1517,9 @@ function ApparencePanel() {
         subtitle="Personnalisez l'interface selon vos préférences visuelles."
       />
 
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <HStack gap={2}>
-            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Thème</Card.Title>
-            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
-          </HStack>
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Thème</Card.Title>
         </Card.Header>
         <Card.Body p={4}>
           <ToggleRow
@@ -1523,7 +1527,6 @@ function ApparencePanel() {
             description="Réduit la fatigue visuelle en environnement peu éclairé."
             checked={settings.darkMode}
             onChange={() => update({ darkMode: !settings.darkMode })}
-            disabled
           />
         </Card.Body>
       </Card.Root>
@@ -1539,7 +1542,7 @@ function ApparencePanel() {
                 key={d}
                 flex={1}
                 borderWidth="2px"
-                borderColor={settings.density === d ? 'brand.500' : 'gray.200'}
+                borderColor={settings.density === d ? 'brand.500' : 'border.default'}
                 borderRadius="10px"
                 p={4}
                 cursor="pointer"
@@ -1757,7 +1760,7 @@ function DonneesPanel({ userId }: { userId: string }) {
       />
 
       {feedback && (
-        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'green.50' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
+        <Box px={4} py={3} borderRadius="md" bg={feedback.type === 'success' ? 'accent.subtle' : 'red.50'} borderWidth="1px" borderColor={feedback.type === 'success' ? 'green.200' : 'red.200'}>
           <Text fontSize="sm" color={feedback.type === 'success' ? 'green.700' : 'red.700'}>{feedback.msg}</Text>
         </Box>
       )}

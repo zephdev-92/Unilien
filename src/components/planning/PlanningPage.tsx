@@ -287,7 +287,7 @@ export function PlanningPage() {
       <Flex
         display={{ base: 'none', md: 'flex' }}
         gap="2px"
-        bg="bg.page"
+        bg="bg.muted"
         borderWidth="1.5px"
         borderColor="border.default"
         borderRadius="10px"
@@ -300,9 +300,9 @@ export function PlanningPage() {
           borderRadius="6px"
           fontSize="14px"
           fontWeight="600"
-          bg={viewMode === 'week' ? 'white' : 'transparent'}
-          color={viewMode === 'week' ? 'brand.500' : 'text.inactive'}
-          boxShadow={viewMode === 'week' ? '0 1px 2px rgba(78,100,120,.06)' : 'none'}
+          bg={viewMode === 'week' ? 'brand.solid' : 'transparent'}
+          color={viewMode === 'week' ? 'white' : 'text.inactive'}
+          boxShadow={viewMode === 'week' ? 'sm' : 'none'}
           transition="background 0.15s, color 0.15s"
           cursor="pointer"
           onClick={() => setViewMode('week')}
@@ -316,9 +316,9 @@ export function PlanningPage() {
           borderRadius="6px"
           fontSize="14px"
           fontWeight="600"
-          bg={viewMode === 'month' ? 'white' : 'transparent'}
-          color={viewMode === 'month' ? 'brand.500' : 'text.inactive'}
-          boxShadow={viewMode === 'month' ? '0 1px 2px rgba(78,100,120,.06)' : 'none'}
+          bg={viewMode === 'month' ? 'brand.solid' : 'transparent'}
+          color={viewMode === 'month' ? 'white' : 'text.inactive'}
+          boxShadow={viewMode === 'month' ? 'sm' : 'none'}
           transition="background 0.15s, color 0.15s"
           cursor="pointer"
           onClick={() => setViewMode('month')}
@@ -334,9 +334,9 @@ export function PlanningPage() {
           align="center"
           gap={1}
           px={3} py="5px"
-          borderWidth="1.5px" borderColor="border.default"
+          borderWidth="1.5px" borderColor="border.strong"
           borderRadius={btnRadius}
-          fontSize="13px" fontWeight="600" color="brand.500"
+          fontSize="13px" fontWeight="600" color="brand.fg"
           bg="transparent"
           _hover={{ bg: 'bg.page' }}
           onClick={() => setIsDlMenuOpen(!isDlMenuOpen)}
@@ -457,9 +457,9 @@ export function PlanningPage() {
                 as="button" align="center" justify="center"
                 px="7px" py="7px"
                 borderRadius="6px"
-                borderWidth="1.5px" borderColor="border.default"
-                bg="transparent" color="brand.500"
-                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+                borderWidth="1.5px" borderColor="border.strong"
+                bg="transparent" color="brand.fg"
+                _hover={{ borderColor: 'brand.solid', color: 'brand.solid', bg: 'brand.subtle' }}
                 onClick={goToPrevious}
                 aria-label={viewMode === 'week' ? 'Semaine précédente' : 'Mois précédent'}
               >
@@ -472,9 +472,9 @@ export function PlanningPage() {
                 as="button" align="center" justify="center"
                 px="7px" py="7px"
                 borderRadius="6px"
-                borderWidth="1.5px" borderColor="border.default"
-                bg="transparent" color="brand.500"
-                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+                borderWidth="1.5px" borderColor="border.strong"
+                bg="transparent" color="brand.fg"
+                _hover={{ borderColor: 'brand.solid', color: 'brand.solid', bg: 'brand.subtle' }}
                 onClick={goToNext}
                 aria-label={viewMode === 'week' ? 'Semaine suivante' : 'Mois suivant'}
               >
@@ -483,10 +483,10 @@ export function PlanningPage() {
               <Flex
                 as="button"
                 px={4} py="7px"
-                borderWidth="1.5px" borderColor="border.default" borderRadius="6px"
-                fontSize="13px" fontWeight="600" color="brand.500"
+                borderWidth="1.5px" borderColor="border.strong" borderRadius="6px"
+                fontSize="13px" fontWeight="600" color="brand.fg"
                 bg="transparent"
-                _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+                _hover={{ borderColor: 'brand.solid', color: 'brand.solid', bg: 'brand.subtle' }}
                 onClick={goToToday}
               >
                 Aujourd&apos;hui
@@ -500,10 +500,10 @@ export function PlanningPage() {
                 <Box
                   as="select"
                   px={3} py="7px"
-                  borderWidth="1.5px" borderColor="border.default" borderRadius="10px"
-                  fontSize="14px" fontWeight="500" color="brand.500"
+                  borderWidth="1.5px" borderColor="border.strong" borderRadius="10px"
+                  fontSize="14px" fontWeight="500" color="text.default"
                   bg="bg.surface" cursor="pointer"
-                  _hover={{ borderColor: 'brand.100' }}
+                  _hover={{ borderColor: 'brand.solid' }}
                   value={employeeFilter ?? ''}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setEmployeeFilter(e.target.value || null)
@@ -517,10 +517,10 @@ export function PlanningPage() {
                 <Box
                   as="select"
                   px={3} py="7px"
-                  borderWidth="1.5px" borderColor="border.default" borderRadius="10px"
-                  fontSize="14px" fontWeight="500" color="brand.500"
+                  borderWidth="1.5px" borderColor="border.strong" borderRadius="10px"
+                  fontSize="14px" fontWeight="500" color="text.default"
                   bg="bg.surface" cursor="pointer"
-                  _hover={{ borderColor: 'brand.100' }}
+                  _hover={{ borderColor: 'brand.solid' }}
                   value={typeFilter}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setTypeFilter(e.target.value as ShiftTypeFilter)

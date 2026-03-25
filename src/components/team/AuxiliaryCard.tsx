@@ -30,7 +30,7 @@ function MetaRow({ icon, label, children }: { icon: React.ReactNode; label: stri
 function StatusPill({ status, isOnLeave }: { status: string; isOnLeave: boolean }) {
   if (isOnLeave) {
     return (
-      <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="warning.50" color="warning.500">
+      <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="warning.subtle" color="warning.500">
         En congé
       </Box>
     )
@@ -38,7 +38,7 @@ function StatusPill({ status, isOnLeave }: { status: string; isOnLeave: boolean 
   const isActive = status === 'active'
   return (
     <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full"
-      bg={isActive ? 'success.50' : 'gray.100'}
+      bg={isActive ? 'success.subtle' : 'gray.100'}
       color={isActive ? 'success.700' : 'gray.500'}
     >
       {isActive ? 'Actif' : 'Inactif'}
@@ -145,7 +145,7 @@ export function AuxiliaryCard({ auxiliary, onClick }: AuxiliaryCardProps) {
           fontSize="xs"
           borderRadius="6px"
           py="7px"
-          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
         >
           Voir le profil
         </AccessibleButton>
@@ -161,7 +161,7 @@ export function AuxiliaryCard({ auxiliary, onClick }: AuxiliaryCardProps) {
           fontSize="xs"
           borderRadius="6px"
           py="7px"
-          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
         >
           Planning
         </AccessibleButton>
