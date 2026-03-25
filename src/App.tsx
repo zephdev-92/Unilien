@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { Box, Container, Spinner, Center, Text } from '@chakra-ui/react'
 import { LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm } from '@/components/auth'
 import { ErrorBoundary } from '@/components/ui'
+import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner'
 import { RouteAnnouncer } from '@/components/accessibility/RouteAnnouncer'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
@@ -23,6 +24,7 @@ const ClockInPage = lazy(() => import('@/components/clock-in/ClockInPage'))
 const CompliancePage = lazy(() => import('@/pages/CompliancePage'))
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage'))
 const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'))
+const LegalPage = lazy(() => import('@/pages/LegalPage'))
 
 // Applique les attributs data-* sur <html> selon les préférences d'accessibilité
 function AccessibilityApplier() {
@@ -118,8 +120,9 @@ function App() {
           {/* Page d'accueil publique */}
           <Route path="/" element={<HomePage />} />
 
-          {/* Page de contact */}
+          {/* Pages publiques */}
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/mentions-legales" element={<LegalPage />} />
 
           {/* Routes publiques */}
           <Route
@@ -183,6 +186,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <CookieConsentBanner />
     </>
   )
 }
