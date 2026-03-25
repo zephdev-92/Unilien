@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import { AccessibleInput, AccessibleButton, GhostButton, PrimaryButton } from '@/components/ui'
 import { PlanningModal } from './PlanningModal'
+import { toaster } from '@/lib/toaster'
 import { logger } from '@/lib/logger'
 import { createAbsence, uploadJustification, validateJustificationFile } from '@/services/absenceService'
 import { countBusinessDays, FAMILY_EVENT_LABELS, FAMILY_EVENT_DAYS } from '@/lib/absence'
@@ -344,10 +345,12 @@ export function AbsenceRequestModal({
           : undefined,
       })
 
+      toaster.success({ title: 'Demande d\'absence envoyée' })
       onSuccess()
       onClose()
     } catch (error) {
       logger.error('Erreur création absence:', error)
+      toaster.error({ title: 'Erreur lors de la demande d\'absence' })
       setSubmitError(error instanceof Error ? error.message : 'Une erreur est survenue')
     } finally {
       setIsSubmitting(false)

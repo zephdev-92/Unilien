@@ -24,6 +24,7 @@ import { createShifts } from '@/services/shiftService'
 import { SHIFT_TYPE_LABELS } from './shiftTypeLabels'
 import { TaskSelector } from './TaskSelector'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -142,12 +143,19 @@ export function NewShiftModal({
       )
       if (failed.length > 0) {
         logger.error('Certaines occurrences ont échoué:', failed)
+        toaster.success({
+          title: 'Interventions créées',
+          description: `${validOccurrences.length - failed.length} créées, ${failed.length} échouées`,
+        })
+      } else {
+        toaster.success({ title: `${validOccurrences.length} interventions créées avec succès` })
       }
       setIsPreviewOpen(false)
       onSuccess()
       onClose()
     } catch (error) {
       logger.error('Erreur création répétitions:', error)
+      toaster.error({ title: 'Erreur lors de la création des interventions' })
     } finally {
       setIsBatchSubmitting(false)
     }

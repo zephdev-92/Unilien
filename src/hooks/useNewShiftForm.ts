@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { createShift } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import type { ShiftType } from '@/types'
 import { useShiftNightHours } from '@/hooks/useShiftNightHours'
 import { useShiftRequalification } from '@/hooks/useShiftRequalification'
@@ -201,6 +202,7 @@ export function useNewShiftForm({
         guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
       })
 
+      toaster.success({ title: 'Intervention créée avec succès' })
       onSuccess()
       onClose()
     } catch (error) {

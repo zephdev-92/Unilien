@@ -18,6 +18,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AccessibleButton, AccessibleInput } from '@/components/ui'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import {
   getAuxiliaryDetails,
   updateContract,
@@ -82,9 +83,11 @@ export function AuxiliaryDetailModal({
       const updated = await getAuxiliaryDetails(contractId)
       setDetails(updated)
       setIsEditing(false)
+      toaster.success({ title: 'Contrat mis à jour' })
       onUpdate()
     } catch (error) {
       logger.error('Erreur mise à jour:', error)
+      toaster.error({ title: 'Erreur lors de la mise à jour du contrat' })
     } finally {
       setIsSaving(false)
     }
@@ -94,10 +97,12 @@ export function AuxiliaryDetailModal({
     setIsTerminating(true)
     try {
       await terminateContract(contractId)
+      toaster.success({ title: 'Contrat résilié' })
       onUpdate()
       onClose()
     } catch (error) {
       logger.error('Erreur résiliation:', error)
+      toaster.error({ title: 'Erreur lors de la résiliation' })
     } finally {
       setIsTerminating(false)
     }
@@ -109,9 +114,11 @@ export function AuxiliaryDetailModal({
       await suspendContract(contractId)
       const updated = await getAuxiliaryDetails(contractId)
       setDetails(updated)
+      toaster.success({ title: 'Contrat suspendu' })
       onUpdate()
     } catch (error) {
       logger.error('Erreur suspension:', error)
+      toaster.error({ title: 'Erreur lors de la suspension' })
     } finally {
       setIsSuspending(false)
     }
@@ -123,9 +130,11 @@ export function AuxiliaryDetailModal({
       await resumeContract(contractId)
       const updated = await getAuxiliaryDetails(contractId)
       setDetails(updated)
+      toaster.success({ title: 'Contrat réactivé' })
       onUpdate()
     } catch (error) {
       logger.error('Erreur réactivation:', error)
+      toaster.error({ title: 'Erreur lors de la réactivation' })
     } finally {
       setIsResuming(false)
     }

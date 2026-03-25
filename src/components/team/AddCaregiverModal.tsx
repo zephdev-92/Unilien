@@ -17,6 +17,7 @@ import {
   addCaregiverToEmployer,
 } from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
+import { toaster } from '@/lib/toaster'
 import type { CaregiverPermissions, CaregiverLegalStatus } from '@/types'
 
 // ============================================
@@ -174,6 +175,7 @@ export function AddCaregiverModal({
         employerId,
       )
 
+      toaster.success({ title: 'Invitation envoyée avec succès' })
       setInviteSuccess(true)
       setFoundCaregiver({
         profileId: userId,
@@ -183,6 +185,7 @@ export function AddCaregiverModal({
       })
     } catch (err) {
       logger.error('Erreur invitation aidant:', err)
+      toaster.error({ title: "Erreur lors de l'envoi de l'invitation" })
       setInviteError(err instanceof Error ? err.message : "Erreur lors de l'envoi de l'invitation")
     } finally {
       setIsInviting(false)
@@ -202,9 +205,11 @@ export function AddCaregiverModal({
         permissionsLocked,
       })
 
+      toaster.success({ title: 'Aidant ajouté avec succès' })
       onSuccess()
       handleClose()
     } catch (err) {
+      toaster.error({ title: "Erreur lors de l'ajout de l'aidant" })
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'ajout')
     } finally {
       setIsSubmitting(false)

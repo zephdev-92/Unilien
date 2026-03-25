@@ -13,6 +13,7 @@ import { RepeatConfigSection } from './RepeatConfigSection'
 import { RepeatPreviewModal, type RepeatOccurrence } from './RepeatPreviewModal'
 import { useRepeatConfig } from '@/hooks/useRepeatConfig'
 import { createShifts } from '@/services/shiftService'
+import { toaster } from '@/lib/toaster'
 import type { Shift } from '@/types'
 import type { ShiftForValidation, AbsenceForValidation } from '@/lib/compliance'
 import { format } from 'date-fns'
@@ -88,12 +89,19 @@ export function RepeatShiftModal({
       )
       if (failed.length > 0) {
         logger.error('Certaines occurrences ont échoué:', failed)
+        toaster.success({
+          title: 'Interventions créées',
+          description: `${validOccurrences.length - failed.length} créées, ${failed.length} échouées`,
+        })
+      } else {
+        toaster.success({ title: `${validOccurrences.length} interventions répétées avec succès` })
       }
       setIsPreviewOpen(false)
       onSuccess()
       onClose()
     } catch (error) {
       logger.error('Erreur création occurrences:', error)
+      toaster.error({ title: 'Erreur lors de la création des répétitions' })
       setSubmitError(error instanceof Error ? error.message : 'Une erreur est survenue')
     } finally {
       setIsSubmitting(false)

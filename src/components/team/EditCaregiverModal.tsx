@@ -17,6 +17,7 @@ import { updateCaregiver, type CaregiverWithProfile } from '@/services/caregiver
 import { getActiveCaregiverContract, terminateContract, updateContract } from '@/services/contractService'
 import { PCH_RATES } from '@/types'
 import type { Contract, CaregiverPermissions, CaregiverLegalStatus, CaregiverContractStatus } from '@/types'
+import { toaster } from '@/lib/toaster'
 
 // Labels pour les statuts juridiques
 const legalStatusLabels: Record<CaregiverLegalStatus, string> = {
@@ -118,9 +119,11 @@ export function EditCaregiverModal({
         permissions,
       })
 
+      toaster.success({ title: 'Permissions mises à jour' })
       onSuccess()
       handleClose()
     } catch (err) {
+      toaster.error({ title: 'Erreur lors de la mise à jour des permissions' })
       setError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour')
     } finally {
       setIsSubmitting(false)
@@ -132,9 +135,11 @@ export function EditCaregiverModal({
     setIsTerminating(true)
     try {
       await terminateContract(caregiverContract.id)
+      toaster.success({ title: 'Contrat aidant résilié' })
       setCaregiverContract(null)
       setConfirmTerminate(false)
     } catch (err) {
+      toaster.error({ title: 'Erreur lors de la résiliation du contrat' })
       setError(err instanceof Error ? err.message : 'Erreur lors de la terminaison du contrat')
     } finally {
       setIsTerminating(false)
@@ -167,8 +172,10 @@ export function EditCaregiverModal({
         const updated = await getActiveCaregiverContract(caregiver.employerId, caregiver.profileId)
         setCaregiverContract(updated)
       }
+      toaster.success({ title: 'Contrat aidant mis à jour' })
       setIsEditingContract(false)
     } catch (err) {
+      toaster.error({ title: 'Erreur lors de la mise à jour du contrat' })
       setError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du contrat')
     } finally {
       setIsSavingContract(false)
