@@ -449,7 +449,7 @@ export function EditCaregiverModal({
                           {!isEditingContract && (
                             confirmTerminate ? (
                               <Stack gap={3}>
-                                <Box p={4} bg="danger.50" borderRadius="10px" borderWidth="1px" borderColor="danger.100">
+                                <Box p={4} bg="danger.subtle" borderRadius="10px" borderWidth="1px" borderColor="danger.100">
                                   <Text color="danger.500" fontWeight={600} fontSize="sm">
                                     Êtes-vous sûr de vouloir mettre fin à ce contrat ?
                                   </Text>
@@ -482,7 +482,7 @@ export function EditCaregiverModal({
                                 variant="outline"
                                 borderColor="danger.500"
                                 color="danger.500"
-                                _hover={{ bg: 'danger.50' }}
+                                _hover={{ bg: 'danger.subtle' }}
                                 onClick={() => setConfirmTerminate(true)}
                               >
                                 Mettre fin au contrat

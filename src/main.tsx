@@ -6,12 +6,13 @@ import { ErrorBoundary } from '@/components/ui'
 import App from './App'
 import './index.css'
 
-// Appliquer la densité sauvegardée au démarrage
+// Appliquer les préférences d'apparence au démarrage (avant React pour éviter le flash)
 try {
   const raw = localStorage.getItem('unilien-apparence')
   if (raw) {
-    const { density } = JSON.parse(raw)
+    const { density, darkMode } = JSON.parse(raw)
     if (density === 'compact') document.documentElement.setAttribute('data-density', 'compact')
+    if (darkMode) document.documentElement.classList.add('dark')
   }
 } catch { /* ignore */ }
 

@@ -100,7 +100,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
     return (
       <Stack gap={6}>
         <WelcomeCard profile={profile} />
-        <Box p={6} bg="warm.50" borderRadius="12px" borderWidth="1px" borderColor="warm.200">
+        <Box p={6} bg="warm.subtle" borderRadius="12px" borderWidth="1px" borderColor="warm.200">
           <Text fontWeight="medium" color="warm.700" mb={2}>
             Profil aidant non configuré
           </Text>
@@ -129,7 +129,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
 
       {/* Message si aucune permission */}
       {!hasViewPermission && !hasAdvancedPermissions && (
-        <Box p={6} bg="warm.50" borderRadius="12px" borderWidth="1px" borderColor="warm.200">
+        <Box p={6} bg="warm.subtle" borderRadius="12px" borderWidth="1px" borderColor="warm.200">
           <Text fontWeight="medium" color="warm.700" mb={2}>
             Accès limité
           </Text>

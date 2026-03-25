@@ -133,7 +133,7 @@ export function PushPermissionBanner({
 
   return (
     <Box
-      bg="brand.50"
+      bg="brand.subtle"
       borderRadius="12px"
       p={4}
       mb={4}

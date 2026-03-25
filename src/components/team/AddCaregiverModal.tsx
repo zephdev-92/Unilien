@@ -299,7 +299,7 @@ export function AddCaregiverModal({
                 {showInviteForm && !inviteSuccess && (
                   <Box
                     p={5}
-                    bg="brand.50"
+                    bg="brand.subtle"
                     borderRadius="12px"
                     borderWidth="1px"
                     borderColor="brand.200"
@@ -375,7 +375,7 @@ export function AddCaregiverModal({
                 {inviteSuccess && foundCaregiver && (
                   <Box
                     p={5}
-                    bg="green.50"
+                    bg="accent.subtle"
                     borderRadius="12px"
                     borderWidth="1px"
                     borderColor="green.200"
@@ -404,7 +404,7 @@ export function AddCaregiverModal({
                 {foundCaregiver && (
                   <>
                     <Box
-                      bg="green.50"
+                      bg="accent.subtle"
                       borderWidth="1px"
                       borderColor="green.200"
                       borderRadius="10px"
@@ -460,7 +460,7 @@ export function AddCaregiverModal({
                     {/* Message si permissions verrouillées */}
                     {permissionsLocked && (
                       <Box
-                        bg="brand.50"
+                        bg="brand.subtle"
                         borderWidth="1px"
                         borderColor="brand.200"
                         borderRadius="10px"

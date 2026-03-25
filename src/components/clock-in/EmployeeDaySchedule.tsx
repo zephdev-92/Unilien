@@ -9,12 +9,12 @@ interface EmployeeDayScheduleProps {
 
 function statusPill(status: string) {
   if (status === 'completed') {
-    return { label: 'Terminé', bg: 'accent.50', color: 'accent.700' }
+    return { label: 'Terminé', bg: 'accent.subtle', color: 'accent.700' }
   }
   if (status === 'planned') {
-    return { label: 'À venir', bg: 'warm.50', color: 'warm.600' }
+    return { label: 'À venir', bg: 'warm.subtle', color: 'warm.600' }
   }
-  return { label: 'En cours', bg: 'warm.50', color: 'warm.600' }
+  return { label: 'En cours', bg: 'warm.subtle', color: 'warm.600' }
 }
 
 export function EmployeeDaySchedule({ todayShifts }: EmployeeDayScheduleProps) {

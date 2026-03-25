@@ -92,7 +92,7 @@ export function AnomaliesPanel({ todayShifts, historyShifts }: AnomaliesPanelPro
                 borderRadius="md"
                 borderLeftWidth="3px"
                 borderLeftColor={anomaly.severity === 'danger' ? 'danger.500' : 'brand.500'}
-                bg={anomaly.severity === 'danger' ? 'danger.50' : 'brand.50'}
+                bg={anomaly.severity === 'danger' ? 'danger.subtle' : 'brand.subtle'}
                 color={anomaly.severity === 'danger' ? 'danger.500' : 'brand.500'}
               >
                 <Box flexShrink={0} mt="1px">

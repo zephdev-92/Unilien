@@ -79,7 +79,7 @@ export function DateNavigator({ selectedDate, onDateChange, shifts }: DateNaviga
               transition="all 0.15s"
               bg={isSelected ? 'brand.500' : 'transparent'}
               color={isSelected ? 'white' : 'text.default'}
-              _hover={isSelected ? {} : { bg: 'brand.50' }}
+              _hover={isSelected ? {} : { bg: 'brand.subtle' }}
               css={{
                 '&:focus, &:focus:not(:focus-visible)': {
                   outline: 'none !important',

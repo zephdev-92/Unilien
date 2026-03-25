@@ -12,10 +12,10 @@ export const GhostButton = forwardRef<HTMLButtonElement, AccessibleButtonProps>(
         ref={ref}
         variant="outline"
         bg="transparent"
-        color="brand.500"
+        color="brand.fg"
         borderWidth="1.5px"
-        borderColor="border.default"
-        _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+        borderColor="border.strong"
+        _hover={{ borderColor: 'brand.solid', color: 'brand.solid', bg: 'brand.subtle' }}
         {...props}
       />
     )

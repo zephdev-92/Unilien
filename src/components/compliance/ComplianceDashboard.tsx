@@ -227,7 +227,7 @@ export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShow
             fontWeight="600"
             cursor="pointer"
             whiteSpace="nowrap"
-            _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+            _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
             onClick={() => setShowHelp(false)}
             role="button"
             aria-label="Retour au tableau de bord"
@@ -329,7 +329,8 @@ export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShow
                 borderRadius: '6px',
                 border: '1px solid var(--chakra-colors-border-default)',
                 fontSize: '14px',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--chakra-colors-bg-surface)',
+                color: 'var(--chakra-colors-text-default)',
               }}
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
@@ -347,7 +348,8 @@ export function ComplianceDashboard({ employerId, showHelp: showHelpProp, onShow
                   borderRadius: '6px',
                   border: '1px solid var(--chakra-colors-border-default)',
                   fontSize: '14px',
-                  backgroundColor: 'white',
+                  backgroundColor: 'var(--chakra-colors-bg-surface)',
+                  color: 'var(--chakra-colors-text-default)',
                 }}
                 value={employeeFilter}
                 onChange={(e) => setEmployeeFilter(e.target.value)}
@@ -555,7 +557,7 @@ function AlertCard({
           fontWeight="600"
           cursor="pointer"
           whiteSpace="nowrap"
-          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
           role="button"
           aria-label="Corriger l'alerte"
         >
@@ -575,7 +577,7 @@ function AlertCard({
           fontWeight="600"
           cursor="pointer"
           whiteSpace="nowrap"
-          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
           onClick={onIgnore}
           role="button"
           aria-label="Ignorer l'alerte"

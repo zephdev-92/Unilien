@@ -84,7 +84,7 @@ export function CaregiverCard({ caregiver, contract, onEdit, onRemove }: Caregiv
               <Tag.Label>{statusLabel}</Tag.Label>
             </Tag.Root>
           ) : (
-            <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="gray.100" color="text.muted">
+            <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="bg.muted" color="text.muted">
               Sans contrat
             </Box>
           )}
@@ -187,7 +187,7 @@ export function CaregiverCard({ caregiver, contract, onEdit, onRemove }: Caregiv
           py="7px"
           minH="auto"
           minW="auto"
-          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
         >
           Modifier
         </AccessibleButton>
@@ -205,7 +205,7 @@ export function CaregiverCard({ caregiver, contract, onEdit, onRemove }: Caregiv
           py="7px"
           minH="auto"
           minW="auto"
-          _hover={{ borderColor: 'danger.500', color: 'danger.500', bg: 'danger.50' }}
+          _hover={{ borderColor: 'danger.500', color: 'danger.500', bg: 'danger.subtle' }}
         >
           Retirer
         </AccessibleButton>

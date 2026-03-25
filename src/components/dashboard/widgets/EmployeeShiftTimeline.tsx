@@ -59,8 +59,8 @@ const DOT_COLORS: Record<DotStatus, { bg: string; border: string; opacity?: numb
 
 const STATUS_LABELS: Record<DotStatus, { text: string; bg: string; color: string; dotColor: string }> = {
   done: { text: 'Terminé', bg: 'bg.muted', color: 'text.muted', dotColor: 'text.muted' },
-  active: { text: 'En cours', bg: 'accent.50', color: 'accent.700', dotColor: 'accent.500' },
-  upcoming: { text: 'À venir', bg: 'warm.50', color: 'warm.500', dotColor: 'warm.500' },
+  active: { text: 'En cours', bg: 'accent.subtle', color: 'accent.700', dotColor: 'accent.500' },
+  upcoming: { text: 'À venir', bg: 'warm.subtle', color: 'warm.500', dotColor: 'warm.500' },
 }
 
 function getTimeHint(shift: TimelineShift, dotStatus: DotStatus): string | null {
@@ -185,7 +185,7 @@ export function EmployeeShiftTimeline({ employeeId }: EmployeeShiftTimelineProps
           borderRadius="6px"
           px="16px"
           py="7px"
-          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
         >
           <RouterLink to="/planning">Mon planning</RouterLink>
         </AccessibleButton>
@@ -252,7 +252,7 @@ export function EmployeeShiftTimeline({ employeeId }: EmployeeShiftTimelineProps
                         as="span"
                         fontSize="11px"
                         fontWeight="600"
-                        bg={dotStatus === 'active' ? 'brand.50' : 'bg.muted'}
+                        bg={dotStatus === 'active' ? 'brand.subtle' : 'bg.muted'}
                         color={dotStatus === 'active' ? 'brand.500' : undefined}
                         px="12px"
                         py="4px"

@@ -123,7 +123,7 @@ function AlertSummaryList({ employees }: { employees: EmployeeComplianceStatus[]
         align="center"
         gap={3}
         p={3}
-        bg="green.50"
+        bg="accent.subtle"
         borderRadius="10px"
         borderLeftWidth={3}
         borderLeftColor="green.400"

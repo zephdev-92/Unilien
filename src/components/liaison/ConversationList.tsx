@@ -189,14 +189,14 @@ function ConvItem({ conv, isSelected, onSelect, label, icon, avatarUrl, avatarBg
       px={3}
       py={3}
       cursor="pointer"
-      bg={isSelected ? 'brand.50' : 'transparent'}
+      bg={isSelected ? 'brand.subtle' : 'transparent'}
       borderWidth="2px"
       borderColor={isSelected ? 'brand.100' : 'transparent'}
       borderRadius="10px"
       mx="8px"
       w="calc(100% - 16px)"
       mb="2px"
-      _hover={{ bg: 'brand.50' }}
+      _hover={{ bg: 'brand.subtle' }}
       onClick={() => onSelect(conv)}
       transition="background 0.15s"
     >

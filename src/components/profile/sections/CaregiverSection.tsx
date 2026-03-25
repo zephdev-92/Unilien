@@ -192,7 +192,7 @@ export function CaregiverSection({ profileId }: CaregiverSectionProps) {
     <Stack gap={6}>
       {/* Info employeur associé */}
       <Box
-        bg="brand.50"
+        bg="brand.subtle"
         borderRadius="12px"
         borderWidth="1px"
         borderColor="brand.200"

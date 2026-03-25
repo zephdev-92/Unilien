@@ -92,7 +92,7 @@ export function ProfileHero({ profile, isEditing, onToggleEdit, onAvatarClick }:
               color="text.muted"
               cursor="pointer"
               transition="background 0.15s, color 0.15s"
-              _hover={{ bg: 'brand.50', color: 'brand.500' }}
+              _hover={{ bg: 'brand.subtle', color: 'brand.500' }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -118,7 +118,7 @@ export function ProfileHero({ profile, isEditing, onToggleEdit, onAvatarClick }:
             justify={{ base: 'center', sm: 'flex-start' }}
           >
             {profile.email && (
-              <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="success.50" color="success.700">
+              <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="success.subtle" color="success.700">
                 Compte vérifié
               </Box>
             )}
@@ -143,7 +143,7 @@ export function ProfileHero({ profile, isEditing, onToggleEdit, onAvatarClick }:
             py="7px"
             minH="auto"
             minW="auto"
-            _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+            _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
           >
             {isEditing ? 'Mode lecture' : 'Modifier le profil'}
           </AccessibleButton>

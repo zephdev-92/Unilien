@@ -65,7 +65,7 @@ export function PaySummary({
       overflow="hidden"
     >
       {/* En-tête avec total */}
-      <Box p={4} bg="brand.50" borderBottomWidth="1px" borderColor="brand.100">
+      <Box p={4} bg="brand.subtle" borderBottomWidth="1px" borderColor="brand.100">
         <Flex justify="space-between" align="center">
           <Text fontWeight="medium" color="text.secondary">
             Rémunération estimée
@@ -215,7 +215,7 @@ export function MajorationIndicator({ pay }: { pay: ComputedPay }) {
       {majorations.map((m) => (
         <Box
           key={m.label}
-          bg="green.50"
+          bg="accent.subtle"
           color="green.700"
           px={2}
           py={0.5}

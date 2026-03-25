@@ -159,7 +159,7 @@ function OccurrenceRow({ result }: { result: OccurrenceResult }) {
       justify="space-between"
       p={3}
       borderRadius="10px"
-      bg={blocked ? 'red.50' : complianceResult.warnings.length > 0 ? 'orange.50' : 'green.50'}
+      bg={blocked ? 'red.50' : complianceResult.warnings.length > 0 ? 'orange.50' : 'accent.subtle'}
       opacity={blocked ? 0.7 : 1}
     >
       <Text fontSize="sm" fontWeight="medium" color={blocked ? 'red.700' : 'gray.700'}>

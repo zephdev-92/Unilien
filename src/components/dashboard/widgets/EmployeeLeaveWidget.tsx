@@ -146,7 +146,7 @@ export function EmployeeLeaveWidget({ employeeId }: EmployeeLeaveWidgetProps) {
           borderRadius="6px"
           px="16px"
           py="7px"
-          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
         >
           <RouterLink to="/conges/demande">
             <Box as="span" display={{ base: 'none', md: 'inline' }}>Demander un congé</Box>

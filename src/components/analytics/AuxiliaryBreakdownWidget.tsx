@@ -79,7 +79,7 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
                     w={8}
                     h={8}
                     borderRadius="full"
-                    bg="brand.50"
+                    bg="brand.subtle"
                     align="center"
                     justify="center"
                     flexShrink={0}

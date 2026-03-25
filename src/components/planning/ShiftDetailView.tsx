@@ -102,7 +102,7 @@ export function ShiftDetailView({
               borderRadius="8px"
               fontSize="xs"
               fontWeight="700"
-              bg={shift.shiftType === 'presence_day' ? 'brand.50' : shift.shiftType === 'guard_24h' ? 'warm.50' : 'brand.50'}
+              bg={shift.shiftType === 'presence_day' ? 'brand.subtle' : shift.shiftType === 'guard_24h' ? 'warm.subtle' : 'brand.subtle'}
               color={shift.shiftType === 'presence_day' ? 'brand.500' : shift.shiftType === 'guard_24h' ? 'warm.600' : 'brand.500'}
             >
               {shift.shiftType === 'presence_day' ? 'Jour' : shift.shiftType === 'guard_24h' ? '24h' : 'Nuit'}

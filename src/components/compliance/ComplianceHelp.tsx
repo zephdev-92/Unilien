@@ -246,7 +246,7 @@ export function ComplianceHelp() {
         </HStack>
       </Box>
 
-      <Box bg="brand.50" _dark={{ bg: 'blue.900/20' }} p={4} borderRadius="12px">
+      <Box bg="brand.subtle" _dark={{ bg: 'blue.900/20' }} p={4} borderRadius="12px">
         <HStack gap={2} mb={2}>
           <Icon color="brand.500">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -73,7 +73,7 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
           w="38px"
           h="38px"
           borderRadius="10px"
-          _hover={{ bg: 'brand.50', borderColor: 'brand.100' }}
+          _hover={{ bg: 'brand.subtle', borderColor: 'brand.100' }}
           position="relative"
           css={{
             // Subtle animation when has unread

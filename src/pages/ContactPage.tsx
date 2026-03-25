@@ -260,7 +260,7 @@ export function ContactPage() {
                 </Box>
 
                 {/* FAQ Shortcut */}
-                <Box bg="brand.50" p={6} borderRadius="xl">
+                <Box bg="brand.subtle" p={6} borderRadius="xl">
                   <Text fontWeight="bold" color="brand.700" mb={2}>
                     Questions fréquentes
                   </Text>
@@ -281,7 +281,7 @@ export function ContactPage() {
                 </Box>
 
                 {/* Response Time */}
-                <Box bg="green.50" p={6} borderRadius="xl">
+                <Box bg="accent.subtle" p={6} borderRadius="xl">
                   <Flex gap={3} align="center" mb={2}>
                     <Text fontSize="xl">⚡</Text>
                     <Text fontWeight="bold" color="green.800">

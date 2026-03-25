@@ -32,7 +32,7 @@ body {
 /* Accessibilite : focus visible — double anneau comme le prototype */
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px #fff;
+  box-shadow: 0 0 0 2px var(--chakra-colors-bg-surface);
   outline: 2px solid var(--chakra-colors-brand-500);
   outline-offset: 2px;
   transition: none;

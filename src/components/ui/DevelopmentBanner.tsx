@@ -31,7 +31,7 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
 
   return (
     <Box
-      bg="warm.50"
+      bg="warm.subtle"
       borderBottomWidth="1px"
       borderColor="warm.200"
       py={3}

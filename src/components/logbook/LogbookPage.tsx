@@ -264,7 +264,7 @@ export function LogbookPage() {
             mb={3}
             px={3}
             py={2}
-            bg="brand.50"
+            bg="brand.subtle"
             borderRadius="8px"
             fontSize="13px"
             fontWeight="600"

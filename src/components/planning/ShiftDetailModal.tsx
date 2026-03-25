@@ -391,7 +391,7 @@ export function ShiftDetailModal({
           color="brand.500"
           borderWidth="1.5px"
           borderColor="border.default"
-          _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+          _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
         >
           Annuler
         </AccessibleButton>

@@ -268,7 +268,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
                     borderWidth="2px"
                     borderColor={selectedFormat === fmt.value ? 'brand.500' : 'border.default'}
                     borderRadius="12px"
-                    bg={selectedFormat === fmt.value ? 'brand.50' : 'transparent'}
+                    bg={selectedFormat === fmt.value ? 'brand.subtle' : 'transparent'}
                     cursor="pointer"
                     textAlign="center"
                     transition="all 0.15s"

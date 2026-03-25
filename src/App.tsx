@@ -156,7 +156,7 @@ function App() {
           <Route
             path="/reinitialisation"
             element={
-              <Box minH="100vh" bg="gray.50">
+              <Box minH="100vh" bg="bg.page">
                 <Container maxW="container.sm" py={8}>
                   <ResetPasswordForm />
                 </Container>

@@ -167,7 +167,7 @@ export function RecentMessagesWidget({ userId }: RecentMessagesWidgetProps) {
                 w="32px"
                 h="32px"
                 borderRadius="full"
-                bg="brand.50"
+                bg="brand.subtle"
                 flexShrink={0}
               >
                 <Text fontSize="xs" fontWeight="bold" color="brand.600">

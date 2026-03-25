@@ -141,7 +141,7 @@ export function EmployeeClockWidget({
               gap={2}
               px={4}
               py={2.5}
-              bg="brand.50"
+              bg="brand.subtle"
               borderRadius="md"
               fontSize="sm"
               color="brand.500"

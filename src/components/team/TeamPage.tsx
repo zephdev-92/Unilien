@@ -150,7 +150,7 @@ export function TeamPage() {
             px={4}
             py={3}
             textAlign="left"
-            _hover={{ bg: 'brand.50' }}
+            _hover={{ bg: 'brand.subtle' }}
             onClick={() => { setIsAddMenuOpen(false); setIsNewContractOpen(true) }}
             display="flex"
             alignItems="center"
@@ -181,7 +181,7 @@ export function TeamPage() {
             px={4}
             py={3}
             textAlign="left"
-            _hover={{ bg: 'brand.50' }}
+            _hover={{ bg: 'brand.subtle' }}
             onClick={() => { setIsAddMenuOpen(false); setIsAddCaregiverOpen(true) }}
             display="flex"
             alignItems="center"

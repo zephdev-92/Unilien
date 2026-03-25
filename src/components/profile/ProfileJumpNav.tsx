@@ -38,7 +38,7 @@ export function ProfileJumpNav({ items, activeId }: ProfileJumpNavProps) {
           alignItems="center"
           px={4}
           py={2}
-          bg={activeId === item.id ? 'brand.50' : 'bg.page'}
+          bg={activeId === item.id ? 'brand.subtle' : 'bg.page'}
           borderWidth="1px"
           borderColor={activeId === item.id ? 'brand.500' : 'border.default'}
           borderRadius="20px"
@@ -48,7 +48,7 @@ export function ProfileJumpNav({ items, activeId }: ProfileJumpNavProps) {
           whiteSpace="nowrap"
           transition="background 0.15s, color 0.15s, border-color 0.15s"
           _hover={{
-            bg: 'brand.50',
+            bg: 'brand.subtle',
             borderColor: 'brand.500',
             color: 'brand.500',
           }}

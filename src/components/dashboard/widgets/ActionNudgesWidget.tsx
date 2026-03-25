@@ -36,8 +36,8 @@ const ClockIcon = (
 )
 
 const colorMap = {
-  orange: { bg: 'warm.50', border: 'warm.200', icon: 'warm.500', text: 'warm.700', sub: 'warm.500' },
-  blue: { bg: 'brand.50', border: 'brand.200', icon: 'brand.500', text: 'brand.700', sub: 'brand.500' },
+  orange: { bg: 'warm.subtle', border: 'warm.200', icon: 'warm.500', text: 'warm.700', sub: 'warm.500' },
+  blue: { bg: 'brand.subtle', border: 'brand.200', icon: 'brand.500', text: 'brand.700', sub: 'brand.500' },
 }
 
 export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {

@@ -339,7 +339,7 @@ function EmployerSituationView({ employer, isLoading }: { employer: Employer | n
             <Flex justify="space-between" align="center" mb={2}>
               <Text fontWeight={600} fontSize="sm">PCH (Prestation de Compensation du Handicap)</Text>
               <Box fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full"
-                bg={employer?.pchBeneficiary ? 'success.50' : 'bg.page'}
+                bg={employer?.pchBeneficiary ? 'success.subtle' : 'bg.page'}
                 color={employer?.pchBeneficiary ? 'success.700' : 'text.muted'}
               >
                 {employer?.pchBeneficiary ? 'Bénéficiaire' : 'Non bénéficiaire'}
@@ -441,7 +441,7 @@ function MaskedValue({ value, visibleEnd = 2, prefix = '' }: { value?: string; v
         borderRadius="6px"
         px={3}
         h="26px"
-        _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.50' }}
+        _hover={{ borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }}
         onClick={() => setRevealed(!revealed)}
         aria-label={revealed ? 'Masquer' : 'Afficher'}
       >
@@ -544,7 +544,7 @@ function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; 
           {(employee?.qualifications?.length ?? 0) > 0 ? (
             <Flex gap={2} flexWrap="wrap">
               {employee?.qualifications.map((q) => (
-                <Box key={q} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="brand.50" color="brand.500">{q}</Box>
+                <Box key={q} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="brand.subtle" color="brand.500">{q}</Box>
               ))}
             </Flex>
           ) : (

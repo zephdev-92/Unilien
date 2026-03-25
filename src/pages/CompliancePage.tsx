@@ -69,7 +69,7 @@ export function CompliancePage() {
         fontSize="13px"
         fontWeight="600"
         cursor="pointer"
-        _hover={{ borderColor: 'brand.500', bg: 'brand.50' }}
+        _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
         onClick={() => setShowHelp(true)}
         role="button"
         aria-label="Aide"
