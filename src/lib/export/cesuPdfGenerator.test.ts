@@ -17,8 +17,11 @@ const { mockDoc } = vi.hoisted(() => {
     roundedRect: vi.fn(),
     line: vi.fn(),
     addPage: vi.fn(),
+    addImage: vi.fn(),
+    setPage: vi.fn(),
     output: vi.fn().mockReturnValue('data:application/pdf;base64,MOCK_PDF'),
     internal: {
+      getNumberOfPages: vi.fn().mockReturnValue(1),
       pageSize: {
         getWidth: vi.fn().mockReturnValue(210),
         getHeight: vi.fn().mockReturnValue(297),

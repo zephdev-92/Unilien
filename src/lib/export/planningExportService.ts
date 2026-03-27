@@ -151,6 +151,7 @@ async function getActiveContracts(
     `)
     .eq('employer_id', employerId)
     .eq('status', 'active')
+    .eq('contract_category', 'employment')
 
   if (employeeId) {
     query = query.eq('employee_id', employeeId)
@@ -256,7 +257,7 @@ function buildEmployeeData(
 
   return {
     employeeId: contract.employee_id,
-    firstName: contract.employee_profile?.profile?.first_name || '',
+    firstName: contract.employee_profile?.profile?.first_name || 'Employé',
     lastName: contract.employee_profile?.profile?.last_name || '',
     contractId: contract.id,
     contractType: contract.contract_type,

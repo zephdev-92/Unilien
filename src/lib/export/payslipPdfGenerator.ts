@@ -8,6 +8,7 @@ import { jsPDF } from 'jspdf'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { PayslipData, PayslipPchData, ExportResult } from './types'
+import { addLogo } from './pdfLogo'
 
 // ─── Palette Unilien ─────────────────────────────────────────────────────────
 const C = {
@@ -43,7 +44,7 @@ function pct(r: number): string {
 // ─── Point d'entrée public ───────────────────────────────────────────────────
 export function generatePayslipPdf(data: PayslipData): ExportResult {
   try {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: false, floatPrecision: 'smart' })
 
     let y = drawHeader(doc, data)
     y = drawParties(doc, data, y)
@@ -81,32 +82,33 @@ export function generatePayslipPdf(data: PayslipData): ExportResult {
 function drawHeader(doc: jsPDF, data: PayslipData): number {
   // Bandeau coloré
   doc.setFillColor(...C.primary)
-  doc.rect(0, 0, W, 38, 'F')
+  doc.rect(0, 0, W, 22, 'F')
+  addLogo(doc, MG, 6, 9)
 
   // Titre
   doc.setTextColor(...C.white)
-  doc.setFontSize(20)
+  doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  doc.text('BULLETIN DE PAIE', W / 2, 14, { align: 'center' })
+  doc.text('BULLETIN DE PAIE', MG + 11, 10)
 
   // Période
-  doc.setFontSize(13)
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
-  doc.text(data.periodLabel.toUpperCase(), W / 2, 24, { align: 'center' })
+  doc.text(data.periodLabel.toUpperCase(), MG + 11, 15)
 
   // Date de génération
-  doc.setFontSize(8)
+  doc.setFontSize(7)
   doc.text(
     `Généré le ${format(data.generatedAt, "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-    W - MG, 33, { align: 'right' }
+    MG + 11, 19
   )
 
   // Mention indicative
   doc.setTextColor(...C.gray)
   doc.setFontSize(7)
-  doc.text('Document indicatif — barèmes IDCC 3239 / 2025', MG, 33)
+  doc.text('Document indicatif — barèmes IDCC 3239 / 2025', MG, 26)
 
-  return 46
+  return 32
 }
 
 function drawParties(doc: jsPDF, data: PayslipData, y: number): number {

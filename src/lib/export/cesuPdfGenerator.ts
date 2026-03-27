@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { MonthlyDeclarationData, ExportResult } from './types'
+import { addLogo } from './pdfLogo'
 
 // Couleurs UniLien
 const COLORS = {
@@ -35,6 +36,8 @@ export function generateCesuPdf(data: MonthlyDeclarationData): ExportResult {
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4',
+      compress: false,
+      floatPrecision: 'smart',
     })
 
     // En-tête avec titre
@@ -79,31 +82,28 @@ export function generateCesuPdf(data: MonthlyDeclarationData): ExportResult {
 function drawHeader(doc: jsPDF, data: MonthlyDeclarationData): number {
   // Bandeau coloré
   doc.setFillColor(...COLORS.primary)
-  doc.rect(0, 0, PAGE_WIDTH, 35, 'F')
+  doc.rect(0, 0, PAGE_WIDTH, 22, 'F')
+  addLogo(doc, MARGIN, 6, 9)
 
   // Titre principal
   doc.setTextColor(...COLORS.white)
-  doc.setFontSize(22)
+  doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  doc.text('RÉCAPITULATIF CESU', PAGE_WIDTH / 2, 15, { align: 'center' })
+  doc.text('RÉCAPITULATIF CESU', MARGIN + 11, 10)
 
   // Période
-  doc.setFontSize(14)
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
-  doc.text(data.periodLabel.toUpperCase(), PAGE_WIDTH / 2, 25, { align: 'center' })
+  doc.text(data.periodLabel.toUpperCase(), MARGIN + 11, 15)
 
   // Date de génération
-  doc.setTextColor(...COLORS.black)
-  doc.setFontSize(9)
+  doc.setFontSize(7)
   doc.text(
     `Généré le ${format(data.generatedAt, "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-    PAGE_WIDTH - MARGIN,
-    45,
-    { align: 'right' }
+    MARGIN + 11, 19
   )
 
-  // Retourne la position Y suivante, le paramètre y n'est pas utilisé car l'en-tête a une hauteur fixe
-  return 55
+  return 30
 }
 
 /**
