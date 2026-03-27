@@ -9,7 +9,7 @@ Instructions et contexte persistants pour Claude Code. Ce fichier est chargé au
 **Unilien** (alias Handi-Lien) est une PWA de gestion de soins pour personnes handicapées.
 Domaine métier : **Convention Collective IDCC 3239** (employeurs particuliers, droit du travail français).
 
-- **Stack** : React 19 + TypeScript + Vite + Chakra UI v3 + Supabase + Zustand + TanStack Query
+- **Stack** : React 19 + TypeScript + Vite + Chakra UI v3 + Supabase + Zustand (fetch via services ; **pas** de TanStack Query en prod — voir `docs/TANSTACK_QUERY_MIGRATION.md`)
 - **UI/Docs** : en français
 - **Repo GitHub** : https://github.com/zephdev-92/Unilien
 
@@ -99,8 +99,9 @@ Règles dans `src/lib/compliance/rules/` :
 ### Sécurité & qualité
 - Logger centralisé avec redaction : `src/lib/logger.ts`
 - Sanitisation via DOMPurify : `src/lib/sanitize.ts` — à appeler avant chaque écriture DB
-- 7/13 services utilisent `sanitizeText()` : absence, caregiver, liaison, logbook, notification, profile, shift, push (24/02/2026)
-- Les 6 restants (auxiliary, compliance, contract, document, leaveBalance, stats) sont soit read-only, soit n'écrivent que des valeurs contrôlées (enums, UUIDs, dates) — aucune sanitisation nécessaire
+- 8/13 services utilisent `sanitizeText()` : absence, caregiver, liaison, logbook, notification, profile, shift, push (24/02/2026)
+- Les 5 restants (auxiliary, compliance, contract, document, leaveBalance, stats) sont soit read-only, soit n'écrivent que des valeurs contrôlées (enums, UUIDs, dates) — aucune sanitisation nécessaire
+- **Post‑pentest (2026)** : migration **`041_security_fixes.sql`** (RLS, RPC `create_notification`, bucket justifications, etc.) — synthèse **`docs/SECURITY_CHECK_2026-03-26.md`** ; détail historique **`docs/SECURITY_IDOR_ANALYSIS.md`**. **CSP** en enforcement sur Netlify (`netlify.toml`).
 
 ---
 
@@ -120,9 +121,9 @@ npm run test:coverage # Coverage v8
 
 ## Tests
 
-**État (20/02/2026)** : 1573 tests / 77 fichiers — **60.21% statement coverage**
+**État (mars 2026)** : ~2161 tests / 119 fichiers — **~70% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
 - Services : 91.42% (13/13 testés)
-- Hooks : 89.26% (7/7 testés)
+- Hooks : couverture élevée (8 hooks listés ci-dessous + tests)
 
 ### Patterns de test
 
@@ -173,7 +174,7 @@ vi.mock('@/services/myService')
 
 ### PWA
 - Service worker via `vite-plugin-pwa`
-- ⚠️ Runtime cache trop large (`/rest/v1/*`) — à restreindre
+- Cache runtime limité au **storage** Supabase (`storage/v1/*`), pas aux réponses **`/rest/v1/*`** (`vite.config.ts`) — voir `docs/SECURITY_CHECK_2026-03-26.md`
 
 ---
 
@@ -184,8 +185,7 @@ vi.mock('@/services/myService')
 | ~~Moyen~~ ✅ | ~~`LogbookPage.tsx` et `LiaisonPage.tsx` importent supabase directement~~ → `useEmployerResolution` hook (23/02/2026) |
 | ~~Moyen~~ ✅ | ~~`notificationService` sans `sanitizeText()`~~ → corrigé sur `title`+`message` (23/02/2026) |
 | Faible | Quelques tests `useAuth.test.ts` déclenchent des warnings React `act(...)` |
-| Faible | PWA runtime cache trop broad (`/rest/v1/*`) |
-| Faible | TanStack Query non uniforme (certains hooks utilisent encore `useEffect + fetch`) |
+| Faible | Data-fetching encore majoritairement `useEffect` + services (pas de TanStack Query — voir `docs/TANSTACK_QUERY_MIGRATION.md`) |
 
 ## Hooks (8/8)
 
@@ -209,7 +209,11 @@ vi.mock('@/services/myService')
 - `DEVELOPMENT_ROADMAP.md` — roadmap générale
 - `DESIGN_REDESIGN.md` — cadrage redesign UI/UX
 - `TEST_COVERAGE_ANALYSIS.md` — analyse couverture
-- `SECURITY_ANALYSIS.md` — audit sécurité
+- `ACCESSIBILITY.md` — accessibilité (WCAG, préférences, limites)
+- `SECURITY_CHECK_2026-03-26.md` — synthèse post-migration **041** (RLS, RPC, CSP, PWA cache)
+- `SECURITY_ANALYSIS.md` — audit sécurité applicatif
+- `SECURITY_IDOR_ANALYSIS.md` — analyse IDOR / pentest (historique + statut post-041)
+- `TANSTACK_QUERY_MIGRATION.md` — si réintroduction de TanStack Query un jour
 - `Garde_de_24_heures.md` — spec métier garde 24h
 - `heure_de_presence_responsable.md` — spec présence responsable
 - `feature_reprise_conges_contrat.md` — reprise congés au contrat
@@ -268,9 +272,10 @@ Titre (anglais) : <type>(<scope>): <description courte>
 ## Supabase & base de données
 
 - Client : `src/lib/supabase/client.ts`
-- Migrations : `supabase/migrations/` (030 migrations au 23/02/2026)
+- Migrations : `supabase/migrations/` (**41** fichiers au 03/2026)
 - RLS activé sur toutes les tables
 - Dernières migrations notables :
   - `028` : garde 24h initial
   - `029` : guard_segments JSONB v1
   - `030` : guard_segments v2 (N-segments libres, champs obsolètes supprimés)
+  - **`041`** : correctifs sécurité (IDOR, RPC notifications, aidants, conversations, profils, audit fichiers, bucket justifications) — **voir `docs/SECURITY_CHECK_2026-03-26.md`**

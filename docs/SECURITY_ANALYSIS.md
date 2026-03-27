@@ -1,6 +1,6 @@
 # Analyse de sécurité
 
-_Dernière mise à jour : 2026-03-17_
+_Dernière mise à jour : 2026-03-26_
 
 ## Objectif
 
@@ -11,9 +11,9 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 ## Résumé exécutif
 
 - ~~**P0 — Critique** : IDOR dans `send-push-notification`~~ ✅ Corrigé — la fonction edge utilise désormais `notificationId` (lookup DB) au lieu de `userId` brut + CORS restreint.
-- **P1 — Élevé** : CSP déployée en mode `Report-Only` — à basculer en enforcement après validation en production.
-- **P1 — Élevé** : RPC `create_notification` — tout utilisateur authentifié peut créer des notifications pour n'importe quel utilisateur, avec `action_url` non validé (redirection ouverte / phishing).
-- **P1 — Élevé** : Dépendance `vite-plugin-pwa` → `serialize-javascript` (CVE RCE, CVSS 8.1).
+- ~~**P1 — Élevé** : CSP en `Report-Only`~~ ✅ Corrigé (2026-03-26) — **`Content-Security-Policy`** en enforcement dans `netlify.toml` (voir aussi `docs/SECURITY_CHECK_2026-03-26.md`).
+- ~~**P1 — Élevé** : RPC `create_notification` (IDOR + `action_url`)~~ ✅ Corrigé — migration **`041_security_fixes.sql`** : relation métier obligatoire, validation stricte des chemins relatifs pour `action_url`.
+- **P1 — Élevé** : Dépendance `vite-plugin-pwa` → `serialize-javascript` (CVE RCE, CVSS 8.1) — surveiller les montées de version.
 - ~~**P2 — Moyen** : stratégie de cache PWA trop large~~ ✅ Corrigé — le cache ne porte plus que sur `storage/v1/` (avatars, justificatifs), pas sur `/rest/v1/`.
 - **P2 — Moyen** : `attachmentService` — `file.name` utilisé dans le chemin d'upload sans sanitisation (risque path traversal).
 
@@ -97,23 +97,18 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ---
 
-### P1 — Élevé (nouveaux, audit 2026-03-17)
+### ~~P1 — Élevé~~ ✅ Corrigé (migration 041 — 2026-03)
 
 #### 2. RPC `create_notification` — IDOR + action_url non validé
 
-**Constat**
-- La fonction RPC `create_notification` est exécutable par tout utilisateur authentifié (`GRANT EXECUTE TO authenticated`).
-- Aucune vérification que l'appelant a le droit de créer une notification pour `p_user_id` — tout utilisateur peut notifier n'importe quel autre.
-- Le paramètre `p_action_url` n'est pas validé : accepte `javascript:`, `//evil.com`, URLs absolues arbitraires.
-- L'URL est utilisée dans : `navigate(actionUrl)` (NotificationsPanel), `window.location.href` (pushService), `client.navigate()` / `openWindow()` (sw-push.js).
+**Constat historique (avant migration 041)**
 
-**Impact**
-- **IDOR** : spam de notifications, harcèlement ciblé.
-- **Redirection ouverte / phishing** : une notification malveillante peut rediriger la victime vers un site de phishing ou exécuter du JavaScript via `javascript:`.
+- La fonction RPC `create_notification` était exécutable par tout utilisateur authentifié sans vérification de relation métier avec `p_user_id`, et `p_action_url` n’était pas validé côté serveur.
 
-**Recommandation**
-- Restreindre l'appel à `create_notification` : soit via une Edge Function qui vérifie les relations métier (employeur→employé, etc.), soit en ajoutant une logique PL/pgSQL qui valide que l'appelant peut notifier `p_user_id`.
-- Valider `p_action_url` : autoriser uniquement les chemins relatifs commençant par `/` (same-origin). Rejeter `javascript:`, `data:`, `//`, et les URLs absolues externes.
+**État actuel**
+
+- Migration **`041_security_fixes.sql`** : la fonction impose une **relation métier** avec la cible (contrats actifs, employeur↔aidant, etc.) et **rejette** les `action_url` dangereuses (chemins relatifs `/...` uniquement ; rejet de `javascript:`, `data:`, URLs absolues, etc.).
+- Côté client, la navigation et les push restent défendus en profondeur (`NotificationsPanel`, `pushService`, `sw-push.js`) — voir `docs/SECURITY_XSS_ANALYSIS.md` et `docs/SECURITY_CHECK_2026-03-26.md`.
 
 #### 3. Dépendance `serialize-javascript` (CVE RCE)
 
@@ -127,15 +122,17 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 ---
 
-### P1 — Élevé (en cours)
+### ~~P1 — Élevé~~ ✅ CSP en enforcement (2026-03-26)
 
 #### 4. CSP sur l'hébergement
 
-**Constat initial**
-- Les headers Netlify n'incluaient pas de `Content-Security-Policy`.
+**Historique**
 
-**Correction appliquée (2026-02-11)**
-- CSP déployée en mode `Content-Security-Policy-Report-Only` dans `netlify.toml` :
+- Phase **Report-Only** puis passage à l’**enforcement** documenté dans `docs/SECURITY_CHECK_2026-03-26.md`.
+
+**État actuel (`netlify.toml`)**
+
+- Header **`Content-Security-Policy`** (bloquant), par exemple :
   ```
   default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
   connect-src 'self' https://*.supabase.co wss://*.supabase.co;
@@ -143,13 +140,12 @@ Cette note synthétise les points de sécurité observés dans le code front-end
   font-src 'self'; worker-src 'self'; manifest-src 'self';
   object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   ```
-- `style-src 'unsafe-inline'` requis par Chakra UI v3 (emotion — styles injectés dynamiquement).
-- `blob:` dans `img-src` pour les prévisualisations d'avatars.
-- `wss://*.supabase.co` pour les connexions Realtime.
+- `style-src 'unsafe-inline'` requis par Chakra UI v3 (emotion).
+- `blob:` dans `img-src` pour les prévisualisations d'avatars ; `wss://*.supabase.co` pour Realtime.
 
-**Prochaine étape**
-- Valider en production via la console navigateur (aucune violation CSP reportée).
-- Basculer `Content-Security-Policy-Report-Only` → `Content-Security-Policy` (enforcement).
+**Suivi**
+
+- Surveiller la console navigateur en déploiement après changements de dépendances ou de contenus inline.
 
 ---
 
@@ -189,9 +185,9 @@ Le `vite.config.ts` ne met en cache que `https://*.supabase.co/storage/v1/*` (av
 | Priorité | Action | Effort estimé |
 |----------|--------|---------------|
 | ~~**P0 immédiat**~~ | ~~Corriger l'autorisation dans `send-push-notification`~~ | ✅ Fait |
-| **P1 court terme** | Restreindre RPC `create_notification` + valider `action_url` | Moyen |
+| ~~**P1 court terme**~~ | ~~Restreindre RPC `create_notification` + valider `action_url`~~ | ✅ Fait (041) |
 | **P1 court terme** | Mettre à jour `vite-plugin-pwa` / résoudre vulnérabilité `serialize-javascript` | Moyen |
-| **P1 court terme** | CSP Report-Only → enforcement (après validation prod) | Faible |
+| ~~**P1 court terme**~~ | ~~CSP Report-Only → enforcement~~ | ✅ Fait |
 | ~~**P2 court terme**~~ | ~~Restreindre CORS edge~~ | ✅ Fait |
 | ~~**P2 court terme**~~ | ~~Cache PWA /rest/v1~~ | ✅ Fait |
 | **P2 court terme** | Sanitiser `file.name` dans `attachmentService` | Faible |
@@ -241,10 +237,11 @@ Le `vite.config.ts` ne met en cache que `https://*.supabase.co/storage/v1/*` (av
 
 ## Travail effectué
 
-### Migrations de sécurité (013-021)
+### Migrations de sécurité (013-021, 041)
 
 | Migration | Description |
 |-----------|-------------|
+| **041** | **Correctifs pentest / IDOR / RPC / CSP & co.** — voir `docs/SECURITY_CHECK_2026-03-26.md` |
 | 013 | Contraintes email/téléphone + table audit uploads |
 | 014 | Fix `get_user_role()` search_path |
 | 015 | Fix `update_updated_at_column()`, `is_employee()` + RLS audit |
@@ -314,9 +311,9 @@ Le projet présente de solides fondamentaux de sécurité :
 - ✅ Logger centralisé avec redaction
 - ✅ Headers de sécurité de base (Netlify)
 
-**Priorités immédiates (P1)** :
-1. Restreindre et sécuriser le RPC `create_notification` (IDOR + validation `action_url`)
-2. Traiter la vulnérabilité `serialize-javascript` dans les dépendances
-3. Basculer la CSP en mode enforcement
+**Priorités restantes (P1/P2)** :
+1. Traiter la vulnérabilité `serialize-javascript` dans la chaîne de build (`vite-plugin-pwa` / audits npm)
+2. Sanitiser `file.name` dans `attachmentService` (path traversal)
+3. Poursuivre le durcissement long terme (chiffrement au repos, rate limiting)
 
 Le risque principal à moyen terme réside dans les données de santé (`handicap_type`, `specific_needs`) qui nécessitent une attention particulière en termes de conformité RGPD. Le chiffrement via `pgsodium` est recommandé pour une protection renforcée.

@@ -2,6 +2,8 @@
 
 Professional vulnerability reports formatted for HackerOne, Bugcrowd, or YesWeHack.
 
+> **26/03/2026** — These write-ups are **historical triage** artifacts. Database and policy fixes are in **`041_security_fixes.sql`** with a summary in **`docs/SECURITY_CHECK_2026-03-26.md`**. Use them for **regression** testing (API replay should fail where 041 applies).
+
 ---
 
 ## Report #1: Caregiver Self-Promotion to Legal Guardian (Critical)
@@ -127,6 +129,10 @@ console.log('Escalation result:', error ? error : data)
 
 3. **Verification Workflow**  
    - Introduce a documented process for tutor/curator status (e.g. upload of court decision, admin review).
+
+### Remediation status (2026-03-26)
+
+**RLS** — Policy **`Caregivers can update own profile limited`** in **041** blocks self-service changes to `legal_status`, `employer_id`, `permissions`, `permissions_locked`. Replaying the PoC API calls against an updated DB should return **error**. The **UI** may still show `legal_status`; RLS remains the backstop — optional UI hardening can further reduce confusion.
 
 ---
 
@@ -267,6 +273,11 @@ Victim sees `alert(document.domain)` when clicking the notification (app in fore
 4. **Remove direct REST inserts for cross-user notifications**  
    Ensure all cross-user notifications flow through server-side logic that enforces authorization and URL validation.
 
+### Remediation status (2026-03-26)
+
+- **`notifications_insert_own`** and hardened **`create_notification`** (**041**).
+- Client alignment: `notificationService`, `NotificationsPanel`, `pushService`, `sw-push.js` — see **`SECURITY_XSS_ANALYSIS.md`** and **`SECURITY_CHECK_2026-03-26.md`**.
+
 ---
 
 ## Report #3: Path Traversal in Attachment Upload (Medium)
@@ -330,6 +341,10 @@ function sanitizeFileName(name: string): string {
 }
 const fileName = `${conversationId}/${senderId}/${Date.now()}_${sanitizeFileName(file.name)}`;
 ```
+
+### Remediation status (2026-03-26)
+
+**Open** — sanitization of `file.name` in `attachmentService` remains **recommended** (not part of migration 041). Track with **`SECURITY_PENTEST_REPORT.md`** § 2.3.
 
 ---
 

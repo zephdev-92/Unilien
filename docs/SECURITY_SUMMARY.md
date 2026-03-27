@@ -1,6 +1,6 @@
 ## Synthèse sécurité Unilien
 
-_Dernière mise à jour : 2026-03-11_
+_Dernière mise à jour : 2026-03-26_
 
 ---
 
@@ -8,105 +8,83 @@ _Dernière mise à jour : 2026-03-11_
 
 Le projet présente des **fondamentaux solides** pour une PWA de gestion de soins :
 
-- Gestion de session robuste via Supabase (tokens non persistés côté client).
-- RLS activé et audité sur toutes les tables.
+- Gestion de session via Supabase : **JWT gérés par le SDK en mémoire** ; le store Zustand ne **persiste pas** les tokens (seulement le profil dans `localStorage`).
+- RLS activé et audité sur les tables sensibles ; correctifs récents regroupés dans la migration **`041_security_fixes.sql`** (voir `docs/SECURITY_CHECK_2026-03-26.md`).
 - Validation côté client (Zod) et côté serveur (contraintes PostgreSQL).
 - Logger centralisé avec masquage des données sensibles.
-- Headers de sécurité de base déjà configurés.
-- Pas d'utilisation de `dangerouslySetInnerHTML`, protection XSS native via React.
+- Headers de sécurité sur Netlify, dont une **CSP en enforcement** (`Content-Security-Policy` dans `netlify.toml`).
+- Pas d’usage dangereux de HTML utilisateur dans le rendu React (hors cas documentés).
 
-Conclusion : la base de sécurité est saine et nettement au‑dessus de la moyenne pour une app front + Supabase.
+Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenne pour une app front + Supabase.
 
 ---
 
 ## 2. Points positifs majeurs
 
 - **Authentification & session**
-  - Tokens JWT uniquement en mémoire (Supabase SDK), non persistés en `localStorage`.
+  - Tokens JWT en mémoire via le client Supabase ; pas de duplication des secrets JWT dans le store persisté.
   - Vérification HaveIBeenPwned activée pour les mots de passe.
   - Erreur explicite si la configuration Supabase est invalide en production.
 
 - **Contrôle d’accès & RLS**
-  - RLS activé sur toutes les tables sensibles, avec des policies alignées sur la logique métier (employeurs, employés, aidants, tuteurs).
-  - Accès finement segmenté (`own`, `team`, `tuteurs`, `aidants`, etc.).
+  - Policies alignées sur le métier ; migration **041** resserre les cas IDOR (notifications, RPC, aidants, conversations, profils, audit fichiers, bucket justifications).
 
 - **Validation & intégrité des données**
-  - Schémas Zod côté front (mots de passe, emails, téléphones FR).
-  - Contraintes côté DB pour garantir la cohérence même en cas de client malveillant.
-  - Table d’audit pour les uploads de fichiers.
+  - Schémas Zod côté front ; contraintes côté DB.
+  - Table d’audit pour les uploads ; évolution documentée dans les rapports pentest.
 
-- **Sécurité front**
-  - Pas de HTML brut, pas de templating manuel dangereux.
-  - Content-Security-Policy déjà déployée en mode `Report-Only` pour évaluer les impacts avant enforcement.
+- **Sécurité front & réseau**
+  - **CSP bloquante** sur l’hébergement.
+  - Cache PWA : pas de `NetworkFirst` sur `/rest/v1/*` — cache limité au **storage** Supabase (fichiers), pas aux réponses API REST sensibles.
 
 ---
 
-## 3. Risques et faiblesses identifiés
+## 3. Risques et sujets encore ouverts
 
-- **CSP uniquement en Report-Only (P1)**
-  - La politique CSP existe mais n’est pas encore bloquante.
-  - En cas de découverte d’une XSS ailleurs, la CSP actuelle ne l’empêcherait pas, elle ne fait que la reporter.
-
-- **Cache PWA trop large (P2)**
-  - Stratégie `NetworkFirst` sur `https://*.supabase.co/rest/v1/*`.
-  - Risque de mise en cache local de réponses contenant des données sensibles (planning, logbook, données handicap…).
-  - Ce n’est pas une faille directe mais augmente l’impact en cas de compromission du device ou d’usage partagé.
+- **Dépendances (build / transitif)**
+  - Suivre `npm audit` (ex. chaîne `vite-plugin-pwa` / `serialize-javascript`) et appliquer les correctifs sans régression PWA.
 
 - **Stockage client**
-  - `localStorage` ne contient que le profil utilisateur (sans tokens), donc risque limité.
-  - En cas de XSS, ce profil reste néanmoins accessible : vérifier qu’aucun champ très sensible n’y est exposé.
+  - `localStorage` contient le profil utilisateur (sans tokens). En cas de XSS, ce profil reste exposé : limiter les champs persistés au strict nécessaire.
 
 - **Chiffrement des données sensibles**
-  - Les données de santé sont protégées par RLS mais pas chiffrées au repos.
-  - Pour un projet lié au handicap, le chiffrement (ex. `pgsodium`) est fortement recommandé à moyen terme.
+  - Données de santé protégées par RLS ; chiffrement au repos (`pgsodium`, etc.) reste un objectif moyen terme pour une défense en profondeur.
 
 - **Rate limiting**
-  - Pas encore de politique explicite de limitation de débit sur les endpoints sensibles (auth, upload, notifications).
-  - Risque de brute-force ou d’abus automatisé si des endpoints sont exposés publiquement.
+  - Pas encore de politique homogène sur tous les points sensibles (auth, upload, notifications) — à planifier selon l’hébergeur / Edge.
+
+- **Pièces jointes / noms de fichiers**
+  - Sanitisation du nom de fichier dans `attachmentService` (path traversal) — toujours pertinente.
 
 ---
 
 ## 4. Vulnérabilités critiques (P0) et statut
 
 - **Ancien P0 : IDOR sur la fonction edge `send-push-notification`**
-  - Désormais corrigé :
-    - Passage à un `notificationId` résolu côté DB au lieu d’un `userId` fourni par le client.
-    - Anti‑replay (notifications récentes uniquement).
-    - CORS restreint aux domaines applicatifs connus.
-    - Suppression des logs sensibles.
+  - Corrigé : `notificationId`, anti-replay, CORS restreint, logs nettoyés.
 
-À date, aucune vulnérabilité critique (P0) connue n’est active.
+- **Correctifs IDOR / RPC / RLS (2026-03)**
+  - Traités dans la migration **041** ; détail dans `docs/SECURITY_IDOR_ANALYSIS.md` (constat historique + **Statut 26/03/2026**) et `docs/SECURITY_CHECK_2026-03-26.md`.
+
+À date, aucune vulnérabilité critique (P0) **ouverte** identifiée dans la surface documentée.
 
 ---
 
 ## 5. Plan d’actions recommandé
 
-- **Court terme (P1)**
-  - Basculer la CSP de `Content-Security-Policy-Report-Only` à `Content-Security-Policy` après validation en production (absence de violations bloquantes).
-  - Vérifier que tous les accès Supabase passent bien par les services centralisés et la logique de permissions existante.
+- **Court terme**
+  - Maintenir les dépendances à jour et rejouer les scénarios de non-régression décrits dans les rapports pentest après chaque migration RLS.
 
-- **Court / moyen terme (P2)**
-  - Affiner la stratégie de cache PWA :
-    - Remplacer le pattern global `/rest/v1/*` par une allowlist de routes non sensibles.
-    - Désactiver le cache pour les endpoints contenant des données personnelles.
-  - Introduire le chiffrement des données de santé dans la base (par exemple avec `pgsodium`).
-  - Mettre en place un rate limiting sur les endpoints sensibles (auth, upload, notifications, fonctions edge).
+- **Moyen terme**
+  - Chiffrement au repos pour données de santé ; rate limiting ciblé ; sanitisation stricte des noms de fichiers uploadés.
 
 - **Continu**
-  - Auditer systématiquement les policies RLS à chaque migration de schéma.
-  - Ajouter des tests automatisés d’autorisation pour les fonctions edge et les principales tables métiers.
+  - Auditer les policies RLS à chaque évolution de schéma ; tests d’autorisation sur les fonctions edge et tables clés.
 
 ---
 
 ## 6. Conclusion
 
-La posture de sécurité d’Unilien est **globalement bonne** : fondations techniques robustes (RLS complet, logger, HIBP, validations client+serveur, CSP en préparation).  
-Les priorités à court et moyen terme sont :
+La posture de sécurité d’Unilien est **globalement bonne** : RLS renforcé (041), CSP en enforcement, cache API PWA corrigé, RPC notifications sécurisée côté base.
 
-1. Faire passer l
-3. Préparer le chiffrement des données de santé au repos et un rate limiting adapté.
-
-Ces actions renforceront significativement la résilience de l’application, en particulier vis‑à‑vis des risques RGPD liés aux données de santé.
-
-a CSP en mode enforcement après validation.
-2. Réduire la surface du cache PWA sur les endpoints Supabase.
+Les efforts suivants porteront surtout sur la **réduction de la dette dépendances**, le **durcissement des uploads**, le **chiffrement** et le **rate limiting** — en complément des exigences RGPD sur les données de santé.

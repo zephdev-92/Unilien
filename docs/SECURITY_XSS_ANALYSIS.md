@@ -2,17 +2,19 @@
 
 **Focus** : Vecteurs d’injection côté client, React / Vite SPA
 
+> **26/03/2026** — Les scénarios **stored** impliquant `action_url` / notifications s’appuyaient en grande partie sur l’**IDOR** côté base (corrigé dans **`041_security_fixes.sql`**). La **CSP** est en **enforcement** sur Netlify. Voir **`docs/SECURITY_CHECK_2026-03-26.md`** et **`docs/SECURITY_IDOR_ANALYSIS.md`**.
+
 ---
 
 ## Synthèse des vecteurs XSS
 
-| # | Vecteur | Type | Sévérité | Contexte d'exécution |
-|---|---------|------|----------|----------------------|
-| 1 | `action_url` → `window.location.href` (push) | Stored | **Élevé** | Contexte page, foreground |
-| 2 | `action_url` → `openWindow` / `navigate` (SW) | Stored | Moyen | Service Worker |
-| 3 | NavIcon `dangerouslySetInnerHTML` | — | Faible (contrôlé) | Données statiques |
-| 4 | `notification.title` non sanitisé | Stored | Faible | React échappe par défaut |
-| 5 | `attachment.name` / `file.name` | Reflected | Faible | React échappe |
+| # | Vecteur | Type | Sévérité | Contexte d'exécution | Statut (26/03/2026) |
+|---|---------|------|----------|----------------------|---------------------|
+| 1 | `action_url` → `window.location.href` (push) | Stored | **Élevé** | Contexte page, foreground | **Mitigé** — RPC 041 + validation client (`pushService`, etc.) |
+| 2 | `action_url` → `openWindow` / `navigate` (SW) | Stored | Moyen | Service Worker | **Mitigé** — même source ; `sw-push.js` défense en profondeur |
+| 3 | NavIcon `dangerouslySetInnerHTML` | — | Faible (contrôlé) | Données statiques | Inchangé (SVG statiques) |
+| 4 | `notification.title` non sanitisé | Stored | Faible | React échappe par défaut | Suivi hygiene / sanitisation |
+| 5 | `attachment.name` / `file.name` | Reflected | Faible | React échappe | Path traversal — voir `attachmentService` |
 
 ---
 

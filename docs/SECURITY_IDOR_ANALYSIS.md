@@ -2,17 +2,19 @@
 
 **Focus** : Supabase REST API, RLS Postgres, JWT, accès cross-user
 
+> **Lecture (26/03/2026)** : ce document décrit le **constat initial** du pentest. Les correctifs sont déployés via la migration **`supabase/migrations/041_security_fixes.sql`** et résumés dans **`docs/SECURITY_CHECK_2026-03-26.md`**. Les scénarios ci-dessous restent utiles pour des **tests de non-régression** (Burp, Postman).
+
 ---
 
 ## Synthèse des vulnérabilités IDOR
 
-| # | Titre | Sévérité | Prérequis |
-|---|-------|----------|-----------|
-| 1 | INSERT notifications — `user_id` arbitraire via REST | **Critique** | Authentifié |
-| 2 | RPC `create_notification` — IDOR + action_url | **Élevé** | Authentifié |
-| 3 | caregivers UPDATE — `legal_status` par l'aidant (privilege escalation) | **Critique** | Aidant |
-| 4 | conversations INSERT — employer_id arbitraire + participant_ids | **Moyen** | Authentifié |
-| 5 | file_upload_audit INSERT — pollution du trail d'audit | **Faible** | Authentifié |
+| # | Titre | Sévérité | Prérequis | Statut (26/03/2026) |
+|---|-------|----------|-----------|---------------------|
+| 1 | INSERT notifications — `user_id` arbitraire via REST | **Critique** | Authentifié | **Corrigé** — policy `notifications_insert_own` |
+| 2 | RPC `create_notification` — IDOR + action_url | **Élevé** | Authentifié | **Corrigé** — relation métier + validation `action_url` (041) |
+| 3 | caregivers UPDATE — `legal_status` par l'aidant (privilege escalation) | **Critique** | Aidant | **Corrigé** — policy *limited* sur colonnes sensibles |
+| 4 | conversations INSERT — employer_id arbitraire + participant_ids | **Moyen** | Authentifié | **Corrigé** — policy réécrite (`employer_id` / contrats / aidants) |
+| 5 | file_upload_audit INSERT — pollution du trail d'audit | **Faible** | Authentifié | **Corrigé** — plus d'INSERT `authenticated` arbitraire |
 
 ---
 
@@ -73,6 +75,10 @@ CREATE POLICY "notifications_insert" ON public.notifications
 
 Pour les notifications cross-user, passer uniquement par une Edge Function ou une RPC qui impose une logique métier (employeur → employé, etc.) avant insert.
 
+#### Statut (26/03/2026)
+
+Policy **`notifications_insert_own`** : `WITH CHECK (auth.uid() = user_id)` — voir **`041_security_fixes.sql`** (section P1-1).
+
 ---
 
 ## 2. [ÉLEVÉ] RPC create_notification — IDOR sans relation métier
@@ -116,6 +122,10 @@ Authorization: Bearer <ACCESS_TOKEN>
 - Réduire l’usage de la RPC : passer par une Edge Function.
 - Dans la RPC (si conservée) : valider que l’appelant a une relation légitime avec `p_user_id` (contract, caregiver, etc.).
 - Valider `p_action_url` : uniquement chemins relatifs same-origin (ex. `/planning?date=...`).
+
+#### Statut (26/03/2026)
+
+Fonction **`create_notification`** remplacée dans **`041_security_fixes.sql`** (P1-2) : vérification de relation métier avec `p_user_id`, validation stricte de `p_action_url` (chemins relatifs ; rejet `javascript:`, `data:`, URLs absolues, etc.).
 
 ---
 
@@ -168,6 +178,10 @@ WITH CHECK (
 ```
 
 Ou une policy qui interdit toute modification de `legal_status` par un aidant sur lui-même.
+
+#### Statut (26/03/2026)
+
+Policy **`Caregivers can update own profile limited`** dans **`041_security_fixes.sql`** (P0-1) : `legal_status`, `employer_id`, `permissions`, `permissions_locked` ne peuvent pas être modifiés en self-service par l’aidant.
 
 ---
 
@@ -225,6 +239,10 @@ CREATE POLICY "Users can create conversations" ON public.conversations
 
 Ou logique similaire pour limiter les créations aux employeurs et à leurs équipes.
 
+#### Statut (26/03/2026)
+
+Policy **`Users can create conversations`** réécrite dans **`041_security_fixes.sql`** (P2-1) : `employer_id` doit correspondre à l’appelant ou à un lien métier (contrat actif, aidant même employeur).
+
 ---
 
 ## 5. [FAIBLE] file_upload_audit — pollution du trail d’audit
@@ -266,6 +284,10 @@ Impact : corruption du trail d’audit, faux positifs en forensique.
 
 - Réserver les inserts à un rôle service (backend / Edge Function), pas à `authenticated`.
 - Ou retirer toute policy INSERT pour les clients et n’insérer que via triggers/fonctions SECURITY DEFINER.
+
+#### Statut (26/03/2026)
+
+Ancienne policy **`Service role can insert audit entries`** supprimée dans **`041_security_fixes.sql`** (P2-2) : plus d’INSERT `authenticated` avec `WITH CHECK (true)` ; écritures réservées aux rôles/privilèges appropriés.
 
 ---
 
@@ -316,3 +338,5 @@ Impact : corruption du trail d’audit, faux positifs en forensique.
 
 - Rapport principal : `docs/SECURITY_PENTEST_REPORT.md`
 - Artifacts : `docs/SECURITY_PENTEST_ARTIFACTS.md`
+- Revue post-correctifs : `docs/SECURITY_CHECK_2026-03-26.md`
+- Migration : `supabase/migrations/041_security_fixes.sql`
