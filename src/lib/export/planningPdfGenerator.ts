@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale'
 import { startOfWeek, addDays, startOfMonth, getDaysInMonth } from 'date-fns'
 import type { PlanningExportData, PlanningShiftEntry, PlanningAbsenceEntry } from './types'
 import type { ExportResult } from './types'
+import { addLogo } from './pdfLogo'
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const C = {
@@ -48,7 +49,7 @@ const SHIFT_COLORS: Record<string, { fg: [number,number,number]; bg: [number,num
 
 // ─── Layout calendrier ────────────────────────────────────────────────────────
 
-const HEADER_H = 36   // hauteur en-tête
+const HEADER_H = 22   // hauteur en-tête
 const DAY_ROW_H = 8   // hauteur ligne jours semaine
 const CELL_H = 28     // hauteur ligne semaine
 const COL_W = CW / 7  // largeur colonne (≈ 26.57mm)
@@ -88,24 +89,23 @@ function drawEmployeePage(
   employeeIdx: number
 ): void {
   const employee = data.employees[employeeIdx]
-  const fullName = `${employee.firstName} ${employee.lastName}`
+  const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(' ') || 'Employé inconnu'
 
   // En-tête bleue
   doc.setFillColor(...C.primary)
   doc.rect(0, 0, W, HEADER_H, 'F')
+  addLogo(doc, MG, 6, 9)
   doc.setTextColor(...C.white)
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  doc.text('PLANNING', W / 2, 12, { align: 'center' })
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'normal')
-  doc.text(data.periodLabel.toUpperCase(), W / 2, 20, { align: 'center' })
+  doc.text('PLANNING', MG + 11, 10)
   doc.setFontSize(9)
-  doc.text(fullName, W / 2, 28, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.text(`${data.periodLabel.toUpperCase()}  —  ${fullName}`, MG + 11, 15)
   doc.setFontSize(7)
   doc.text(
     `Généré le ${format(data.generatedAt, "d MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-    W - MG, 34, { align: 'right' }
+    MG + 11, 19
   )
 
   // Grille jours
@@ -260,7 +260,7 @@ function addPageNumbers(doc: jsPDF, total: number): void {
 
 export function generatePlanningPdf(data: PlanningExportData): ExportResult {
   try {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: false, floatPrecision: 'smart' })
 
     data.employees.forEach((_, idx) => {
       if (idx > 0) doc.addPage()

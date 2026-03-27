@@ -17,6 +17,7 @@ const { mockDoc } = vi.hoisted(() => {
     roundedRect: vi.fn(),
     line: vi.fn(),
     addPage: vi.fn(),
+    addImage: vi.fn(),
     setPage: vi.fn(),
     output: vi.fn().mockReturnValue('data:application/pdf;base64,MOCK_PDF'),
     internal: {
@@ -144,7 +145,7 @@ describe('generatePlanningPdf', () => {
 
   it(`appelle doc.text pour l'en-tête`, () => {
     generatePlanningPdf(makeData())
-    expect(mockDoc.text).toHaveBeenCalledWith('PLANNING', expect.any(Number), expect.any(Number), expect.objectContaining({ align: 'center' }))
+    expect(mockDoc.text).toHaveBeenCalledWith('PLANNING', expect.any(Number), expect.any(Number))
   })
 
   it('gère les absences approuvées dans la grille', () => {
