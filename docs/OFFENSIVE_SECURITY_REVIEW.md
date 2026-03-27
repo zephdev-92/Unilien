@@ -2,6 +2,8 @@
 
 _Date: 2026-03-18_
 
+> **Update 2026-03-26** — This document reflects the **offensive review as of the review date**. Subsequent fixes are in **`supabase/migrations/041_security_fixes.sql`** with a summary in **`docs/SECURITY_CHECK_2026-03-26.md`**. Use the historical findings below for **regression testing**; see **Current posture** for the post-migration state.
+
 ## Scope and attacker model
 
 This review assumes a **bug bounty / external attacker** with:
@@ -21,9 +23,22 @@ The application is currently vulnerable to at least **three critical account/ten
 2. **That primitive can be chained into cross-tenant takeover** by rewriting `employer_id`, `permissions`, and `legal_status`, then inheriting RLS-based access to another family/team.
 3. **Medical justification documents are stored in a bucket created as `public = true` and exposed via `getPublicUrl()`**, which is incompatible with health/privacy-sensitive data.
 
-There are also strong secondary findings:
+There were also strong secondary findings (historical):
 - **global profile enumeration** for any user who becomes an employer,
 - **arbitrary notification injection / in-app spam** for any authenticated user.
+
+---
+
+## Current posture (2026-03-26)
+
+| Area | Status after migration 041 |
+|------|----------------------------|
+| Caregiver self-update | **Addressed** — `Caregivers can update own profile limited` locks `legal_status`, `employer_id`, `permissions`, `permissions_locked` on self-service updates |
+| Justifications bucket | **Addressed** — `public = false` for bucket `justifications`; app uses signed URLs (`absenceJustificationService`) |
+| Profile enumeration | **Mitigated** — employer/tutor search policies tightened |
+| Notifications / RPC | **Addressed** — `notifications_insert_own`; `create_notification` enforces business relationship + safe `action_url` |
+
+Re-test suggested on staging: REST replay of old PoCs should **fail** where 041 applies.
 
 ---
 
@@ -87,6 +102,10 @@ Prefer: return=representation
 ### At-scale weaponization
 
 An attacker can automate this against every caregiver account they control and instantly convert low-privilege invitations into privileged access footholds.
+
+### Remediation status (2026-03-26)
+
+**Addressed in `041_security_fixes.sql`** — policy **`Caregivers can update own profile limited`**: `legal_status`, `employer_id`, `permissions`, and `permissions_locked` cannot be changed in self-service. Re-test direct `PATCH` from the PoCs; expect failure.
 
 ---
 
@@ -163,6 +182,10 @@ Once inside a target tenant, the attacker can:
 - pull justification URLs or storage objects,
 - create misleading internal records to support social engineering.
 
+### Remediation status (2026-03-26)
+
+**Addressed** — same **limited** policy as Finding 1: `employer_id` cannot be rewritten by the caregiver on self-update. Replay cross-tenant PoCs against a DB with **041** applied.
+
 ---
 
 ## Finding 3 — Public medical-document bucket for absence justifications
@@ -208,6 +231,10 @@ The application generates predictable object names:
 ### At-scale weaponization
 
 A motivated attacker can build a collector for all leaked `publicUrl` values and exfiltrate documents in bulk, then use the contents for extortion, identity fraud, or targeted phishing.
+
+### Remediation status (2026-03-26)
+
+**Mitigated** — `UPDATE storage.buckets SET public = false WHERE id = 'justifications'` in **041**; client uses **signed URLs** (`createSignedUrl` in `absenceJustificationService.ts`). Re-test unauthenticated fetch of old public URL patterns.
 
 ---
 
@@ -255,6 +282,10 @@ Authorization: Bearer <employer_jwt>
 ### At-scale weaponization
 
 A single attacker-employer account can become a full user enumeration oracle for the entire platform.
+
+### Remediation status (2026-03-26)
+
+**Mitigated** — employer and tutor **search** policies on `profiles` rewritten in **041** to require relationship to returned rows (contract / caregiver / self). Re-test broad `GET /profiles` as employer.
 
 ---
 
@@ -310,6 +341,10 @@ Content-Type: application/json
 ### At-scale weaponization
 
 Combined with Finding 4, this becomes a reliable internal spam and social-engineering channel across the entire user base.
+
+### Remediation status (2026-03-26)
+
+**Addressed** — `notifications_insert_own` and hardened **`create_notification`** (business relationship + `action_url` validation) in **041**. See `docs/SECURITY_IDOR_ANALYSIS.md` and `docs/SECURITY_XSS_ANALYSIS.md`.
 
 ---
 

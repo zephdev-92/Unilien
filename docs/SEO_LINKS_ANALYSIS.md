@@ -1,8 +1,10 @@
 # Analyse SEO & Liens — Unilien
 
-**Date** : 27 février 2026
-**Périmètre** : SPA React + Vite + PWA déployée sur Netlify
+**Dernière mise à jour** : 26 mars 2026  
+**Périmètre** : SPA React + Vite + PWA déployée sur Netlify  
 **Contexte** : Application métier B2B (employeurs particuliers / auxiliaires de vie). Seules `/` et `/contact` sont publiquement indexables — les pages applicatives sont protégées par authentification.
+
+> **Note 26/03/2026** — Alignement partiel avec le dépôt : routes françaises dans `App.tsx`, favicon **`Favicon.svg`**, page **`/mentions-legales`**, footer avec liens encore partiels (`#` sur certains placeholders). Pas de **`robots.txt`** / PNG PWA dédiés au moment de la relecture ; **`@axe-core/react`** toujours non branché en dev — voir **`docs/ACCESSIBILITY.md`**.
 
 ---
 
@@ -29,8 +31,8 @@
 ```html
 <html lang="fr">                          ✅ langue déclarée
 <title>Unilien</title>                    ⚠️ trop court
-<link rel="icon" href="/vite.svg">        🔴 favicon Vite par défaut
-<!-- rien d'autre -->
+<link rel="icon" type="image/svg+xml" href="/Favicon.svg" />   ✅ favicon projet
+<!-- meta OG, description : toujours à enrichir -->
 ```
 
 | Balise | État | Impact |
@@ -42,7 +44,7 @@
 | `<link rel="canonical">` | **ABSENT** | Risque de contenu dupliqué |
 | `<meta name="theme-color">` | **ABSENT** | Défini dans le manifest mais pas en `<head>` |
 | `<link rel="apple-touch-icon">` | **ABSENT** | Référencé dans `vite.config.ts` mais le fichier n'existe pas dans `public/` |
-| `favicon` | **Vite par défaut** (`/vite.svg`) | Non professionnel en production |
+| `favicon` | **`/Favicon.svg`** (SVG) | Présent — poursuivre les meta / OG |
 
 ### 1.2 Manifest PWA
 

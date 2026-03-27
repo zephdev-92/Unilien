@@ -3,6 +3,8 @@
 **Date** : 2026-03-18  
 **Référence** : `docs/OFFENSIVE_SECURITY_REVIEW.md`
 
+> **26/03/2026** — L’analyse du **18/03** reste valide comme **historique**. Les correctifs sont dans **`041_security_fixes.sql`** et **`docs/SECURITY_CHECK_2026-03-26.md`**. Les findings **1** et **5** sont détaillés dans **`docs/SECURITY_IDOR_ANALYSIS.md`** ; pas de doublon ici.
+
 ---
 
 ## Finding 2 — Cross-tenant takeover via `employer_id`
@@ -41,9 +43,13 @@ Un caregiver peut donc envoyer :
 ```
 sans violer la policy, car `profile_id` reste inchangé.
 
-### Conclusion
+### Conclusion (état analysé au 18/03/2026)
 
 **✅ CONFIRMÉ** — Un caregiver peut réécrire `employer_id` sur sa propre ligne et effectuer un pivot cross-tenant. Le Finding 2 du OFFENSIVE_SECURITY_REVIEW est valide.
+
+### Après migration 041
+
+La policy **`Caregivers can update own profile limited`** interdit la modification de `employer_id` en self-service. Rejeu du `PATCH` REST attendu en **échec** sur une base à jour.
 
 ---
 
@@ -89,6 +95,10 @@ UPDATE storage.buckets SET public = false WHERE id = 'justifications';
 ```
 et utiliser des URLs signées (`createSignedUrl`) pour les justifications.
 
+### Après migration 041
+
+La recommandation SQL est **appliquée** dans **041**. Le service **`absenceJustificationService.ts`** utilise des **URL signées** (plus de `getPublicUrl` pour ce flux). Vérifier en staging/prod qu’aucun lien public ne fonctionne sans token.
+
 ---
 
 ## Finding 4 — Enumération des profils
@@ -103,7 +113,7 @@ CREATE POLICY "Employers can search profiles by email"
 
 La condition ne filtre pas les lignes de `profiles` : elle vérifie seulement que l’appelant est employeur. Un employeur authentifié satisfait la condition pour **toutes** les lignes de `profiles`.
 
-### Conclusion
+### Conclusion (état analysé au 18/03/2026)
 
 **✅ CONFIRMÉ** — Un employeur peut exécuter :
 ```http
@@ -111,14 +121,18 @@ GET /rest/v1/profiles?select=id,first_name,last_name,email,phone,role
 ```
 et récupérer tous les profils. Le Finding 4 est valide.
 
+### Après migration 041
+
+Policies **Employers** / **Tutors can search profiles by email** resserrées — réexécuter les requêtes larges et comparer avec les attentes de `SECURITY_CHECK_2026-03-26.md`.
+
 ---
 
 ## Synthèse
 
-| Finding | Statut | Commentaire |
-|---------|--------|-------------|
-| 1 — Caregiver mass assignment | ✅ Confirmé | Déjà documenté, policy sans restriction de colonnes |
-| 2 — Cross-tenant via employer_id | ✅ Confirmé | `employer_id` modifiable par le caregiver sur sa propre ligne |
-| 3 — Bucket justifications public | ⚠️ Probable | `public = true` inchangé ; à tester en production |
-| 4 — Profile enumeration | ✅ Confirmé | Policy trop large |
-| 5 — Notification injection | ✅ Confirmé | Déjà documenté dans SECURITY_IDOR_ANALYSIS |
+| Finding | Statut (18/03) | Après 041 |
+|---------|----------------|-----------|
+| 1 — Caregiver mass assignment | ✅ Confirmé | Corrigé — policy limited |
+| 2 — Cross-tenant via employer_id | ✅ Confirmé | Corrigé — `employer_id` figé en self-service |
+| 3 — Bucket justifications public | ⚠️ Probable | Corrigé — `public = false` + URLs signées |
+| 4 — Profile enumeration | ✅ Confirmé | Mitigé — policies resserrées |
+| 5 — Notification injection | ✅ Confirmé | Corrigé — voir `SECURITY_IDOR_ANALYSIS` |

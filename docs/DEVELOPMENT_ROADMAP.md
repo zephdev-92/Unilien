@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 23 mars 2026 (2161 tests / 119 fichiers, security fixes, code quality, Chakra UI v3 Provider migration)
-**Version**: 1.10.0
+**Dernière mise à jour**: 27 mars 2026 (2161 tests / 119 fichiers — alignement docs sécurité post-041, ACCESSIBILITY, SEO, Chakra UI v3 Provider)
+**Version**: 1.10.1
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -78,6 +78,17 @@ Audit complet du codebase contre les 6 fichiers de règles (`.claude/rules/`). C
 - Tests : 2084 → 2161 (+77 tests, 119 fichiers)
 - 41 migrations DB (était 38)
 - ~80 hex hardcodés identifiés → backlog Q2 (migration design tokens sémantiques)
+
+#### Documentation sécurité, accessibilité & SEO (26–27 mars 2026)
+
+Remise à plat des livrables d’audit avec l’état **post-`041_security_fixes.sql`** et **`docs/SECURITY_CHECK_2026-03-26.md`** (régressions Burp / API à rejouer) :
+
+- **IDOR / pentest** : `SECURITY_IDOR_ANALYSIS.md` (tableau + statuts §1–§5), `SECURITY_PENTEST_REPORT.md`, `SECURITY_PENTEST_ARTIFACTS.md` (§4.4 synthèse post-041), `BUG_BOUNTY_REPORTS.md` (Remediation status #1–#3)
+- **Synthèses** : `SECURITY_ANALYSIS.md`, `SECURITY_SUMMARY.md`, `SECURITY_XSS_ANALYSIS.md`
+- **Offensive** : `OFFENSIVE_SECURITY_REVIEW.md` (Current posture + remediation), `OFFENSIVE_SECURITY_VERIFICATION.md`
+- **SEO** : `SEO_LINKS_ANALYSIS.md` — favicon `/Favicon.svg`, encadré de relève 26/03
+- **Projet** : `CLAUDE.md` — entrée **`docs/ACCESSIBILITY.md`** dans la liste documentation
+- **Rapports déjà présents** dans `docs/` : `ACCESSIBILITY.md`, `CODE_QUALITY_2026-03-26.md`, `SECURITY_CHECK_2026-03-26.md` (référence unique migration 041)
 
 ### Semaine 12 — 16 mars 2026 (PRs #158–#164)
 
@@ -1488,14 +1499,12 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 #### 13.4 Headers Sécurité
 
 ```
-[x] Content-Security-Policy — ✅ (CSP headers en production)
-[ ] X-Frame-Options
-[ ] X-Content-Type-Options
-[ ] Referrer-Policy
+[x] Content-Security-Policy — enforcement (`netlify.toml`, voir `SECURITY_CHECK_2026-03-26.md`)
+[x] X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy — déjà présents sur Netlify (`netlify.toml`)
 ```
 
-**Effort**: 1 heure (config hosting)
-**Timeline**: Cette semaine
+**Effort**: suivi lors des changements de dépendances / inline scripts
+**Timeline**: continu
 
 ---
 
@@ -1731,7 +1740,7 @@ npx playwright install
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
 - 🟡 Tests composants UI critiques restants (Phase 3)
-- 🟢 Headers sécurité
+- ✅ Documentation sécurité / accessibilité / SEO alignée (`041` + `SECURITY_CHECK` — 26–27/03/2026)
 
 ### Q2 2026 (Avril - Juin)
 
@@ -1869,6 +1878,8 @@ npx playwright install
 ## 📚 Documentation Associée
 
 - `docs/SECURITY_ANALYSIS.md` - Analyse sécurité complète
+- `docs/SECURITY_CHECK_2026-03-26.md` - Revue synthétique post-migration 041
+- `docs/ACCESSIBILITY.md` - Accessibilité (WCAG, préférences, limites)
 - `docs/TEST_COVERAGE_ANALYSIS.md` - Plan tests détaillé
 - `docs/issues/HARDCODED_MAJORATIONS_ISSUE.md` - Bug critique exports
 - `docs/TODO_NOTIFICATIONS.md` - Détails notifications
@@ -1877,7 +1888,7 @@ npx playwright install
 - `CODE_MODERNITY_ANALYSIS.md` - Analyse modernité du code (mise à jour 11/02/2026)
 - `README.md` - Setup & installation
 
-> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0f), 2b (✅ corrigé 10/02/2026), 2c, et 16 (16.1 code splitting ✅). Semaine 7 : 4 PRs mergées (absences IDCC 3239, interventions 24h, label brut, fix validation) + sprint tests massif le 12/02 (786 tests, couverture 37%, objectif Q1 atteint). Semaine 8 : sprint hooks terminé (835 tests, 42%, 7/7 hooks), feature présence responsable IDCC 3239 (#72), logo SVG (#73), reprise historique congés.
+> **Note** : Audit complet multi-domaines réalisé le 09/02/2026 couvrant sécurité, qualité, architecture, accessibilité et performance. Les résultats sont intégrés dans cette roadmap aux sections P0 (0a-0f), 2b (✅ corrigé 10/02/2026), 2c, et 16 (16.1 code splitting ✅). Semaine 7 : 4 PRs mergées (absences IDCC 3239, interventions 24h, label brut, fix validation) + sprint tests massif le 12/02 (786 tests, couverture 37%, objectif Q1 atteint). Semaine 8 : sprint hooks terminé (835 tests, 42%, 7/7 hooks), feature présence responsable IDCC 3239 (#72), logo SVG (#73), reprise historique congés. **Mars 2026** : migration **041** + documentation sécurité réalignée (`SECURITY_CHECK_2026-03-26`, analyses IDOR/XSS/pentest/offensive).
 
 ---
 
@@ -2028,11 +2039,10 @@ npx playwright install
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 24 février 2026 — Sprint /wd:analyze (9 PRs) : bug CRITIQUE calcul dimanche presence_day corrigé, 13 useState → useReducer ShiftDetailModal, double-render useNotifications éliminé, fenêtre requête shifts réduite, ErrorBoundary sur chaque route, notificationService splitté. **1605 tests / 79 fichiers / ~60% coverage.**
+> **Dernière review**: 27 mars 2026 — Alignement documentation sécurité (post-041, `SECURITY_CHECK_*`, `ACCESSIBILITY`, SEO) ; métriques code : **2161 tests / 119 fichiers** (Semaine 14 — 23/03/2026).
 
 ---
 
 **Maintenu par**: Tech Lead
-**Prochaine revue**: 3 mars 2026
-**PRs ouvertes** : #93 (useNotifications), #94 (fenêtre requête), #95 (ShiftDetailModal useReducer)
+**Prochaine revue**: avril 2026
 **Feedback**: [Ouvrir une issue](https://github.com/zephdev-92/Unilien/issues)
