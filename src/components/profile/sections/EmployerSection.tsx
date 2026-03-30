@@ -7,6 +7,8 @@ import { AccessibleInput, AccessibleButton, AccessibleSelect } from '@/component
 import { logger } from '@/lib/logger'
 import type { Employer, EmergencyContact, PchType } from '@/types'
 import { PCH_TYPE_LABELS, PCH_TARIFFS_2026, calcEnveloppePch } from '@/lib/pch/pchTariffs'
+import { useHealthConsent } from '@/hooks/useHealthConsent'
+import { HealthDataConsentModal } from '@/components/profile/HealthDataConsentModal'
 
 const addressSchema = z.object({
   street: z.string().min(1, 'La rue est obligatoire'),
@@ -80,6 +82,8 @@ const defaultEmployer: Partial<Employer> = {
 export function EmployerSection({ employer = defaultEmployer as Employer, onSave, section = 'all' }: EmployerSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [showConsentModal, setShowConsentModal] = useState(false)
+  const { hasConsent, loading: consentLoading, grantConsent } = useHealthConsent()
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(
     employer.emergencyContacts || []
   )
@@ -210,7 +214,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
       </Box>
       )}
 
-      {/* Informations médicales */}
+      {/* Informations médicales — consentement RGPD requis */}
       {showSituation && (
       <Box
         bg="bg.surface"
@@ -223,6 +227,31 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           Informations complémentaires
         </Text>
 
+        {!consentLoading && !hasConsent ? (
+          <Box
+            p={5}
+            bg="orange.50"
+            borderRadius="10px"
+            borderWidth="1px"
+            borderColor="orange.200"
+            textAlign="center"
+          >
+            <Text fontSize="sm" color="orange.800" mb={1} fontWeight="600">
+              Consentement requis
+            </Text>
+            <Text fontSize="sm" color="orange.700" mb={4} lineHeight="1.6">
+              La saisie de vos informations de santé (handicap, besoins, PCH) nécessite
+              votre consentement explicite conformément à l'article 9 du RGPD.
+            </Text>
+            <AccessibleButton
+              colorPalette="orange"
+              size="sm"
+              onClick={() => setShowConsentModal(true)}
+            >
+              Donner mon consentement
+            </AccessibleButton>
+          </Box>
+        ) : (
         <Stack gap={5}>
           <AccessibleSelect
             label="Type de handicap"
@@ -368,6 +397,13 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
             </>
           )}
         </Stack>
+        )}
+
+        <HealthDataConsentModal
+          isOpen={showConsentModal}
+          onClose={() => setShowConsentModal(false)}
+          onConsent={grantConsent}
+        />
       </Box>
       )}
 

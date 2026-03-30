@@ -45,9 +45,6 @@ export interface Database {
         Row: {
           profile_id: string
           address: Record<string, unknown>
-          handicap_type: string | null
-          handicap_name: string | null
-          specific_needs: string | null
           cesu_number: string | null
           pch_beneficiary: boolean
           pch_monthly_amount: number | null
@@ -56,9 +53,6 @@ export interface Database {
         Insert: {
           profile_id: string
           address: Record<string, unknown>
-          handicap_type?: string | null
-          handicap_name?: string | null
-          specific_needs?: string | null
           cesu_number?: string | null
           pch_beneficiary?: boolean
           pch_monthly_amount?: number | null
@@ -66,13 +60,32 @@ export interface Database {
         }
         Update: {
           address?: Record<string, unknown>
-          handicap_type?: string | null
-          handicap_name?: string | null
-          specific_needs?: string | null
           cesu_number?: string | null
           pch_beneficiary?: boolean
           pch_monthly_amount?: number | null
           emergency_contacts?: Record<string, unknown>[]
+        }
+      }
+      employer_health_data: {
+        Row: {
+          profile_id: string
+          handicap_type: string | null
+          handicap_name: string | null
+          specific_needs: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          profile_id: string
+          handicap_type?: string | null
+          handicap_name?: string | null
+          specific_needs?: string | null
+        }
+        Update: {
+          handicap_type?: string | null
+          handicap_name?: string | null
+          specific_needs?: string | null
+          updated_at?: string
         }
       }
       employees: {
@@ -387,6 +400,51 @@ export interface Database {
           message_notifications?: boolean
           reminder_hours_before?: number
           updated_at?: string
+        }
+      }
+    }
+      audit_logs: {
+        Row: {
+          id: string
+          user_id: string
+          action: 'read' | 'create' | 'update' | 'delete' | 'grant_consent' | 'revoke_consent'
+          resource: string
+          resource_id: string | null
+          fields_accessed: string[] | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: 'read' | 'create' | 'update' | 'delete' | 'grant_consent' | 'revoke_consent'
+          resource: string
+          resource_id?: string | null
+          fields_accessed?: string[] | null
+          created_at?: string
+        }
+        Update: never
+      }
+      user_consents: {
+        Row: {
+          id: string
+          user_id: string
+          consent_type: 'health_data' | 'cookie'
+          granted_at: string
+          revoked_at: string | null
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          consent_type: 'health_data' | 'cookie'
+          granted_at?: string
+          revoked_at?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          revoked_at?: string | null
         }
       }
     }
