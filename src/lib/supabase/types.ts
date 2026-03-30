@@ -402,7 +402,6 @@ export interface Database {
           updated_at?: string
         }
       }
-    }
       audit_logs: {
         Row: {
           id: string
