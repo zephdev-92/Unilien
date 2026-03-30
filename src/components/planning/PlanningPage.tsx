@@ -250,7 +250,7 @@ export function PlanningPage() {
       if (!data) return
 
       const result = fmt === 'pdf'
-        ? generatePlanningPdf(data)
+        ? await generatePlanningPdf(data)
         : fmt === 'excel'
         ? generatePlanningExcel(data)
         : generatePlanningIcal(data)

@@ -2,38 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { generateCesuPdf } from './cesuPdfGenerator'
 import type { MonthlyDeclarationData, EmployeeDeclarationData } from './types'
 
-// ── Mock jsPDF (vi.hoisted car vi.mock est hissé avant les variables) ──────────
+// ── Mock react-pdf renderer ────────────────────────────────────────────────
 
-const { mockDoc } = vi.hoisted(() => {
-  const mockDoc = {
-    setFillColor: vi.fn(),
-    setTextColor: vi.fn(),
-    setDrawColor: vi.fn(),
-    setFontSize: vi.fn(),
-    setFont: vi.fn(),
-    setLineWidth: vi.fn(),
-    text: vi.fn(),
-    rect: vi.fn(),
-    roundedRect: vi.fn(),
-    line: vi.fn(),
-    addPage: vi.fn(),
-    addImage: vi.fn(),
-    setPage: vi.fn(),
-    output: vi.fn().mockReturnValue('data:application/pdf;base64,MOCK_PDF'),
-    internal: {
-      getNumberOfPages: vi.fn().mockReturnValue(1),
-      pageSize: {
-        getWidth: vi.fn().mockReturnValue(210),
-        getHeight: vi.fn().mockReturnValue(297),
-      },
-    },
-  }
-  return { mockDoc }
-})
-
-vi.mock('jspdf', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsPDF: vi.fn(function(this: any) { Object.assign(this, mockDoc) }),
+vi.mock('./pdfReactRenderer', () => ({
+  renderReactPdf: vi.fn(async () => 'data:application/pdf;base64,MOCK_PDF'),
 }))
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -87,76 +59,44 @@ function makeData(overrides: Partial<MonthlyDeclarationData> = {}): MonthlyDecla
 describe('generateCesuPdf', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockDoc.output.mockReturnValue('data:application/pdf;base64,MOCK_PDF')
   })
 
   describe('Résultat de base', () => {
-    it('retourne success=true pour des données valides', () => {
-      const result = generateCesuPdf(makeData())
+    it('retourne success=true pour des données valides', async () => {
+      const result = await generateCesuPdf(makeData())
       expect(result.success).toBe(true)
     })
 
-    it('retourne le bon mimeType', () => {
-      const result = generateCesuPdf(makeData())
+    it('retourne le bon mimeType', async () => {
+      const result = await generateCesuPdf(makeData())
       expect(result.mimeType).toBe('application/pdf')
     })
 
-    it('retourne un filename au format cesu_YYYY_MM.pdf', () => {
-      const result = generateCesuPdf(makeData({ year: 2026, month: 3 }))
+    it('retourne un filename au format cesu_YYYY_MM.pdf', async () => {
+      const result = await generateCesuPdf(makeData({ year: 2026, month: 3 }))
       expect(result.filename).toBe('cesu_2026_03.pdf')
     })
 
-    it('padde le mois avec un zéro (mois 1 → 01)', () => {
-      const result = generateCesuPdf(makeData({ year: 2026, month: 1 }))
+    it('padde le mois avec un zéro (mois 1 → 01)', async () => {
+      const result = await generateCesuPdf(makeData({ year: 2026, month: 1 }))
       expect(result.filename).toBe('cesu_2026_01.pdf')
     })
 
-    it('retourne le contenu PDF depuis output()', () => {
-      const result = generateCesuPdf(makeData())
+    it('retourne le contenu PDF depuis le renderer', async () => {
+      const result = await generateCesuPdf(makeData())
       expect(result.content).toBe('data:application/pdf;base64,MOCK_PDF')
-    })
-
-    it('appelle doc.output avec "datauristring"', () => {
-      generateCesuPdf(makeData())
-      expect(mockDoc.output).toHaveBeenCalledWith('datauristring')
-    })
-  })
-
-  describe('Contenu dessiné', () => {
-    it('appelle setFillColor au moins une fois', () => {
-      generateCesuPdf(makeData())
-      expect(mockDoc.setFillColor).toHaveBeenCalled()
-    })
-
-    it('appelle text au moins une fois', () => {
-      generateCesuPdf(makeData())
-      expect(mockDoc.text).toHaveBeenCalled()
-    })
-
-    it('inclut le nom de l\'employeur dans les appels text', () => {
-      generateCesuPdf(makeData())
-      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
-      const allText = textCalls.join(' ')
-      expect(allText).toContain('Paul Durand')
     })
   })
 
   describe('Avec numéro CESU', () => {
-    it('accepte un cesuNumber optionnel', () => {
-      const result = generateCesuPdf(makeData({ cesuNumber: 'CESU-12345' }))
+    it('accepte un cesuNumber optionnel', async () => {
+      const result = await generateCesuPdf(makeData({ cesuNumber: 'CESU-12345' }))
       expect(result.success).toBe(true)
-    })
-
-    it('inclut le numéro CESU dans les appels text', () => {
-      generateCesuPdf(makeData({ cesuNumber: 'CESU-12345' }))
-      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
-      const allText = textCalls.join(' ')
-      expect(allText).toContain('CESU-12345')
     })
   })
 
-  describe('Avec plusieurs employés (pagination)', () => {
-    it('accepte plusieurs employés', () => {
+  describe('Avec plusieurs employés', () => {
+    it('accepte plusieurs employés', async () => {
       const data = makeData({
         employees: [
           makeEmployee(),
@@ -164,27 +104,19 @@ describe('generateCesuPdf', () => {
         ],
         totalEmployees: 2,
       })
-      const result = generateCesuPdf(data)
+      const result = await generateCesuPdf(data)
       expect(result.success).toBe(true)
     })
   })
 
   describe('Gestion d\'erreur', () => {
-    it('retourne success=false si output lance une erreur', () => {
-      mockDoc.output.mockImplementation(() => {
-        throw new Error('PDF generation failed')
-      })
-      const result = generateCesuPdf(makeData())
-      expect(result.success).toBe(false)
-      expect(result.error).toBeDefined()
-    })
+    it('retourne success=false si le renderer échoue', async () => {
+      const { renderReactPdf } = await import('./pdfReactRenderer')
+      vi.mocked(renderReactPdf).mockRejectedValueOnce(new Error('Render failed'))
 
-    it('retourne le message d\'erreur dans result.error', () => {
-      mockDoc.output.mockImplementation(() => {
-        throw new Error('PDF generation failed')
-      })
-      const result = generateCesuPdf(makeData())
-      expect(result.error).toContain('PDF generation failed')
+      const result = await generateCesuPdf(makeData())
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Render failed')
     })
   })
 })

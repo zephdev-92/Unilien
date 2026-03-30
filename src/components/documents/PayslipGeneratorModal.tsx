@@ -78,7 +78,7 @@ export function PayslipGeneratorModal({
         return
       }
 
-      const result = generatePayslipPdf(data)
+      const result = await generatePayslipPdf(data)
       if (!result.success) {
         setError(result.error ?? 'Erreur lors de la génération du PDF.')
         return
