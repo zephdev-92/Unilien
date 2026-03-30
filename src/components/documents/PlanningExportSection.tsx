@@ -151,7 +151,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
       let result
       switch (selectedFormat) {
         case 'pdf':
-          result = generatePlanningPdf(planningData)
+          result = await generatePlanningPdf(planningData)
           break
         case 'excel':
           result = generatePlanningExcel(planningData)

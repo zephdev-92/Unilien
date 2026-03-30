@@ -2,38 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { generatePlanningPdf } from './planningPdfGenerator'
 import type { PlanningExportData, EmployeePlanningData, PlanningShiftEntry } from './types'
 
-// ── Mock jsPDF ────────────────────────────────────────────────────────────────
+// ── Mock react-pdf renderer ────────────────────────────────────────────────
 
-const { mockDoc } = vi.hoisted(() => {
-  const mockDoc = {
-    setFillColor: vi.fn(),
-    setTextColor: vi.fn(),
-    setDrawColor: vi.fn(),
-    setFontSize: vi.fn(),
-    setFont: vi.fn(),
-    setLineWidth: vi.fn(),
-    text: vi.fn(),
-    rect: vi.fn(),
-    roundedRect: vi.fn(),
-    line: vi.fn(),
-    addPage: vi.fn(),
-    addImage: vi.fn(),
-    setPage: vi.fn(),
-    output: vi.fn().mockReturnValue('data:application/pdf;base64,MOCK_PDF'),
-    internal: {
-      getNumberOfPages: vi.fn().mockReturnValue(1),
-      pageSize: {
-        getWidth: vi.fn().mockReturnValue(210),
-        getHeight: vi.fn().mockReturnValue(297),
-      },
-    },
-  }
-  return { mockDoc }
-})
-
-vi.mock('jspdf', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsPDF: vi.fn(function(this: any) { Object.assign(this, mockDoc) }),
+vi.mock('./pdfReactRenderer', () => ({
+  renderReactPdf: vi.fn(async () => 'data:application/pdf;base64,MOCK_PDF'),
 }))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -92,66 +64,40 @@ function makeData(overrides: Partial<PlanningExportData> = {}): PlanningExportDa
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockDoc.output.mockReturnValue('data:application/pdf;base64,MOCK_PDF')
-  mockDoc.internal.getNumberOfPages.mockReturnValue(1)
 })
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('generatePlanningPdf', () => {
-  it('retourne un résultat réussi', () => {
-    const result = generatePlanningPdf(makeData())
+  it('retourne un résultat réussi', async () => {
+    const result = await generatePlanningPdf(makeData())
     expect(result.success).toBe(true)
     expect(result.filename).toMatch(/\.pdf$/)
     expect(result.mimeType).toBe('application/pdf')
     expect(result.content).toBe('data:application/pdf;base64,MOCK_PDF')
   })
 
-  it('appelle addPage pour chaque employé supplémentaire', () => {
-    const data = makeData({
-      employees: [makeEmployee(), makeEmployee({ employeeId: 'emp-2', firstName: 'Paul', lastName: 'Martin' })],
-      totalEmployees: 2,
-    })
-    mockDoc.internal.getNumberOfPages.mockReturnValue(2)
-    generatePlanningPdf(data)
-    expect(mockDoc.addPage).toHaveBeenCalledTimes(1)
-  })
-
-  it(`le nom de fichier contient le nom de l'employé si un seul employé`, () => {
-    const result = generatePlanningPdf(makeData())
+  it('le nom de fichier contient le nom de l\'employé si un seul employé', async () => {
+    const result = await generatePlanningPdf(makeData())
     expect(result.filename).toContain('curie')
     expect(result.filename).toContain('2024')
     expect(result.filename).toContain('03')
   })
 
-  it('le nom de fichier contient "complet" si plusieurs employés', () => {
+  it('le nom de fichier contient "complet" si plusieurs employés', async () => {
     const data = makeData({
       employees: [makeEmployee(), makeEmployee({ employeeId: 'emp-2', firstName: 'Paul', lastName: 'Martin' })],
       totalEmployees: 2,
     })
-    mockDoc.internal.getNumberOfPages.mockReturnValue(2)
-    const result = generatePlanningPdf(data)
+    const result = await generatePlanningPdf(data)
     expect(result.filename).toContain('complet')
   })
 
-  it('gère les erreurs de génération', () => {
-    mockDoc.output.mockImplementationOnce(() => {
-      throw new Error('PDF error')
-    })
-    const result = generatePlanningPdf(makeData())
-    expect(result.success).toBe(false)
-    expect(result.error).toBe('PDF error')
-  })
-
-  it(`appelle doc.text pour l'en-tête`, () => {
-    generatePlanningPdf(makeData())
-    expect(mockDoc.text).toHaveBeenCalledWith('PLANNING', expect.any(Number), expect.any(Number))
-  })
-
-  it('gère les absences approuvées dans la grille', () => {
+  it('gère les absences approuvées', async () => {
     const data = makeData({
       employees: [
         makeEmployee({
+          shifts: [],
           absences: [
             {
               id: 'abs-1',
@@ -164,7 +110,49 @@ describe('generatePlanningPdf', () => {
         }),
       ],
     })
-    const result = generatePlanningPdf(data)
+    const result = await generatePlanningPdf(data)
+    expect(result.success).toBe(true)
+  })
+
+  it('gère les erreurs de génération', async () => {
+    const { renderReactPdf } = await import('./pdfReactRenderer')
+    vi.mocked(renderReactPdf).mockRejectedValueOnce(new Error('PDF error'))
+
+    const result = await generatePlanningPdf(makeData())
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('PDF error')
+  })
+
+  it('gère plusieurs types de shifts', async () => {
+    const data = makeData({
+      employees: [
+        makeEmployee({
+          shifts: [
+            makeShift({ shiftType: 'effective' }),
+            makeShift({ id: 'shift-2', shiftType: 'presence_day' }),
+            makeShift({ id: 'shift-3', shiftType: 'presence_night' }),
+            makeShift({ id: 'shift-4', shiftType: 'guard_24h' }),
+          ],
+          totalShifts: 4,
+        }),
+      ],
+    })
+    const result = await generatePlanningPdf(data)
+    expect(result.success).toBe(true)
+  })
+
+  it('gère les shifts annulés (filtrés)', async () => {
+    const data = makeData({
+      employees: [
+        makeEmployee({
+          shifts: [
+            makeShift({ status: 'cancelled' }),
+            makeShift({ id: 'shift-2', status: 'completed' }),
+          ],
+        }),
+      ],
+    })
+    const result = await generatePlanningPdf(data)
     expect(result.success).toBe(true)
   })
 })

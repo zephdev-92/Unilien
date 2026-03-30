@@ -92,11 +92,11 @@ export function CesuDeclarationSection({ employerId }: Props) {
     }
   }, [employerId, selectedYear, selectedMonth])
 
-  const handleDownload = (declaration: MonthlyDeclarationData, format: ExportFormat) => {
+  const handleDownload = async (declaration: MonthlyDeclarationData, format: ExportFormat) => {
     let result
     switch (format) {
       case 'pdf':
-        result = generateCesuPdf(declaration)
+        result = await generateCesuPdf(declaration)
         break
       case 'csv':
         result = generateCesuCsv(declaration)

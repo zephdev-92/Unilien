@@ -2,37 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { generatePayslipPdf } from './payslipPdfGenerator'
 import type { PayslipData, CotisationsResult } from './types'
 
-// ── Mock jsPDF (vi.hoisted car vi.mock est hissé avant les variables) ──────────
+// ── Mock react-pdf renderer ────────────────────────────────────────────────
 
-const { mockDoc } = vi.hoisted(() => {
-  const mockDoc = {
-    setFillColor: vi.fn(),
-    setTextColor: vi.fn(),
-    setDrawColor: vi.fn(),
-    setFontSize: vi.fn(),
-    setFont: vi.fn(),
-    setLineWidth: vi.fn(),
-    setPage: vi.fn(),
-    text: vi.fn(),
-    rect: vi.fn(),
-    roundedRect: vi.fn(),
-    line: vi.fn(),
-    addPage: vi.fn(),
-    output: vi.fn().mockReturnValue('data:application/pdf;base64,MOCK_PDF'),
-    internal: {
-      pageSize: {
-        getWidth: vi.fn().mockReturnValue(210),
-        getHeight: vi.fn().mockReturnValue(297),
-      },
-      getNumberOfPages: vi.fn().mockReturnValue(1),
-    },
-  }
-  return { mockDoc }
-})
-
-vi.mock('jspdf', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jsPDF: vi.fn(function(this: any) { Object.assign(this, mockDoc) }),
+vi.mock('./pdfReactRenderer', () => ({
+  renderReactPdf: vi.fn(async () => 'data:application/pdf;base64,MOCK_PDF'),
 }))
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -67,6 +40,7 @@ function makeData(overrides: Partial<PayslipData> = {}): PayslipData {
     employeeId: 'employee-1',
     employeeFirstName: 'Marie',
     employeeLastName: 'Curie',
+    contractId: 'contract-1',
     contractType: 'CDI',
     hourlyRate: 12.5,
     weeklyHours: 35,
@@ -98,77 +72,45 @@ function makeData(overrides: Partial<PayslipData> = {}): PayslipData {
 describe('generatePayslipPdf', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockDoc.output.mockReturnValue('data:application/pdf;base64,MOCK_PDF')
   })
 
   describe('Résultat de base', () => {
-    it('retourne success=true pour des données valides', () => {
-      const result = generatePayslipPdf(makeData())
+    it('retourne success=true pour des données valides', async () => {
+      const result = await generatePayslipPdf(makeData())
       expect(result.success).toBe(true)
     })
 
-    it('retourne le bon mimeType', () => {
-      const result = generatePayslipPdf(makeData())
+    it('retourne le bon mimeType', async () => {
+      const result = await generatePayslipPdf(makeData())
       expect(result.mimeType).toBe('application/pdf')
     })
 
-    it('retourne le contenu PDF depuis output()', () => {
-      const result = generatePayslipPdf(makeData())
+    it('retourne le contenu PDF depuis le renderer', async () => {
+      const result = await generatePayslipPdf(makeData())
       expect(result.content).toBe('data:application/pdf;base64,MOCK_PDF')
-    })
-
-    it('appelle doc.output avec "datauristring"', () => {
-      generatePayslipPdf(makeData())
-      expect(mockDoc.output).toHaveBeenCalledWith('datauristring')
     })
   })
 
   describe('Nom du fichier', () => {
-    it('génère le bon filename pour "Curie" en janvier 2026', () => {
-      const result = generatePayslipPdf(makeData())
+    it('génère le bon filename pour "Curie" en janvier 2026', async () => {
+      const result = await generatePayslipPdf(makeData())
       expect(result.filename).toBe('bulletin_curie_2026_01.pdf')
     })
 
-    it('padde le mois avec un zéro (mois 3 → 03)', () => {
-      const result = generatePayslipPdf(makeData({ month: 3 }))
+    it('padde le mois avec un zéro (mois 3 → 03)', async () => {
+      const result = await generatePayslipPdf(makeData({ month: 3 }))
       expect(result.filename).toBe('bulletin_curie_2026_03.pdf')
     })
 
-    it('normalise les espaces dans le nom (nom avec espace → underscore)', () => {
-      const result = generatePayslipPdf(makeData({ employeeLastName: 'De La Tour' }))
+    it('normalise les espaces dans le nom', async () => {
+      const result = await generatePayslipPdf(makeData({ employeeLastName: 'De La Tour' }))
       expect(result.filename).toContain('de_la_tour')
     })
   })
 
-  describe('Contenu dessiné', () => {
-    it('appelle setFillColor au moins une fois', () => {
-      generatePayslipPdf(makeData())
-      expect(mockDoc.setFillColor).toHaveBeenCalled()
-    })
-
-    it('appelle text au moins une fois', () => {
-      generatePayslipPdf(makeData())
-      expect(mockDoc.text).toHaveBeenCalled()
-    })
-
-    it('inclut le nom de l\'employé dans les appels text', () => {
-      generatePayslipPdf(makeData())
-      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
-      const allText = textCalls.join(' ')
-      expect(allText).toContain('Marie Curie')
-    })
-
-    it('inclut le nom de l\'employeur dans les appels text', () => {
-      generatePayslipPdf(makeData())
-      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
-      const allText = textCalls.join(' ')
-      expect(allText).toContain('Paul Durand')
-    })
-  })
-
   describe('Exonération patronale SS', () => {
-    it('génère sans erreur avec isExemptPatronalSS=true', () => {
-      const result = generatePayslipPdf(makeData({
+    it('génère sans erreur avec isExemptPatronalSS=true', async () => {
+      const result = await generatePayslipPdf(makeData({
         isExemptPatronalSS: true,
         cotisations: makeCotisations({ isExemptPatronalSS: true }),
       }))
@@ -177,8 +119,8 @@ describe('generatePayslipPdf', () => {
   })
 
   describe('Avec lignes de cotisations', () => {
-    it('génère sans erreur avec des lignes de cotisations', () => {
-      const result = generatePayslipPdf(makeData({
+    it('génère sans erreur avec des lignes de cotisations', async () => {
+      const result = await generatePayslipPdf(makeData({
         cotisations: makeCotisations({
           employeeCotisations: [
             { label: 'CSG déductible', base: 1788.76, rate: 0.068, amount: 121.64, isEmployer: false },
@@ -191,8 +133,8 @@ describe('generatePayslipPdf', () => {
       expect(result.success).toBe(true)
     })
 
-    it('génère sans erreur avec des lignes exonérées', () => {
-      const result = generatePayslipPdf(makeData({
+    it('génère sans erreur avec des lignes exonérées', async () => {
+      const result = await generatePayslipPdf(makeData({
         cotisations: makeCotisations({
           employerCotisations: [
             { label: 'SS patronale', base: 1788.76, rate: 0.128, amount: 0, isEmployer: true, exempted: true },
@@ -213,38 +155,21 @@ describe('generatePayslipPdf', () => {
       pchResteACharge: Math.max(0, 2208.76 - 1160.40),
     }
 
-    it('génère sans erreur avec isPchBeneficiary=true et données PCH', () => {
-      const result = generatePayslipPdf(makeData({
+    it('génère sans erreur avec isPchBeneficiary=true', async () => {
+      const result = await generatePayslipPdf(makeData({
         isPchBeneficiary: true,
         pch: pchData,
       }))
       expect(result.success).toBe(true)
     })
 
-    it('n\'affiche pas la section PCH si isPchBeneficiary=false', () => {
-      generatePayslipPdf(makeData({ isPchBeneficiary: false }))
-      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
-      const allText = textCalls.join(' ')
-      expect(allText).not.toContain('PCH')
-    })
-
-    it('affiche la mention RÉCAPITULATIF PCH si isPchBeneficiary=true', () => {
-      generatePayslipPdf(makeData({
-        isPchBeneficiary: true,
-        pch: pchData,
-      }))
-      const textCalls = mockDoc.text.mock.calls.map((call: unknown[]) => String(call[0]))
-      const allText = textCalls.join(' ')
-      expect(allText).toContain('PCH')
-    })
-
-    it('n\'affiche pas la section PCH si isPchBeneficiary=true mais pch absent', () => {
-      const result = generatePayslipPdf(makeData({ isPchBeneficiary: true, pch: undefined }))
+    it('génère sans erreur avec pch absent', async () => {
+      const result = await generatePayslipPdf(makeData({ isPchBeneficiary: true, pch: undefined }))
       expect(result.success).toBe(true)
     })
 
-    it('génère sans erreur avec reste à charge nul (enveloppe couvre le coût)', () => {
-      const result = generatePayslipPdf(makeData({
+    it('génère sans erreur avec reste à charge nul', async () => {
+      const result = await generatePayslipPdf(makeData({
         isPchBeneficiary: true,
         pch: { ...pchData, pchEnvelopePch: 9999, pchResteACharge: 0 },
       }))
@@ -253,21 +178,27 @@ describe('generatePayslipPdf', () => {
   })
 
   describe('Gestion d\'erreur', () => {
-    it('retourne success=false si output lance une erreur', () => {
-      mockDoc.output.mockImplementation(() => {
-        throw new Error('PDF generation failed')
-      })
-      const result = generatePayslipPdf(makeData())
-      expect(result.success).toBe(false)
-      expect(result.error).toBeDefined()
-    })
+    it('retourne success=false si le renderer échoue', async () => {
+      const { renderReactPdf } = await import('./pdfReactRenderer')
+      vi.mocked(renderReactPdf).mockRejectedValueOnce(new Error('Render failed'))
 
-    it('retourne le message d\'erreur dans result.error', () => {
-      mockDoc.output.mockImplementation(() => {
-        throw new Error('jsPDF crashed')
-      })
-      const result = generatePayslipPdf(makeData())
-      expect(result.error).toContain('jsPDF crashed')
+      const result = await generatePayslipPdf(makeData())
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Render failed')
+    })
+  })
+
+  describe('Majorations', () => {
+    it('génère sans erreur avec toutes les majorations', async () => {
+      const result = await generatePayslipPdf(makeData({
+        sundayMajoration: 18.75,
+        holidayMajoration: 25,
+        nightMajoration: 20.01,
+        overtimeMajoration: 15,
+        presenceResponsiblePay: 100,
+        nightPresenceAllowance: 50,
+      }))
+      expect(result.success).toBe(true)
     })
   })
 })

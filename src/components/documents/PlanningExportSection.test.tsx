@@ -63,7 +63,7 @@ const { mockPlanningData, mockGetPlanningExportData, mockGetPlanningExportDataFo
 vi.mock('@/lib/export', () => ({
   getPlanningExportData: mockGetPlanningExportData,
   getPlanningExportDataForEmployee: mockGetPlanningExportDataForEmployee,
-  generatePlanningPdf: vi.fn().mockReturnValue({
+  generatePlanningPdf: vi.fn().mockResolvedValue({
     success: true,
     filename: 'planning.pdf',
     content: 'data:application/pdf;base64,TEST',

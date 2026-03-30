@@ -187,7 +187,7 @@ export function PayslipSection({ employerId }: Props) {
         return
       }
 
-      const result = generatePayslipPdf(payslipData)
+      const result = await generatePayslipPdf(payslipData)
 
       if (!result.success) {
         setDialogError(result.error ?? 'Erreur lors de la generation du PDF')
