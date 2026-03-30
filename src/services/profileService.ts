@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
+import { logAudit } from '@/services/auditService'
 import type { Profile, Employer, Employee, PchType } from '@/types'
 import type { ProfileDbRow } from '@/types/database'
 import { mapProfileFromDb } from '@/lib/mappers'
@@ -236,9 +237,10 @@ export async function deleteAvatar(profileId: string): Promise<void> {
 // ============================================
 
 export async function getEmployer(profileId: string): Promise<Employer | null> {
+  // Données générales (accessibles aux employés/aidants via RLS)
   const { data, error } = await supabase
     .from('employers')
-    .select('profile_id, address, cesu_number, pch_beneficiary, pch_monthly_amount, pch_type, pch_monthly_hours')
+    .select('profile_id, address, cesu_number, pch_beneficiary, pch_monthly_amount, pch_type, pch_monthly_hours, emergency_contacts')
     .eq('profile_id', profileId)
     .maybeSingle()
 
@@ -249,12 +251,28 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
 
   if (!data) return null
 
+  // Données de santé (RLS strict : propriétaire uniquement)
+  const { data: healthData } = await supabase
+    .from('employer_health_data')
+    .select('handicap_type, handicap_name, specific_needs')
+    .eq('profile_id', profileId)
+    .maybeSingle()
+
+  if (healthData) {
+    logAudit({
+      action: 'read',
+      resource: 'employer_health_data',
+      resourceId: profileId,
+      fields: ['handicap_type', 'handicap_name', 'specific_needs'],
+    })
+  }
+
   return {
     profileId: data.profile_id,
     address: data.address as Employer['address'],
-    handicapType: data.handicap_type || undefined,
-    handicapName: data.handicap_name || undefined,
-    specificNeeds: data.specific_needs || undefined,
+    handicapType: healthData?.handicap_type || undefined,
+    handicapName: healthData?.handicap_name || undefined,
+    specificNeeds: healthData?.specific_needs || undefined,
     cesuNumber: data.cesu_number || undefined,
     pchBeneficiary: data.pch_beneficiary ?? false,
     pchMonthlyAmount: data.pch_monthly_amount || undefined,
@@ -264,6 +282,8 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
   }
 }
 
+const VALID_HANDICAP_TYPES = ['moteur', 'visuel', 'auditif', 'cognitif', 'psychique', 'polyhandicap', 'maladie_invalidante', 'autre']
+
 export async function upsertEmployer(profileId: string, data: Partial<Employer>) {
   const sanitizedAddress = data.address ? {
     street: data.address.street ? sanitizeText(data.address.street) : '',
@@ -272,12 +292,10 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     country: data.address.country || 'France',
   } : {}
 
+  // Données générales (table employers)
   const payload = {
     profile_id: profileId,
     address: sanitizedAddress,
-    handicap_type: data.handicapType || null,
-    handicap_name: data.handicapName ? sanitizeText(data.handicapName) : null,
-    specific_needs: data.specificNeeds ? sanitizeText(data.specificNeeds) : null,
     cesu_number: data.cesuNumber ? sanitizeText(data.cesuNumber) : null,
     pch_beneficiary: data.pchBeneficiary ?? false,
     pch_monthly_amount: Number.isFinite(data.pchMonthlyAmount) ? data.pchMonthlyAmount : null,
@@ -293,6 +311,40 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
   if (error) {
     logger.error('Erreur mise à jour employeur:', error)
     throw new Error(error.message)
+  }
+
+  // Données de santé (table séparée, RLS strict)
+  const hasHealthData = data.handicapType || data.handicapName || data.specificNeeds
+  if (hasHealthData !== undefined) {
+    const healthPayload = {
+      profile_id: profileId,
+      handicap_type: data.handicapType && VALID_HANDICAP_TYPES.includes(data.handicapType) ? data.handicapType : null,
+      handicap_name: data.handicapName ? sanitizeText(data.handicapName) : null,
+      specific_needs: data.specificNeeds ? sanitizeText(data.specificNeeds) : null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error: healthError } = await supabase
+      .from('employer_health_data')
+      .upsert(healthPayload, { onConflict: 'profile_id' })
+
+    if (healthError) {
+      logger.error('Erreur mise à jour données santé employeur:', healthError)
+      throw new Error(healthError.message)
+    }
+
+    const modifiedFields = [
+      data.handicapType !== undefined && 'handicap_type',
+      data.handicapName !== undefined && 'handicap_name',
+      data.specificNeeds !== undefined && 'specific_needs',
+    ].filter(Boolean) as string[]
+
+    logAudit({
+      action: 'update',
+      resource: 'employer_health_data',
+      resourceId: profileId,
+      fields: modifiedFields,
+    })
   }
 }
 
@@ -332,6 +384,20 @@ export async function getEmployee(profileId: string): Promise<Employee | null> {
         country: 'France',
       }
     : undefined
+
+  const hasSensitiveData = data.social_security_number || data.iban || data.date_of_birth
+  if (hasSensitiveData) {
+    logAudit({
+      action: 'read',
+      resource: 'employee_sensitive',
+      resourceId: profileId,
+      fields: [
+        data.social_security_number && 'social_security_number',
+        data.iban && 'iban',
+        data.date_of_birth && 'date_of_birth',
+      ].filter(Boolean) as string[],
+    })
+  }
 
   return {
     profileId: data.profile_id,
@@ -392,5 +458,20 @@ export async function upsertEmployee(profileId: string, data: Partial<Employee>)
   if (error) {
     logger.error('Erreur mise à jour employé:', error)
     throw new Error(error.message)
+  }
+
+  const sensitiveFields = [
+    data.socialSecurityNumber !== undefined && 'social_security_number',
+    data.iban !== undefined && 'iban',
+    data.dateOfBirth !== undefined && 'date_of_birth',
+  ].filter(Boolean) as string[]
+
+  if (sensitiveFields.length > 0) {
+    logAudit({
+      action: 'update',
+      resource: 'employee_sensitive',
+      resourceId: profileId,
+      fields: sensitiveFields,
+    })
   }
 }

@@ -59,6 +59,36 @@ export interface EmployerDbRow {
   pch_monthly_amount: number | null
   pch_type: string | null
   pch_monthly_hours: number | null
+  emergency_contacts: Array<{ name: string; phone: string; relationship: string }> | null
+}
+
+export interface EmployerHealthDataDbRow {
+  profile_id: string
+  handicap_type: string | null
+  handicap_name: string | null
+  specific_needs: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface UserConsentDbRow {
+  id: string
+  user_id: string
+  consent_type: 'health_data' | 'cookie'
+  granted_at: string
+  revoked_at: string | null
+  ip_address: string | null
+  user_agent: string | null
+}
+
+export interface AuditLogDbRow {
+  id: string
+  user_id: string
+  action: 'read' | 'create' | 'update' | 'delete' | 'grant_consent' | 'revoke_consent'
+  resource: string
+  resource_id: string | null
+  fields_accessed: string[] | null
+  created_at: string
 }
 
 export interface AddressDb {

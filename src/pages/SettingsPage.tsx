@@ -34,6 +34,7 @@ import type { Address, UserRole } from '@/types'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { exportUserDataJSON, exportUserShiftsCSV } from '@/services/dataExportService'
 import { logger } from '@/lib/logger'
+import { useHealthConsent } from '@/hooks/useHealthConsent'
 import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
 import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
@@ -1690,6 +1691,98 @@ function loadPrivacySettings() {
   } catch { return { analytics: true, cookies: true } }
 }
 
+function HealthConsentCard() {
+  const { hasConsent, loading, grantedAt, revokeConsent, grantConsent } = useHealthConsent()
+  const [revoking, setRevoking] = useState(false)
+  const [confirmRevoke, setConfirmRevoke] = useState(false)
+
+  const handleRevoke = async () => {
+    setRevoking(true)
+    await revokeConsent()
+    setRevoking(false)
+    setConfirmRevoke(false)
+  }
+
+  const handleGrant = async () => {
+    await grantConsent()
+  }
+
+  if (loading) return null
+
+  return (
+    <Card.Root borderRadius="md" borderWidth="1px" borderColor={hasConsent ? 'green.200' : 'orange.200'} boxShadow="sm">
+      <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor={hasConsent ? 'green.200' : 'orange.200'} bg={hasConsent ? 'green.50' : 'orange.50'}>
+        <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700" color={hasConsent ? 'green.700' : 'orange.700'}>
+          Consentement données de santé (RGPD)
+        </Card.Title>
+      </Card.Header>
+      <Card.Body p={4}>
+        {hasConsent ? (
+          <VStack gap={3} align="stretch">
+            <Text fontSize="sm" color="text.secondary">
+              Vous avez consenti au traitement de vos données de santé le{' '}
+              <Text as="span" fontWeight="600">
+                {grantedAt ? new Date(grantedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+              </Text>.
+            </Text>
+            <Text fontSize="xs" color="text.muted">
+              Conformément à l&apos;article 9 du RGPD, vous pouvez retirer ce consentement à tout moment.
+              Vos données de santé (type de handicap, besoins, PCH) ne seront plus accessibles.
+            </Text>
+            {!confirmRevoke ? (
+              <Button
+                colorPalette="red"
+                variant="outline"
+                size="xs"
+                w="fit-content"
+                onClick={() => setConfirmRevoke(true)}
+              >
+                Retirer mon consentement
+              </Button>
+            ) : (
+              <Box p={3} bg="red.50" borderRadius="md" borderWidth="1px" borderColor="red.200">
+                <Text fontSize="sm" color="red.700" mb={2} fontWeight="500">
+                  Vos données de santé ne seront plus accessibles. Elles resteront en base mais ne seront plus affichées.
+                </Text>
+                <HStack gap={2}>
+                  <Button
+                    colorPalette="red"
+                    size="xs"
+                    onClick={handleRevoke}
+                    loading={revoking}
+                    loadingText="Révocation..."
+                  >
+                    Confirmer la révocation
+                  </Button>
+                  <GhostButton size="xs" onClick={() => setConfirmRevoke(false)}>
+                    Annuler
+                  </GhostButton>
+                </HStack>
+              </Box>
+            )}
+          </VStack>
+        ) : (
+          <VStack gap={3} align="stretch">
+            <Text fontSize="sm" color="text.secondary">
+              Vous n&apos;avez pas consenti au traitement de vos données de santé.
+              Sans consentement, vous ne pouvez pas renseigner vos informations de handicap et PCH.
+            </Text>
+            <Button
+              colorPalette="brand"
+              variant="outline"
+              size="xs"
+              w="fit-content"
+              onClick={handleGrant}
+            >
+              Donner mon consentement
+            </Button>
+          </VStack>
+        )}
+      </Card.Body>
+    </Card.Root>
+  )
+}
+
 function DonneesPanel({ userId }: { userId: string }) {
   const [privacy, setPrivacy] = useState(loadPrivacySettings)
   const [exporting, setExporting] = useState<string | null>(null)
@@ -1782,6 +1875,8 @@ function DonneesPanel({ userId }: { userId: string }) {
           </VStack>
         </Card.Body>
       </Card.Root>
+
+      <HealthConsentCard />
 
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
