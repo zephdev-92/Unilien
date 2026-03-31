@@ -372,6 +372,25 @@ export interface PayslipDbRow {
 }
 
 // ============================================================
+// CESU DECLARATION
+// ============================================================
+
+export interface CesuDeclarationDbRow {
+  id: string
+  employer_id: string
+  year: number
+  month: number
+  period_label: string
+  total_employees: number
+  total_hours: number
+  total_gross_pay: number
+  declaration_data: Record<string, unknown>
+  storage_path: string | null
+  generated_at: string
+  created_at: string
+}
+
+// ============================================================
 // INTERVENTION SETTINGS
 // ============================================================
 

@@ -456,6 +456,23 @@ export interface Payslip {
   createdAt: Date
 }
 
+// ── Déclaration CESU (historique persisté) ───────────────────────────────────
+
+export interface CesuDeclarationRecord {
+  id: string
+  employerId: string
+  year: number
+  month: number
+  periodLabel: string
+  totalEmployees: number
+  totalHours: number
+  totalGrossPay: number
+  declarationData: import('@/lib/export/types').MonthlyDeclarationData
+  storagePath: string | null
+  generatedAt: Date
+  createdAt: Date
+}
+
 // État authentification
 export interface AuthState {
   user: Profile | null
