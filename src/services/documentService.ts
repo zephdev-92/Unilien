@@ -38,17 +38,24 @@ export interface DocumentStats {
 export async function getDocumentsForEmployer(
   employerId: string
 ): Promise<DocumentWithEmployee[]> {
-  // Récupérer les employee_ids via les contrats actifs avec les infos profil
+  // Récupérer tous les contrats actifs (employés + aidants)
   const { data: contracts, error: contractsError } = await supabase
     .from('contracts')
     .select(`
       employee_id,
+      caregiver_id,
+      contract_category,
       employee_profile:employees!employee_id(
         profile:profiles!profile_id(
           id,
           first_name,
           last_name
         )
+      ),
+      caregiver_profile:profiles!caregiver_id(
+        id,
+        first_name,
+        last_name
       )
     `)
     .eq('employer_id', employerId)
@@ -58,26 +65,44 @@ export async function getDocumentsForEmployer(
     return []
   }
 
-  // Créer un map employeeId -> employeeInfo
-  const employeeMap = new Map<string, { id: string; firstName: string; lastName: string }>()
+  // Map personId -> infos profil (employés + aidants)
+  const personMap = new Map<string, { id: string; firstName: string; lastName: string }>()
+  const personIds: string[] = []
+
   for (const contract of contracts) {
-    const profile = (contract as ContractWithEmployeeDbRow).employee_profile?.profile
-    if (profile) {
-      employeeMap.set(contract.employee_id, {
-        id: profile.id,
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-      })
+    if (contract.employee_id) {
+      const profile = (contract as ContractWithEmployeeDbRow).employee_profile?.profile
+      if (profile) {
+        personMap.set(contract.employee_id, {
+          id: profile.id,
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
+        })
+      }
+      personIds.push(contract.employee_id)
+    }
+    if (contract.caregiver_id) {
+      const cgProfile = (contract as { caregiver_profile?: { id?: string; first_name?: string; last_name?: string } }).caregiver_profile
+      if (cgProfile) {
+        personMap.set(contract.caregiver_id, {
+          id: cgProfile.id || contract.caregiver_id,
+          firstName: cgProfile.first_name || '',
+          lastName: cgProfile.last_name || '',
+        })
+      }
+      personIds.push(contract.caregiver_id)
     }
   }
 
-  const employeeIds = contracts.map((c) => c.employee_id)
+  if (personIds.length === 0) {
+    return []
+  }
 
-  // Récupérer les absences
+  // Récupérer les absences de tous (employés + aidants)
   const { data: absences, error } = await supabase
     .from('absences')
     .select('id, employee_id, absence_type, start_date, end_date, reason, justification_url, status, business_days_count, justification_due_date, family_event_type, leave_year, created_at')
-    .in('employee_id', employeeIds)
+    .in('employee_id', personIds)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -87,7 +112,7 @@ export async function getDocumentsForEmployer(
 
   return (absences || []).map((row) => ({
     absence: mapAbsenceFromDb(row),
-    employee: employeeMap.get(row.employee_id) || {
+    employee: personMap.get(row.employee_id) || {
       id: row.employee_id,
       firstName: 'Inconnu',
       lastName: '',

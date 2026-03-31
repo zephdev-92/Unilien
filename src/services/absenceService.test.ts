@@ -253,15 +253,12 @@ describe('absenceService', () => {
       Object.defineProperty(file, 'size', { value: 1 * 1024 * 1024 })
 
       mockUpload.mockResolvedValue({ error: null })
-      mockCreateSignedUrl.mockResolvedValue({
-        data: { signedUrl: 'https://storage.example.com/justifications/emp-456/arret.pdf?token=xxx' },
-        error: null,
-      })
 
       const result = await uploadJustification('emp-456', file)
 
-      expect(result.url).toContain('storage.example.com')
-      expect(result.url).toContain('token=')
+      // Retourne le storage path (pas une URL signée)
+      expect(result.url).toContain('emp-456/')
+      expect(result.url).toContain('.pdf')
       expect(mockUpload).toHaveBeenCalled()
       expect(mockStorage).toHaveBeenCalledWith('justifications')
     })

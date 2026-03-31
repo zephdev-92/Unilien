@@ -24,7 +24,7 @@ import {
   getDocumentsForEmployer,
   type DocumentWithEmployee,
 } from '@/services/documentService'
-import { updateAbsenceStatus } from '@/services/absenceService'
+import { updateAbsenceStatus, getJustificationSignedUrl } from '@/services/absenceService'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
 import {
@@ -100,8 +100,23 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
     }
   }
 
-  const openJustification = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer')
+  const openJustification = async (storagePath: string) => {
+    // Si c'est déjà une URL complète (anciens enregistrements), l'ouvrir directement
+    if (storagePath.startsWith('http')) {
+      window.open(storagePath, '_blank', 'noopener,noreferrer')
+      return
+    }
+    // Sinon générer une URL signée depuis le storage path
+    const signedUrl = await getJustificationSignedUrl(storagePath)
+    if (signedUrl) {
+      window.open(signedUrl, '_blank', 'noopener,noreferrer')
+    } else {
+      toaster.create({
+        title: 'Erreur',
+        description: 'Impossible de telecharger le justificatif',
+        type: 'error',
+      })
+    }
   }
 
   if (isLoading) {

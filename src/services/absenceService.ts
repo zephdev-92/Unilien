@@ -18,7 +18,7 @@ import { addTakenDays, restoreTakenDays, getLeaveBalance, initializeLeaveBalance
 
 // Re-export du module justificatif pour compatibilité des imports existants
 export type { JustificationUploadResult, JustificationUploadOptions } from './absenceJustificationService'
-export { validateJustificationFile, uploadJustification } from './absenceJustificationService'
+export { validateJustificationFile, uploadJustification, getJustificationSignedUrl } from './absenceJustificationService'
 
 // ============================================
 // GET ABSENCES FOR EMPLOYEE
