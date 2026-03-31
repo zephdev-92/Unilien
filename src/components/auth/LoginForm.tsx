@@ -31,10 +31,11 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 export function LoginForm() {
-  const { signIn, isLoading, error } = useAuth()
+  const { signIn, isLoading } = useAuth()
   const [searchParams] = useSearchParams()
   const justRegistered = searchParams.get('registered') === 'true'
   const [showPassword, setShowPassword] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const {
     register,
@@ -46,7 +47,11 @@ export function LoginForm() {
   })
 
   const onSubmit = async (data: LoginFormData) => {
-    await signIn(data)
+    setLocalError(null)
+    const result = await signIn(data)
+    if (!result.success) {
+      setLocalError(result.error || 'Erreur de connexion')
+    }
   }
 
   return (
@@ -112,16 +117,15 @@ export function LoginForm() {
         )}
 
         {/* Message d'erreur */}
-        {error && (
+        {localError && (
           <Alert.Root status="error" borderRadius="md" mb={4}>
             <Alert.Indicator />
-            <Alert.Description>{error}</Alert.Description>
+            <Alert.Description>{localError}</Alert.Description>
           </Alert.Root>
         )}
 
         {/* Formulaire */}
-        <Box
-          as="form"
+        <form
           id="login-form"
           onSubmit={handleSubmit(onSubmit)}
         >
@@ -195,7 +199,7 @@ export function LoginForm() {
               Se connecter
             </AccessibleButton>
           </Stack>
-        </Box>
+        </form>
 
         {/* Lien inscription */}
         <Text textAlign="center" fontSize="sm" color="text.muted" mt={5}>
