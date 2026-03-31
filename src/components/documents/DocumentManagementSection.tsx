@@ -101,13 +101,14 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
   }
 
   const openJustification = async (storagePath: string) => {
-    // Si c'est déjà une URL complète (anciens enregistrements), l'ouvrir directement
-    if (storagePath.startsWith('http')) {
-      window.open(storagePath, '_blank', 'noopener,noreferrer')
-      return
+    let path = storagePath
+    // Anciennes URLs publiques → extraire le storage path
+    if (path.startsWith('http')) {
+      const match = path.match(/\/justifications\/(.+)$/)
+      path = match ? match[1].split('?')[0] : path
     }
-    // Sinon générer une URL signée depuis le storage path
-    const signedUrl = await getJustificationSignedUrl(storagePath)
+    // Générer une URL signée
+    const signedUrl = await getJustificationSignedUrl(path)
     if (signedUrl) {
       window.open(signedUrl, '_blank', 'noopener,noreferrer')
     } else {
