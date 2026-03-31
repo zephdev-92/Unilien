@@ -33,6 +33,7 @@ import { updateProfile, uploadAvatar, deleteAvatar, validateAvatarFile, getEmplo
 import type { Address, UserRole } from '@/types'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { exportUserDataJSON, exportUserShiftsCSV } from '@/services/dataExportService'
+import { deleteAllUserData, deleteAccount } from '@/services/accountService'
 import { logger } from '@/lib/logger'
 import { useHealthConsent } from '@/hooks/useHealthConsent'
 import { GhostButton, PrimaryButton } from '@/components/ui'
@@ -714,38 +715,173 @@ function SecuritePanel() {
       </Card.Root>
 
       {/* Zone de danger */}
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="red.200" boxShadow="sm" opacity={0.6}>
+      <DangerZone />
+    </VStack>
+  )
+}
+
+// ── Zone de danger ───────────────────────────────────────────────────────────
+
+function DangerZone() {
+  const [showDeleteData, setShowDeleteData] = useState(false)
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [processing, setProcessing] = useState(false)
+  const [dangerFeedback, setDangerFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+
+  const handleDeleteData = async () => {
+    if (confirmText !== 'SUPPRIMER') return
+    setProcessing(true)
+    setDangerFeedback(null)
+    try {
+      await deleteAllUserData()
+      setDangerFeedback({ type: 'success', msg: 'Toutes les données ont été supprimées.' })
+      setShowDeleteData(false)
+      setConfirmText('')
+    } catch (err) {
+      logger.error('Erreur suppression données:', err)
+      setDangerFeedback({ type: 'error', msg: 'Erreur lors de la suppression des données.' })
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (confirmText !== 'SUPPRIMER MON COMPTE') return
+    setProcessing(true)
+    setDangerFeedback(null)
+    try {
+      await deleteAccount()
+      // Redirection automatique via auth state change → page login
+    } catch (err) {
+      logger.error('Erreur suppression compte:', err)
+      setDangerFeedback({ type: 'error', msg: 'Erreur lors de la suppression du compte.' })
+      setProcessing(false)
+    }
+  }
+
+  const resetModals = () => {
+    setShowDeleteData(false)
+    setShowDeleteAccount(false)
+    setConfirmText('')
+  }
+
+  return (
+    <>
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="red.200" boxShadow="sm">
         <Card.Header px={4} py={3} bg="red.50" borderBottomWidth="1px" borderColor="red.200">
-          <HStack gap={2}>
-            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700" color="red.600">Zone de danger</Card.Title>
-            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
-          </HStack>
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700" color="red.600">Zone de danger</Card.Title>
         </Card.Header>
         <Card.Body p={4}>
+          {dangerFeedback && (
+            <Box mb={4} px={4} py={3} borderRadius="md" bg={dangerFeedback.type === 'success' ? 'accent.subtle' : 'red.50'} borderWidth="1px" borderColor={dangerFeedback.type === 'success' ? 'green.200' : 'red.200'}>
+              <Text fontSize="sm" color={dangerFeedback.type === 'success' ? 'green.700' : 'red.700'}>{dangerFeedback.msg}</Text>
+            </Box>
+          )}
           <VStack gap={4} align="stretch">
             <HStack justify="space-between" align="start">
               <Box>
                 <Text fontWeight="medium" fontSize="sm">Supprimer toutes les données</Text>
-                <Text fontSize="xs" color="text.muted">Efface définitivement les interventions et données employés.</Text>
+                <Text fontSize="xs" color="text.muted">Efface définitivement les interventions, contrats, absences et messages. Votre compte reste actif.</Text>
               </Box>
-              <Button colorPalette="red" size="xs" variant="outline" disabled>
+              <Button
+                colorPalette="red"
+                size="xs"
+                variant="outline"
+                onClick={() => { resetModals(); setShowDeleteData(true) }}
+              >
                 Supprimer
               </Button>
             </HStack>
+
+            {showDeleteData && (
+              <Box p={4} borderRadius="md" borderWidth="1px" borderColor="red.300" bg="red.50">
+                <VStack gap={3} align="stretch">
+                  <Text fontSize="sm" fontWeight="medium" color="red.700">
+                    Cette action est irréversible. Toutes vos interventions, contrats, absences et messages seront supprimés.
+                  </Text>
+                  <Text fontSize="sm">
+                    Tapez <strong>SUPPRIMER</strong> pour confirmer :
+                  </Text>
+                  <Input
+                    size="sm"
+                    placeholder="SUPPRIMER"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    autoFocus
+                  />
+                  <HStack gap={2} justify="flex-end">
+                    <Button size="xs" variant="ghost" onClick={resetModals} disabled={processing}>
+                      Annuler
+                    </Button>
+                    <Button
+                      size="xs"
+                      colorPalette="red"
+                      onClick={handleDeleteData}
+                      disabled={confirmText !== 'SUPPRIMER' || processing}
+                      loading={processing}
+                    >
+                      Confirmer la suppression
+                    </Button>
+                  </HStack>
+                </VStack>
+              </Box>
+            )}
+
             <Separator />
+
             <HStack justify="space-between" align="start">
               <Box>
-                <Text fontWeight="medium" fontSize="sm">Désactiver le compte</Text>
-                <Text fontSize="xs" color="text.muted">Votre compte sera suspendu. Les données restent 30 jours.</Text>
+                <Text fontWeight="medium" fontSize="sm">Supprimer le compte</Text>
+                <Text fontSize="xs" color="text.muted">Supprime définitivement votre compte et toutes les données associées.</Text>
               </Box>
-              <Button colorPalette="red" size="xs" variant="outline" disabled>
-                Désactiver
+              <Button
+                colorPalette="red"
+                size="xs"
+                variant="outline"
+                onClick={() => { resetModals(); setShowDeleteAccount(true) }}
+              >
+                Supprimer
               </Button>
             </HStack>
+
+            {showDeleteAccount && (
+              <Box p={4} borderRadius="md" borderWidth="1px" borderColor="red.300" bg="red.50">
+                <VStack gap={3} align="stretch">
+                  <Text fontSize="sm" fontWeight="medium" color="red.700">
+                    Cette action est irréversible. Votre compte et toutes vos données seront définitivement supprimés. Vous ne pourrez plus vous connecter.
+                  </Text>
+                  <Text fontSize="sm">
+                    Tapez <strong>SUPPRIMER MON COMPTE</strong> pour confirmer :
+                  </Text>
+                  <Input
+                    size="sm"
+                    placeholder="SUPPRIMER MON COMPTE"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    autoFocus
+                  />
+                  <HStack gap={2} justify="flex-end">
+                    <Button size="xs" variant="ghost" onClick={resetModals} disabled={processing}>
+                      Annuler
+                    </Button>
+                    <Button
+                      size="xs"
+                      colorPalette="red"
+                      onClick={handleDeleteAccount}
+                      disabled={confirmText !== 'SUPPRIMER MON COMPTE' || processing}
+                      loading={processing}
+                    >
+                      Supprimer mon compte
+                    </Button>
+                  </HStack>
+                </VStack>
+              </Box>
+            )}
           </VStack>
         </Card.Body>
       </Card.Root>
-    </VStack>
+    </>
   )
 }
 

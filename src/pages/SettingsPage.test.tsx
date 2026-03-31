@@ -160,14 +160,15 @@ describe('SettingsPage', () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Sécurité'))
       expect(screen.getByText('Supprimer toutes les données')).toBeInTheDocument()
-      expect(screen.getByText('Désactiver le compte')).toBeInTheDocument()
+      expect(screen.getByText('Supprimer le compte')).toBeInTheDocument()
     })
 
-    it('affiche les boutons zone de danger en disabled', () => {
+    it('affiche les boutons zone de danger actifs avec confirmation', () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Sécurité'))
-      const supprimerBtn = screen.getByRole('button', { name: 'Supprimer' })
-      expect(supprimerBtn).toBeDisabled()
+      const supprimerBtns = screen.getAllByRole('button', { name: 'Supprimer' })
+      expect(supprimerBtns).toHaveLength(2)
+      supprimerBtns.forEach((btn) => expect(btn).not.toBeDisabled())
     })
   })
 
