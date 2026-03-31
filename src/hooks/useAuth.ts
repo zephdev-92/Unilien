@@ -61,6 +61,36 @@ function getSignUpErrorMessage(err: unknown): string {
   return 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.'
 }
 
+/**
+ * Convertit les erreurs de connexion Supabase en messages utilisateur clairs
+ */
+function getSignInErrorMessage(err: unknown): string {
+  if (!(err instanceof Error)) {
+    return 'Une erreur est survenue lors de la connexion. Veuillez réessayer.'
+  }
+
+  const message = err.message.toLowerCase()
+
+  if (message.includes('invalid login credentials') || message.includes('invalid credentials')) {
+    return 'Adresse email ou mot de passe incorrect.'
+  }
+
+  if (message.includes('email not confirmed')) {
+    return 'Votre adresse email n\'a pas encore été confirmée. Vérifiez votre boîte mail (et vos spams).'
+  }
+
+  if (message.includes('rate limit') || message.includes('too many requests')) {
+    return 'Trop de tentatives de connexion. Veuillez patienter quelques minutes.'
+  }
+
+  if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
+    return 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.'
+  }
+
+  logger.error('Erreur connexion non mappée:', err.message)
+  return 'Une erreur est survenue lors de la connexion. Veuillez réessayer.'
+}
+
 interface SignInData {
   email: string
   password: string
@@ -249,7 +279,7 @@ export function useAuth() {
         navigate('/tableau-de-bord')
         return { success: true }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Erreur de connexion'
+        const message = getSignInErrorMessage(err)
         setError(message)
         return { success: false, error: message }
       } finally {

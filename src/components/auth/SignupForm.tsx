@@ -95,10 +95,11 @@ const roleOptions = [
 ]
 
 export function SignupForm() {
-  const { signUp, isLoading, error } = useAuth()
+  const { signUp, isLoading } = useAuth()
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const {
     register,
@@ -113,6 +114,7 @@ export function SignupForm() {
   const watchedRole = watch('role')
 
   const onSubmit = async (data: SignupFormData) => {
+    setLocalError(null)
     const result = await signUp({
       email: data.email,
       password: data.password,
@@ -124,6 +126,8 @@ export function SignupForm() {
 
     if (result.success) {
       navigate('/connexion?registered=true')
+    } else {
+      setLocalError(result.error || 'Erreur lors de l\'inscription')
     }
   }
 
@@ -179,12 +183,12 @@ export function SignupForm() {
         </Text>
 
         {/* Message d'erreur */}
-        {error && (
+        {localError && (
           <Alert.Root status="error" borderRadius="md" mb={4}>
             <Alert.Indicator />
             <Alert.Description>
-              {error}
-              {error.includes('déjà associée') && (
+              {localError}
+              {localError.includes('déjà associée') && (
                 <>
                   {' '}
                   <Link asChild color="red.700" fontWeight="600" textDecoration="underline">

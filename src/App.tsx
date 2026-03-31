@@ -57,9 +57,9 @@ function LoadingPage() {
 
 // Composant de route publique (redirige si connecté)
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, isInitialized } = useAuth()
+  const { isAuthenticated, isInitialized } = useAuth()
 
-  if (!isInitialized || isLoading) {
+  if (!isInitialized) {
     return <LoadingPage />
   }
 

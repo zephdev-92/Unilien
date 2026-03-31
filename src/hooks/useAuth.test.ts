@@ -274,7 +274,7 @@ describe('useAuth', () => {
     })
 
     it('devrait gérer les erreurs de connexion', async () => {
-      const error = new Error('Identifiants invalides')
+      const error = new Error('Invalid login credentials')
       mockSignInWithPassword.mockResolvedValue({
         data: { user: null, session: null },
         error,
@@ -291,7 +291,7 @@ describe('useAuth', () => {
       })
 
       expect(signInResult!.success).toBe(false)
-      expect(signInResult!.error).toBe('Identifiants invalides')
+      expect(signInResult!.error).toBe('Adresse email ou mot de passe incorrect.')
       expect(mockNavigate).not.toHaveBeenCalled()
     })
 
@@ -312,7 +312,7 @@ describe('useAuth', () => {
       })
 
       expect(signInResult!.success).toBe(false)
-      expect(signInResult!.error).toBe('Erreur de connexion')
+      expect(signInResult!.error).toBe('Une erreur est survenue lors de la connexion. Veuillez réessayer.')
     })
   })
 

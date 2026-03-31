@@ -26,8 +26,9 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
 
 export function ForgotPasswordForm() {
-  const { resetPassword, isLoading, error } = useAuth()
+  const { resetPassword, isLoading } = useAuth()
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   const {
     register,
@@ -39,9 +40,12 @@ export function ForgotPasswordForm() {
   })
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
+    setLocalError(null)
     const result = await resetPassword(data.email)
     if (result.success) {
       setIsSubmitted(true)
+    } else {
+      setLocalError(result.error || 'Erreur lors de la réinitialisation')
     }
   }
 
@@ -119,10 +123,10 @@ export function ForgotPasswordForm() {
         ) : (
           <>
             {/* Message d'erreur */}
-            {error && (
+            {localError && (
               <Alert.Root status="error" borderRadius="10px">
                 <Alert.Indicator />
-                <Alert.Description>{error}</Alert.Description>
+                <Alert.Description>{localError}</Alert.Description>
               </Alert.Root>
             )}
 
