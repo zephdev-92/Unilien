@@ -260,8 +260,8 @@ describe('absenceService', () => {
 
       const result = await uploadJustification('emp-456', file)
 
-      expect(result.url).toContain('storage.example.com')
-      expect(result.url).toContain('token=')
+      // uploadJustification retourne le chemin storage (pas une URL signée)
+      expect(result.url).toContain('emp-456/')
       expect(mockUpload).toHaveBeenCalled()
       expect(mockStorage).toHaveBeenCalledWith('justifications')
     })

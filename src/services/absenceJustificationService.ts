@@ -94,15 +94,24 @@ export async function uploadJustification(
     throw new Error("Erreur lors de l'upload du justificatif.")
   }
 
-  // Utiliser une URL signée (bucket privé) — expire après 1h
-  const { data: urlData, error: signError } = await supabase.storage
-    .from(JUSTIFICATIONS_BUCKET)
-    .createSignedUrl(fileName, 3600)
+  // Stocker le chemin du fichier (pas une URL signée qui expire)
+  return { url: fileName }
+}
 
-  if (signError || !urlData?.signedUrl) {
-    logger.error('Erreur génération URL signée justificatif:', signError)
-    throw new Error('Erreur lors de la génération du lien de téléchargement.')
+/**
+ * Génère une URL signée temporaire (1h) pour télécharger un justificatif.
+ */
+export async function getJustificationSignedUrl(
+  storagePath: string
+): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(JUSTIFICATIONS_BUCKET)
+    .createSignedUrl(storagePath, 3600)
+
+  if (error || !data?.signedUrl) {
+    logger.error('Erreur génération URL signée justificatif:', error)
+    return null
   }
 
-  return { url: urlData.signedUrl }
+  return data.signedUrl
 }
