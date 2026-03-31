@@ -1,9 +1,10 @@
 /**
  * Section "Declarations CESU" dans la page Documents.
  * Pattern : toolbar (periode) + tableau recapitulatif + dialog generation.
+ * Les declarations sont persistees en base (table cesu_declarations).
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Box,
   VStack,
@@ -16,6 +17,7 @@ import {
   Dialog,
   CloseButton,
   Alert,
+  Spinner,
 } from '@chakra-ui/react'
 import {
   getMonthlyDeclarationData,
@@ -25,8 +27,15 @@ import {
   downloadExport,
   MONTHS_FR,
   type ExportFormat,
-  type MonthlyDeclarationData,
 } from '@/lib/export'
+import {
+  saveCesuDeclaration,
+  getCesuDeclarations,
+  deleteCesuDeclaration,
+  uploadCesuPdf,
+  getCesuPdfSignedUrl,
+} from '@/services/cesuDeclarationService'
+import type { CesuDeclarationRecord } from '@/types'
 import { toaster } from '@/lib/toaster'
 import { logger } from '@/lib/logger'
 
@@ -46,8 +55,20 @@ export function CesuDeclarationSection({ employerId }: Props) {
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [showDialog, setShowDialog] = useState(false)
 
-  // ── Historique des declarations generees
-  const [declarations, setDeclarations] = useState<MonthlyDeclarationData[]>([])
+  // ── Historique des declarations (persistees en base)
+  const [declarations, setDeclarations] = useState<CesuDeclarationRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // ── Chargement initial depuis la base
+  useEffect(() => {
+    async function load() {
+      setIsLoading(true)
+      const records = await getCesuDeclarations(employerId)
+      setDeclarations(records)
+      setIsLoading(false)
+    }
+    load()
+  }, [employerId])
 
   const handleGenerate = useCallback(async () => {
     setIsGenerating(true)
@@ -70,18 +91,34 @@ export function CesuDeclarationSection({ employerId }: Props) {
         return
       }
 
-      // Ajouter aux declarations (eviter les doublons)
+      // Générer et uploader le PDF
+      let storagePath: string | null = null
+      const pdfResult = await generateCesuPdf(data)
+      if (pdfResult.success && pdfResult.content) {
+        storagePath = await uploadCesuPdf(employerId, data.year, data.month, pdfResult.content)
+      }
+
+      // Persister en base (upsert) avec le chemin du PDF
+      const saved = await saveCesuDeclaration(employerId, data, storagePath)
+      if (!saved) {
+        setDialogError('Erreur lors de la sauvegarde de la declaration')
+        return
+      }
+
+      // Mettre à jour le state local
       setDeclarations((prev) => {
         const exists = prev.some(
-          (d) => d.periodLabel === data.periodLabel
+          (r) => r.year === saved.year && r.month === saved.month
         )
-        return exists ? prev.map((d) => d.periodLabel === data.periodLabel ? data : d) : [data, ...prev]
+        return exists
+          ? prev.map((r) => r.year === saved.year && r.month === saved.month ? saved : r)
+          : [saved, ...prev]
       })
 
       setShowDialog(false)
       toaster.create({
         title: 'Declaration CESU',
-        description: `${data.periodLabel} — ${data.totalEmployees} employe${data.totalEmployees > 1 ? 's' : ''}, ${data.totalHours.toFixed(2).replace('.', ',')}h`,
+        description: `${saved.periodLabel} — ${saved.totalEmployees} employe${saved.totalEmployees > 1 ? 's' : ''}, ${saved.totalHours.toFixed(2).replace('.', ',')}h`,
         type: 'success',
       })
     } catch (err) {
@@ -92,7 +129,25 @@ export function CesuDeclarationSection({ employerId }: Props) {
     }
   }, [employerId, selectedYear, selectedMonth])
 
-  const handleDownload = async (declaration: MonthlyDeclarationData, format: ExportFormat) => {
+  const handleDownload = async (record: CesuDeclarationRecord, format: ExportFormat) => {
+    const declaration = record.declarationData
+
+    // PDF stocké en Storage → télécharger via URL signée
+    if (format === 'pdf' && record.storagePath) {
+      const url = await getCesuPdfSignedUrl(record.storagePath)
+      if (url) {
+        window.open(url, '_blank')
+        toaster.create({
+          title: 'Declaration CESU',
+          description: `${declaration.periodLabel} telecharge en PDF`,
+          type: 'success',
+        })
+        return
+      }
+      // Fallback : regénérer si l'URL signée échoue
+    }
+
+    // Génération à la volée (CSV, summary, ou fallback PDF)
     let result
     switch (format) {
       case 'pdf':
@@ -116,6 +171,24 @@ export function CesuDeclarationSection({ employerId }: Props) {
       toaster.create({
         title: 'Erreur',
         description: result.error || 'Erreur lors du telechargement',
+        type: 'error',
+      })
+    }
+  }
+
+  const handleDelete = async (record: CesuDeclarationRecord) => {
+    const success = await deleteCesuDeclaration(record.id)
+    if (success) {
+      setDeclarations((prev) => prev.filter((r) => r.id !== record.id))
+      toaster.create({
+        title: 'Declaration supprimee',
+        description: record.periodLabel,
+        type: 'info',
+      })
+    } else {
+      toaster.create({
+        title: 'Erreur',
+        description: 'Impossible de supprimer la declaration',
         type: 'error',
       })
     }
@@ -149,7 +222,12 @@ export function CesuDeclarationSection({ employerId }: Props) {
       </Text>
 
       {/* ── Tableau ── */}
-      {declarations.length === 0 ? (
+      {isLoading ? (
+        <HStack justify="center" py={8}>
+          <Spinner size="sm" />
+          <Text fontSize="sm" color="text.muted">Chargement des declarations…</Text>
+        </HStack>
+      ) : declarations.length === 0 ? (
         <EmptyState.Root>
           <EmptyState.Content>
             <EmptyState.Title>Aucune declaration</EmptyState.Title>
@@ -171,24 +249,27 @@ export function CesuDeclarationSection({ employerId }: Props) {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {declarations.map((d) => (
-                <Table.Row key={d.periodLabel}>
+              {declarations.map((r) => (
+                <Table.Row key={r.id}>
                   <Table.Cell>
-                    <Text fontWeight="medium" fontSize="sm">{d.periodLabel}</Text>
-                  </Table.Cell>
-                  <Table.Cell textAlign="right">
-                    <Text fontSize="sm">
-                      {d.totalEmployees} employe{d.totalEmployees > 1 ? 's' : ''}
+                    <Text fontWeight="medium" fontSize="sm">{r.periodLabel}</Text>
+                    <Text fontSize="xs" color="text.muted">
+                      {new Date(r.generatedAt).toLocaleDateString('fr-FR')}
                     </Text>
                   </Table.Cell>
                   <Table.Cell textAlign="right">
                     <Text fontSize="sm">
-                      {d.totalHours.toFixed(2).replace('.', ',')} h
+                      {r.totalEmployees} employe{r.totalEmployees > 1 ? 's' : ''}
+                    </Text>
+                  </Table.Cell>
+                  <Table.Cell textAlign="right">
+                    <Text fontSize="sm">
+                      {r.totalHours.toFixed(2).replace('.', ',')} h
                     </Text>
                   </Table.Cell>
                   <Table.Cell textAlign="right">
                     <Text fontWeight="bold" fontSize="sm">
-                      {d.totalGrossPay.toFixed(2).replace('.', ',')} €
+                      {r.totalGrossPay.toFixed(2).replace('.', ',')} €
                     </Text>
                   </Table.Cell>
                   <Table.Cell textAlign="center">
@@ -197,7 +278,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
                         size="xs"
                         variant="ghost"
                         colorPalette="brand"
-                        onClick={() => handleDownload(d, 'pdf')}
+                        onClick={() => handleDownload(r, 'pdf')}
                       >
                         PDF
                       </Button>
@@ -205,9 +286,17 @@ export function CesuDeclarationSection({ employerId }: Props) {
                         size="xs"
                         variant="ghost"
                         colorPalette="brand"
-                        onClick={() => handleDownload(d, 'csv')}
+                        onClick={() => handleDownload(r, 'csv')}
                       >
                         CSV
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        colorPalette="red"
+                        onClick={() => handleDelete(r)}
+                      >
+                        ✕
                       </Button>
                     </HStack>
                   </Table.Cell>
