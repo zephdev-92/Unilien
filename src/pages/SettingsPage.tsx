@@ -1806,15 +1806,6 @@ function AccessibilitePanel() {
 
 // ── Données ───────────────────────────────────────────────────────────────────
 
-const PRIVACY_STORAGE_KEY = 'unilien-privacy'
-
-function loadPrivacySettings() {
-  try {
-    const raw = localStorage.getItem(PRIVACY_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : { analytics: true, cookies: true }
-  } catch { return { analytics: true, cookies: true } }
-}
-
 function HealthConsentCard() {
   const { hasConsent, loading, grantedAt, revokeConsent, grantConsent } = useHealthConsent()
   const [revoking, setRevoking] = useState(false)
@@ -1908,17 +1899,8 @@ function HealthConsentCard() {
 }
 
 function DonneesPanel({ userId }: { userId: string }) {
-  const [privacy, setPrivacy] = useState(loadPrivacySettings)
   const [exporting, setExporting] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
-
-  const togglePrivacy = (key: 'analytics' | 'cookies') => {
-    setPrivacy((prev: typeof privacy) => {
-      const next = { ...prev, [key]: !prev[key] }
-      localStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(next))
-      return next
-    })
-  }
 
   const handleExportJSON = async () => {
     setExporting('json')
@@ -2014,15 +1996,15 @@ function DonneesPanel({ userId }: { userId: string }) {
             <ToggleRow
               label="Analyses anonymisées"
               description="Contribuez à améliorer Unilien en partageant des données d'usage anonymisées."
-              checked={privacy.analytics}
-              onChange={() => togglePrivacy('analytics')}
+              checked={true}
+              onChange={() => {}}
               disabled
             />
             <ToggleRow
               label="Cookies de performance"
               description="Cookies pour optimiser les temps de chargement."
-              checked={privacy.cookies}
-              onChange={() => togglePrivacy('cookies')}
+              checked={true}
+              onChange={() => {}}
               disabled
             />
           </VStack>
