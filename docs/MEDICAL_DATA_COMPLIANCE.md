@@ -1,6 +1,6 @@
 # Conformite donnees medicales et sensibles
 
-_Derniere mise a jour : 09 mars 2026_
+_Derniere mise a jour : 01 avril 2026_
 
 ---
 
@@ -12,13 +12,20 @@ Unilien collecte des donnees relatives au handicap et a la situation medicale de
 
 ## 1. Inventaire des donnees sensibles
 
-### Table `employers`
+### Table `employer_health_data` (migration 043 — isolee depuis le 30/03/2026)
 
 | Colonne | Type | Sensibilite | Description |
 |---------|------|-------------|-------------|
 | `handicap_type` | text | **Sante** | Type de handicap (moteur, visuel, auditif, cognitif, psychique, polyhandicap, maladie_invalidante, autre) |
 | `handicap_name` | text | **Sante** | Precision du handicap (ex: Paraplegie, DMLA, Autisme) |
 | `specific_needs` | text | **Sante** | Besoins specifiques lies au handicap |
+
+> **Important** : ces colonnes ont ete **deplacees** de la table `employers` vers `employer_health_data` (migration 043). La table est protegee par RLS **owner-only** (`profile_id = auth.uid()`). Les employes et aidants n'y ont plus acces.
+
+### Table `employers` (donnees medico-administratives restantes)
+
+| Colonne | Type | Sensibilite | Description |
+|---------|------|-------------|-------------|
 | `pch_beneficiary` | boolean | Medico-admin | Statut beneficiaire PCH |
 | `pch_type` | text | Medico-admin | Type de dispositif PCH |
 | `pch_monthly_amount` | numeric | Medico-admin | Montant PCH mensuel |
@@ -26,17 +33,50 @@ Unilien collecte des donnees relatives au handicap et a la situation medicale de
 | `emergency_contacts` | jsonb[] | Personnel | Contacts d'urgence (nom, telephone, relation) |
 | `address` | jsonb | Personnel | Adresse du domicile |
 
+### Table `user_consents` (migration 042)
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `user_id` | UUID | Utilisateur concerne |
+| `consent_type` | text | Type de consentement (`health_data`, `cookie`) |
+| `granted_at` | timestamptz | Date du consentement |
+| `revoked_at` | timestamptz | Date de revocation (nullable) |
+| `ip_address` | text | IP au moment du consentement |
+| `user_agent` | text | Navigateur au moment du consentement |
+
+### Table `audit_logs` (migration 044)
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `user_id` | UUID | Utilisateur ayant effectue l'action |
+| `action` | text | `read`, `create`, `update`, `delete`, `grant_consent`, `revoke_consent` |
+| `resource` | text | Table/ressource concernee |
+| `resource_id` | UUID | ID de la ressource |
+| `fields_accessed` | text[] | Colonnes accedees |
+
+> Table **immuable** : policy `INSERT` uniquement, pas de `DELETE` ni `UPDATE`.
+
 ### Composants front-end concernes
 
+- `HealthDataConsentModal` — modale de consentement explicite (RGPD art. 9)
 - `EmployerSection.tsx` — formulaire de saisie (handicap, PCH, CESU, contacts urgence)
 - `ProfilePage.tsx` — affichage mode lecture (EmployerSituationView, EmergencyContactsView)
-- `profileService.ts` — `upsertEmployer()` et `getEmployer()`
 
-### Services back-end concernes
+### Hooks et services concernes
 
+- `useHealthConsent` — hook de gestion du consentement (grant/revoke)
+- `auditService.ts` — journalisation des acces aux donnees sensibles
 - `profileService.ts` — CRUD Supabase avec `sanitizeText()` sur les champs texte
-- Migration `031_add_pch_fields.sql` — colonnes PCH
-- Migration `024_auto_create_role_row_on_signup.sql` — creation automatique ligne employers
+- `accountService.ts` — suppression compte et donnees (RPC `delete_own_data`, `delete_own_account`)
+
+### Migrations DB
+
+- `024_auto_create_role_row_on_signup.sql` — creation automatique ligne employers
+- `031_add_pch_fields.sql` — colonnes PCH
+- **`042_user_consents.sql`** — table consentements (grant/revoke + metadata)
+- **`043_employer_health_data.sql`** — isolation donnees sante dans table dediee
+- **`044_audit_logs.sql`** — journal d'acces immuable
+- **`047_delete_account.sql`** — RPC suppression donnees + compte (RGPD art. 17)
 
 ---
 
@@ -83,118 +123,86 @@ La certification HDS (articles L.1111-8 et R.1111-8-8 du Code de la sante publiq
 
 | Mesure | Statut | Detail |
 |--------|--------|--------|
-| RLS (Row Level Security) | OK | `employers` protege : seul le proprietaire (`auth.uid() = profile_id`) peut lire/modifier ses donnees |
-| Acces employes | OK | Les employes avec contrat actif peuvent lire le profil employeur (pour adapter l'accompagnement) |
-| Acces aidants | OK | Les aidants lies peuvent lire ; seuls tuteurs/curateurs peuvent modifier |
-| Sanitisation | OK | `sanitizeText()` applique sur les champs texte avant ecriture |
-| Champs optionnels | OK | Tous les champs medicaux sont optionnels |
+| RLS (Row Level Security) | ✅ | `employer_health_data` : RLS **owner-only** (`profile_id = auth.uid()`) |
+| Isolation donnees sante | ✅ | Table `employer_health_data` separee de `employers` (migration 043) |
+| Acces employes/aidants | ✅ | **Bloque** — employes et aidants ne peuvent plus lire `handicap_type`, `handicap_name`, `specific_needs` |
+| Consentement explicite | ✅ | `HealthDataConsentModal` + `useHealthConsent` + table `user_consents` (migration 042) |
+| Journal d'acces | ✅ | Table `audit_logs` immuable + `auditService.ts` (migration 044) |
+| Droit a l'effacement | ✅ | RPC `delete_own_data` supprime toutes les donnees + anonymise les audit logs (migration 047) |
+| Suppression de compte | ✅ | RPC `delete_own_account` avec double confirmation UI (migration 047) |
+| Sanitisation | ✅ | `sanitizeText()` applique sur les champs texte avant ecriture |
+| Champs optionnels | ✅ | Tous les champs medicaux sont optionnels |
+| Mentions legales | ✅ | Texte d'information dans la modale de consentement + `LegalPage` |
 
-### Ce qui manque
+### Ce qui reste a faire
 
 | Mesure | Priorite | Description |
 |--------|----------|-------------|
-| **Consentement explicite** | P1 | Checkbox + texte d'information avant la premiere saisie de donnees de sante |
-| **Chiffrement colonnes** | P1 | Chiffrer `handicap_type`, `handicap_name`, `specific_needs` avec `pgsodium` |
-| **Mentions legales** | P1 | Informer l'utilisateur : finalite, duree de conservation, droits (acces, rectification, effacement) |
-| **Droit a l'effacement** | P2 | Bouton "Supprimer mes donnees medicales" (distincts du compte) |
-| **Duree de conservation** | P2 | Politique de suppression automatique apres fin des contrats |
-| **Journal d'acces** | P3 | Logger qui accede aux donnees sensibles (audit trail) |
-| **Registre des traitements** | P3 | Document formel pour la CNIL |
+| **Chiffrement colonnes** | Haute | Chiffrer `handicap_type`, `handicap_name`, `specific_needs` avec `pgsodium` — en attente migration Supabase self-hosted |
+| **Duree de conservation** | Moyenne | Politique de suppression automatique apres fin des contrats |
+| **Registre des traitements** | Basse | Document formel pour la CNIL |
 
 ---
 
-## 4. Plan d'action
+## 4. Etat d'implementation
 
-### Phase 1 — Consentement et information (prioritaire)
+### Phase 1 — Consentement et information ✅ (PR #203, 30/03/2026)
 
-**4.1 Ecran de consentement**
+- **`HealthDataConsentModal`** : modale affichee avant toute saisie de donnees de sante
+- **`useHealthConsent`** : hook grant/revoke avec metadata (IP, user-agent)
+- **Table `user_consents`** (migration 042) : horodatage + IP + user-agent pour preuve de consentement
+- **Revocation** : le retrait du consentement bloque l'acces aux champs sante cote UI
+- **Mentions legales** : texte dans la modale + page mentions legales
 
-Avant la premiere saisie de la section "Ma Situation", afficher un ecran de consentement :
+### Phase 2 — Isolation et audit ✅ (PR #203, 30/03/2026)
 
-```
-┌─────────────────────────────────────────────────┐
-│  Donnees relatives a votre situation             │
-│                                                  │
-│  Les informations suivantes concernent votre     │
-│  situation de handicap et vos droits PCH.        │
-│                                                  │
-│  Elles sont utilisees uniquement pour :          │
-│  • Adapter l'accompagnement de vos auxiliaires   │
-│  • Calculer vos droits et enveloppes PCH         │
-│                                                  │
-│  Ces donnees sont :                              │
-│  • Facultatives                                  │
-│  • Chiffrees et protegees                        │
-│  • Accessibles uniquement par vous et vos        │
-│    aidants autorises                             │
-│  • Supprimables a tout moment                    │
-│                                                  │
-│  ☐ J'accepte la collecte de ces informations    │
-│                                                  │
-│  [Continuer]              [En savoir plus]       │
-└─────────────────────────────────────────────────┘
-```
+- **Table `employer_health_data`** (migration 043) : donnees sante isolees avec RLS owner-only
+- **Table `audit_logs`** (migration 044) : journal immuable de tous les acces aux donnees sensibles
+- **`auditService.ts`** : log automatique des lectures/ecritures sur les ressources sensibles
 
-**Implementation** :
-- Ajouter une colonne `medical_data_consent` (boolean) + `medical_data_consent_date` (timestamp) dans `employers`
-- Stocker la date du consentement pour preuve
-- Afficher le formulaire "Ma Situation" uniquement si consentement donne
-- Permettre le retrait du consentement (supprime les donnees medicales)
+### Phase 3 — Droit a l'effacement ✅ (PR #207, 31/03/2026)
 
-**4.2 Mentions legales dans le formulaire**
+- **RPC `delete_own_data`** (`SECURITY DEFINER`) : supprime toutes les donnees utilisateur, anonymise les audit logs
+- **RPC `delete_own_account`** : appelle `delete_own_data` puis supprime le compte `auth.users`
+- **Double confirmation UI** : saisie manuelle "SUPPRIMER" / "SUPPRIMER MON COMPTE"
+- Accessible dans Parametres > Zone de danger
 
-Ajouter un texte d'information au-dessus de la section "Informations complementaires" :
+### Phase 4 — Chiffrement colonnes (a venir)
 
-> "Ces informations sont protegees et facultatives. Elles servent a adapter l'accompagnement de vos auxiliaires. Vous pouvez les modifier ou les supprimer a tout moment depuis cette page."
-
-### Phase 2 — Chiffrement (recommande)
-
-**4.3 Chiffrement avec pgsodium**
-
-```sql
--- Activer pgsodium
-CREATE EXTENSION IF NOT EXISTS pgsodium;
-
--- Creer une cle de chiffrement
-SELECT pgsodium.create_key(name := 'medical_data_key');
-
--- Chiffrer les colonnes sensibles
--- Option A : Transparent Column Encryption (TCE)
--- Option B : Chiffrement applicatif via fonctions
-```
-
-**Colonnes a chiffrer** :
+**Colonnes a chiffrer** (table `employer_health_data`) :
 - `handicap_type`
 - `handicap_name`
 - `specific_needs`
 
-**Note** : les champs PCH sont des donnees administratives (montant, heures) et ne necessitent pas forcement de chiffrement, mais c'est recommande.
+```sql
+-- Activer pgsodium (disponible apres migration Supabase self-hosted)
+CREATE EXTENSION IF NOT EXISTS pgsodium;
+SELECT pgsodium.create_key(name := 'medical_data_key');
+```
 
-### Phase 3 — Droit a l'effacement
-
-**4.4 Suppression des donnees medicales**
-
-Ajouter un bouton dans la section "Ma Situation" :
-- "Supprimer mes donnees medicales"
-- Confirmer par modale
-- Met a `NULL` les colonnes : `handicap_type`, `handicap_name`, `specific_needs`
-- Optionnel : met aussi a `NULL` les champs PCH
-- Met `medical_data_consent` a `false`
+> **Statut** : en attente de la migration vers Supabase self-hosted. Les donnees sont protegees par RLS owner-only en attendant.
 
 ---
 
-## 5. Acces par role — Matrice
+## 5. Acces par role — Matrice (mise a jour 01/04/2026)
+
+### Donnees de sante (`employer_health_data`)
+
+| Donnee | Employeur (proprietaire) | Employe | Aidant | Tuteur/Curateur |
+|--------|--------------------------|---------|--------|-----------------|
+| `handicap_type` | Lecture + Ecriture | **Bloque** | **Bloque** | **Bloque** |
+| `handicap_name` | Lecture + Ecriture | **Bloque** | **Bloque** | **Bloque** |
+| `specific_needs` | Lecture + Ecriture | **Bloque** | **Bloque** | **Bloque** |
+
+> La table `employer_health_data` est protegee par RLS **owner-only** (`profile_id = auth.uid()`). Seul l'employeur proprietaire peut lire et modifier ses donnees de sante. Les employes, aidants et tuteurs n'y ont pas acces.
+
+### Donnees employeur (`employers`)
 
 | Donnee | Employeur (proprietaire) | Employe (contrat actif) | Aidant (lie) | Tuteur/Curateur |
 |--------|--------------------------|------------------------|--------------|-----------------|
-| `handicap_type` | Lecture + Ecriture | **Lecture** | **Lecture** | Lecture + Ecriture |
-| `handicap_name` | Lecture + Ecriture | **Lecture** | **Lecture** | Lecture + Ecriture |
-| `specific_needs` | Lecture + Ecriture | **Lecture** | **Lecture** | Lecture + Ecriture |
 | `pch_*` | Lecture + Ecriture | Non | **Lecture** | Lecture + Ecriture |
 | `emergency_contacts` | Lecture + Ecriture | **Lecture** | **Lecture** | Lecture + Ecriture |
 | `address` | Lecture + Ecriture | **Lecture** | **Lecture** | Lecture + Ecriture |
-
-> **Point d'attention** : les employes avec contrat actif peuvent actuellement lire **toutes** les colonnes de la table `employers` via la policy RLS "Employees can read employer for active contracts". Il faudrait envisager une vue ou une fonction qui filtre les colonnes retournees selon le role.
 
 ---
 
@@ -210,11 +218,13 @@ Ajouter un bouton dans la section "Ma Situation" :
 
 ## 7. Checklist de mise en conformite
 
-- [ ] Ajouter le consentement explicite (colonne + UI)
-- [ ] Ajouter les mentions legales dans le formulaire
-- [ ] Chiffrer les colonnes sensibles (pgsodium ou applicatif)
-- [ ] Ajouter le bouton "Supprimer mes donnees medicales"
+- [x] Consentement explicite (table `user_consents` + `HealthDataConsentModal` + `useHealthConsent`) — PR #203
+- [x] Mentions legales dans la modale de consentement + `LegalPage`
+- [x] Isolation donnees sante (table `employer_health_data`, RLS owner-only) — migration 043
+- [x] Restriction acces employes/aidants aux colonnes sante — migration 043
+- [x] Journal d'acces aux donnees sensibles (table `audit_logs` + `auditService.ts`) — migration 044
+- [x] Droit a l'effacement donnees (RPC `delete_own_data`) — migration 047
+- [x] Suppression de compte (RPC `delete_own_account` + double confirmation UI) — migration 047
+- [ ] Chiffrer les colonnes sensibles (pgsodium) — en attente migration self-hosted
 - [ ] Definir la duree de conservation et la politique de purge
-- [ ] Restreindre les colonnes retournees aux employes (vue ou fonction)
 - [ ] Creer le registre des traitements (document CNIL)
-- [ ] Ajouter un journal d'acces aux donnees sensibles

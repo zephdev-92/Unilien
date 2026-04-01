@@ -1,8 +1,10 @@
-# Revue de sécurité — 26 mars 2026
+# Revue de sécurité — mise à jour 1er avril 2026
 
-Synthèse d’audit alignée sur l’état du dépôt à cette date. Référence migrations : `supabase/migrations/041_security_fixes.sql`.
+Synthèse d'audit alignée sur l'état du dépôt. Couvre les migrations 041 à 048.
 
-## Correctifs déjà présents (migration 041)
+## Correctifs et protections en place
+
+### Migration 041 — Correctifs sécurité (26 mars 2026)
 
 | Sujet | État |
 |--------|------|
@@ -14,37 +16,101 @@ Synthèse d’audit alignée sur l’état du dépôt à cette date. Référence
 | **Conversations `INSERT`** | `employer_id` ne peut plus être choisi arbitrairement sans lien métier. |
 | **PWA / cache API** | `vite.config.ts` : pas de cache sur `/rest/v1/*` ; cache `CacheFirst` limité au storage Supabase. |
 
-Côté application, les justificatifs utilisent des URL signées (`src/services/absenceJustificationService.ts`), cohérent avec un bucket privé.
+### Migrations 042-044 — RGPD données de santé (30 mars 2026, PR #203)
+
+| Sujet | État |
+|--------|------|
+| **Consentement explicite** | Table `user_consents` (migration 042) — grant/revoke avec horodatage, IP, user-agent. |
+| **Isolation données santé** | Table `employer_health_data` (migration 043) — RLS owner-only, séparée de `employers`. |
+| **Audit trail** | Table `audit_logs` (migration 044) — immuable (`INSERT` only), pas de `DELETE`/`UPDATE` policy. |
+| **Accès non-propriétaires** | Employés/aidants ne peuvent plus lire `handicap_type`, `handicap_name`, `specific_needs`. |
+| **Composants** | `HealthDataConsentModal` + `useHealthConsent` bloquent l'accès aux champs santé sans consentement. |
+
+### Migration 045 — CESU declarations (31 mars 2026, PR #205)
+
+| Sujet | État |
+|--------|------|
+| **Table `cesu_declarations`** | RLS `employer_id = auth.uid()` — chaque employeur ne voit que ses déclarations. |
+| **Bucket `cesu-declarations`** | Privé, accès via URL signées uniquement. |
+
+### Migration 046 — Justificatifs aidants (31 mars 2026, PR #206)
+
+| Sujet | État |
+|--------|------|
+| **Policy storage** | Les aidants avec permission peuvent accéder aux justificatifs de leur employeur. |
+
+### Migration 047 — Suppression compte/données (31 mars 2026, PR #207)
+
+| Sujet | État |
+|--------|------|
+| **RPC `delete_own_data`** | `SECURITY DEFINER` — supprime toutes les données utilisateur, anonymise les `audit_logs` (RGPD art. 17). |
+| **RPC `delete_own_account`** | `SECURITY DEFINER` — appelle `delete_own_data` puis `auth.users` delete. Vérifie `auth.uid() = profile_id`. |
+| **Double confirmation UI** | Saisie manuelle "SUPPRIMER" / "SUPPRIMER MON COMPTE" avant exécution. |
+
+### Migration 048 — Convention settings (1er avril 2026, PR #208)
+
+| Sujet | État |
+|--------|------|
+| **Table `convention_settings`** | RLS `profile_id = auth.uid()` — paramètres convention par employeur. |
+
+## Contrôles applicatifs
+
+- `NotificationsPanel` : navigation uniquement si `actionUrl.startsWith('/')`.
+- `pushService` : clic sur notification locale limité same-origin et chemin commençant par `/`.
+- `NavIcon` : `dangerouslySetInnerHTML` sur SVG statiques (pas d'entrée utilisateur).
+- `sanitizeText()` (DOMPurify) appliqué avant chaque écriture DB de texte utilisateur.
+- `logger.ts` : redaction des données personnelles — jamais de `console.log` en production.
+- URL signées pour tous les fichiers privés (justificatifs, CESU PDFs).
+
+## CSP et headers (production — Netlify)
+
+```
+Content-Security-Policy: default-src 'self'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
 
 ## Points à surveiller
 
 ### Dépendances (`npm audit`)
 
-- **jspdf** : avis signalant des problèmes sur les versions concernées. Usage actuel : génération PDF côté client. Surveiller les montées de version correctives et retester les exports.
-- **picomatch** (transitif, workbox / vite) : avis ReDoS — impact principalement chaîne de build, pas le runtime navigateur de la PWA.
+- **jspdf** : avis signalant des problèmes sur les versions concernées. Surveiller les montées de version correctives.
+- **picomatch** (transitif, workbox / vite) : avis ReDoS — impact chaîne de build uniquement, pas le runtime navigateur.
 - **yaml** (cosmiconfig / emotion) : avis sur YAML très profond — scénario peu réaliste au build.
 
 ### Champs aidant
 
-La policy « limited » ne fige pas toutes les colonnes (ex. `can_replace_employer`, autres champs de profil). Si le métier impose que seul l’employeur les modifie, prévoir un affinement RLS ou des règles applicatives.
+La policy « limited » ne fige pas toutes les colonnes (ex. `can_replace_employer`). Si le métier impose que seul l'employeur les modifie, prévoir un affinement RLS.
 
 ### Cache service worker (storage)
 
-Cache longue durée sur les réponses storage : risque de **confidentialité locale** sur appareil partagé ; pas un contournement des politiques serveur.
+Cache longue durée sur les réponses storage : risque de confidentialité locale sur appareil partagé ; pas un contournement des politiques serveur.
 
-### Déploiement
+### RPC SECURITY DEFINER
 
-Les correctifs RLS/storage ne sont effectifs qu’après **application de la migration 041** sur chaque instance Supabase (prod / staging).
+Les deux RPC de suppression (`delete_own_data`, `delete_own_account`) s'exécutent avec les privilèges du propriétaire de la fonction. La vérification `auth.uid()` est faite en début de fonction — ne pas modifier sans revue de sécurité.
 
-## Contrôles applicatifs notés
+### Chiffrement colonnes (à venir)
 
-- `NotificationsPanel` : navigation uniquement si `actionUrl.startsWith('/')`.
-- `pushService` : clic sur notification locale limité same-origin et chemin commençant par `/`.
-- `NavIcon` : `dangerouslySetInnerHTML` sur SVG statiques (pas d’entrée utilisateur).
+Les données de santé (`employer_health_data`) sont protégées par RLS mais pas chiffrées au repos. Le chiffrement colonne via `pgsodium` est prévu après migration Supabase self-hosted.
+
+## TODO sécurité
+
+| Action | Priorité | Statut |
+|--------|----------|--------|
+| Chiffrement colonnes santé (pgsodium) | Haute | En attente migration self-hosted |
+| 2FA TOTP (Supabase MFA) | Moyenne | Documenté (`docs/2FA_IMPLEMENTATION.md`) |
+| Affiner RLS aidants (`can_replace_employer`) | Basse | À évaluer |
+| `npm audit` régulier avant mise en prod | Continue | En place |
 
 ## Références
 
 - `docs/SECURITY_PENTEST_REPORT.md`
 - `docs/OFFENSIVE_SECURITY_REVIEW.md`
 - `docs/OFFENSIVE_SECURITY_VERIFICATION.md`
-- Migration : `supabase/migrations/041_security_fixes.sql`
+- `docs/SECURITY_IDOR_ANALYSIS.md`
+- `docs/MEDICAL_DATA_COMPLIANCE.md`
+- `docs/2FA_IMPLEMENTATION.md`
+- Migrations : `supabase/migrations/041_security_fixes.sql` à `048_convention_settings.sql`
