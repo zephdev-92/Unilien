@@ -418,3 +418,21 @@ export interface ShoppingArticleHistoryDbRow {
   use_count: number
   last_used_at: string
 }
+
+// ============================================================
+// CONVENTION SETTINGS
+// ============================================================
+
+export interface ConventionSettingsDbRow {
+  profile_id: string
+  rule_break: boolean
+  rule_daily_max: boolean
+  rule_overtime: boolean
+  rule_night: boolean
+  maj_dimanche: number
+  maj_ferie: number
+  maj_nuit: number
+  maj_supp: number
+  created_at: string
+  updated_at: string
+}

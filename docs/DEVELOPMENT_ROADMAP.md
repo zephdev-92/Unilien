@@ -27,16 +27,63 @@
 ### Métriques Clés
 
 - **Fichiers source**: ~262 fichiers TS/TSX (hors tests)
-- **Tests**: 2161 tests / 119 fichiers (70%+ coverage)
-- **Migrations DB**: 41 migrations
+- **Tests**: ~2178 tests / 121 fichiers (70%+ coverage)
+- **Migrations DB**: 47 migrations
 - **Composants UI**: ~134 composants
-- **Services**: 25 services
+- **Services**: 27 services
 - **Hooks**: 23 hooks custom
 - **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-14 - Février/Mars 2026)
+## ✅ Réalisations Récentes (Semaines 6-15 - Février/Mars 2026)
+
+### Semaine 14-15 — 30-31 mars 2026 (PRs #203–#207)
+
+#### RGPD données de santé (PR #203 ✅)
+
+Conformité RGPD article 9 — données de santé :
+- Modal consentement santé (`HealthDataConsentModal`) + hook `useHealthConsent`
+- Table `employer_health_data` séparée avec RLS owner-only (migration 043)
+- Table `user_consents` pour traçabilité consentement (migration 042)
+- Table `audit_logs` immuable (migration 044) + `auditService.ts`
+- `EmployerSection` bloque champs santé sans consentement
+- `SettingsPage` > Données : panneau grant/revoke consentement
+- 17 nouveaux tests (8 hook + 9 composant)
+
+#### Fix login error messages (PR #204 ✅)
+
+- Correction message d'erreur invisible sur mauvais mot de passe
+- `Box as="form"` → `<form>` natif (Chakra v3 ne forward pas onSubmit)
+- Messages d'erreur traduits en français (credentials, email, rate limit, réseau)
+- Fix `PublicRoute` qui unmount le formulaire pendant `isLoading`
+
+#### Persistance déclarations CESU (PR #205 ✅)
+
+Les déclarations CESU survivent maintenant au rechargement de page :
+- Migration 045 : table `cesu_declarations` (JSONB snapshot + colonnes dénormalisées)
+- Service `cesuDeclarationService.ts` : save (upsert), get, delete + upload/download PDF
+- Bucket Storage `cesu-declarations` avec RLS
+- `CesuDeclarationSection` : chargement DB au mount, sauvegarde après génération, bouton supprimer
+
+#### Fix absences et filtres documents (PR #206 ✅)
+
+- 5 filtres sur l'onglet absences : employé, mois, type, statut, justificatif
+- Absences aidants visibles (requête `caregiver_id` ajoutée dans `documentService`)
+- Fix téléchargement justificatif 404 : stockage chemin → URL signée à la demande
+- Migration 046 : policy RLS pour justificatifs aidants
+
+#### Zone de danger — suppression compte/données (PR #207 ✅)
+
+- Migration 047 : 2 RPC `SECURITY DEFINER` (`delete_own_account`, `delete_own_data`)
+- Service `accountService.ts` : `deleteAllUserData()` + `deleteAccount()`
+- UI : double confirmation par saisie (SUPPRIMER / SUPPRIMER MON COMPTE)
+- Gestion tables sans CASCADE + anonymisation audit_logs (RGPD art. 17)
+
+#### Métriques session (31/03/2026)
+- Migrations DB : 41 → 47 (+6)
+- Services : +2 (`cesuDeclarationService`, `accountService`)
+- PRs : #203–#207
 
 ### Semaine 14 — 23 mars 2026 (PRs #180–#181)
 
