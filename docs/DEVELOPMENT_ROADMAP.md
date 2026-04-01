@@ -1288,9 +1288,9 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 [x] Note légale : "PCH versée par le Conseil Départemental"
 ```
 
-#### 6b.4 Module PCH complet (Niveau 4 — long terme)
+#### 6b.4 Module PCH complet (Niveau 4 — long terme) — **V2**
 
-**Effort** : 1 semaine · **Timeline** : Q2 2026
+**Effort** : 1 semaine · **Timeline** : V2
 
 ```
 [ ] Suivi du plan de compensation (dates d'attribution, révisions)
@@ -1330,10 +1330,11 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 
 ---
 
-### 7. 👥 Gestion Avancée Équipe
+### 7. 👥 Gestion Avancée Équipe — **V2**
 
 **Impact**: 🟡 IMPORTANT - UX
 **Effort**: 1 semaine
+**Timeline**: V2
 
 **Fonctionnalités manquantes**:
 
@@ -1881,7 +1882,7 @@ npx playwright install
 
 **Semaines 14-18**:
 - 🔴 Tests UI composants (Phase 3)
-- 🟡 Gestion équipe avancée
+- 🔵 Gestion équipe avancée → **V2**
 - 🟡 Analytics & Reporting (page créée PR #141 — exports restants)
 - 🟢 2FA
 
