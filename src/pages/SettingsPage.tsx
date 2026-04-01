@@ -40,6 +40,7 @@ import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
 import { useConventionSettings } from '@/hooks/useConventionSettings'
 import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
+import { toaster } from '@/lib/toaster'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1109,9 +1110,19 @@ function NotificationsPanel({ userId }: { userId: string }) {
 
   const handleTogglePush = async () => {
     if (isSubscribed) {
-      await unsubscribe()
+      const ok = await unsubscribe()
+      if (ok) {
+        toaster.success({ title: 'Notifications push désactivées' })
+      } else {
+        toaster.error({ title: 'Erreur lors de la désactivation des notifications' })
+      }
     } else {
-      await subscribe()
+      const ok = await subscribe()
+      if (ok) {
+        toaster.success({ title: 'Notifications push activées' })
+      } else if (!pushError) {
+        toaster.error({ title: 'Erreur lors de l\'activation des notifications' })
+      }
     }
   }
 
