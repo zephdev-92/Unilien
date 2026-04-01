@@ -38,6 +38,7 @@ import { logger } from '@/lib/logger'
 import { useHealthConsent } from '@/hooks/useHealthConsent'
 import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
+import { useConventionSettings } from '@/hooks/useConventionSettings'
 import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1182,12 +1183,6 @@ function NotificationsPanel({ userId }: { userId: string }) {
 
 // ── Convention ─────────────────────────────────────────────────────────────────
 
-const CONVENTION_STORAGE_KEY = 'unilien-convention-settings'
-const CONVENTION_DEFAULTS = {
-  ruleBreak: true, ruleDailyMax: true, ruleOvertime: true, ruleNight: true,
-  majDimanche: 30, majFerie: 60, majNuit: 25, majSupp: 25,
-}
-
 // ── Panneau Interventions ─────────────────────────────────────────────────────
 
 function InterventionsPanel() {
@@ -1440,37 +1435,31 @@ function InterventionsPanel() {
 
 // ── Panneau Convention ────────────────────────────────────────────────────────
 
-function loadConventionSettings() {
-  try {
-    const raw = localStorage.getItem(CONVENTION_STORAGE_KEY)
-    return raw ? { ...CONVENTION_DEFAULTS, ...JSON.parse(raw) } : { ...CONVENTION_DEFAULTS }
-  } catch { return { ...CONVENTION_DEFAULTS } }
-}
-
 function ConventionPanel() {
-  const [settings, setSettings] = useState(loadConventionSettings)
+  const {
+    ruleBreak, ruleDailyMax, ruleOvertime, ruleNight,
+    majDimanche, majFerie, majNuit, majSupp,
+    isLoading, updateSettings, resetToDefaults,
+  } = useConventionSettings()
+
   const [feedback, setFeedback] = useState<string | null>(null)
 
-  const update = (patch: Partial<typeof settings>) => {
-    setSettings((prev: typeof settings) => {
-      const next = { ...prev, ...patch }
-      localStorage.setItem(CONVENTION_STORAGE_KEY, JSON.stringify(next))
-      return next
-    })
-  }
-
-  const handleSave = () => {
-    localStorage.setItem(CONVENTION_STORAGE_KEY, JSON.stringify(settings))
-    setFeedback('Majorations enregistrées.')
+  const showFeedback = (msg: string) => {
+    setFeedback(msg)
     setTimeout(() => setFeedback(null), 3000)
   }
 
   const handleReset = () => {
-    const defaults = { ...CONVENTION_DEFAULTS }
-    setSettings(defaults)
-    localStorage.setItem(CONVENTION_STORAGE_KEY, JSON.stringify(defaults))
-    setFeedback('Valeurs réinitialisées.')
-    setTimeout(() => setFeedback(null), 3000)
+    resetToDefaults()
+    showFeedback('Valeurs réinitialisées.')
+  }
+
+  if (isLoading) {
+    return (
+      <Center py={12}>
+        <Spinner size="lg" />
+      </Center>
+    )
   }
 
   return (
@@ -1492,10 +1481,10 @@ function ConventionPanel() {
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
-            <ToggleRow label="Pause obligatoire (Art. L3121-16)" description="Alerte si aucune pause de 20 min pour une intervention supérieure à 6h." checked={settings.ruleBreak} onChange={() => update({ ruleBreak: !settings.ruleBreak })} />
-            <ToggleRow label="Durée maximale journalière" description="Avertissement si le total dépasse 10h par jour." checked={settings.ruleDailyMax} onChange={() => update({ ruleDailyMax: !settings.ruleDailyMax })} />
-            <ToggleRow label="Heures supplémentaires" description="Calcul automatique des majorations au-delà de 40h/semaine." checked={settings.ruleOvertime} onChange={() => update({ ruleOvertime: !settings.ruleOvertime })} />
-            <ToggleRow label="Présence nuit / Garde 24h" description="Alerte si la présence de nuit dépasse 12h consécutives." checked={settings.ruleNight} onChange={() => update({ ruleNight: !settings.ruleNight })} />
+            <ToggleRow label="Pause obligatoire (Art. L3121-16)" description="Alerte si aucune pause de 20 min pour une intervention supérieure à 6h." checked={ruleBreak} onChange={() => updateSettings({ ruleBreak: !ruleBreak })} />
+            <ToggleRow label="Durée maximale journalière" description="Avertissement si le total dépasse 10h par jour." checked={ruleDailyMax} onChange={() => updateSettings({ ruleDailyMax: !ruleDailyMax })} />
+            <ToggleRow label="Heures supplémentaires" description="Calcul automatique des majorations au-delà de 40h/semaine." checked={ruleOvertime} onChange={() => updateSettings({ ruleOvertime: !ruleOvertime })} />
+            <ToggleRow label="Présence nuit / Garde 24h" description="Alerte si la présence de nuit dépasse 12h consécutives." checked={ruleNight} onChange={() => updateSettings({ ruleNight: !ruleNight })} />
           </VStack>
         </Card.Body>
       </Card.Root>
@@ -1509,31 +1498,30 @@ function ConventionPanel() {
           <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
             <Field.Root>
               <Field.Label>Majoration dimanche (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={settings.majDimanche} onChange={(e) => update({ majDimanche: Number(e.target.value) })} />
+              <Input type="number" min={0} max={100} value={majDimanche} onChange={(e) => updateSettings({ majDimanche: Number(e.target.value) })} />
             </Field.Root>
             <Field.Root>
               <Field.Label>Majoration jour férié (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={settings.majFerie} onChange={(e) => update({ majFerie: Number(e.target.value) })} />
+              <Input type="number" min={0} max={100} value={majFerie} onChange={(e) => updateSettings({ majFerie: Number(e.target.value) })} />
             </Field.Root>
             <Field.Root>
               <Field.Label>Majoration nuit (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={settings.majNuit} onChange={(e) => update({ majNuit: Number(e.target.value) })} />
+              <Input type="number" min={0} max={100} value={majNuit} onChange={(e) => updateSettings({ majNuit: Number(e.target.value) })} />
             </Field.Root>
             <Field.Root>
               <Field.Label>Majoration heures sup (%)</Field.Label>
-              <Input type="number" min={0} max={100} value={settings.majSupp} onChange={(e) => update({ majSupp: Number(e.target.value) })} />
+              <Input type="number" min={0} max={100} value={majSupp} onChange={(e) => updateSettings({ majSupp: Number(e.target.value) })} />
             </Field.Root>
           </Grid>
           <HStack mt={5} gap={3} justify="flex-end">
             <GhostButton size="sm" onClick={handleReset}>Réinitialiser</GhostButton>
-            <PrimaryButton size="sm" onClick={handleSave}>Enregistrer</PrimaryButton>
           </HStack>
         </Card.Body>
       </Card.Root>
 
       <HStack gap={2} align="center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14} aria-hidden="true" style={{ flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
-        <Text fontSize="sm" color="text.muted">Les règles de validation sont enregistrées automatiquement. Les majorations nécessitent un clic sur Enregistrer.</Text>
+        <Text fontSize="sm" color="text.muted">Tous les paramètres sont sauvegardés automatiquement et synchronisés avec votre compte.</Text>
       </HStack>
     </VStack>
   )

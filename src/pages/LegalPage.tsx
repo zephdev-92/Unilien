@@ -135,7 +135,7 @@ export default function LegalPage() {
                 { name: 'sb-*-auth-token', type: 'Cookie', desc: 'Session d\'authentification Supabase' },
                 { name: 'unilien-apparence', type: 'localStorage', desc: 'Préférences d\'affichage (thème sombre, densité)' },
                 { name: 'unilien-cookie-consent', type: 'localStorage', desc: 'Enregistrement de votre choix concernant ce bandeau' },
-                { name: 'unilien-convention', type: 'localStorage', desc: 'Paramètres de convention collective' },
+                { name: 'unilien-convention-settings', type: 'localStorage', desc: 'Cache local des paramètres de convention collective (synchronisé avec votre compte)' },
                 { name: 'unilien-accessibilite', type: 'localStorage', desc: 'Préférences d\'accessibilité' },
               ].map((c) => (
                 <Flex key={c.name} px={4} py={2} fontSize="xs" color="text.inactive" gap={4} borderTopWidth="1px" borderColor="border.default">
