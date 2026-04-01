@@ -98,11 +98,6 @@ export const AccessibleButton = forwardRef<HTMLButtonElement, AccessibleButtonPr
         {/* Contenu principal */}
         {displayContent}
 
-        {/* Texte accessible caché si différent */}
-        {accessibleLabel && (
-          <VisuallyHidden>{accessibleLabel}</VisuallyHidden>
-        )}
-
         {/* Icône droite */}
         {!loading && rightIcon && (
           <span aria-hidden="true" style={{ marginLeft: '8px' }}>

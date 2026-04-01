@@ -809,7 +809,6 @@ function DangerZone() {
                     placeholder="SUPPRIMER"
                     value={confirmText}
                     onChange={(e) => setConfirmText(e.target.value)}
-                    autoFocus
                   />
                   <HStack gap={2} justify="flex-end">
                     <Button size="xs" variant="ghost" onClick={resetModals} disabled={processing}>
@@ -860,7 +859,6 @@ function DangerZone() {
                     placeholder="SUPPRIMER MON COMPTE"
                     value={confirmText}
                     onChange={(e) => setConfirmText(e.target.value)}
-                    autoFocus
                   />
                   <HStack gap={2} justify="flex-end">
                     <Button size="xs" variant="ghost" onClick={resetModals} disabled={processing}>
