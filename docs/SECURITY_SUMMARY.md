@@ -1,6 +1,6 @@
 ## Synthèse sécurité Unilien
 
-_Dernière mise à jour : 2026-03-26_
+_Dernière mise à jour : 2026-04-01_
 
 ---
 
@@ -9,7 +9,9 @@ _Dernière mise à jour : 2026-03-26_
 Le projet présente des **fondamentaux solides** pour une PWA de gestion de soins :
 
 - Gestion de session via Supabase : **JWT gérés par le SDK en mémoire** ; le store Zustand ne **persiste pas** les tokens (seulement le profil dans `localStorage`).
-- RLS activé et audité sur les tables sensibles ; correctifs récents regroupés dans la migration **`041_security_fixes.sql`** (voir `docs/SECURITY_CHECK_2026-03-26.md`).
+- RLS activé et audité sur les tables sensibles ; **8 migrations sécurité** (041 à 048) couvrant IDOR, RGPD santé, CESU, suppression compte, convention settings.
+- **Conformité RGPD article 9** : consentement explicite, isolation données de santé, audit trail immuable (migrations 042-044, PR #203).
+- **Droit à l’effacement** : RPC `delete_own_data` + `delete_own_account` avec double confirmation UI (migration 047, PR #207).
 - Validation côté client (Zod) et côté serveur (contraintes PostgreSQL).
 - Logger centralisé avec masquage des données sensibles.
 - Headers de sécurité sur Netlify, dont une **CSP en enforcement** (`Content-Security-Policy` dans `netlify.toml`).
@@ -28,10 +30,20 @@ Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenn
 
 - **Contrôle d’accès & RLS**
   - Policies alignées sur le métier ; migration **041** resserre les cas IDOR (notifications, RPC, aidants, conversations, profils, audit fichiers, bucket justifications).
+  - **Isolation données de santé** : table `employer_health_data` séparée de `employers`, RLS owner-only (migration 043).
+  - Employés et aidants ne peuvent plus lire `handicap_type`, `handicap_name`, `specific_needs`.
+
+- **RGPD & données de santé**
+  - Table `user_consents` : consentement explicite avec horodatage, IP, user-agent (migration 042).
+  - Table `audit_logs` : journal d’accès immuable (`INSERT` only, pas de `DELETE`/`UPDATE`) (migration 044).
+  - `HealthDataConsentModal` + `useHealthConsent` : bloquent l’accès aux champs santé sans consentement.
+  - RPC `delete_own_data` : suppression RGPD art. 17 + anonymisation audit logs (migration 047).
+  - RPC `delete_own_account` : suppression complète compte + données (migration 047).
 
 - **Validation & intégrité des données**
   - Schémas Zod côté front ; contraintes côté DB.
   - Table d’audit pour les uploads ; évolution documentée dans les rapports pentest.
+  - `sanitizeText()` (DOMPurify) appliqué avant chaque écriture DB de texte utilisateur.
 
 - **Sécurité front & réseau**
   - **CSP bloquante** sur l’hébergement.
@@ -48,7 +60,7 @@ Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenn
   - `localStorage` contient le profil utilisateur (sans tokens). En cas de XSS, ce profil reste exposé : limiter les champs persistés au strict nécessaire.
 
 - **Chiffrement des données sensibles**
-  - Données de santé protégées par RLS ; chiffrement au repos (`pgsodium`, etc.) reste un objectif moyen terme pour une défense en profondeur.
+  - Données de santé isolées dans `employer_health_data` et protégées par RLS owner-only ; chiffrement au repos (`pgsodium`) reste un objectif après migration Supabase self-hosted.
 
 - **Rate limiting**
   - Pas encore de politique homogène sur tous les points sensibles (auth, upload, notifications) — à planifier selon l’hébergeur / Edge.
@@ -64,7 +76,16 @@ Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenn
   - Corrigé : `notificationId`, anti-replay, CORS restreint, logs nettoyés.
 
 - **Correctifs IDOR / RPC / RLS (2026-03)**
-  - Traités dans la migration **041** ; détail dans `docs/SECURITY_IDOR_ANALYSIS.md` (constat historique + **Statut 26/03/2026**) et `docs/SECURITY_CHECK_2026-03-26.md`.
+  - Traités dans la migration **041** ; détail dans `docs/SECURITY_IDOR_ANALYSIS.md` et `docs/SECURITY_CHECK_2026-03-26.md`.
+
+- **Migrations sécurité 042-048 (mars-avril 2026)**
+  - 042 : `user_consents` (consentement RGPD)
+  - 043 : `employer_health_data` (isolation données santé)
+  - 044 : `audit_logs` (journal d'accès immuable)
+  - 045 : `cesu_declarations` (RLS employer-only, bucket privé)
+  - 046 : storage policy justificatifs aidants
+  - 047 : RPC suppression données/compte (`SECURITY DEFINER`)
+  - 048 : `convention_settings` (RLS owner-only)
 
 À date, aucune vulnérabilité critique (P0) **ouverte** identifiée dans la surface documentée.
 
@@ -85,6 +106,6 @@ Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenn
 
 ## 6. Conclusion
 
-La posture de sécurité d’Unilien est **globalement bonne** : RLS renforcé (041), CSP en enforcement, cache API PWA corrigé, RPC notifications sécurisée côté base.
+La posture de sécurité d’Unilien est **globalement bonne** : RLS renforcé (041-048), CSP en enforcement, cache API PWA corrigé, conformité RGPD article 9 (consentement + isolation + audit trail + droit à l’effacement), suppression de compte fonctionnelle.
 
-Les efforts suivants porteront surtout sur la **réduction de la dette dépendances**, le **durcissement des uploads**, le **chiffrement** et le **rate limiting** — en complément des exigences RGPD sur les données de santé.
+Les efforts suivants porteront sur le **chiffrement au repos** (pgsodium, après migration self-hosted), le **2FA** (TOTP via Supabase MFA), le **rate limiting**, et la **maintenance des dépendances**.
