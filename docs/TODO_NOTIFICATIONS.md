@@ -244,7 +244,7 @@ interface NotificationPreferences {
 ## Checklist finale
 
 - [x] Web Push API - Code implémenté
-- [ ] Web Push API - Configuration VAPID
+- [x] Web Push API - Configuration VAPID ✅ (clés régénérées 09/02/2026, secrets Supabase configurés)
 - [ ] Web Push API - Tests de bout en bout
 - [ ] Email via Resend
 - [ ] SMS via Twilio (urgences)

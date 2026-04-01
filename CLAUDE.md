@@ -47,7 +47,7 @@ src/
 ├── lib/
 │   ├── compliance/
 │   │   └── rules/        # Règles individuelles IDCC 3239 + checker central
-│   ├── export/           # Génération PDF (jsPDF)
+│   ├── export/           # Génération PDF (@react-pdf/renderer)
 │   ├── absence/
 │   ├── supabase/         # Client Supabase
 │   ├── logger.ts         # Logger centralisé avec redaction
@@ -79,10 +79,11 @@ src/
 - Types app (camelCase) → `src/types/index.ts`
 - Conversion via `src/lib/mappers.ts`
 
-### Services (13 services testés)
+### Services (29 services)
 Chaque service dans `src/services/` gère le CRUD Supabase pour un domaine :
-`absence`, `auxiliary`, `caregiver`, `compliance`, `contract`, `document`,
-`leaveBalance`, `liaison`, `logbook`, `notification`, `profile`, `push`, `shift`, `stats`
+`absence`, `attachment`, `auxiliary`, `caregiver`, `cesuDeclaration`, `compliance`, `contract`,
+`document`, `interventionSettings`, `conventionSettings`, `account`, `dataExport`,
+`leaveBalance`, `liaison`, `logbook`, `notification`, `nudge`, `profile`, `push`, `search`, `shift`, `stats`
 
 ### Auth
 - Store Zustand : `src/stores/authStore.ts`
@@ -101,7 +102,8 @@ Règles dans `src/lib/compliance/rules/` :
 - Sanitisation via DOMPurify : `src/lib/sanitize.ts` — à appeler avant chaque écriture DB
 - 8/13 services utilisent `sanitizeText()` : absence, caregiver, liaison, logbook, notification, profile, shift, push (24/02/2026)
 - Les 5 restants (auxiliary, compliance, contract, document, leaveBalance, stats) sont soit read-only, soit n'écrivent que des valeurs contrôlées (enums, UUIDs, dates) — aucune sanitisation nécessaire
-- **Post‑pentest (2026)** : migration **`041_security_fixes.sql`** (RLS, RPC `create_notification`, bucket justifications, etc.) — synthèse **`docs/SECURITY_CHECK_2026-03-26.md`** ; détail historique **`docs/SECURITY_IDOR_ANALYSIS.md`**. **CSP** en enforcement sur Netlify (`netlify.toml`).
+- **Post‑pentest (2026)** : migrations **`041` à `048`** — RLS renforcé, RGPD art. 9 (consentement + isolation données santé + audit trail), suppression compte/données, CESU persisté, convention settings DB. Synthèse : **`docs/SECURITY_CHECK_2026-03-26.md`**. **CSP** en enforcement sur Netlify.
+- **Accessibilité** : `eslint-plugin-jsx-a11y` activé, `@axe-core/react` branché en DEV (PR #210).
 
 ---
 
@@ -121,9 +123,9 @@ npm run test:coverage # Coverage v8
 
 ## Tests
 
-**État (mars 2026)** : ~2161 tests / 119 fichiers — **~70% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
-- Services : 91.42% (13/13 testés)
-- Hooks : couverture élevée (8 hooks listés ci-dessous + tests)
+**État (1er avril 2026)** : 2167 tests / 122 fichiers — **54% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
+- Services : 70.91% stmts (nombreux services testés)
+- Hooks : couverture élevée (10+ hooks testés)
 
 ### Patterns de test
 
@@ -147,11 +149,10 @@ vi.mock('@/services/myService')
 // waitFor pour les états async
 ```
 
-**PDF (jsPDF)** :
+**PDF (@react-pdf/renderer)** :
 ```ts
-// vi.hoisted() pour mockDoc
-// vi.fn(function(this: any) { Object.assign(this, mockDoc) }) pour le constructeur
-// Nécessite setPage + internal.getNumberOfPages dans le mock
+// Mocker @react-pdf/renderer : vi.mock('@react-pdf/renderer', ...)
+// PDFs générés via composants React déclaratifs (plus de jsPDF)
 ```
 
 ---
@@ -187,20 +188,22 @@ vi.mock('@/services/myService')
 | Faible | Quelques tests `useAuth.test.ts` déclenchent des warnings React `act(...)` |
 | Faible | Data-fetching encore majoritairement `useEffect` + services (pas de TanStack Query — voir `docs/TANSTACK_QUERY_MIGRATION.md`) |
 
-## Hooks (8/8)
+## Hooks (10+)
 
 - `useAuth`, `useNotifications`, `useComplianceCheck`, `useShiftReminders`
 - `useComplianceMonitor`, `usePushNotifications`, `useSpeechRecognition`
-- `useEmployerResolution` ← **nouveau (23/02/2026)** : résout l'`employerId` selon le rôle (employer/employee/caregiver). Utilisé par `LiaisonPage` et `LogbookPage`. Accepte `requiredCaregiverPermission?: keyof CaregiverPermissions`.
+- `useEmployerResolution` — résout l'`employerId` selon le rôle. Accepte `requiredCaregiverPermission?`.
+- `useHealthConsent` — grant/revoke consentement RGPD données de santé (PR #203)
+- `useConventionSettings` — chargement/sync paramètres convention IDCC 3239 (PR #208)
+- `useInterventionSettings` — tâches par défaut + liste de courses (PR #180)
 
 ---
 
-## Redesign UI/UX (en attente)
+## Dark mode & Design system
 
-- Document de cadrage : `docs/DESIGN_REDESIGN.md`
-- Périmètre : `theme.ts` + 64 composants, sans toucher services/stores/tests/DB
-- 3 directions proposées (A=Sobre, B=Chaleureux, C=Moderne) — choix non tranché
-- Approche : Phase 1 design system → Phase 2 navigation → Phase 3 pages P1 → Phase 4 reste
+- **Dark mode** : ✅ implémenté (PR #192) — toggle dans Paramètres > Apparence
+- **Design tokens** : ✅ ~237 hex migrés vers tokens sémantiques Chakra UI v3 (PR #185)
+- **Redesign UI/UX avancé** : en attente — cadrage dans `docs/DESIGN_REDESIGN.md` (3 directions A/B/C, choix non tranché)
 
 ---
 
@@ -210,9 +213,14 @@ vi.mock('@/services/myService')
 - `DESIGN_REDESIGN.md` — cadrage redesign UI/UX
 - `TEST_COVERAGE_ANALYSIS.md` — analyse couverture
 - `ACCESSIBILITY.md` — accessibilité (WCAG, préférences, limites)
-- `SECURITY_CHECK_2026-03-26.md` — synthèse post-migration **041** (RLS, RPC, CSP, PWA cache)
+- `SECURITY_CHECK_2026-03-26.md` — synthèse migrations **041-048** (RLS, RGPD, audit trail, zone danger, CSP)
+- `SECURITY_SUMMARY.md` — synthèse globale posture sécurité
 - `SECURITY_ANALYSIS.md` — audit sécurité applicatif
 - `SECURITY_IDOR_ANALYSIS.md` — analyse IDOR / pentest (historique + statut post-041)
+- `MEDICAL_DATA_COMPLIANCE.md` — conformité RGPD données de santé (checklist 7/10 ✅)
+- `2FA_IMPLEMENTATION.md` — plan implémentation 2FA TOTP
+- `SOCIAL_LOGIN_IMPLEMENTATION.md` — plan OAuth Google/Microsoft
+- `ANALYTICS_IMPLEMENTATION.md` — plan Plausible self-hosted
 - `TANSTACK_QUERY_MIGRATION.md` — si réintroduction de TanStack Query un jour
 - `Garde_de_24_heures.md` — spec métier garde 24h
 - `heure_de_presence_responsable.md` — spec présence responsable

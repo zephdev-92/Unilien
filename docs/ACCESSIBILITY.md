@@ -1,6 +1,6 @@
 # Accessibilité (a11y) — Unilien
 
-**Dernière mise à jour :** 26 mars 2026
+**Dernière mise à jour :** 1er avril 2026
 
 Document de référence sur l’état de l’accessibilité de la PWA Unilien (React 19, Chakra UI v3). Complète les notes dans `CLAUDE.md` et l’analyse qualité (`docs/CODE_QUALITY_2026-03-26.md`). Référencé depuis la section *Documentation disponible dans `docs/`* de `CLAUDE.md`.
 
@@ -21,7 +21,7 @@ Document de référence sur l’état de l’accessibilité de la PWA Unilien (R
 | Annonces SPA | Bon — `RouteAnnouncer` + `document.title` |
 | Préférences utilisateur | Bon — contraste élevé, mouvement réduit, mode lecteur d’écran, texte agrandi |
 | Focus visible | Bon — règles globales dans `index.css` + renforts Chakra ponctuels |
-| Garde-fous automatisés | **À renforcer** — pas de `eslint-plugin-jsx-a11y` ; `@axe-core/react` présent mais non branché en dev |
+| Garde-fous automatisés | ✅ Bon — `eslint-plugin-jsx-a11y` activé (PR #210) ; `@axe-core/react` branché en dev (PR #210) |
 | Skip links | Partiel — formulaires d’auth uniquement ; pas sur le shell connecté |
 | Couverture homogène | Variable — zones très documentées (`SettingsPage`, `DashboardLayout`, notifications) vs reste à valider manuellement ou par outils |
 
@@ -45,21 +45,26 @@ Document de référence sur l’état de l’accessibilité de la PWA Unilien (R
 
 6. **`DashboardLayout`** : `role="banner"`, navigation avec libellés accessibles, zone principale en `<main>`.
 
-7. **`AccessibleButton`** : intention explicite (focus visible, `aria-busy`, annonce de chargement).
+7. **`AccessibleButton`** : intention explicite (focus visible, `aria-busy`, annonce de chargement). Double annonce corrigée — `VisuallyHidden` redondant supprimé, `aria-label` seul utilisé (PR #210).
 
 8. **Formulaires d’authentification** : skip links vers le contenu principal.
+
+9. **`@axe-core/react`** : initialisé dans `main.tsx` en mode DEV uniquement — signale les violations axe dans la console du navigateur (PR #210).
+
+10. **`eslint-plugin-jsx-a11y`** : preset recommandé activé dans `eslint.config.js` — détecte les problèmes d’accessibilité à la compilation (PR #210).
 
 ---
 
 ## Écarts et risques
 
-### Priorité moyenne
+### ✅ Corrigés (PR #210 — 1er avril 2026)
 
-- **ESLint** : absence de règles `jsx-a11y` — risque de régressions (boutons sans nom, mauvais `tabIndex`, champs non étiquetés).
+- ~~**ESLint** : absence de règles `jsx-a11y`~~ → `eslint-plugin-jsx-a11y` preset recommandé activé.
+- ~~**`@axe-core/react`** : non initialisé~~ → branché dans `main.tsx` (`import.meta.env.DEV`).
+- ~~**`AccessibleButton`** : double annonce `aria-label` + `VisuallyHidden`~~ → `VisuallyHidden` supprimé, `aria-label` seul suffit.
+- ~~**`autoFocus`** dans `SettingsPage` (zone de danger)~~ → supprimé (erreur jsx-a11y).
 
-- **`@axe-core/react`** : dépendance dev non initialisée dans `main.tsx` — pas de signalement automatique des problèmes axe en développement.
-
-- **`AccessibleButton`** : si `accessibleLabel` est défini, combinaison `aria-label` + `<VisuallyHidden>` avec le même texte peut entraîner une **double annonce** selon lecteur d’écran / navigateur. Préférer un seul mécanisme pour le nom accessible.
+### Priorité moyenne (restant)
 
 - **Skip link** : absent du layout connecté — tabulation longue avant le contenu sur certaines pages.
 
@@ -75,16 +80,16 @@ Document de référence sur l’état de l’accessibilité de la PWA Unilien (R
 
 ---
 
-## Plan d’action recommandé
+## Plan d’action
 
-| # | Action | Effort |
-|---|--------|--------|
-| 1 | Ajouter `eslint-plugin-jsx-a11y` (preset recommandé) et traiter les erreurs bloquantes | Faible à moyen |
-| 2 | Initialiser `@axe-core/react` uniquement si `import.meta.env.DEV` | Très faible |
-| 3 | Corriger le double nom accessible dans `AccessibleButton` | Faible |
-| 4 | Ajouter un skip link dans `DashboardLayout` vers `#contenu-principal` (ou équivalent) sur `<main>` | Faible |
-| 5 | Audit manuel ou externe des parcours P1 (planning, messagerie, conformité) | Moyen |
-| 6 | Optionnel : tests d’intégration avec règles axe sur 1–2 écrans représentatifs | Moyen |
+| # | Action | Effort | Statut |
+|---|--------|--------|--------|
+| 1 | Ajouter `eslint-plugin-jsx-a11y` et traiter les erreurs bloquantes | Faible à moyen | ✅ PR #210 |
+| 2 | Initialiser `@axe-core/react` en mode DEV | Très faible | ✅ PR #210 |
+| 3 | Corriger le double nom accessible dans `AccessibleButton` | Faible | ✅ PR #210 |
+| 4 | Ajouter un skip link dans `DashboardLayout` vers `#contenu-principal` | Faible | 🔲 À faire |
+| 5 | Audit manuel parcours P1 (planning, messagerie, conformité) | Moyen | 🔲 À faire |
+| 6 | Tests d’intégration avec règles axe sur 1–2 écrans représentatifs | Moyen | 🔲 À faire |
 
 ---
 
@@ -105,8 +110,9 @@ Document de référence sur l’état de l’accessibilité de la PWA Unilien (R
 ## Commandes utiles
 
 ```bash
-npm run lint      # Aujourd’hui sans règles a11y dédiées
+npm run lint      # Inclut eslint-plugin-jsx-a11y (preset recommandé)
 npm run test:run  # À compléter par des tests ciblés a11y si ajoutés
+# En dev : @axe-core/react signale les violations dans la console navigateur
 ```
 
 ---

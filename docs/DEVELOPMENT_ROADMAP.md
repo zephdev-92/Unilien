@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 27 mars 2026 (2161 tests / 119 fichiers — alignement docs sécurité post-041, ACCESSIBILITY, SEO, Chakra UI v3 Provider)
-**Version**: 1.10.1
+**Dernière mise à jour**: 1er avril 2026 (2167 tests / 122 fichiers — dark mode, design tokens, a11y, PDF @react-pdf, convention settings DB, cookie consent)
+**Version**: 1.11.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -13,25 +13,25 @@
 | Catégorie | Complétude | Statut |
 |-----------|------------|--------|
 | **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
-| **Dashboards** | 85% | ✅ Bon (3 dashboards rôle-spécifiques + mobile aidant, manque onboarding/nudges) |
+| **Dashboards** | 90% | ✅ Bon (3 dashboards rôle-spécifiques + mobile aidant, dark mode, manque onboarding/nudges) |
 | **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, conversations privées en cours) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
-| **Documents/Export** | 92% | ✅ Bon (bulletins v2, export planning PDF/Excel/iCal ✅ mergé, archivage avancé à faire) |
+| **Documents/Export** | 95% | ✅ Excellent (bulletins v2, @react-pdf/renderer, export planning PDF/Excel/iCal, CESU persisté, archivage avancé à faire) |
 | **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | ~70% | ✅ Excellent (2161 tests / 119 fichiers, 8/8 hooks testés ✅) |
-| **Sécurité** | 97% | ✅ Excellent (RLS renforcé, URL validation 5 couches, signed URLs, CSP enforced, IDOR fix, path traversal fix) |
+| **Tests** | 54% stmts | ✅ Bon (2167 tests / 122 fichiers, axe-core + eslint-plugin-jsx-a11y ✅) |
+| **Sécurité** | 98% | ✅ Excellent (RLS renforcé migrations 041-048, RGPD art. 9, audit trail, droit effacement, CSP enforced) |
 | **Qualité code** | 98% | ✅ Excellent (0 `select('*')`, 0 Supabase direct dans composants, Provider snippet v3, 0 `as any`, 0 `eslint-disable` type) |
 
 ### Métriques Clés
 
-- **Fichiers source**: ~262 fichiers TS/TSX (hors tests)
-- **Tests**: ~2178 tests / 121 fichiers (70%+ coverage)
-- **Migrations DB**: 47 migrations
-- **Composants UI**: ~134 composants
-- **Services**: 27 services
-- **Hooks**: 23 hooks custom
+- **Fichiers source**: ~270 fichiers TS/TSX (hors tests)
+- **Tests**: 2167 tests / 122 fichiers (54% stmts coverage)
+- **Migrations DB**: 48 migrations
+- **Composants UI**: ~140 composants
+- **Services**: 29 services
+- **Hooks**: 24 hooks custom
 - **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
@@ -84,6 +84,85 @@ Les déclarations CESU survivent maintenant au rechargement de page :
 - Migrations DB : 41 → 47 (+6)
 - Services : +2 (`cesuDeclarationService`, `accountService`)
 - PRs : #203–#207
+
+#### Convention settings → Supabase DB (PR #208 ✅)
+
+Persistance des paramètres de convention IDCC 3239 depuis localStorage vers Supabase :
+- Migration 048 : table `convention_settings` avec RLS owner-only
+- Service `conventionSettingsService.ts` + store Zustand double persistance (localStorage + Supabase debounced)
+- Hook `useConventionSettings` auto-load/sync
+- Panneau Convention : auto-save + loading spinner (plus de bouton "Enregistrer" manuel)
+
+#### Accessibilité outillage (PR #210 ✅)
+
+- axe-core intégré en mode dev (`@axe-core/react` dans `main.tsx`)
+- `eslint-plugin-jsx-a11y` ajouté à la config ESLint
+- Fix `AccessibleButton` : suppression `VisuallyHidden` redondant
+
+#### Métriques session (01/04/2026)
+- Tests : 2167 / 122 fichiers
+- Coverage stmts : 54.03%
+- Migrations DB : 41 → 48 (+7 depuis 23/03)
+- Services : +3 (`cesuDeclarationService`, `accountService`, `conventionSettingsService`)
+- Hooks : +1 (`useHealthConsent`, `useConventionSettings`)
+
+### Semaine 13 — ~19-23 mars 2026 (PRs #183–#194)
+
+#### Dark mode complet (PR #192 ✅)
+
+Implémentation du dark mode sur l'ensemble de l'application avec tokens sémantiques :
+- Toggle dark/light mode fonctionnel (Paramètres > Apparence)
+- ~237 couleurs hex hardcodées migrées vers les tokens Chakra UI v3 (PR #185)
+- Tokens sémantiques : `bg.surface`, `text.primary`, `text.muted`, `border.default`, etc.
+- Cohérence visuelle totale dark/light sur les 18 routes
+
+#### Fix 21 violations WCAG (PR #186 ✅)
+
+Résolution des violations d'accessibilité issues de l'audit WCAG 2.2 AA :
+- Ratios de contraste insuffisants corrigés
+- Labels manquants sur formulaires et boutons icônes
+- Focus visible sur tous les éléments interactifs
+- Aria attributes manquants ajoutés
+
+#### Toast notifications (PR #191 ✅)
+
+Ajout de feedback visuel via toasts sur les pages clock-in, planning et équipe :
+- Toasts succès/erreur/warning cohérents avec le système Chakra UI v3
+- Actions : clock-in/out, création/modification shift, approbation absence, invitation équipe
+
+#### Redesign page Documents (PR #190 ✅)
+
+Refonte de la page Documents pour aligner sur le prototype :
+- Onglets : Bulletins → Contrats → Absences → Export planning → Déclarations CESU
+- Fix PDFs flous, en-têtes alignés sur le prototype, filtre contrats aidants (PR #194)
+
+#### Cookie consent banner + Legal page (PR #193 ✅)
+
+- Bannière de consentement cookies conforme CNIL
+- Page mentions légales (`/mentions-legales`) mise à jour
+
+#### Flow invitation aidants (PR #188 ✅)
+
+- `feat(team)` : flow complet d'invitation aidants
+- Fix gestion erreurs invitation employés
+- Fix client admin JWT dans Edge Functions (PR #189)
+
+#### Métriques session (~23/03/2026)
+- Design tokens : 237 hex → tokens sémantiques (PR #185)
+- Migrations DB : 41 (inchangé à ce stade)
+
+---
+
+### ~27-28 mars 2026 — Migration PDF (PR #201)
+
+#### Migration jsPDF → @react-pdf/renderer (PR #201 ✅)
+
+Refonte des générateurs PDF pour résoudre les problèmes de qualité :
+- Bulletins de paie, CESU, planning exportés via `@react-pdf/renderer`
+- PDFs nets (pas de flou), layout React déclaratif
+- Meilleure maintenabilité des templates
+
+---
 
 ### Semaine 14 — 23 mars 2026 (PRs #180–#181)
 
@@ -1446,8 +1525,8 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 **Effort**: 1 semaine
 
 ```
-[ ] Barre recherche globale (Cmd+K)
-[ ] Recherche full-text (shifts, logs, messages)
+[x] Barre recherche globale (Cmd+K) — SpotlightSearch + searchService + useSpotlightSearch ✅
+[x] Recherche full-text (shifts, logs, messages) ✅
 [ ] Filtres sauvegardés (favoris)
 [ ] Recherche vocale (Speech Recognition déjà implémentée)
 ```
@@ -1788,6 +1867,15 @@ npx playwright install
 - 🟡 Vérification téléphone SMS
 - 🟡 Tests composants UI critiques restants (Phase 3)
 - ✅ Documentation sécurité / accessibilité / SEO alignée (`041` + `SECURITY_CHECK` — 26–27/03/2026)
+- ✅ Design tokens sémantiques (~237 hex migrés) — PR #185
+- ✅ Dark mode complet — PR #192
+- ✅ Fix 21 violations WCAG — PR #186
+- ✅ Toast notifications — PR #191
+- ✅ Cookie consent banner + Legal page — PR #193
+- ✅ Migration jsPDF → @react-pdf/renderer — PR #201
+- ✅ Convention settings persistées en DB (migration 048) — PR #208
+- ✅ axe-core + eslint-plugin-jsx-a11y — PR #210
+- ✅ Docs sécurité / coverage mis à jour — PR #212
 
 ### Q2 2026 (Avril - Juin)
 
@@ -1798,9 +1886,10 @@ npx playwright install
 - 🟢 2FA
 
 **Semaines 19-22**:
-- 🟡 Chakra UI v3 : migration hex hardcodés → design tokens sémantiques (~80 occurrences / ~20 fichiers — dark mode ready)
+- ✅ Chakra UI v3 : migration hex → design tokens sémantiques ✅ PR #185
+- ✅ Dark mode ✅ PR #192
 - 🟢 UI/UX améliorations
-- 🟢 Onboarding
+- 🟢 Onboarding (demo banner, empty states)
 - 🟢 Performance optimization
 - 🔴 Tests E2E (Phase 4)
 
