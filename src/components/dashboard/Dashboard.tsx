@@ -5,7 +5,6 @@ import { DashboardLayout } from './DashboardLayout'
 import { EmployerDashboard } from './EmployerDashboard'
 import { EmployeeDashboard } from './EmployeeDashboard'
 import { CaregiverDashboard } from './CaregiverDashboard'
-import { PushPermissionBanner } from '@/components/notifications'
 
 export function Dashboard() {
   const { profile, userRole } = useAuth()
@@ -31,7 +30,6 @@ export function Dashboard() {
 
   return (
     <DashboardLayout title="Tableau de bord">
-      <PushPermissionBanner userId={profile.id} />
       {userRole === 'employer' && <EmployerDashboard profile={profile} />}
       {userRole === 'employee' && <EmployeeDashboard profile={profile} />}
       {userRole === 'caregiver' && <CaregiverDashboard profile={profile} />}
