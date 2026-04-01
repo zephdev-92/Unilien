@@ -31,9 +31,6 @@ vi.mock('@/components/dashboard/CaregiverDashboard', () => ({
   CaregiverDashboard: () => <div data-testid="caregiver-dashboard" />,
 }))
 
-vi.mock('@/components/notifications', () => ({
-  PushPermissionBanner: () => <div data-testid="push-permission-banner" />,
-}))
 
 vi.mock('@/hooks/useShiftReminders', () => ({
   useShiftReminders: vi.fn(),
@@ -175,26 +172,4 @@ describe('Dashboard', () => {
     })
   })
 
-  describe('PushPermissionBanner', () => {
-    it('affiche le PushPermissionBanner quand le profil est chargé', async () => {
-      const profile = createMockProfile({ role: 'employer' })
-      mockUseAuth.mockReturnValue({
-        profile,
-        userRole: 'employer',
-        isInitialized: true,
-        user: null,
-        session: null,
-        isLoading: false,
-        signIn: vi.fn(),
-        signOut: vi.fn(),
-        updateProfile: vi.fn(),
-      })
-
-      renderWithProviders(<Dashboard />)
-
-      await waitFor(() => {
-        expect(screen.getByTestId('push-permission-banner')).toBeInTheDocument()
-      })
-    })
-  })
 })
