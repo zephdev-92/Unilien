@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 17 mars 2026
+**Derniere mise a jour** : 01 avril 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -14,16 +14,16 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 - [x] **Panneau Profil** — formulaire infos personnelles (nom, email, tel, adresse, langue, format date) ✅
 - [x] **Panneau Securite** — changement mot de passe (actuel, nouveau, confirmation) ✅
 - [ ] **Panneau Securite** — toggle 2FA avec explication _(badge "Bientot", disabled)_
-- [ ] **Panneau Securite** — Danger Zone (bordure rouge) : bouton supprimer toutes les donnees _(badge "Bientot", disabled)_
-- [ ] **Panneau Securite** — Danger Zone : bouton desactiver le compte (modale confirmation) _(badge "Bientot", disabled)_
+- [x] **Panneau Securite** — Danger Zone (bordure rouge) : bouton supprimer toutes les donnees ✅ _(RPC `delete_own_data`, double confirmation, PR #207)_
+- [x] **Panneau Securite** — Danger Zone : bouton desactiver le compte (modale confirmation) ✅ _(RPC `delete_own_account`, PR #207)_
 - [x] **Panneau Abonnement** (employeur) — carte plan actuel (nom, prix, date renouvellement, moyen paiement) ✅ _(UI-only, Stripe non integre)_
 - [x] **Panneau Abonnement** — barres usage (employes X/X, bulletins, stockage) ✅ _(UI-only, donnees statiques)_
 - [x] **Panneau Abonnement** — grille 3 forfaits (Starter, Standard, Pro) avec features + CTA ✅ _(UI-only)_
 - [x] **Panneau Notifications** — toggles par canal (push fonctionnel, email disabled "Bientot") ✅
 - [ ] **Panneau Notifications** — notifications email fonctionnelles _(attente backend SendGrid/Resend)_
-- [x] **Panneau Convention** (employeur) — parametres convention IDCC 3239 ✅ _(localStorage, TODO: migrer vers DB)_
+- [x] **Panneau Convention** (employeur) — parametres convention IDCC 3239 ✅ _(double persistance localStorage + Supabase, migration 048, PR #208)_
 - [x] **Panneau PCH** (aidant) — configuration PCH ✅ _(localStorage)_
-- [ ] **Panneau Apparence** — toggle dark/light mode _(badge "Bientot", disabled)_
+- [x] **Panneau Apparence** — toggle dark/light mode ✅ _(PR #192, tokens semantiques, ~237 hex migres)_
 - [x] **Panneau Apparence** — selecteur densite (confortable/compact) ✅ _(localStorage)_
 - [ ] **Panneau Apparence** — selecteur palette couleurs
 - [x] **Panneau Accessibilite** — toggle contraste eleve ✅ _(Zustand + localStorage)_
@@ -170,7 +170,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 - [x] **Skeleton loading dashboard** — skeletons sur greeting et action nudges ✅ _(partiel — widgets individuels)_
 - [ ] **Empty states onboarding** — variantes specifiques quand le compte est vide
-- [ ] **Toasts globaux** — verifier coherence avec le systeme du prototype (success/error/warning/info)
+- [x] **Toasts globaux** — coherence Chakra UI v3 sur clock-in, planning et equipe ✅ _(PR #191)_
 - [x] **Modales** — focus management, Escape ferme, clic backdrop ferme, aria-modal ✅ _(Chakra Dialog natif + aria-modal sur modales custom)_
 
 ---
@@ -179,7 +179,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 | Bloc | Items | Done | Priorite |
 |------|-------|------|----------|
-| Settings | 22 | 15 | Moyenne (7 items "Bientot") |
+| Settings | 22 | 19 | Moyenne (3 items restants : 2FA, palette couleurs, confidentialite) |
 | Dashboard | 11 | 8 | Moyenne |
 | Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |
@@ -191,5 +191,5 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Messaging | 4 | 4 | ✅ Termine |
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
-| Patterns UI | 4 | 2 | Basse |
-| **Total** | **102** | **88** | — |
+| Patterns UI | 4 | 3 | Basse |
+| **Total** | **102** | **93** | — |
