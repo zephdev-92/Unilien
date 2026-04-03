@@ -11,6 +11,7 @@ interface AuthState {
   isLoading: boolean
   isInitialized: boolean
   error: string | null
+  mfaPending: boolean
 
   // Actions
   setUser: (user: User | null) => void
@@ -19,6 +20,7 @@ interface AuthState {
   setLoading: (isLoading: boolean) => void
   setInitialized: (isInitialized: boolean) => void
   setError: (error: string | null) => void
+  setMfaPending: (pending: boolean) => void
   reset: () => void
 
   // Computed
@@ -33,6 +35,7 @@ const initialState = {
   isLoading: true,
   isInitialized: false,
   error: null,
+  mfaPending: false,
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -52,11 +55,13 @@ export const useAuthStore = create<AuthState>()(
 
       setError: (error) => set({ error }),
 
+      setMfaPending: (mfaPending) => set({ mfaPending }),
+
       reset: () => set(initialState),
 
       isAuthenticated: () => {
         const state = get()
-        return !!state.user && !!state.session
+        return !!state.user && !!state.session && !state.mfaPending
       },
 
       getUserRole: () => {

@@ -15,6 +15,9 @@ import {
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { AccessibleInput, AccessibleButton, PasswordToggleButton } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/stores/authStore'
+import { supabase } from '@/lib/supabase/client'
+import { MfaChallenge } from './MfaChallenge'
 
 // Schéma de validation
 const loginSchema = z.object({
@@ -36,6 +39,7 @@ export function LoginForm() {
   const justRegistered = searchParams.get('registered') === 'true'
   const [showPassword, setShowPassword] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
 
   const {
     register,
@@ -49,9 +53,38 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setLocalError(null)
     const result = await signIn(data)
+
     if (!result.success) {
       setLocalError(result.error || 'Erreur de connexion')
+      return
     }
+
+    // Si MFA requis, récupérer le facteur et afficher le challenge
+    if (result.mfaRequired) {
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      const totpFactor = factors?.totp?.find((f) => f.status === 'verified')
+      if (totpFactor) {
+        setMfaFactorId(totpFactor.id)
+      }
+    }
+  }
+
+  // Afficher le challenge MFA si nécessaire
+  if (mfaFactorId) {
+    return (
+      <MfaChallenge
+        factorId={mfaFactorId}
+        onSuccess={() => {
+          useAuthStore.getState().setMfaPending(false)
+          window.location.href = '/tableau-de-bord'
+        }}
+        onCancel={() => {
+          setMfaFactorId(null)
+          useAuthStore.getState().setMfaPending(false)
+          supabase.auth.signOut()
+        }}
+      />
+    )
   }
 
   return (
