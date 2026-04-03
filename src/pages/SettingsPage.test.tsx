@@ -186,15 +186,14 @@ describe('SettingsPage', () => {
       expect(screen.getAllByText('Plan actuel').length).toBeGreaterThanOrEqual(1)
       // "Essentiel" apparait dans plan actuel + grille plans + historique
       expect(screen.getAllByText('Essentiel').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByText('3 / 3')).toBeInTheDocument()
+      expect(screen.getByText('Illimité')).toBeInTheDocument()
     })
 
-    it('affiche les 3 plans disponibles', () => {
+    it('affiche le plan Essentiel dans les plans disponibles', () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Abonnement'))
       expect(screen.getByText('Plans disponibles')).toBeInTheDocument()
-      expect(screen.getByText('Gratuit')).toBeInTheDocument()
-      expect(screen.getByText('Pro')).toBeInTheDocument()
+      expect(screen.getAllByText('Essentiel').length).toBeGreaterThanOrEqual(1)
     })
 
     it('affiche le moyen de paiement', () => {

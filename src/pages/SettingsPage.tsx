@@ -892,32 +892,13 @@ function AbonnementPanel() {
 
   const plans = [
     {
-      name: 'Gratuit',
-      price: '0 €',
-      desc: 'Pour découvrir Unilien.',
-      features: ['1 employé', 'Planning basique', 'Pointage horaire'],
-      disabled: ['Bulletins de paie', 'Conformité IDCC'],
-      isCurrent: false,
-      cta: 'Rétrograder',
-    },
-    {
       name: 'Essentiel',
       price: '9,90 €',
-      desc: 'Pour les familles employeurs.',
-      features: ['3 employés', 'Bulletins de paie', 'Conformité IDCC 3239', 'Export planning', 'Cahier de liaison'],
+      desc: 'Pour les particuliers employeurs.',
+      features: ['Auxiliaires illimités', 'Bulletins de paie PDF', 'Conformité IDCC 3239 automatique', 'Export planning (PDF, iCal)', 'Dashboard PCH', 'Cahier de liaison'],
       disabled: [],
       isCurrent: true,
       cta: 'Plan actuel',
-    },
-    {
-      name: 'Pro',
-      price: '24,90 €',
-      desc: 'Pour les aidants professionnels.',
-      features: ['Employés illimités', "Tout l'Essentiel", 'Exports avancés', 'Multi-comptes', 'Support prioritaire'],
-      disabled: [],
-      isCurrent: false,
-      cta: 'Passer au Pro',
-      recommended: true,
     },
   ]
 
@@ -956,7 +937,7 @@ function AbonnementPanel() {
           </HStack>
 
           <VStack gap={3} align="stretch">
-            <UsageBar label="Employés" value="3 / 3" percent={100} />
+            <UsageBar label="Employés" value="Illimité" percent={0} />
             <UsageBar label="Bulletins de paie ce mois" value="2 / ∞" percent={20} />
             <UsageBar label="Espace documents" value="1,2 Go / 5 Go" percent={24} />
           </VStack>
@@ -970,7 +951,7 @@ function AbonnementPanel() {
           <Text fontSize="sm" color="text.muted">Changez de plan à tout moment, sans engagement.</Text>
         </Card.Header>
         <Card.Body p={4}>
-          <Grid templateColumns={{ base: '1fr', lg: 'repeat(3, 1fr)' }} gap={4}>
+          <Grid templateColumns="1fr" gap={4} maxW="480px">
             {plans.map((plan) => (
               <Box
                 key={plan.name}
