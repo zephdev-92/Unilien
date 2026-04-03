@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '@/test/helpers'
 import { createMockProfile } from '@/test/fixtures'
 import { SettingsPage } from './SettingsPage'
@@ -26,7 +26,19 @@ vi.mock('@/services/profileService', () => ({
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
-    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { email: 'test@test.com' } } }), updateUser: vi.fn().mockResolvedValue({ error: null }), signInWithPassword: vi.fn().mockResolvedValue({ error: null }) },
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: { email: 'test@test.com' } } }),
+      updateUser: vi.fn().mockResolvedValue({ error: null }),
+      signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+      mfa: {
+        listFactors: vi.fn().mockResolvedValue({ data: { totp: [] }, error: null }),
+        enroll: vi.fn().mockResolvedValue({ data: null, error: null }),
+        challenge: vi.fn().mockResolvedValue({ data: null, error: null }),
+        verify: vi.fn().mockResolvedValue({ error: null }),
+        unenroll: vi.fn().mockResolvedValue({ error: null }),
+        getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null }),
+      },
+    },
     from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ or: vi.fn().mockResolvedValue({ data: [] }) }) }),
   },
 }))
@@ -141,19 +153,23 @@ describe('SettingsPage', () => {
       mockUseAuth.mockReturnValue({ profile, userRole: 'employer' } as ReturnType<typeof useAuth>)
     })
 
-    it('affiche les sections mot de passe, 2FA et zone de danger', () => {
+    it('affiche les sections mot de passe, 2FA et zone de danger', async () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Sécurité'))
 
       expect(screen.getByText('Changer le mot de passe')).toBeInTheDocument()
-      expect(screen.getByText('Double authentification (2FA)')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('Double authentification (2FA)')).toBeInTheDocument()
+      })
       expect(screen.getByText('Zone de danger')).toBeInTheDocument()
     })
 
-    it('affiche le toggle 2FA', () => {
+    it('affiche le bouton pour activer la 2FA', async () => {
       renderWithProviders(<SettingsPage />)
       fireEvent.click(screen.getByText('Sécurité'))
-      expect(screen.getByText('Activer la 2FA')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /activer la 2fa/i })).toBeInTheDocument()
+      })
     })
 
     it('affiche les options de zone de danger', () => {

@@ -137,6 +137,7 @@ export function useAuth() {
     reset,
     isAuthenticated,
     getUserRole,
+    setMfaPending,
   } = useAuthStore()
 
   // Initialisation de l'authentification
@@ -155,6 +156,12 @@ export function useAuth() {
       if (currentSession) {
         setSession(currentSession)
         setUser(currentSession.user)
+
+        // Vérifier si MFA est en attente
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aalData?.currentLevel === 'aal1' && aalData?.nextLevel === 'aal2') {
+          setMfaPending(true)
+        }
 
         // Récupérer ou créer le profil
         const profile = await loadProfile(
@@ -177,8 +184,8 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (event === 'SIGNED_IN' && newSession) {
-          setSession(newSession)
-          setUser(newSession.user)
+          // Ne pas mettre à jour ici — le signIn() gère session/user/mfa
+          // Cela évite une race condition avec le check MFA
         } else if (event === 'SIGNED_OUT') {
           reset()
         } else if (event === 'TOKEN_REFRESHED' && newSession) {
@@ -268,6 +275,18 @@ export function useAuth() {
           throw new Error('Erreur de connexion')
         }
 
+        // Vérifier si MFA est requis AVANT de mettre à jour le store
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        const mfaRequired = aalData?.currentLevel === 'aal1' && aalData?.nextLevel === 'aal2'
+
+        // Si MFA requis, bloquer isAuthenticated avant de set session/user
+        if (mfaRequired) {
+          setMfaPending(true)
+        }
+
+        setSession(authData.session)
+        setUser(authData.user)
+
         // Récupérer ou créer le profil
         const profile = await loadProfile(
           authData.user.id,
@@ -275,6 +294,10 @@ export function useAuth() {
           authData.user.user_metadata
         )
         if (profile) setProfile(profile)
+
+        if (mfaRequired) {
+          return { success: true, mfaRequired: true }
+        }
 
         navigate('/tableau-de-bord')
         return { success: true }
@@ -286,7 +309,7 @@ export function useAuth() {
         setLoading(false)
       }
     },
-    [navigate, setLoading, setError, setProfile]
+    [navigate, setLoading, setError, setProfile, setMfaPending, setSession, setUser]
   )
 
   // Déconnexion

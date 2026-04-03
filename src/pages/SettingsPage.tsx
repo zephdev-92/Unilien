@@ -39,6 +39,8 @@ import { useHealthConsent } from '@/hooks/useHealthConsent'
 import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
 import { useConventionSettings } from '@/hooks/useConventionSettings'
+import { useMfa } from '@/hooks/useMfa'
+import { MfaEnrollment } from '@/components/auth/MfaEnrollment'
 import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
 import { toaster } from '@/lib/toaster'
 
@@ -697,28 +699,130 @@ function SecuritePanel() {
         </Card.Body>
       </Card.Root>
 
-      {/* 2FA — bientôt disponible */}
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
-        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <HStack gap={2}>
-            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Double authentification (2FA)</Card.Title>
-            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
-          </HStack>
-        </Card.Header>
-        <Card.Body p={4}>
-          <ToggleRow
-            label="Activer la 2FA"
-            description="Protégez votre compte avec Google Authenticator, Authy ou tout autre app d'authentification."
-            checked={false}
-            onChange={() => {}}
-            disabled
-          />
-        </Card.Body>
-      </Card.Root>
+      {/* 2FA */}
+      <TwoFactorCard />
 
       {/* Zone de danger */}
       <DangerZone />
     </VStack>
+  )
+}
+
+// ── 2FA ──────────────────────────────────────────────────────────────────────
+
+function TwoFactorCard() {
+  const { isEnabled, factors, loading, enroll, verify, unenroll, reload } = useMfa()
+  const [showEnroll, setShowEnroll] = useState(false)
+  const [disabling, setDisabling] = useState(false)
+  const [disableCode, setDisableCode] = useState('')
+  const [disableError, setDisableError] = useState<string | null>(null)
+
+  const handleDisable = async () => {
+    if (disableCode.length !== 6) {
+      setDisableError('Le code doit contenir 6 chiffres.')
+      return
+    }
+    setDisabling(true)
+    setDisableError(null)
+    try {
+      const factor = factors.find((f) => f.status === 'verified')
+      if (!factor) return
+
+      // Vérifier le code avant de désactiver
+      await verify(factor.id, disableCode)
+      await unenroll(factor.id)
+      setDisableCode('')
+      toaster.create({ title: '2FA désactivée', type: 'success' })
+    } catch {
+      setDisableError('Code invalide.')
+    } finally {
+      setDisabling(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+        <Card.Body p={4}>
+          <Center py={4}><Spinner size="sm" /></Center>
+        </Card.Body>
+      </Card.Root>
+    )
+  }
+
+  return (
+    <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+      <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+        <HStack gap={2}>
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Double authentification (2FA)</Card.Title>
+          {isEnabled && <Badge colorPalette="green" size="sm">Activée</Badge>}
+        </HStack>
+      </Card.Header>
+      <Card.Body p={4}>
+        {showEnroll ? (
+          <MfaEnrollment
+            onEnroll={enroll}
+            onVerify={verify}
+            onCancel={() => setShowEnroll(false)}
+            onSuccess={() => {
+              setShowEnroll(false)
+              reload()
+              toaster.create({ title: '2FA activée', type: 'success' })
+            }}
+          />
+        ) : isEnabled ? (
+          <VStack gap={3} align="stretch">
+            <Text fontSize="sm" color="text.muted">
+              Votre compte est protégé par la double authentification.
+              Un code vous est demandé à chaque connexion.
+            </Text>
+            <Separator />
+            <Text fontSize="sm" fontWeight="600">
+              Pour désactiver, entrez le code de votre application :
+            </Text>
+            <HStack gap={2}>
+              <Input
+                placeholder="000000"
+                maxLength={6}
+                value={disableCode}
+                onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                fontFamily="mono"
+                fontSize="lg"
+                textAlign="center"
+                letterSpacing="0.2em"
+                maxW="160px"
+              />
+              <Button
+                colorPalette="red"
+                variant="outline"
+                size="sm"
+                onClick={handleDisable}
+                disabled={disabling || disableCode.length !== 6}
+              >
+                {disabling ? 'Désactivation…' : 'Désactiver'}
+              </Button>
+            </HStack>
+            {disableError && (
+              <Text fontSize="sm" color="red.500">{disableError}</Text>
+            )}
+          </VStack>
+        ) : (
+          <VStack gap={3} align="stretch">
+            <Text fontSize="sm" color="text.muted">
+              Protégez votre compte avec Google Authenticator, Authy ou toute autre application d&apos;authentification.
+            </Text>
+            <Button
+              colorPalette="brand"
+              size="sm"
+              alignSelf="flex-start"
+              onClick={() => setShowEnroll(true)}
+            >
+              Activer la 2FA
+            </Button>
+          </VStack>
+        )}
+      </Card.Body>
+    </Card.Root>
   )
 }
 

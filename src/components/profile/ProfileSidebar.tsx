@@ -1,8 +1,9 @@
-import { Box, Flex, Text, Stack, Button, Avatar } from '@chakra-ui/react'
+import { Box, Flex, Text, Stack, Button, Avatar, Badge } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { ProfileCompletionWidget } from './ProfileCompletionWidget'
 import { GhostButton } from '@/components/ui'
 import { useAuth } from '@/hooks/useAuth'
+import { useMfa } from '@/hooks/useMfa'
 import type { Profile, Employer, Employee, Caregiver } from '@/types'
 
 interface ProfileSidebarProps {
@@ -13,6 +14,8 @@ interface ProfileSidebarProps {
 }
 
 function SecurityWidget() {
+  const { isEnabled, loading } = useMfa()
+
   return (
     <Box
       bg="bg.surface"
@@ -41,10 +44,18 @@ function SecurityWidget() {
           <Flex justify="space-between" align="center">
             <Box>
               <Text fontSize="sm" fontWeight={600}>Double authentification</Text>
-              <Text fontSize="11px" color="text.muted">Non activée</Text>
+              {!loading && isEnabled ? (
+                <Badge colorPalette="green" size="sm">Activée</Badge>
+              ) : (
+                <Text fontSize="11px" color="text.muted">
+                  {loading ? '…' : 'Non activée'}
+                </Text>
+              )}
             </Box>
             <GhostButton asChild size="xs">
-              <RouterLink to="/parametres#securite">Activer</RouterLink>
+              <RouterLink to="/parametres#securite">
+                {isEnabled ? 'Gérer' : 'Activer'}
+              </RouterLink>
             </GhostButton>
           </Flex>
         </Stack>

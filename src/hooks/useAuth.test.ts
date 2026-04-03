@@ -31,6 +31,10 @@ vi.mock('@/lib/supabase/client', () => ({
       resetPasswordForEmail: (email: string, options: unknown) =>
         mockResetPasswordForEmail(email, options),
       onAuthStateChange: (callback: unknown) => mockOnAuthStateChange(callback),
+      mfa: {
+        getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null }),
+        listFactors: vi.fn().mockResolvedValue({ data: { totp: [] }, error: null }),
+      },
     },
     from: () => ({
       select: () => ({
