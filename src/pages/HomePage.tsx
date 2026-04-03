@@ -119,102 +119,6 @@ function PainPointCard({
   )
 }
 
-function PricingCard({
-  name,
-  price,
-  priceSuffix,
-  features,
-  cta,
-  ctaLink,
-  featured,
-}: {
-  name: string
-  price: string
-  priceSuffix: string
-  features: { text: string; available: boolean }[]
-  cta: string
-  ctaLink: string
-  featured?: boolean
-}) {
-  return (
-    <Box
-      p={8}
-      bg="bg.surface"
-      borderRadius="lg"
-      borderWidth="2px"
-      borderColor={featured ? 'brand.500' : 'border.default'}
-      textAlign="center"
-      position="relative"
-    >
-      {featured && (
-        <Flex
-          position="absolute"
-          top="-12px"
-          left="50%"
-          transform="translateX(-50%)"
-          bg="brand.500"
-          color="white"
-          fontSize="xs"
-          fontWeight="800"
-          px={3}
-          py="4px"
-          borderRadius="full"
-          whiteSpace="nowrap"
-        >
-          Le plus populaire
-        </Flex>
-      )}
-      <Text fontSize="xl" fontWeight="800" textAlign="center">
-        {name}
-      </Text>
-      <Box fontFamily="heading" fontSize="4xl" fontWeight="900" color="text.default" my={3} textAlign="center">
-        {price} <Text as="sub" fontSize="sm" color="text.muted" verticalAlign="baseline">{priceSuffix}</Text>
-      </Box>
-      <Stack gap={2} textAlign="left" my={5}>
-        {features.map((f) => (
-          <Flex key={f.text} align="center" gap={2} color={f.available ? 'text.default' : 'text.muted'}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={f.available ? '#9BB23B' : 'currentColor'}
-              strokeWidth="2.5"
-              width="16"
-              height="16"
-              style={{ flexShrink: 0 }}
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <Text fontSize="sm">{f.text}</Text>
-          </Flex>
-        ))}
-      </Stack>
-      <Button
-        asChild
-        w="100%"
-        bg={featured ? 'brand.500' : 'transparent'}
-        color={featured ? 'white' : 'text.secondary'}
-        borderWidth={featured ? '0' : '1.5px'}
-        borderColor={featured ? 'transparent' : 'border.default'}
-        fontFamily="heading"
-        fontSize="sm"
-        fontWeight="700"
-        letterSpacing="0.01em"
-        borderRadius="md"
-        px={5}
-        py="11px"
-        height="auto"
-        boxShadow={featured ? 'sm' : 'none'}
-        _hover={featured
-          ? { bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }
-          : { borderColor: 'brand.500', color: 'brand.500', bg: 'brand.subtle' }
-        }
-        _active={{ transform: 'translateY(0)' }}
-      >
-        <RouterLink to={ctaLink}>{cta}</RouterLink>
-      </Button>
-    </Box>
-  )
-}
 
 function WarningTwoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -450,7 +354,7 @@ export function HomePage() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" width="12" height="12" aria-hidden="true" style={{ flexShrink: 0 }}>
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              Pour les particuliers employeurs · Conformité IDCC&nbsp;3239 automatique
+              Pour les particuliers employeurs — conformité IDCC&nbsp;3239 automatisée
             </Flex>
 
             <Heading
@@ -463,16 +367,14 @@ export function HomePage() {
               letterSpacing="-0.02em"
               mb={0}
             >
-              Un planning illégal peut vous coûter
-              <br />
+              Gérez vos auxiliaires en toute sérénité,{' '}
               <Text as="em" color="brand.500" fontStyle="normal">
-                8 000 €
-              </Text>{' '}
-              aux Prud&apos;hommes.
+                sans risque d&apos;erreur
+              </Text>
             </Heading>
 
             <Text fontSize="lg" color="text.secondary" lineHeight="1.6" maxW="500px" mb={2}>
-              Unilien bloque automatiquement les plannings non conformes avant qu&apos;il soit trop tard. Le premier outil pensé pour les employeurs de vie à domicile.
+              UniLien simplifie vos plannings, sécurise vos démarches et vous protège automatiquement des erreurs administratives. Une solution pensée pour les particuliers employeurs, notamment en situation de handicap.
             </Text>
 
             <Flex gap={3} flexWrap="wrap" mb={4}>
@@ -496,7 +398,7 @@ export function HomePage() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" />
                   </svg>
-                  Essayer gratuitement 14 jours
+                  Essayer gratuitement 30 jours
                 </RouterLink>
               </Button>
               <Button
@@ -529,8 +431,8 @@ export function HomePage() {
             <Stack gap={2}>
               {[
                 'Aucune carte bancaire requise',
-                '100% accessible — WCAG AAA, commande vocale',
-                'Validé par juriste spécialisé IDCC 3239',
+                'Accessible et simplifié',
+                'Conforme IDCC 3239',
               ].map((text) => (
                 <Flex key={text} align="center" gap={2}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="#9BB23B" strokeWidth="2.5" width="15" height="15" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -565,7 +467,7 @@ export function HomePage() {
             <Flex align="flex-start" gap={3} py={3} borderBottomWidth="1px" borderColor="rgba(255,255,255,0.12)">
               <Box w="8px" h="8px" borderRadius="full" bg="#FF6B6B" mt="5px" flexShrink={0} />
               <Box>
-                <Text fontSize="sm" fontWeight="700">Repos 11h non respecté — BLOQUÉ</Text>
+                <Text fontSize="sm" fontWeight="700">Repos 11h non respecté — Bloqué</Text>
                 <Text fontSize="xs" mt={1}>&quot;Marie doit se reposer jusqu&apos;à 7h demain.&quot;</Text>
               </Box>
             </Flex>
@@ -573,7 +475,7 @@ export function HomePage() {
             <Flex align="flex-start" gap={3} py={3} borderBottomWidth="1px" borderColor="rgba(255,255,255,0.12)">
               <Box w="8px" h="8px" borderRadius="full" bg="#FF6B6B" mt="5px" flexShrink={0} />
               <Box>
-                <Text fontSize="sm" fontWeight="700">Pause 20 min oubliée — BLOQUÉ</Text>
+                <Text fontSize="sm" fontWeight="700">Pause 20 min oubliée — Bloqué</Text>
                 <Text fontSize="xs" mt={1}>&quot;Pause obligatoire si intervention {'>'} 6h.&quot;</Text>
               </Box>
             </Flex>
@@ -610,10 +512,10 @@ export function HomePage() {
       <Box py={8} bg="bg.page" borderTopWidth="1px" borderBottomWidth="1px" borderColor="border.default">
         <Container maxW="container.lg">
           <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={6}>
-            <StatItem value="280 000" label="Beneficiaires PCH en France" />
-            <StatItem value="2 000+" label="Condamnations Prud'hommes / an" />
-            <StatItem value="8 000 euros" label="Indemnites moyennes" />
-            <StatItem value="-40 %" label="De temps administratif" />
+            <StatItem value="280 000" label="Particuliers employeurs en France" />
+            <StatItem value="2 000+" label="Situations à risque chaque année" />
+            <StatItem value="8 000 €" label="Coût moyen d'une erreur" />
+            <StatItem value="-40 %" label="De charge administrative avec UniLien" />
           </Grid>
         </Container>
       </Box>
@@ -624,31 +526,31 @@ export function HomePage() {
           <Stack gap={12}>
             <Box textAlign="center">
               <Heading fontSize="2xl" fontWeight="bold" color="text.default" mb={3}>
-                Gérer vos auxiliaires, c&apos;est gérer une PME 24h/24
+                Gérer vos auxiliaires, c&apos;est gérer une organisation complexe
               </Heading>
               <Text color="text.muted" maxW="420px" mx="auto" textAlign="center">
-                Vous n&apos;êtes pas seul·e face à cette charge.
+                Et pourtant, vous n&apos;avez pas à le faire seul.
               </Text>
             </Box>
-            <Box maxW="900px" mx="auto">
+            <Box maxW="1100px" mx="auto">
               <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
                 <PainPointCard
                   iconBg="danger.subtle"
                   icon={<WarningTwoIcon width={24} height={24} />}
-                  title="J'ai peur de faire une erreur couteuse"
-                  description="Le droit du travail evolue. Une regle oubliee peut se transformer en litige a 8 000 euros d'indemnites."
+                  title="Je veux être sûr de bien faire"
+                  description="Les règles évoluent et sont difficiles à suivre seul."
                 />
                 <PainPointCard
                   iconBg="warm.subtle"
                   icon={<CalendarIcon width={24} height={24} />}
-                  title="Excel est inutilisable avec ma pathologie"
-                  description="Les outils generiques ne sont pas adaptes a la gestion depuis un fauteuil roulant ou avec des troubles moteurs."
+                  title="Mes outils ne sont pas adaptés"
+                  description="Les solutions classiques ne prennent pas en compte ma réalité."
                 />
                 <PainPointCard
                   iconBg="brand.subtle"
                   icon={<TimeIcon width={24} height={24} />}
-                  title="Je ne sais jamais si mon planning est legal"
-                  description="Les 11h de repos, la pause de 20 min, les 10h max par jour... Impossible de tout memoriser."
+                  title="Je manque de visibilité"
+                  description="Organiser les plannings devient vite complexe au quotidien."
                 />
               </Grid>
             </Box>
@@ -662,10 +564,10 @@ export function HomePage() {
           <Stack gap={10}>
             <Box textAlign="center" maxW="600px" mx="auto">
               <Heading fontSize="2xl" fontWeight="900" color="text.default" mb={3}>
-                Tout ce dont vous avez besoin
+                Tout ce dont vous avez besoin, réuni en un seul endroit
               </Heading>
               <Text color="text.muted" fontSize="lg">
-                Conçu pour les employeurs particuliers, de la planification à la déclaration.
+                Une plateforme pensée pour simplifier chaque étape, de la planification à la gestion administrative.
               </Text>
             </Box>
             <Box maxW="1100px" mx="auto">
@@ -680,7 +582,7 @@ export function HomePage() {
                     </svg>
                   }
                   title="Planning intelligent"
-                  description="Vues semaine et mois, interventions 24h, présence responsable. Glisser-déposer prévu."
+                  description="Organisez simplement vos interventions, sans erreur."
                 />
                 <FeatureCard
                   icon={
@@ -689,8 +591,8 @@ export function HomePage() {
                     </svg>
                   }
                   iconBg="danger.subtle"
-                  title="Bouclier IDCC 3239"
-                  description="Blocage automatique des infractions : repos, pauses, amplitude, heures supplémentaires."
+                  title="Bouclier juridique"
+                  description="Sécurisez automatiquement vos plannings."
                 />
                 <FeatureCard
                   icon={
@@ -702,7 +604,7 @@ export function HomePage() {
                   }
                   iconBg="accent.subtle"
                   title="Calcul de paie automatique"
-                  description="Majorations conformes, cotisations salariales et patronales, exonération SS, taux PAS."
+                  description="Gagnez du temps et évitez les erreurs."
                 />
                 <FeatureCard
                   icon={
@@ -711,7 +613,7 @@ export function HomePage() {
                     </svg>
                   }
                   title="Cahier de liaison"
-                  description="Messagerie temps réel, rapports d&apos;intervention, pièces jointes, indicateurs de frappe."
+                  description="Gardez un lien clair avec vos intervenants."
                 />
                 <FeatureCard
                   icon={
@@ -724,8 +626,8 @@ export function HomePage() {
                     </svg>
                   }
                   iconBg="warm.subtle"
-                  title="Notifications multi-canal"
-                  description="Push, in-app, email (bientôt SMS). Rappels d&apos;intervention, alertes conformité."
+                  title="Notifications"
+                  description="Restez informé sans y penser."
                 />
                 <FeatureCard
                   icon={
@@ -736,8 +638,8 @@ export function HomePage() {
                     </svg>
                   }
                   iconBg="accent.subtle"
-                  title="Tableaux de bord PCH"
-                  description="Enveloppe PCH mensuelle, reste à charge, prévisions, export CESU en un clic."
+                  title="Tableaux PCH"
+                  description="Suivez vos droits et votre budget facilement."
                 />
               </Grid>
             </Box>
@@ -751,10 +653,10 @@ export function HomePage() {
           <Stack gap={10}>
             <Box textAlign="center" maxW="600px" mx="auto">
               <Heading fontSize="2xl" fontWeight="900" color="text.default" mb={3}>
-                Ce n&apos;est pas juste un agenda. C&apos;est un bouclier juridique.
+                Une protection automatique, sans effort
               </Heading>
               <Text color="text.muted" fontSize="lg">
-                Unilien détecte et bloque en temps réel les infractions à la Convention IDCC 3239.
+                UniLien détecte et bloque les erreurs avant qu&apos;elles ne deviennent un problème.
               </Text>
             </Box>
             <Stack maxW="680px" mx="auto" w="100%" gap={3}>
@@ -777,7 +679,7 @@ export function HomePage() {
                   </svg>
                 </Box>
                 <Box>
-                  <Text fontWeight="700" fontSize="sm">Repos 11h non respecté — BLOQUÉ</Text>
+                  <Text fontWeight="700" fontSize="sm">Repos 11h non respecté — Bloqué</Text>
                   <Text fontSize="xs" mt="2px">Marie doit avoir terminé à 21h pour reprendre à 8h. Cette intervention est impossible.</Text>
                 </Box>
               </Flex>
@@ -935,65 +837,143 @@ export function HomePage() {
       {/* ── Tarifs ── */}
       <Box py="80px" bg="bg.page" id="tarifs">
         <Container maxW="container.xl">
-          <Stack gap={10}>
-            <Box textAlign="center" maxW="600px" mx="auto">
+          <Stack gap={10} align="center">
+
+            {/* Titre section */}
+            <Box textAlign="center" maxW="560px">
               <Heading fontSize="2xl" fontWeight="900" color="text.default" mb={3}>
-                Tarifs simples, sans surprise
+                Essayez UniLien gratuitement pendant 30 jours
               </Heading>
               <Text color="text.muted" fontSize="lg">
-                Commencez gratuitement. Évoluez quand votre équipe grandit.
+                Sans carte bancaire. Sans engagement. Résiliable à tout moment.
               </Text>
             </Box>
-            <Box maxW="1020px" mx="auto">
-              <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={5} alignItems="start">
-                <PricingCard
-                  name="Gratuit"
-                  price="0"
-                  priceSuffix="€/mois"
-                  features={[
-                    { text: '1 employé', available: true },
-                    { text: 'Planning semaine', available: true },
-                    { text: 'Vérifications IDCC 3239', available: true },
-                    { text: 'Pointage horaire', available: true },
-                    { text: 'Bulletins de paie', available: false },
-                    { text: 'Dashboard PCH', available: false },
-                  ]}
-                  cta="Démarrer gratuitement"
-                  ctaLink="/inscription"
-                />
-                <PricingCard
-                  name="Essentiel"
-                  price="9,90"
-                  priceSuffix="€/mois"
-                  featured
-                  features={[
-                    { text: '3 employés', available: true },
-                    { text: 'Bulletins de paie PDF', available: true },
-                    { text: 'Conformité IDCC 3239', available: true },
-                    { text: 'Export planning (PDF, Excel, iCal)', available: true },
-                    { text: 'Dashboard PCH N1–N3', available: true },
-                    { text: 'Cahier de liaison', available: true },
-                  ]}
-                  cta="Essayer 14 jours gratuits"
-                  ctaLink="/inscription"
-                />
-                <PricingCard
-                  name="Pro"
-                  price="24,90"
-                  priceSuffix="€/mois"
-                  features={[
-                    { text: 'Employés illimités', available: true },
-                    { text: "Tout l'Essentiel", available: true },
-                    { text: 'Exports avancés', available: true },
-                    { text: 'Multi-comptes', available: true },
-                    { text: 'Notifications push + email', available: true },
-                    { text: 'Support prioritaire', available: true },
-                  ]}
-                  cta="Choisir Pro"
-                  ctaLink="/inscription"
-                />
-              </Grid>
+
+            {/* Card unique */}
+            <Box
+              w="100%"
+              maxW="460px"
+              bg="bg.surface"
+              borderRadius="2xl"
+              borderWidth="2px"
+              borderColor="brand.500"
+              boxShadow="0 8px 40px -8px rgba(0,0,0,0.12)"
+              overflow="visible"
+              position="relative"
+              pt={10}
+              pb={8}
+              px={8}
+            >
+              {/* Badge "30 jours offerts" */}
+              <Flex
+                position="absolute"
+                top="-14px"
+                left="50%"
+                transform="translateX(-50%)"
+                bg="brand.500"
+                color="white"
+                fontSize="xs"
+                fontWeight="800"
+                letterSpacing="0.06em"
+                textTransform="uppercase"
+                px={4}
+                py="5px"
+                borderRadius="full"
+                whiteSpace="nowrap"
+                boxShadow="sm"
+              >
+                30 jours offerts
+              </Flex>
+
+              {/* Nom du plan */}
+              <Text
+                fontSize="sm"
+                fontWeight="700"
+                textTransform="uppercase"
+                letterSpacing="0.1em"
+                color="brand.500"
+                mb={2}
+                textAlign="center"
+              >
+                Essentiel
+              </Text>
+
+              {/* Prix */}
+              <Flex align="baseline" justify="center" gap={1} mb={1}>
+                <Text fontFamily="heading" fontSize="4xl" fontWeight="900" color="text.default" lineHeight="1">
+                  9,90 €
+                </Text>
+                <Text fontSize="sm" color="text.muted" fontWeight="500">
+                  / mois
+                </Text>
+              </Flex>
+              <Text fontSize="xs" color="text.muted" textAlign="center" mb={7}>
+                après l&apos;essai gratuit
+              </Text>
+
+              {/* Séparateur */}
+              <Box borderTopWidth="1px" borderColor="border.default" mb={6} />
+
+              {/* Features */}
+              <Stack gap={3} mb={7}>
+                {[
+                  'Auxiliaires illimités',
+                  'Bulletins de paie PDF',
+                  'Conformité IDCC 3239 automatique',
+                  'Export planning (PDF, iCal)',
+                  'Dashboard PCH',
+                  'Cahier de liaison',
+                ].map((feat) => (
+                  <Flex key={feat} align="center" gap={3}>
+                    <Flex
+                      w="20px"
+                      h="20px"
+                      borderRadius="full"
+                      bg="accent.subtle"
+                      align="center"
+                      justify="center"
+                      flexShrink={0}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#9BB23B" strokeWidth="3" width="11" height="11" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </Flex>
+                    <Text fontSize="sm" color="text.default" fontWeight="500">
+                      {feat}
+                    </Text>
+                  </Flex>
+                ))}
+              </Stack>
+
+              {/* CTA */}
+              <Button
+                asChild
+                w="100%"
+                bg="brand.500"
+                color="white"
+                fontFamily="heading"
+                fontSize="md"
+                fontWeight="700"
+                letterSpacing="0.01em"
+                borderRadius="xl"
+                py="14px"
+                height="auto"
+                boxShadow="sm"
+                _hover={{ bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
+                _active={{ transform: 'translateY(0)' }}
+                mb={4}
+              >
+                <RouterLink to="/inscription">
+                  Commencer gratuitement
+                </RouterLink>
+              </Button>
+
+              {/* Réassurance */}
+              <Text fontSize="xs" color="text.muted" textAlign="center">
+                ✔ Aucune carte bancaire · ✔ Résiliable à tout moment
+              </Text>
             </Box>
+
           </Stack>
         </Container>
       </Box>
@@ -1040,10 +1020,10 @@ export function HomePage() {
       {/* ── CTA Banner ── */}
       <Flex direction="column" align="center" py="80px" px={8} bg="brand.500" textAlign="center">
         <Heading fontSize="3xl" fontWeight="900" color="white" mb={3}>
-          Protégez-vous dès aujourd&apos;hui.
+          Simplifiez votre quotidien dès aujourd&apos;hui
         </Heading>
         <Text fontSize="lg" color="white" mb={6}>
-          14 jours d&apos;essai gratuit. Aucune carte bancaire requise.
+          UniLien vous accompagne pour gérer vos auxiliaires sereinement, en toute confiance.
         </Text>
         <Button
           asChild
