@@ -30,28 +30,21 @@ describe('HomePage', () => {
   })
 
   describe('Section Hero', () => {
-    it('affiche le message de risque legal', () => {
+    it('affiche le titre principal', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/planning ill[ée]gal peut vous co[ûu]ter/i)).toBeInTheDocument()
+      expect(screen.getByText(/g[ée]rez vos auxiliaires/i)).toBeInTheDocument()
     })
 
-    it('affiche le montant "8 000" en emphase', () => {
+    it('affiche le CTA "Essayer gratuitement 30 jours"', () => {
       renderWithProviders(<HomePage />)
-      // "8 000 €" dans le hero, "8 000 euros" dans les stats
-      expect(screen.getByText(/8 000 €/)).toBeInTheDocument()
-    })
-
-    it('affiche le CTA "Essayer gratuitement 14 jours"', () => {
-      renderWithProviders(<HomePage />)
-      expect(screen.getByRole('link', { name: /essayer gratuitement 14 jours/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /essayer gratuitement 30 jours/i })).toBeInTheDocument()
     })
 
     it('affiche les items de reassurance', () => {
       renderWithProviders(<HomePage />)
-      // "Aucune carte bancaire" apparait dans hero + CTA banner
-      expect(screen.getAllByText(/aucune carte bancaire requise/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText(/wcag aaa/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText(/juriste sp[ée]cialis[ée]/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText(/aucune carte bancaire/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText(/accessible et simplifi[ée]/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText(/conforme idcc 3239/i).length).toBeGreaterThanOrEqual(1)
     })
 
     it('affiche le mockup bouclier juridique', () => {
@@ -67,17 +60,16 @@ describe('HomePage', () => {
       expect(screen.getByText('280 000')).toBeInTheDocument()
       expect(screen.getByText('2 000+')).toBeInTheDocument()
       expect(screen.getByText('-40 %')).toBeInTheDocument()
-      // "8 000 euros" dans les stats, "8 000 €" dans le hero
-      expect(screen.getByText('8 000 euros')).toBeInTheDocument()
+      expect(screen.getByText('8 000 €')).toBeInTheDocument()
     })
   })
 
   describe('Section Problemes', () => {
     it('affiche les 3 pain points', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/peur de faire une erreur/i)).toBeInTheDocument()
-      expect(screen.getByText(/excel est inutilisable/i)).toBeInTheDocument()
-      expect(screen.getByText(/mon planning est legal/i)).toBeInTheDocument()
+      expect(screen.getByText(/je veux [êe]tre s[ûu]r de bien faire/i)).toBeInTheDocument()
+      expect(screen.getByText(/mes outils ne sont pas adapt[ée]s/i)).toBeInTheDocument()
+      expect(screen.getByText(/je manque de visibilit[ée]/i)).toBeInTheDocument()
     })
   })
 
@@ -90,20 +82,18 @@ describe('HomePage', () => {
     it('affiche les 6 feature cards', () => {
       renderWithProviders(<HomePage />)
       expect(screen.getByText('Planning intelligent')).toBeInTheDocument()
-      // "Bouclier IDCC 3239" est aussi un titre de feature card
-      expect(screen.getAllByText(/bouclier idcc 3239/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('Bouclier juridique')).toBeInTheDocument()
       expect(screen.getByText('Calcul de paie automatique')).toBeInTheDocument()
-      // "Cahier de liaison" apparait aussi dans la section tarifs
       expect(screen.getAllByText('Cahier de liaison').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByText('Notifications multi-canal')).toBeInTheDocument()
-      expect(screen.getByText('Tableaux de bord PCH')).toBeInTheDocument()
+      expect(screen.getByText('Notifications')).toBeInTheDocument()
+      expect(screen.getByText('Tableaux PCH')).toBeInTheDocument()
     })
   })
 
   describe('Section Conformite', () => {
-    it('affiche le titre du bouclier juridique', () => {
+    it('affiche le titre de la section conformite', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/ce n'est pas juste un agenda/i)).toBeInTheDocument()
+      expect(screen.getByText(/une protection automatique/i)).toBeInTheDocument()
     })
 
     it('affiche les alertes IDCC 3239', () => {
@@ -114,23 +104,22 @@ describe('HomePage', () => {
   })
 
   describe('Section Tarifs', () => {
-    it('affiche les 3 plans tarifaires', () => {
+    it('affiche le plan Essentiel', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText('Gratuit')).toBeInTheDocument()
       expect(screen.getByText('Essentiel')).toBeInTheDocument()
-      expect(screen.getByText('Pro')).toBeInTheDocument()
     })
 
-    it('affiche les prix', () => {
+    it('affiche le prix et le badge essai', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText('0')).toBeInTheDocument()
-      expect(screen.getByText('9,90')).toBeInTheDocument()
-      expect(screen.getByText('24,90')).toBeInTheDocument()
+      expect(screen.getByText('9,90 €')).toBeInTheDocument()
+      expect(screen.getByText('30 jours offerts')).toBeInTheDocument()
     })
 
-    it('affiche le badge "Le plus populaire"', () => {
+    it('affiche les features du plan Essentiel', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText('Le plus populaire')).toBeInTheDocument()
+      expect(screen.getByText('Auxiliaires illimités')).toBeInTheDocument()
+      expect(screen.getByText('Bulletins de paie PDF')).toBeInTheDocument()
+      expect(screen.getByText('Conformité IDCC 3239 automatique')).toBeInTheDocument()
     })
   })
 
@@ -176,9 +165,9 @@ describe('HomePage', () => {
   })
 
   describe('CTA & Footer', () => {
-    it('affiche le CTA final "Protegez-vous"', () => {
+    it('affiche le CTA final', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/prot[ée]gez-vous/i)).toBeInTheDocument()
+      expect(screen.getByText(/simplifiez votre quotidien/i)).toBeInTheDocument()
     })
 
     it('affiche le footer avec categories', () => {
