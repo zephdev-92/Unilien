@@ -44,13 +44,24 @@ interface Props {
 }
 
 export function CesuDeclarationSection({ employerId }: Props) {
-  const currentYear = new Date().getFullYear()
-  const currentMonth = new Date().getMonth() + 1
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
   const years = [currentYear, currentYear - 1, currentYear - 2]
 
+  // Le dernier mois clôturé (mois précédent)
+  const defaultMonth = currentMonth === 1 ? 12 : currentMonth - 1
+  const defaultYear = currentMonth === 1 ? currentYear - 1 : currentYear
+
+  // Un mois est clôturé si on est au moins le 1er du mois suivant
+  const isMonthClosed = useCallback((year: number, month: number) => {
+    const firstOfNext = new Date(year, month, 1) // month est 1-based → sert de mois suivant (0-based)
+    return new Date() >= firstOfNext
+  }, [])
+
   // ── Generation
-  const [selectedYear, setSelectedYear] = useState(currentYear)
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
+  const [selectedYear, setSelectedYear] = useState(defaultYear)
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
   const [isGenerating, setIsGenerating] = useState(false)
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [showDialog, setShowDialog] = useState(false)
@@ -73,6 +84,12 @@ export function CesuDeclarationSection({ employerId }: Props) {
   const handleGenerate = useCallback(async () => {
     setIsGenerating(true)
     setDialogError(null)
+
+    if (!isMonthClosed(selectedYear, selectedMonth)) {
+      setDialogError('Ce mois n\'est pas encore termine. La declaration CESU sera disponible a partir du 1er du mois suivant.')
+      setIsGenerating(false)
+      return
+    }
 
     try {
       const data = await getMonthlyDeclarationData(employerId, {
@@ -127,7 +144,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
     } finally {
       setIsGenerating(false)
     }
-  }, [employerId, selectedYear, selectedMonth])
+  }, [employerId, selectedYear, selectedMonth, isMonthClosed])
 
   const handleDownload = async (record: CesuDeclarationRecord, format: ExportFormat) => {
     const declaration = record.declarationData
@@ -352,6 +369,15 @@ export function CesuDeclarationSection({ employerId }: Props) {
                   </Box>
                 </HStack>
 
+                {!isMonthClosed(selectedYear, selectedMonth) && (
+                  <Alert.Root status="info">
+                    <Alert.Indicator />
+                    <Alert.Title>
+                      Ce mois n'est pas encore termine. Vous pourrez generer la declaration a partir du {new Date(selectedYear, selectedMonth, 1).toLocaleDateString('fr-FR')}.
+                    </Alert.Title>
+                  </Alert.Root>
+                )}
+
                 {dialogError && (
                   <Alert.Root status="warning">
                     <Alert.Indicator />
@@ -371,6 +397,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
                   onClick={handleGenerate}
                   loading={isGenerating}
                   loadingText="Generation…"
+                  disabled={!isMonthClosed(selectedYear, selectedMonth)}
                 >
                   Generer l'apercu pour {MONTHS_FR[selectedMonth - 1]} {selectedYear}
                 </Button>
