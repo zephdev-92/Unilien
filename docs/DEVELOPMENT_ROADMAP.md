@@ -36,7 +36,35 @@
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-15 - Février/Mars 2026)
+## ✅ Réalisations Récentes (Semaines 6-16 - Février/Avril 2026)
+
+### Semaine 16 — 3 avril 2026 (PRs #218–#220)
+
+#### Refonte textes homepage (PRs #218-#219 ✅)
+
+Refonte complète du copy de la page d'accueil pour un ton plus rassurant :
+- Hero : nouveau titre/sous-texte, CTA "30 jours gratuits", preuves simplifiées
+- Pain points : reformulation empathique, moins alarmiste
+- Features : descriptions simplifiées, section conformité humanisée
+- Tarifs : 3 plans → 1 plan Essentiel centré (30 jours, auxiliaires illimités)
+- CTA final : "Simplifiez votre quotidien dès aujourd'hui"
+- Settings : panneau abonnement simplifié (plan unique Essentiel)
+
+#### 2FA TOTP (PR #220 ✅)
+
+Authentification à deux facteurs via Supabase MFA natif :
+- Hook `useMfa` (enroll, verify, unenroll, AAL check, nettoyage facteurs non vérifiés)
+- `MfaEnrollment` : QR code + copie clé + vérification code 6 chiffres
+- `MfaChallenge` : écran intermédiaire au login
+- Card 2FA fonctionnelle dans Settings > Sécurité (activer/désactiver)
+- Intégration LoginForm : détection AAL → challenge MFA avant redirection
+- `mfaPending` dans auth store pour éviter race condition
+- ProfileSidebar connecté au vrai état MFA
+
+#### Métriques session (03/04/2026)
+- PRs : #218–#220
+- Nouveaux fichiers : `useMfa.ts`, `MfaEnrollment.tsx`, `MfaChallenge.tsx`
+- Tests : 2165 / 122 fichiers
 
 ### Semaine 14-15 — 30-31 mars 2026 (PRs #203–#207)
 
@@ -294,7 +322,7 @@ Restructuration complète de la page Documents pour correspondre au prototype :
 Refonte complète de la page d'accueil (11 items checklist) :
 - Navigation avec ancres, hero avec risque juridique, 4 stats clés, 3 pain points
 - 6 feature cards, section conformité IDCC 3239, 3 témoignages
-- 3 plans tarifaires (Gratuit/Essentiel/Pro), FAQ accordéon, footer complet
+- 3 plans tarifaires (Gratuit/Essentiel/Pro → simplifié en 1 plan Essentiel PR #218-219), FAQ accordéon, footer complet
 - 27 tests couvrant toutes les sections
 
 #### Métriques session (10/03/2026)
@@ -1588,17 +1616,19 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 **Effort**: Variable
 **Document**: `docs/SECURITY_ANALYSIS.md`
 
-#### 13.1 Authentification 2FA
+#### 13.1 Authentification 2FA ✅ (03/04/2026 — PR #220)
 
 ```
-[ ] TOTP (Google Authenticator, Authy)
-[ ] SMS (Twilio)
-[ ] Email (code de secours)
-[ ] Recovery codes
+[x] TOTP via Supabase MFA natif (Google Authenticator, Authy, 1Password)
+[x] Hook useMfa (enroll, verify, unenroll, AAL check)
+[x] Composant MfaEnrollment (QR code + copie clé + vérification)
+[x] Composant MfaChallenge (écran intermédiaire au login)
+[x] Card 2FA fonctionnelle dans Settings > Sécurité (activer/désactiver)
+[x] Intégration LoginForm (détection AAL + challenge MFA)
+[x] ProfileSidebar connecté au vrai état MFA
+[ ] SMS OTP (Twilio) — prévu V2
+[ ] Recovery codes — prévu V2
 ```
-
-**Effort**: 1 semaine
-**Timeline**: Q2 2026
 
 #### 13.2 Rate Limiting
 
@@ -1884,7 +1914,7 @@ npx playwright install
 - 🔴 Tests UI composants (Phase 3)
 - 🔵 Gestion équipe avancée → **V2**
 - 🟡 Analytics & Reporting (page créée PR #141 — exports restants)
-- 🟢 2FA
+- ✅ 2FA TOTP (PR #220)
 
 **Semaines 19-22**:
 - ✅ Chakra UI v3 : migration hex → design tokens sémantiques ✅ PR #185
@@ -1942,7 +1972,7 @@ npx playwright install
 - [x] Coverage tests ≥ 70% ✅ (atteint en Q1 — PR #121)
 - [ ] Tests E2E critiques passent
 - [ ] Score Web Vitals > 90
-- [ ] 2FA disponible
+- [x] 2FA disponible ✅ (TOTP — PR #220)
 - [~] Analytics (page /analytique créée PR #141 — exports restants)
 
 ### Objectifs Q3-Q4 2026
