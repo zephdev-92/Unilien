@@ -44,11 +44,21 @@ export function PayslipGeneratorModal({
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
 
+  // Le dernier mois clôturé (mois précédent)
+  const defaultMonth = currentMonth === 1 ? 12 : currentMonth - 1
+  const defaultYear = currentMonth === 1 ? currentYear - 1 : currentYear
+
+  // Un mois est clôturé si on est au moins le 1er du mois suivant
+  const isMonthClosed = (year: number, month: number) => {
+    const firstOfNext = new Date(year, month, 1)
+    return now >= firstOfNext
+  }
+
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>(
     employees[0]?.id ?? ''
   )
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear)
-  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth)
+  const [selectedYear, setSelectedYear] = useState<number>(defaultYear)
+  const [selectedMonth, setSelectedMonth] = useState<number>(defaultMonth)
   const [isExemptPatronalSS, setIsExemptPatronalSS] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +69,12 @@ export function PayslipGeneratorModal({
     if (!selectedEmployeeId) return
     setIsGenerating(true)
     setError(null)
+
+    if (!isMonthClosed(selectedYear, selectedMonth)) {
+      setError('Ce mois n\'est pas encore terminé. Le bulletin sera disponible à partir du 1er du mois suivant.')
+      setIsGenerating(false)
+      return
+    }
 
     try {
       const employee = employees.find(e => e.id === selectedEmployeeId)
@@ -195,6 +211,15 @@ export function PayslipGeneratorModal({
                 </Text>
               </Box>
 
+              {!isMonthClosed(selectedYear, selectedMonth) && (
+                <Alert.Root status="info">
+                  <Alert.Indicator />
+                  <Alert.Title>
+                    Ce mois n'est pas encore terminé. Vous pourrez générer le bulletin à partir du {new Date(selectedYear, selectedMonth, 1).toLocaleDateString('fr-FR')}.
+                  </Alert.Title>
+                </Alert.Root>
+              )}
+
               <Text fontSize="xs" color="text.muted" lineHeight="1.5">
                 Le bulletin est généré à titre indicatif selon les taux IDCC 3239 (barèmes 2025).
                 Le taux PAS est celui renseigné sur le contrat (0% par défaut).
@@ -214,7 +239,7 @@ export function PayslipGeneratorModal({
               <Button
                 onClick={handleGenerate}
                 loading={isGenerating}
-                disabled={!selectedEmployeeId || employees.length === 0}
+                disabled={!selectedEmployeeId || employees.length === 0 || !isMonthClosed(selectedYear, selectedMonth)}
                 style={{ backgroundColor: 'var(--chakra-colors-brand-400)', color: 'white' }}
               >
                 Télécharger le PDF
