@@ -1,6 +1,6 @@
 # Analyse de couverture des tests — Unilien
 
-**Date d'analyse** : 1er avril 2026
+**Date d'analyse** : 6 avril 2026
 **Framework** : Vitest 4.1.2 + React Testing Library + jsdom
 **Provider coverage** : v8
 
@@ -10,19 +10,19 @@
 
 | Métrique | Valeur | Threshold | Statut |
 |----------|--------|-----------|--------|
-| **Statements** | 54.03% | 38% | Au-dessus |
-| **Branches** | 46.96% | 26% | Au-dessus |
-| **Functions** | 47.25% | 28% | Au-dessus |
-| **Lines** | 55.33% | 38% | Au-dessus |
+| **Statements** | 54.14% | 50% | Au-dessus |
+| **Branches** | 47.10% | 40% | Au-dessus |
+| **Functions** | 47.61% | 40% | Au-dessus |
+| **Lines** | 55.40% | 50% | Au-dessus |
 
-**Tests** : 2167 tests / 122 fichiers (1 en échec — `auxiliaryService.test.ts`)
+**Tests** : 2199 tests / 125 fichiers — tous passent
 **Durée** : ~130s
 
 ---
 
 ## Couverture par domaine
 
-### Services — 70.91% stmts
+### Services — 75.28% stmts
 
 | Service | Stmts | Branches | Functions | Lines |
 |---------|-------|----------|-----------|-------|
@@ -44,12 +44,12 @@
 | teamService | 75.38% | 78.68% | 85.71% | 75% |
 | contractService | 68.65% | 63.55% | 71.42% | 68.65% |
 | notificationService | 57.89% | 50% | 78.57% | 58.18% |
-| documentService (export) | 51.21% | 42.85% | 42.85% | 47.36% |
+| cesuDeclarationService | 51.21% | 42.85% | 42.85% | 47.36% |
 | nudgeService | 30% | 38.09% | 28.57% | 32% |
-| conventionSettingsService | 7.69% | 0% | 0% | 8.33% |
-| dataExportService | 8% | 0% | 0% | 9.09% |
-| auxiliaryService | 0% | 0% | 0% | 0% |
-| accountService | 0% | 0% | 0% | 0% |
+| auxiliaryService | 100% | 85% | 100% | 100% |
+| accountService | 100% | 100% | 100% | 100% |
+| conventionSettingsService | 100% | 100% | 100% | 100% |
+| dataExportService | 100% | 100% | 100% | 100% |
 | analyticsService | 0% | 0% | 0% | 0% |
 | storageService | 0% | 0% | 0% | 0% |
 
@@ -100,19 +100,8 @@ Hooks testés : `useAuth`, `useNotifications`, `useComplianceCheck`, `useShiftRe
 | 5 fév 2026 | ~200 | ~16 | ~15% | ~10% |
 | 19 fév 2026 | ~1200 | ~80 | ~42% | ~26% |
 | 26 mars 2026 | ~2161 | ~119 | ~50% | ~40% |
-| **1er avril 2026** | **2167** | **122** | **54.03%** | **46.96%** |
-
----
-
-## Test en échec
-
-```
-FAIL src/services/auxiliaryService.test.ts
-  × calcule hoursThisMonth a partir des shifts completed du mois
-  Expected: 5.5, Received: 0
-```
-
-Probablement un problème de mock sur les dates (filtrage par mois courant). À investiguer.
+| 1er avril 2026 | 2167 | 122 | 54.03% | 46.96% |
+| **6 avril 2026** | **2199** | **125** | **54.14%** | **47.10%** |
 
 ---
 
@@ -120,12 +109,8 @@ Probablement un problème de mock sur les dates (filtrage par mois courant). À 
 
 | Service | Raison | Priorité |
 |---------|--------|----------|
-| `accountService` | Nouveau (PR #207) | Moyenne |
-| `auxiliaryService` | Tests existent mais service pas couvert | Haute |
 | `analyticsService` | Feature non déployée | Basse |
 | `storageService` | Utilitaire interne | Basse |
-| `conventionSettingsService` | Nouveau (PR #208) | Moyenne |
-| `dataExportService` | 8% seulement | Moyenne |
 
 ---
 
@@ -139,26 +124,15 @@ coverage: {
   include: ['src/**/*.{ts,tsx}'],
   exclude: ['src/**/*.test.*', 'src/test/**', 'src/types/**', 'src/vite-env.d.ts', 'src/main.tsx'],
   thresholds: {
-    statements: 38,
-    branches: 26,
-    functions: 28,
-    lines: 38,
+    statements: 50,
+    branches: 40,
+    functions: 40,
+    lines: 50,
   },
 }
 ```
 
-Les thresholds actuels (38/26/28/38) sont largement dépassés. Ils peuvent être relevés.
-
-### Thresholds recommandés (Q2 2026)
-
-```typescript
-thresholds: {
-  statements: 50,
-  branches: 40,
-  functions: 40,
-  lines: 50,
-}
-```
+Thresholds relevés le 6 avril 2026 (PR #230). Prochaine cible : 60/50/50/60.
 
 ---
 
