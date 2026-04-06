@@ -123,8 +123,8 @@ npm run test:coverage # Coverage v8
 
 ## Tests
 
-**État (1er avril 2026)** : 2167 tests / 122 fichiers — **54% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
-- Services : 70.91% stmts (nombreux services testés)
+**État (6 avril 2026)** : 2199 tests / 125 fichiers — **54.14% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
+- Services : 75.28% stmts (nombreux services testés)
 - Hooks : couverture élevée (10+ hooks testés)
 
 ### Patterns de test
