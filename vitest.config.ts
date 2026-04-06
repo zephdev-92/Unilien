@@ -25,12 +25,11 @@ export default defineConfig({
         'src/main.tsx',
       ],
       thresholds: {
-        // Baseline réel au 19/02/2026 (~42% global, 91% services, 89% hooks)
-        // Augmenter progressivement — Cible Q2: 60% | Cible finale: 70%
-        statements: 38,
-        branches: 26,
-        functions: 28,
-        lines: 38,
+        // Relevé le 06/04/2026 — Cible Q2: 60% | Cible finale: 70%
+        statements: 50,
+        branches: 40,
+        functions: 40,
+        lines: 50,
       },
     },
   },
