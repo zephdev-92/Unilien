@@ -361,14 +361,13 @@ describe('getAuxiliaryDetails', () => {
 
   it('calcule hoursThisMonth a partir des shifts completed du mois', async () => {
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const dateInMonth = new Date(startOfMonth)
-    dateInMonth.setDate(dateInMonth.getDate() + 1)
-    // S'assurer que la date est dans le passe par rapport a now
-    if (dateInMonth > now) {
-      dateInMonth.setDate(1) // premier du mois
-    }
-    const shiftDateStr = dateInMonth.toISOString().split('T')[0]
+    // Utiliser hier (ou aujourd'hui si on est au moins le 2 du mois)
+    // pour garantir une date dans le mois en cours ET dans le passé
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    // Si hier est dans le mois précédent (on est le 1er), utiliser aujourd'hui
+    const dateInMonth = yesterday.getMonth() === now.getMonth() ? yesterday : now
+    const shiftDateStr = `${dateInMonth.getFullYear()}-${String(dateInMonth.getMonth() + 1).padStart(2, '0')}-${String(dateInMonth.getDate()).padStart(2, '0')}`
 
     const shifts = [
       // 3h de travail : 09:00 -> 12:00, 0 pause
