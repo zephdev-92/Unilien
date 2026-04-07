@@ -113,7 +113,7 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
   }
 
   if (nudges.length === 0) {
-    return null
+    return <Box data-empty="" />
   }
 
   return (
