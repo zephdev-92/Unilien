@@ -10,6 +10,7 @@ import {
   EmployeeDocumentsWidget,
   RecentMessagesWidget,
   ClockInWidget,
+  OnboardingWidget,
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { logger } from '@/lib/logger'
@@ -86,8 +87,13 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
         />
       </GridItem>
 
-      {/* 8 mobile / 2 desktop. Stats — full width */}
-      <GridItem order={{ base: 8, lg: 0 }} gridColumn={{ base: '1', lg: '1 / -1' }} gridRow={{ lg: '2' }}>
+      {/* Onboarding — full width */}
+      <GridItem order={{ base: 2, lg: 0 }} gridColumn={{ base: '1', lg: '1 / -1' }} gridRow={{ lg: '2' }}>
+        <OnboardingWidget profile={profile} userRole="employee" />
+      </GridItem>
+
+      {/* 8 mobile / 3 desktop. Stats — full width */}
+      <GridItem order={{ base: 8, lg: 0 }} gridColumn={{ base: '1', lg: '1 / -1' }} gridRow={{ lg: '3' }}>
         <StatsWidget userRole="employee" profileId={profile.id} />
       </GridItem>
 

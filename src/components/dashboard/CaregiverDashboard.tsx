@@ -22,6 +22,7 @@ import {
   WeekSummaryWidget,
   RecentMessagesWidget,
   CaregiverShiftTimeline,
+  OnboardingWidget,
 } from './widgets'
 import {
   getCaregiver,
@@ -126,6 +127,9 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
         todayCareCount={todayCareCount}
         loading={isLoading}
       />
+
+      {/* Onboarding */}
+      <OnboardingWidget profile={profile} userRole="caregiver" />
 
       {/* Message si aucune permission */}
       {!hasViewPermission && !hasAdvancedPermissions && (

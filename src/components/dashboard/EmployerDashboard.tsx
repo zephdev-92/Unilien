@@ -13,6 +13,7 @@ import {
   PchEnvelopeWidget,
   TodayPlanningWidget,
   BudgetForecastWidget,
+  OnboardingWidget,
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { getEmployer } from '@/services/profileService'
@@ -90,8 +91,13 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
         />
       </GridItem>
 
-      {/* Mobile: 5 — Desktop: 2e (full width) */}
-      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 5, lg: 1 }}>
+      {/* Onboarding — full width, before nudges */}
+      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 2, lg: 1 }}>
+        <OnboardingWidget profile={profile} userRole="employer" />
+      </GridItem>
+
+      {/* Mobile: 5 — Desktop: 3e (full width) */}
+      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 5, lg: 2 }}>
         <ActionNudgesWidget employerId={profile.id} />
       </GridItem>
 
