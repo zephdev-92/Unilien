@@ -33,6 +33,9 @@ vi.mock('./widgets', () => ({
   CaregiverShiftTimeline: ({ profileId }: { profileId: string }) => (
     <div data-testid="caregiver-timeline" data-profile-id={profileId} />
   ),
+  OnboardingWidget: ({ userRole }: { userRole: string }) => (
+    <div data-testid="onboarding-widget" data-role={userRole} />
+  ),
 }))
 
 // ── Mocks services ────────────────────────────────────────────────────────────

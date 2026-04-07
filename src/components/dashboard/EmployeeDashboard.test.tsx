@@ -43,6 +43,9 @@ vi.mock('./widgets', () => ({
   EmployeeDocumentsWidget: ({ employeeId }: { employeeId: string }) => (
     <div data-testid="employee-documents-widget" data-employee-id={employeeId} />
   ),
+  OnboardingWidget: ({ userRole }: { userRole: string }) => (
+    <div data-testid="onboarding-widget" data-role={userRole} />
+  ),
 }))
 
 // ── Mocks services ────────────────────────────────────────────────────────────
