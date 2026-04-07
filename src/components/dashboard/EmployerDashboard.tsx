@@ -90,8 +90,8 @@ export function EmployerDashboard({ profile }: EmployerDashboardProps) {
         />
       </GridItem>
 
-      {/* Mobile: 5 — Desktop: 2e (full width) */}
-      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 5, lg: 1 }}>
+      {/* Mobile: 5 — Desktop: 2e (full width) — collapse quand vide */}
+      <GridItem colSpan={{ base: 1, lg: 2 }} order={{ base: 5, lg: 1 }} css={{ '&:has(> [data-empty])': { display: 'none' } }}>
         <ActionNudgesWidget employerId={profile.id} />
       </GridItem>
 
