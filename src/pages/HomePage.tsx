@@ -250,12 +250,24 @@ export function HomePage() {
         justify="space-between"
         px={8}
       >
-        <Image
-          src="/Logo_Unilien.svg"
-          alt="Unilien"
-          h="36px"
-          objectFit="contain"
-        />
+        <Box flexShrink={0}>
+          <Image
+            src="/Logo_Unilien_icon.svg"
+            alt="Unilien"
+            h="32px"
+            w="32px"
+            display={{ base: 'block', lg: 'none' }}
+            css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
+          />
+          <Image
+            src="/Logo_Unilien.svg"
+            alt="Unilien"
+            h="28px"
+            objectFit="contain"
+            display={{ base: 'none', lg: 'block' }}
+            css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
+          />
+        </Box>
         <Flex as="nav" gap={6} align="center" display={{ base: 'none', md: 'flex' }} aria-label="Navigation principale">
           <Link href="#fonctionnalites" color="text.muted" fontSize="sm" fontWeight="600" textDecoration="none" _hover={{ color: 'text.default' }}>
             Fonctionnalités

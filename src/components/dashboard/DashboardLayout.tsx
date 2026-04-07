@@ -231,24 +231,26 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
             >
               {isSidebarOpen ? '✕' : '☰'}
             </IconButton>
-            <Image
-              src="/Logo_Unilien_icon.svg"
-              alt="Unilien"
-              h="32px"
-              w="32px"
-              flexShrink={0}
-              display={{ base: 'block', lg: 'none' }}
-              css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
-            />
-            <Image
-              src="/Logo_Unilien.svg"
-              alt="Unilien"
-              h="28px"
-              objectFit="contain"
-              flexShrink={0}
-              display={{ base: 'none', lg: 'block' }}
-              css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
-            />
+            <RouterLink to="/tableau-de-bord">
+              <Image
+                src="/Logo_Unilien_icon.svg"
+                alt="Unilien"
+                h="32px"
+                w="32px"
+                flexShrink={0}
+                display={{ base: 'block', lg: 'none' }}
+                css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
+              />
+              <Image
+                src="/Logo_Unilien.svg"
+                alt="Unilien"
+                h="28px"
+                objectFit="contain"
+                flexShrink={0}
+                display={{ base: 'none', lg: 'block' }}
+                css={{ '.dark &': { filter: 'brightness(0) invert(1)' } }}
+              />
+            </RouterLink>
             <Box
               display={{ base: 'none', lg: 'block' }}
               w="1px"
