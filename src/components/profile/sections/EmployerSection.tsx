@@ -14,7 +14,7 @@ const addressSchema = z.object({
   street: z.string().min(1, 'La rue est obligatoire'),
   city: z.string().min(1, 'La ville est obligatoire'),
   postalCode: z.string().regex(/^\d{5}$/, 'Code postal invalide (5 chiffres)'),
-  country: z.string(),
+  country: z.string().default('France'),
 })
 
 const handicapCategories = [
@@ -82,6 +82,7 @@ const defaultEmployer: Partial<Employer> = {
 export function EmployerSection({ employer = defaultEmployer as Employer, onSave, section = 'all' }: EmployerSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const [showConsentModal, setShowConsentModal] = useState(false)
   const { hasConsent, loading: consentLoading, grantConsent } = useHealthConsent()
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(
@@ -97,7 +98,12 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
   } = useForm<EmployerFormData>({
     resolver: zodResolver(employerSchema),
     defaultValues: {
-      address: employer.address || defaultEmployer.address,
+      address: {
+        street: employer.address?.street || '',
+        city: employer.address?.city || '',
+        postalCode: employer.address?.postalCode || '',
+        country: employer.address?.country || 'France',
+      },
       handicapType: employer.handicapType || '',
       handicapName: employer.handicapName || '',
       specificNeeds: employer.specificNeeds || '',
@@ -123,6 +129,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
     try {
       setIsLoading(true)
       setSuccessMessage(null)
+      setFormError(null)
       await onSave({
         ...data,
         pchType: (data.pchType as PchType) || undefined,
@@ -132,9 +139,24 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
       setTimeout(() => setSuccessMessage(null), 3000)
     } catch (error) {
       logger.error('Erreur mise à jour employeur:', error)
+      setFormError('Erreur lors de la sauvegarde. Veuillez reessayer.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const onValidationError = (validationErrors: Record<string, unknown>) => {
+    const fields: string[] = []
+    const addrErrors = validationErrors.address as Record<string, unknown> | undefined
+    if (addrErrors?.street) fields.push('rue')
+    if (addrErrors?.city) fields.push('ville')
+    if (addrErrors?.postalCode) fields.push('code postal')
+    const msg = fields.length > 0
+      ? `Champs invalides : ${fields.join(', ')}`
+      : 'Veuillez verifier les champs du formulaire'
+    setFormError(msg)
+    setTimeout(() => setFormError(null), 5000)
+    logger.error('Validation employeur:', validationErrors)
   }
 
   const addEmergencyContact = () => {
@@ -162,6 +184,7 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
   const showEmergency = section === 'all' || section === 'emergency'
 
   return (
+    <Box as="form" onSubmit={handleSubmit(onSubmit, onValidationError)}>
     <Stack gap={6}>
       {/* Adresse */}
       {showSituation && (
@@ -176,41 +199,39 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
           Adresse
         </Text>
 
-        <Box as="form" onSubmit={handleSubmit(onSubmit)}>
-          <Stack gap={5}>
-            <AccessibleInput
-              label="Rue"
-              type="text"
-              autoComplete="street-address"
-              error={errors.address?.street?.message}
-              required
-              {...register('address.street')}
-            />
+        <Stack gap={5}>
+          <AccessibleInput
+            label="Rue"
+            type="text"
+            autoComplete="street-address"
+            error={errors.address?.street?.message}
+            required
+            {...register('address.street')}
+          />
 
-            <Flex gap={4} direction={{ base: 'column', md: 'row' }}>
-              <Box flex={2}>
-                <AccessibleInput
-                  label="Ville"
-                  type="text"
-                  autoComplete="address-level2"
-                  error={errors.address?.city?.message}
-                  required
-                  {...register('address.city')}
-                />
-              </Box>
-              <Box flex={1}>
-                <AccessibleInput
-                  label="Code postal"
-                  type="text"
-                  autoComplete="postal-code"
-                  error={errors.address?.postalCode?.message}
-                  required
-                  {...register('address.postalCode')}
-                />
-              </Box>
-            </Flex>
-          </Stack>
-        </Box>
+          <Flex gap={4} direction={{ base: 'column', md: 'row' }}>
+            <Box flex={2}>
+              <AccessibleInput
+                label="Ville"
+                type="text"
+                autoComplete="address-level2"
+                error={errors.address?.city?.message}
+                required
+                {...register('address.city')}
+              />
+            </Box>
+            <Box flex={1}>
+              <AccessibleInput
+                label="Code postal"
+                type="text"
+                autoComplete="postal-code"
+                error={errors.address?.postalCode?.message}
+                required
+                {...register('address.postalCode')}
+              />
+            </Box>
+          </Flex>
+        </Stack>
       </Box>
       )}
 
@@ -496,22 +517,28 @@ export function EmployerSection({ employer = defaultEmployer as Employer, onSave
       )}
 
       {/* Bouton sauvegarder */}
-      <Flex justify="flex-end">
+      <Flex justify="flex-end" align="center" gap={3}>
+        {formError && (
+          <Text color="red.500" fontSize="sm" role="alert">
+            {formError}
+          </Text>
+        )}
         {successMessage && (
-          <Text color="green.600" fontSize="sm" mr={4} alignSelf="center" role="status">
+          <Text color="green.600" fontSize="sm" role="status">
             {successMessage}
           </Text>
         )}
         <AccessibleButton
+          type="submit"
           colorPalette="brand"
           loading={isLoading}
           loadingText="Enregistrement..."
-          onClick={handleSubmit(onSubmit)}
         >
           Enregistrer les modifications
         </AccessibleButton>
       </Flex>
     </Stack>
+    </Box>
   )
 }
 
