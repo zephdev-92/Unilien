@@ -184,7 +184,9 @@ export function WelcomeCard({
       <Box flexShrink={0}>
         <Box
           as={RouterLink}
-          to={profile.role === 'employee' ? '/suivi-des-heures' : isCaregiver ? '/planning' : '/planning'}
+          to={profile.role === 'employee'
+            ? (todayShiftCount ? '/suivi-des-heures' : '/planning')
+            : '/planning'}
           display="inline-flex"
           alignItems="center"
           px={4}
@@ -204,7 +206,9 @@ export function WelcomeCard({
             outlineOffset: '2px',
           }}
         >
-          {profile.role === 'employee' ? 'Enregistrer mes heures →' : isCaregiver ? 'Mon planning →' : 'Voir le planning du jour →'}
+          {profile.role === 'employee'
+            ? (todayShiftCount ? 'Enregistrer mes heures →' : 'Voir mon planning →')
+            : isCaregiver ? 'Mon planning →' : 'Voir le planning du jour →'}
         </Box>
       </Box>
     </Flex>
