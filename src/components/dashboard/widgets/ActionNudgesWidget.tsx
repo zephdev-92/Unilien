@@ -53,7 +53,6 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
         const now = new Date()
         const weekStart = startOfWeek(now, { weekStartsOn: 1 })
         const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
-        const monthLabel = format(now, 'MMMM yyyy', { locale: fr })
         const weekLabel = format(weekStart, "'Semaine du' d MMMM", { locale: fr })
 
         // 1. Shifts completed but not validated by employer this week
@@ -70,18 +69,23 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
           })
         }
 
-        // 2. Active employees without payslip for current month
+        // 2. Active employees without payslip for last closed month (previous month)
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const checkYear = prevMonthDate.getFullYear()
+        const checkMonth = prevMonthDate.getMonth() + 1
+
         const { count: missingCount, names: nameStr } = await getMissingPayslipEmployees(
           employerId,
-          now.getFullYear(),
-          now.getMonth() + 1
+          checkYear,
+          checkMonth
         )
 
         if (missingCount > 0) {
+          const prevMonthLabel = format(prevMonthDate, 'MMMM yyyy', { locale: fr })
           result.push({
             id: 'generate-payslips',
             title: `${missingCount} bulletin${missingCount > 1 ? 's' : ''} de paie à générer`,
-            subtitle: `${monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)} — ${nameStr}`,
+            subtitle: `${prevMonthLabel.charAt(0).toUpperCase() + prevMonthLabel.slice(1)} — ${nameStr}`,
             href: '/documents',
             color: 'orange',
             icon: DocumentIcon,

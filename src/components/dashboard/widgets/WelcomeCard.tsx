@@ -154,18 +154,19 @@ export function WelcomeCard({
 
   return (
     <Flex
-      align="center"
-      justify="space-between"
+      align={{ base: 'center', md: 'center' }}
+      justify={{ base: 'center', md: 'space-between' }}
+      direction={{ base: 'column', md: 'row' }}
       gap={4}
       bg={gradient}
       borderRadius="16px"
       px={{ base: 5, md: 6 }}
       py={5}
       color="white"
-      flexWrap={{ base: 'wrap', md: 'nowrap' }}
+      flexWrap={{ base: 'nowrap', md: 'nowrap' }}
     >
-      {/* Left */}
-      <Box flex="1" minW={0}>
+      {/* Left / Top */}
+      <Box flex={{ base: 'unset', md: '1' }} minW={0} textAlign={{ base: 'center', md: 'left' }}>
         <Text fontSize="14px" opacity={0.8} mb={1}>
           {formatDateEyebrow()}
         </Text>
@@ -173,13 +174,13 @@ export function WelcomeCard({
           {greeting}, {profile.firstName} 👋
         </Text>
         {chips.length > 0 && (
-          <Flex gap={2} flexWrap="wrap" alignItems="center">
+          <Flex gap={2} flexWrap="wrap" alignItems="center" justifyContent={{ base: 'center', md: 'flex-start' }}>
             {chips}
           </Flex>
         )}
       </Box>
 
-      {/* Right — CTA button */}
+      {/* Right / Bottom — CTA button */}
       <Box flexShrink={0}>
         <Box
           as={RouterLink}
