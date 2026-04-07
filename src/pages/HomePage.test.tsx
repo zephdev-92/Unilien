@@ -10,7 +10,7 @@ describe('HomePage', () => {
   describe('Navigation', () => {
     it('affiche le logo Unilien', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByAltText('Unilien')).toBeInTheDocument()
+      expect(screen.getAllByAltText('Unilien').length).toBeGreaterThanOrEqual(1)
     })
 
     it('affiche les liens ancres de navigation (nav + footer)', () => {
