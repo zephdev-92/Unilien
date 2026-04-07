@@ -52,11 +52,16 @@ export async function getMissingPayslipEmployees(
   year: number,
   month: number
 ): Promise<{ count: number; names: string }> {
+  // Dernier jour du mois vérifié — exclure les contrats qui commencent après
+  const lastDay = new Date(year, month, 0)
+  const lastDayOfMonth = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
+
   const { data: activeContracts, error: contractsError } = await supabase
     .from('contracts')
     .select('id, employees!inner(profiles!inner(first_name, last_name))')
     .eq('employer_id', employerId)
     .eq('status', 'active')
+    .lte('start_date', lastDayOfMonth)
 
   if (contractsError || !activeContracts || activeContracts.length === 0) {
     return { count: 0, names: '' }
