@@ -63,6 +63,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Mon profil', href: '/profil', icon: 'user', ariaLabel: 'Voir mon profil' },
       { label: 'Paramètres', href: '/parametres', icon: 'settings', ariaLabel: 'Accéder aux paramètres' },
+      { label: 'Aide', href: '/aide', icon: 'help', ariaLabel: 'Consulter le guide d\'utilisation' },
     ],
   },
 ]
