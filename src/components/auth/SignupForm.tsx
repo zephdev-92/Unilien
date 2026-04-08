@@ -15,6 +15,7 @@ import {
 } from '@chakra-ui/react'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { AccessibleInput, AccessibleButton, PasswordToggleButton } from '@/components/ui'
+import { SocialLoginButtons } from './SocialLoginButtons'
 import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types'
 
@@ -354,6 +355,11 @@ export function SignupForm() {
               Créer mon compte
             </AccessibleButton>
           </Stack>
+        </Box>
+
+        {/* Social login */}
+        <Box mt={4}>
+          <SocialLoginButtons />
         </Box>
 
         {/* Lien connexion */}

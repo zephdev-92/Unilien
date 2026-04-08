@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react'
 import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import { AccessibleInput, AccessibleButton, PasswordToggleButton } from '@/components/ui'
+import { SocialLoginButtons } from './SocialLoginButtons'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase/client'
@@ -233,6 +234,11 @@ export function LoginForm() {
             </AccessibleButton>
           </Stack>
         </form>
+
+        {/* Social login */}
+        <Box mt={4}>
+          <SocialLoginButtons />
+        </Box>
 
         {/* Lien inscription */}
         <Text textAlign="center" fontSize="sm" color="text.muted" mt={5}>

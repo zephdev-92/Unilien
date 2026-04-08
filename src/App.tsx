@@ -26,6 +26,8 @@ const DocumentsPage = lazy(() => import('@/pages/DocumentsPage'))
 const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'))
 const LegalPage = lazy(() => import('@/pages/LegalPage'))
 const HelpPage = lazy(() => import('@/pages/HelpPage'))
+const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage'))
+const OnboardingRolePage = lazy(() => import('@/pages/OnboardingRolePage'))
 
 // Applique les attributs data-* sur <html> selon les préférences d'accessibilité
 function AccessibilityApplier() {
@@ -156,6 +158,12 @@ function App() {
               </PublicRoute>
             }
           />
+          {/* Callback OAuth - pas de PublicRoute car la session n'est pas encore établie */}
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+          {/* Onboarding rôle pour les nouveaux utilisateurs OAuth */}
+          <Route path="/onboarding/role" element={<OnboardingRolePage />} />
+
           {/* Reset password - pas de PublicRoute car le token vient de l'email */}
           <Route
             path="/reinitialisation"
