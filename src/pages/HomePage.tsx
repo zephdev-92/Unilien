@@ -379,9 +379,9 @@ export function HomePage() {
               letterSpacing="-0.02em"
               mb={0}
             >
-              Gérez vos auxiliaires en toute sérénité,{' '}
+              Gérez vos auxiliaires de vie en toute sérénité,{' '}
               <Text as="em" color="brand.500" fontStyle="normal">
-                sans risque d&apos;erreur
+                sans risque d&apos;erreurs
               </Text>
             </Heading>
 
