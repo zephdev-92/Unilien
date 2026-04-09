@@ -1682,7 +1682,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 
 ```
 [ ] Configuration Supabase (API limits)
-[ ] Rate limiting custom (Edge Functions)
+[x] Rate limiting custom (Edge Functions) — send-email 10/min + send-push 30/min, réponse 429 ✅
 [ ] Alerts dépassement limites
 ```
 
