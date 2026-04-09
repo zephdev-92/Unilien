@@ -1395,11 +1395,11 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 **Effort**: 2 jours
 
 ```
-[ ] Table documents (metadata)
-[ ] Upload documents administratifs
-[ ] Catégorisation (contrat, bulletin, justificatif)
+[~] Table documents (metadata) — tables séparées par type (payslips, cesu_declarations, absences) mais pas de table unifiée ⏳
+[x] Upload documents administratifs — bulletins ✅, CESU ✅, justificatifs absences ✅ (Storage Supabase)
+[~] Catégorisation (contrat, bulletin, justificatif) — implicite par section, pas de champ category centralisé ⏳
 [ ] Recherche documents
-[ ] Prévisualisation
+[x] Prévisualisation — signed URLs bulletins + CESU + justificatifs ✅
 ```
 
 **Timeline**: Semaines 12-13/2026
