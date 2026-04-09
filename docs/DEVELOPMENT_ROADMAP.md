@@ -1102,8 +1102,8 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 
 **Types restant génériques** (P2, non bloquant) :
 ```
-[ ] Aligner accessibility_settings → AccessibilitySettings dans database.ts
-[ ] Aligner computed_pay → ComputedPay dans ShiftDbRow
+[x] Aligner accessibility_settings → AccessibilitySettings dans database.ts ✅
+[x] Aligner computed_pay → ComputedPay dans ShiftDbRow ✅
 [x] Aligner permissions → CaregiverPermissions dans CaregiverDbRow (PR #114, 26/02/2026)
 [x] Aligner address → AddressDb dans CaregiverDbRow (PR #114, 26/02/2026)
 [x] Typer attachments → Attachment[] dans LiaisonMessageDbRow + LogEntryDbRow (PR #114, 26/02/2026)
@@ -1575,7 +1575,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 [ ] Tour guidé première connexion (highlight interactif des éléments clés)
 [ ] Tooltips contextuels (première visite de chaque page)
 [ ] Vidéos tutoriels
-[ ] FAQ intégrée
+[x] FAQ intégrée — HelpPage avec accordéon Q/R (9 sections, PR #235) ✅
 [ ] Checklist profil complet (widget progression — cf. prototype profile.html)
 ```
 
