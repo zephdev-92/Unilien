@@ -79,11 +79,18 @@ src/
 - Types app (camelCase) → `src/types/index.ts`
 - Conversion via `src/lib/mappers.ts`
 
-### Services (29 services)
+### Services (30 services)
 Chaque service dans `src/services/` gère le CRUD Supabase pour un domaine :
 `absence`, `attachment`, `auxiliary`, `caregiver`, `cesuDeclaration`, `compliance`, `contract`,
 `document`, `interventionSettings`, `conventionSettings`, `account`, `dataExport`,
-`leaveBalance`, `liaison`, `logbook`, `notification`, `nudge`, `profile`, `push`, `search`, `shift`, `stats`
+`leaveBalance`, `liaison`, `logbook`, `notification`, `nudge`, `profile`, `push`, `search`, `shift`, `stats`, `email`
+
+### Email (Resend)
+- **Edge Function** : `supabase/functions/send-email/` — Resend API, JWT auth, rate limiting 10/min
+- **Service client** : `src/services/emailService.ts` — `sendEmail()`, `sendShiftReminder()`, `sendNewMessageNotification()`
+- **Templates HTML** : rappel intervention J-1, nouveau message
+- **Intégration** : appelé depuis `notificationCreators.ts` (shift reminder + message notification) selon `notification_preferences`
+- **Limitation dev** : `onboarding@resend.dev` → envoi uniquement vers l'email du compte Resend. Un domaine vérifié est requis pour la prod.
 
 ### Auth
 - Store Zustand : `src/stores/authStore.ts`
@@ -102,7 +109,7 @@ Règles dans `src/lib/compliance/rules/` :
 - Sanitisation via DOMPurify : `src/lib/sanitize.ts` — à appeler avant chaque écriture DB
 - 8/13 services utilisent `sanitizeText()` : absence, caregiver, liaison, logbook, notification, profile, shift, push (24/02/2026)
 - Les 5 restants (auxiliary, compliance, contract, document, leaveBalance, stats) sont soit read-only, soit n'écrivent que des valeurs contrôlées (enums, UUIDs, dates) — aucune sanitisation nécessaire
-- **Post‑pentest (2026)** : migrations **`041` à `048`** — RLS renforcé, RGPD art. 9 (consentement + isolation données santé + audit trail), suppression compte/données, CESU persisté, convention settings DB. Synthèse : **`docs/SECURITY_CHECK_2026-03-26.md`**. **CSP** en enforcement sur Netlify.
+- **Post‑pentest (2026)** : migrations **`041` à `049`** — RLS renforcé, RGPD art. 9 (consentement + isolation données santé + audit trail), suppression compte/données, CESU persisté, convention settings DB, email profil. Synthèse : **`docs/SECURITY_CHECK_2026-03-26.md`**. **CSP** en enforcement sur Netlify.
 - **Accessibilité** : `eslint-plugin-jsx-a11y` activé, `@axe-core/react` branché en DEV (PR #210).
 
 ---
@@ -123,7 +130,7 @@ npm run test:coverage # Coverage v8
 
 ## Tests
 
-**État (6 avril 2026)** : 2199 tests / 125 fichiers — **54.14% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
+**État (9 avril 2026)** : 2210 tests / 126 fichiers — **54.14% statement coverage** (voir `docs/TEST_COVERAGE_ANALYSIS.md` pour le détail)
 - Services : 75.28% stmts (nombreux services testés)
 - Hooks : couverture élevée (10+ hooks testés)
 

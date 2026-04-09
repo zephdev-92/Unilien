@@ -1,13 +1,12 @@
-# Authentification à deux facteurs (2FA) — Plan d'implémentation
+# Authentification à deux facteurs (2FA) — Implémentation
 
-> Statut : **En attente** — card grisée avec badge "Bientôt" dans Paramètres > Sécurité
+> Statut : **✅ TERMINÉ** — PR #220 (3 avril 2026)
 
 ---
 
 ## Contexte
 
-Unilien affiche déjà une card 2FA dans le panneau Sécurité des paramètres, mais elle est désactivée.
-L'objectif est d'implémenter le TOTP (Time-based One-Time Password) via Supabase Auth MFA natif.
+La 2FA TOTP est implémentée via Supabase Auth MFA natif. La card dans Paramètres > Sécurité est fonctionnelle.
 
 ---
 

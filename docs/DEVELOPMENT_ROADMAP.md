@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 1er avril 2026 (2167 tests / 122 fichiers — dark mode, design tokens, a11y, PDF @react-pdf, convention settings DB, cookie consent)
-**Version**: 1.11.0
+**Dernière mise à jour**: 9 avril 2026 (2210 tests / 126 fichiers — email Resend, OAuth social login, onboarding widget, page aide, dashboard CTAs, logo responsive)
+**Version**: 1.14.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -12,31 +12,85 @@
 
 | Catégorie | Complétude | Statut |
 |-----------|------------|--------|
-| **Authentification** | 95% | ✅ Excellent (login, signup, reset, rôles) |
-| **Dashboards** | 90% | ✅ Bon (3 dashboards rôle-spécifiques + mobile aidant, dark mode, manque onboarding/nudges) |
+| **Authentification** | 98% | ✅ Excellent (login, signup, reset, rôles, OAuth Google/Microsoft, 2FA TOTP) |
+| **Dashboards** | 95% | ✅ Excellent (3 dashboards rôle-spécifiques + mobile aidant, dark mode, onboarding widget, CTAs dynamiques) |
 | **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, conversations privées en cours) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions) |
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 95% | ✅ Excellent (bulletins v2, @react-pdf/renderer, export planning PDF/Excel/iCal, CESU persisté, archivage avancé à faire) |
-| **Notifications** | 70% | 🟡 Partiel (in-app + push OK, email/SMS manquants) |
-| **Tests** | 54% stmts | ✅ Bon (2167 tests / 122 fichiers, axe-core + eslint-plugin-jsx-a11y ✅) |
-| **Sécurité** | 98% | ✅ Excellent (RLS renforcé migrations 041-048, RGPD art. 9, audit trail, droit effacement, CSP enforced) |
+| **Notifications** | 85% | 🟡 Bon (in-app + push + email OK, SMS manquant) |
+| **Tests** | 54% stmts | ✅ Bon (2210 tests / 126 fichiers, axe-core + eslint-plugin-jsx-a11y ✅) |
+| **Sécurité** | 98% | ✅ Excellent (RLS renforcé migrations 041-049, RGPD art. 9, audit trail, droit effacement, CSP enforced) |
 | **Qualité code** | 98% | ✅ Excellent (0 `select('*')`, 0 Supabase direct dans composants, Provider snippet v3, 0 `as any`, 0 `eslint-disable` type) |
 
 ### Métriques Clés
 
 - **Fichiers source**: ~270 fichiers TS/TSX (hors tests)
-- **Tests**: 2167 tests / 122 fichiers (54% stmts coverage)
-- **Migrations DB**: 48 migrations
-- **Composants UI**: ~140 composants
-- **Services**: 29 services
+- **Tests**: 2210 tests / 126 fichiers (54% stmts coverage)
+- **Migrations DB**: 49 migrations
+- **Composants UI**: ~145 composants
+- **Services**: 30 services
 - **Hooks**: 24 hooks custom
 - **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-16 - Février/Avril 2026)
+## ✅ Réalisations Récentes (Semaines 6-19 - Février/Avril 2026)
+
+### Semaine 19 — 5-9 avril 2026 (PRs #227–#240)
+
+#### Tests & couverture (PRs #227–#231 ✅)
+
+- Fix test timezone-dependent `auxiliaryService` (#227)
+- Tests unitaires `accountService` — suppression données/compte (#228)
+- Tests unitaires `conventionSettingsService` (#229)
+- Seuils coverage relevés à 50/40/40/50 (#230)
+- Mise à jour stats coverage (2199 tests / 125 fichiers / 54%) (#231)
+
+#### Dashboard enrichi (PRs #232–#234 ✅)
+
+- `WelcomeCard` centré mobile + fix nudge mois bulletin (#232)
+- Logo responsive homepage + logo cliquable dashboard (#233)
+- CTA dynamique employé selon shifts du jour (#234)
+
+#### Page aide (PR #235 ✅)
+
+- Nouvelle `HelpPage` avec 9 sections : prise en main, planning, contrats, conformité, documents, messagerie, notifications, export, compte
+- Route `/aide` accessible depuis la nav
+
+#### Dashboard onboarding (PRs #236–#237 ✅)
+
+- Widget onboarding pour nouveaux utilisateurs (checklist complétude) (#237)
+- Fix nudge bulletin : exclusion contrats futurs (#236)
+
+#### OAuth social login (PR #238 ✅)
+
+- `SocialLoginButtons` : Google + Microsoft
+- `AuthCallbackPage` : gestion callback OAuth
+- `OnboardingRolePage` : sélection rôle pour nouveaux comptes OAuth
+- Providers configurés : Google ✅, Azure/Microsoft ✅
+- Redirect URI Supabase : `https://lczfygydhnyygguvponw.supabase.co/auth/v1/callback`
+
+#### Fix copy homepage (PR #239 ✅)
+
+- Titre hero : "auxiliaires de vie" + corrections formulations
+
+#### Email notifications Resend (PR #240 ✅)
+
+- Edge Function `send-email` : Resend API, JWT auth, rate limiting 10/min
+- `emailService.ts` : templates HTML rappel intervention J-1 + nouveau message
+- Branché dans `notificationCreators.ts` (shift reminder + message)
+- Préférences e-mail fonctionnelles dans SettingsPage (plus de badge "Bientôt")
+- Fix PGRST100 : `not.read_by.cs` → `read_by.not.cs` dans `liaisonService`
+- Migration `049` : correctif email profil
+
+#### Métriques session (09/04/2026)
+- PRs : #227–#240
+- Tests : 2210 / 126 fichiers
+- Migrations : 49
+
+---
 
 ### Semaine 16 — 3 avril 2026 (PRs #218–#220)
 
@@ -1129,7 +1183,7 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 - ✅ Notifications in-app (bell icon, badge, panel, mark as read, dismiss)
 - ✅ Notifications Realtime (Supabase Realtime subscriptions)
 - ✅ Notifications Web Push (code implémenté, service worker prêt, config VAPID manquante)
-- ❌ Notifications Email (non implémenté)
+- ✅ Notifications Email (Resend + Edge Function, PR #240 — 09/04/2026)
 - ❌ Notifications SMS (non implémenté)
 
 #### 4.1 Web Push (Finalisation) ✅ (19/02/2026)
@@ -1147,28 +1201,22 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 **Effort**: 2-3 heures
 **Timeline**: Cette semaine
 
-#### 4.2 Email Notifications (Nouveau)
+#### 4.2 Email Notifications ✅ (09/04/2026 — PR #240)
 
-**Use cases**:
-- Confirmation d'inscription
-- Réinitialisation mot de passe (déjà fait par Supabase)
-- Notifications importantes (shifts, absences approuvées)
-- Rappels hebdomadaires (digest)
+**Fournisseur** : Resend via Supabase Edge Function `send-email`
 
-**Solution recommandée**: Supabase Edge Functions + SendGrid/Resend
-
-**Actions**:
+**Implémenté** :
 ```
-[ ] Choisir fournisseur email (SendGrid/Resend)
-[ ] Créer templates emails (HTML + texte)
-[ ] Créer Edge Function send-email
-[ ] Intégrer dans notificationService
-[ ] Préférences utilisateur (opt-out)
-[ ] Tests envoi
+[x] Edge Function send-email (Resend API, JWT auth, rate limiting 10/min)
+[x] emailService.ts : sendShiftReminder(), sendNewMessageNotification()
+[x] Templates HTML : rappel intervention J-1, nouveau message
+[x] Intégration notificationCreators.ts (shift + message)
+[x] Préférences utilisateur dans SettingsPage (opt-in/out par type)
+[x] Fix requête read_by PostgREST (PGRST100)
 ```
 
-**Effort**: 1 semaine
-**Timeline**: Semaines 8-9/2026
+**Limitation** : `onboarding@resend.dev` → envoi uniquement vers l'email du compte Resend.
+**Prochaine étape** : vérifier un domaine dans Resend pour la prod.
 
 #### 4.3 SMS Notifications (Nouveau)
 
