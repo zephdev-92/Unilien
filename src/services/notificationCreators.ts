@@ -1,11 +1,27 @@
+import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import type { Notification, NotificationType, NotificationPriority } from '@/types'
 import {
   createNotification,
   createBulkNotifications,
   getProfileName,
+  getNotificationPreferences,
   getPlanningUrlWithDate,
 } from './notificationService.core'
+import { sendShiftReminder, sendNewMessageNotification } from './emailService'
+
+// ============================================
+// EMAIL HELPER
+// ============================================
+
+async function getUserEmail(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('id', userId)
+    .single()
+  return data?.email ?? null
+}
 
 // ============================================
 // COMPLIANCE NOTIFICATION HELPERS
@@ -111,7 +127,7 @@ export async function createComplianceCriticalNotification(
 
 export async function createShiftReminderNotification(
   userId: string,
-  employeeName: string,
+  employerName: string,
   shiftDate: Date,
   startTime: string,
   shiftId: string
@@ -122,20 +138,41 @@ export async function createShiftReminderNotification(
     month: 'long',
   })
 
-  return createNotification({
+  const notification = await createNotification({
     userId,
     type: 'shift_reminder',
     priority: 'normal',
     title: 'Rappel intervention',
-    message: `Intervention avec ${employeeName} prévue ${formattedDate} à ${startTime}.`,
+    message: `Intervention chez ${employerName} prévue ${formattedDate} à ${startTime}.`,
     actionUrl: getPlanningUrlWithDate(shiftDate),
     data: {
-      employeeName,
+      employerName,
       shiftId,
       shiftDate: shiftDate.toISOString(),
       startTime,
     },
   })
+
+  // Email si activé dans les préférences
+  try {
+    const [prefs, email, recipientName] = await Promise.all([
+      getNotificationPreferences(userId),
+      getUserEmail(userId),
+      getProfileName(userId),
+    ])
+    if (prefs.emailEnabled && prefs.shiftReminders && email) {
+      await sendShiftReminder(email, {
+        recipientName,
+        employerName,
+        date: formattedDate,
+        startTime,
+      })
+    }
+  } catch (err) {
+    logger.error('[Email] Erreur rappel shift:', err)
+  }
+
+  return notification
 }
 
 export async function createMessageNotification(
@@ -143,7 +180,7 @@ export async function createMessageNotification(
   senderName: string,
   messagePreview: string
 ): Promise<Notification | null> {
-  return createNotification({
+  const notification = await createNotification({
     userId,
     type: 'message_received',
     priority: 'normal',
@@ -152,6 +189,27 @@ export async function createMessageNotification(
     actionUrl: '/messagerie',
     data: { senderName, messagePreview },
   })
+
+  // Email si activé dans les préférences
+  try {
+    const [prefs, email, recipientName] = await Promise.all([
+      getNotificationPreferences(userId),
+      getUserEmail(userId),
+      getProfileName(userId),
+    ])
+    if (prefs.emailEnabled && prefs.messageNotifications && email) {
+      await sendNewMessageNotification(email, {
+        recipientName,
+        senderName,
+        preview: messagePreview.substring(0, 120),
+        conversationUrl: 'https://unilien.fr/messagerie',
+      })
+    }
+  } catch (err) {
+    logger.error('[Email] Erreur notif message:', err)
+  }
+
+  return notification
 }
 
 // ============================================
