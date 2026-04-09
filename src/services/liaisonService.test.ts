@@ -558,7 +558,7 @@ describe('getLiaisonUnreadCount', () => {
 
     expect(count).toBe(5)
     expect(chain.neq).toHaveBeenCalledWith('sender_id', USER_ID)
-    expect(chain.or).toHaveBeenCalledWith(`read_by.is.null,not.read_by.cs.{${USER_ID}}`)
+    expect(chain.or).toHaveBeenCalledWith(`read_by.is.null,read_by.not.cs.{${USER_ID}}`)
   })
 
   it('retourne 0 en cas d\'erreur', async () => {

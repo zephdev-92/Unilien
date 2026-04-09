@@ -4,6 +4,8 @@ import { sanitizeText } from '@/lib/sanitize'
 import type { Attachment, Conversation, LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
 import type { ConversationDbRow, LiaisonMessageDbRow } from '@/types/database'
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { createMessageNotification } from './notificationCreators'
+import { getProfileName } from './profileService'
 
 // ============================================
 // TYPES
@@ -85,7 +87,7 @@ export async function getConversations(
       .select('*', { count: 'exact', head: true })
       .eq('conversation_id', conv.id)
       .neq('sender_id', userId)
-      .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
+      .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
 
     result.push(mapConversationFromDb(conv, {
       otherParticipant,
@@ -384,6 +386,21 @@ export async function createLiaisonMessage(
     })
     .eq('id', conversationId)
 
+  // Notifier les autres participants
+  try {
+    const recipients = (conv?.participant_ids || []).filter((id: string) => id !== senderId)
+    if (recipients.length > 0) {
+      const senderName = await getProfileName(senderId)
+      await Promise.all(
+        recipients.map((recipientId: string) =>
+          createMessageNotification(recipientId, senderName, content.trim())
+        )
+      )
+    }
+  } catch (err) {
+    logger.error('[Liaison] Erreur notification message:', err)
+  }
+
   return mapMessageFromDb(data)
 }
 
@@ -472,7 +489,7 @@ export async function markAllMessagesAsRead(
     .select('id, read_by')
     .eq('conversation_id', conversationId)
     .neq('sender_id', userId)
-    .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
+    .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
 
   if (fetchError) {
     logger.error('Erreur récupération messages non lus:', fetchError)
@@ -502,7 +519,7 @@ export async function getLiaisonUnreadCount(
     .select('*', { count: 'exact', head: true })
     .eq('conversation_id', conversationId)
     .neq('sender_id', userId)
-    .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
+    .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
 
   if (error) {
     logger.error('Erreur comptage messages non lus:', error)
@@ -524,7 +541,7 @@ export async function getTotalUnreadCount(
     .select('*', { count: 'exact', head: true })
     .eq('employer_id', employerId)
     .neq('sender_id', userId)
-    .or(`read_by.is.null,not.read_by.cs.{${userId}}`)
+    .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
 
   if (error) {
     logger.error('Erreur comptage messages non lus total:', error)

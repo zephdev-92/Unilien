@@ -32,6 +32,7 @@ import { useAccessibilityStore } from '@/stores/authStore'
 import { updateProfile, uploadAvatar, deleteAvatar, validateAvatarFile, getEmployer, upsertEmployer, getEmployee, upsertEmployee } from '@/services/profileService'
 import type { Address, UserRole } from '@/types'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { getNotificationPreferences, updateNotificationPreferences } from '@/services/notificationService'
 import { exportUserDataJSON, exportUserShiftsCSV } from '@/services/dataExportService'
 import { deleteAllUserData, deleteAccount } from '@/services/accountService'
 import { logger } from '@/lib/logger'
@@ -1187,8 +1188,32 @@ function NotificationsPanel({ userId }: { userId: string }) {
     unsubscribe,
   } = usePushNotifications({ userId })
 
-  const [emailEnabled, setEmailEnabled] = useState(true)
-  const [messageNotifications, setMessageNotifications] = useState(false)
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [emailShiftReminders, setEmailShiftReminders] = useState(false)
+  const [emailMessageNotifications, setEmailMessageNotifications] = useState(false)
+  const [emailSaving, setEmailSaving] = useState(false)
+
+  useEffect(() => {
+    getNotificationPreferences(userId).then((prefs) => {
+      setEmailEnabled(prefs.emailEnabled)
+      setEmailShiftReminders(prefs.shiftReminders)
+      setEmailMessageNotifications(prefs.messageNotifications)
+    }).catch(() => {})
+  }, [userId])
+
+  const handleEmailToggle = async (field: 'emailEnabled' | 'shiftReminders' | 'messageNotifications', value: boolean) => {
+    setEmailSaving(true)
+    try {
+      if (field === 'emailEnabled') setEmailEnabled(value)
+      if (field === 'shiftReminders') setEmailShiftReminders(value)
+      if (field === 'messageNotifications') setEmailMessageNotifications(value)
+      await updateNotificationPreferences(userId, { [field]: value })
+    } catch {
+      toaster.error({ title: 'Erreur lors de la sauvegarde' })
+    } finally {
+      setEmailSaving(false)
+    }
+  }
 
   const pushAvailable = isSupported && isConfigured
   const pushDenied = permission === 'denied'
@@ -1259,15 +1284,32 @@ function NotificationsPanel({ userId }: { userId: string }) {
 
       <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
         <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <HStack gap={2}>
-            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Notifications e-mail</Card.Title>
-            <Badge size="sm" colorPalette="orange">Bientôt</Badge>
-          </HStack>
+          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Notifications e-mail</Card.Title>
+          <Text fontSize="sm" color="text.muted">Reçues dans votre boîte mail.</Text>
         </Card.Header>
         <Card.Body p={4}>
           <VStack gap={0} align="stretch">
-            <ToggleRow label="Activer les e-mails" description="Active ou désactive toutes les notifications par e-mail." checked={emailEnabled} onChange={() => setEmailEnabled(!emailEnabled)} disabled badge="Bientôt" />
-            <ToggleRow label="Nouveaux messages" description="Notification par e-mail quand vous recevez un nouveau message." checked={messageNotifications} onChange={() => setMessageNotifications(!messageNotifications)} disabled />
+            <ToggleRow
+              label="Activer les e-mails"
+              description="Active ou désactive toutes les notifications par e-mail."
+              checked={emailEnabled}
+              onChange={() => handleEmailToggle('emailEnabled', !emailEnabled)}
+              disabled={emailSaving}
+            />
+            <ToggleRow
+              label="Rappels d'intervention"
+              description="Rappel par e-mail la veille de chaque intervention."
+              checked={emailShiftReminders}
+              onChange={() => handleEmailToggle('shiftReminders', !emailShiftReminders)}
+              disabled={emailSaving || !emailEnabled}
+            />
+            <ToggleRow
+              label="Nouveaux messages"
+              description="Notification par e-mail quand vous recevez un nouveau message."
+              checked={emailMessageNotifications}
+              onChange={() => handleEmailToggle('messageNotifications', !emailMessageNotifications)}
+              disabled={emailSaving || !emailEnabled}
+            />
           </VStack>
         </Card.Body>
       </Card.Root>
