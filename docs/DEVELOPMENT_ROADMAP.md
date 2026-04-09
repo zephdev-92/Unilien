@@ -1584,10 +1584,10 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 #### 9.3 Responsive Mobile Amélioré
 
 ```
-[ ] Optimisation touch targets
-[ ] Navigation mobile simplifiée
+[~] Optimisation touch targets — AccessibleInput/Select avec tailles min, pas de système global 44px ⏳
+[~] Navigation mobile simplifiée — sidebar mobile + overlay existants, pas de simplification dédiée mobile ⏳
 [ ] Gestes tactiles (swipe, pinch)
-[ ] Mode offline (PWA)
+[~] Mode offline (PWA) — Service worker + workbox actif, cache assets + Storage Supabase. /rest/v1/ exclu volontairement (données sensibles) ⏳
 ```
 
 **Effort**: 1 semaine
