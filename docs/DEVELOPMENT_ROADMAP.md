@@ -860,7 +860,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] Nettoyer les imports inutilisés (Navigate, isAuthenticated, isLoading)
 [x] Conserver les vérifications fines de permissions internes (canManageTeam, canExportData)
 [x] Build TypeScript + Vite : 0 erreur
-[ ] Tests unitaires du composant ProtectedRoute
+[x] Tests unitaires du composant ProtectedRoute (App.test.tsx — describe('ProtectedRoute', ...) ✅)
 ```
 
 ---
@@ -904,7 +904,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] logbookService.ts : sanitizeText() sur content (create + update)
 [x] profileService.ts : sanitizeText() sur firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, address.* (updateProfile + upsertEmployer + upsertEmployee)
 [x] caregiverService.ts : sanitizeText() sur relationship, relationshipDetails, emergencyPhone, availabilityHours, address.* (upsert + updateProfile)
-[ ] Ajouter tests unitaires vérifiant la sanitisation
+[x] Ajouter tests unitaires vérifiant la sanitisation (shiftService, liaisonService, absenceService, logbookService, caregiverService — ✅)
 ```
 
 ---
@@ -1019,8 +1019,8 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] useComplianceMonitor.test.ts — ✅ 17/02/2026 (PR #71)
 [x] usePushNotifications.test.ts — ✅ 17/02/2026 (PR #71)
 [x] Composants UI critiques (dashboard widgets, planning views) — ✅ Semaine 9/2026
-[ ] Export PDF/CESU (cesuGenerator, pdfGenerator)
-[ ] Tests E2E (Playwright — Phase 4)
+[x] Export PDF/CESU (cesuGenerator, pdfGenerator) — ✅ @react-pdf/renderer, CESU persisté en DB/Storage (PR #205)
+[x] Tests E2E (Playwright — Phase 4) — ✅ Playwright + Chromium, 8 tests (PR #244)
 ```
 
 **Timeline**:
@@ -1102,8 +1102,8 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 
 **Types restant génériques** (P2, non bloquant) :
 ```
-[ ] Aligner accessibility_settings → AccessibilitySettings dans database.ts
-[ ] Aligner computed_pay → ComputedPay dans ShiftDbRow
+[x] Aligner accessibility_settings → AccessibilitySettings dans database.ts ✅
+[x] Aligner computed_pay → ComputedPay dans ShiftDbRow ✅
 [x] Aligner permissions → CaregiverPermissions dans CaregiverDbRow (PR #114, 26/02/2026)
 [x] Aligner address → AddressDb dans CaregiverDbRow (PR #114, 26/02/2026)
 [x] Typer attachments → Attachment[] dans LiaisonMessageDbRow + LogEntryDbRow (PR #114, 26/02/2026)
@@ -1395,11 +1395,11 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 **Effort**: 2 jours
 
 ```
-[ ] Table documents (metadata)
-[ ] Upload documents administratifs
-[ ] Catégorisation (contrat, bulletin, justificatif)
+[~] Table documents (metadata) — tables séparées par type (payslips, cesu_declarations, absences) mais pas de table unifiée ⏳
+[x] Upload documents administratifs — bulletins ✅, CESU ✅, justificatifs absences ✅ (Storage Supabase)
+[~] Catégorisation (contrat, bulletin, justificatif) — implicite par section, pas de champ category centralisé ⏳
 [ ] Recherche documents
-[ ] Prévisualisation
+[x] Prévisualisation — signed URLs bulletins + CESU + justificatifs ✅
 ```
 
 **Timeline**: Semaines 12-13/2026
@@ -1464,7 +1464,7 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 
 ```
 [ ] Demo banner — bandeau "Mode démo" avec badge, texte explicatif, CTA inscription, bouton fermer (dismissible localStorage)
-[ ] Onboarding banner — 3 étapes avec progression (compte créé ✓, ajouter employé, planifier intervention) + CTA par étape
+[x] Onboarding banner — 3 étapes avec progression (compte créé ✓, ajouter employé, planifier intervention) + CTA par étape — ✅ OnboardingWidget (PR #237)
 [ ] Empty state dashboard — variante onboarding quand aucun employé/intervention (stats à "0", planning vide avec CTA)
 ```
 
@@ -1561,7 +1561,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 ```
 [ ] Documentation composants (Storybook?)
 [ ] Variantes composants (sizes, colors)
-[ ] Tokens design (spacing, colors, typography)
+[~] Tokens design (spacing, colors, typography) — colors ✅ + typography ✅ (theme.ts PR #185) | spacing custom ⏳
 [ ] Guidelines accessibilité
 ```
 
@@ -1575,7 +1575,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 [ ] Tour guidé première connexion (highlight interactif des éléments clés)
 [ ] Tooltips contextuels (première visite de chaque page)
 [ ] Vidéos tutoriels
-[ ] FAQ intégrée
+[x] FAQ intégrée — HelpPage avec accordéon Q/R (9 sections, PR #235) ✅
 [ ] Checklist profil complet (widget progression — cf. prototype profile.html)
 ```
 
@@ -1584,10 +1584,10 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 #### 9.3 Responsive Mobile Amélioré
 
 ```
-[ ] Optimisation touch targets
-[ ] Navigation mobile simplifiée
+[~] Optimisation touch targets — AccessibleInput/Select avec tailles min, pas de système global 44px ⏳
+[~] Navigation mobile simplifiée — sidebar mobile + overlay existants, pas de simplification dédiée mobile ⏳
 [ ] Gestes tactiles (swipe, pinch)
-[ ] Mode offline (PWA)
+[~] Mode offline (PWA) — Service worker + workbox actif, cache assets + Storage Supabase. /rest/v1/ exclu volontairement (données sensibles) ⏳
 ```
 
 **Effort**: 1 semaine
@@ -1682,7 +1682,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 
 ```
 [ ] Configuration Supabase (API limits)
-[ ] Rate limiting custom (Edge Functions)
+[x] Rate limiting custom (Edge Functions) — send-email 10/min + send-push 30/min, réponse 429 ✅
 [ ] Alerts dépassement limites
 ```
 
