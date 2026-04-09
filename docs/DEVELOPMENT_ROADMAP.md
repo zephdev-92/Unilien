@@ -1561,7 +1561,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 ```
 [ ] Documentation composants (Storybook?)
 [ ] Variantes composants (sizes, colors)
-[ ] Tokens design (spacing, colors, typography)
+[~] Tokens design (spacing, colors, typography) — colors ✅ + typography ✅ (theme.ts PR #185) | spacing custom ⏳
 [ ] Guidelines accessibilité
 ```
 
