@@ -1,6 +1,6 @@
-# Revue de sécurité — mise à jour 1er avril 2026
+# Revue de sécurité — mise à jour 9 avril 2026
 
-Synthèse d'audit alignée sur l'état du dépôt. Couvre les migrations 041 à 048.
+Synthèse d'audit alignée sur l'état du dépôt. Couvre les migrations 041 à 049.
 
 ## Correctifs et protections en place
 
@@ -53,6 +53,28 @@ Synthèse d'audit alignée sur l'état du dépôt. Couvre les migrations 041 à 
 |--------|------|
 | **Table `convention_settings`** | RLS `profile_id = auth.uid()` — paramètres convention par employeur. |
 
+### Migration 049 — Correctif email profil (9 avril 2026, PR #240)
+
+| Sujet | État |
+|--------|------|
+| **Email profil** | Correctif exposition email dans `profiles` pour l'envoi d'emails transactionnels. |
+
+### 2FA TOTP (3 avril 2026, PR #220)
+
+| Sujet | État |
+|--------|------|
+| **Supabase MFA natif** | Enrôlement TOTP via QR code (`MfaEnrollment`), challenge au login (`MfaChallenge`), hook `useMfa`. |
+| **Nettoyage facteurs non vérifiés** | Les facteurs partiellement enrôlés sont supprimés automatiquement. |
+| **AAL check** | `LoginForm` détecte AAL1 → redirige vers challenge MFA avant accès app. |
+| **UI Settings** | Card 2FA fonctionnelle dans Paramètres > Sécurité (activer/désactiver). |
+
+### OAuth social login (8 avril 2026, PR #238)
+
+| Sujet | État |
+|--------|------|
+| **Google + Microsoft** | Providers configurés dans Supabase Auth, redirect URI validée. |
+| **Onboarding rôle** | `OnboardingRolePage` force la sélection de rôle pour les nouveaux comptes OAuth (évite les comptes sans rôle). |
+
 ## Contrôles applicatifs
 
 - `NotificationsPanel` : navigation uniquement si `actionUrl.startsWith('/')`.
@@ -101,7 +123,11 @@ Les données de santé (`employer_health_data`) sont protégées par RLS mais pa
 | Action | Priorité | Statut |
 |--------|----------|--------|
 | Chiffrement colonnes santé (pgsodium) | Haute | En attente migration self-hosted |
-| 2FA TOTP (Supabase MFA) | Moyenne | Documenté (`docs/2FA_IMPLEMENTATION.md`) |
+| ~~2FA TOTP (Supabase MFA)~~ | ~~Moyenne~~ | ✅ Terminé — PR #220 (03/04/2026) |
+| ~~Path traversal `attachmentService`~~ | ~~Moyenne~~ | ✅ Corrigé — sanitisation whitelist (09/04/2026) |
+| ~~Vulnérabilité `serialize-javascript` / dépendances~~ | ~~Moyenne~~ | ✅ Corrigé — `npm audit fix` (09/04/2026) |
+| Durée de conservation + politique de purge données | Moyenne | À définir |
+| Registre des traitements CNIL | Moyenne | À créer |
 | Affiner RLS aidants (`can_replace_employer`) | Basse | À évaluer |
 | `npm audit` régulier avant mise en prod | Continue | En place |
 
@@ -113,4 +139,4 @@ Les données de santé (`employer_health_data`) sont protégées par RLS mais pa
 - `docs/SECURITY_IDOR_ANALYSIS.md`
 - `docs/MEDICAL_DATA_COMPLIANCE.md`
 - `docs/2FA_IMPLEMENTATION.md`
-- Migrations : `supabase/migrations/041_security_fixes.sql` à `048_convention_settings.sql`
+- Migrations : `supabase/migrations/041_security_fixes.sql` à `049_fix_profile_email.sql`

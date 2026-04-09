@@ -69,12 +69,16 @@ export async function uploadAttachment(
     throw new Error(validation.error)
   }
 
-  // Sanitiser le nom de fichier pour prévenir le path traversal
-  const safeName = file.name
-    .replace(/^.*[/\\]/, '')   // Retirer tout chemin
-    .replace(/\.\./g, '')      // Retirer les séquences ..
-    .replace(/[/\\]/g, '_')    // Remplacer séparateurs restants
-    .slice(0, 200) || `file_${Date.now()}`
+  // Sanitiser le nom de fichier (whitelist) pour prévenir le path traversal
+  const rawName = (() => { try { return decodeURIComponent(file.name) } catch { return file.name } })()
+  const ext = rawName.includes('.') ? rawName.split('.').pop()!.toLowerCase().replace(/[^a-z0-9]/g, '') : ''
+  const base = rawName
+    .replace(/\.[^.]+$/, '')          // retirer extension
+    .replace(/[^a-zA-Z0-9_\- ]/g, '_') // whitelist : alphanum + _ - espace
+    .replace(/\s+/g, '_')
+    .slice(0, 100)
+    || `file_${Date.now()}`
+  const safeName = ext ? `${base}.${ext}` : base
   const fileName = `${conversationId}/${senderId}/${Date.now()}_${safeName}`
 
   const { error: uploadError } = await supabase.storage
