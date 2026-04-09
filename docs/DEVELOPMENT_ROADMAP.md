@@ -860,7 +860,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] Nettoyer les imports inutilisés (Navigate, isAuthenticated, isLoading)
 [x] Conserver les vérifications fines de permissions internes (canManageTeam, canExportData)
 [x] Build TypeScript + Vite : 0 erreur
-[ ] Tests unitaires du composant ProtectedRoute
+[x] Tests unitaires du composant ProtectedRoute (App.test.tsx — describe('ProtectedRoute', ...) ✅)
 ```
 
 ---
@@ -904,7 +904,7 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] logbookService.ts : sanitizeText() sur content (create + update)
 [x] profileService.ts : sanitizeText() sur firstName, lastName, phone, handicapName, specificNeeds, cesuNumber, address.* (updateProfile + upsertEmployer + upsertEmployee)
 [x] caregiverService.ts : sanitizeText() sur relationship, relationshipDetails, emergencyPhone, availabilityHours, address.* (upsert + updateProfile)
-[ ] Ajouter tests unitaires vérifiant la sanitisation
+[x] Ajouter tests unitaires vérifiant la sanitisation (shiftService, liaisonService, absenceService, logbookService, caregiverService — ✅)
 ```
 
 ---
@@ -1019,8 +1019,8 @@ Diagnostic et résolution systématique des 6 problèmes de qualité détectés 
 [x] useComplianceMonitor.test.ts — ✅ 17/02/2026 (PR #71)
 [x] usePushNotifications.test.ts — ✅ 17/02/2026 (PR #71)
 [x] Composants UI critiques (dashboard widgets, planning views) — ✅ Semaine 9/2026
-[ ] Export PDF/CESU (cesuGenerator, pdfGenerator)
-[ ] Tests E2E (Playwright — Phase 4)
+[x] Export PDF/CESU (cesuGenerator, pdfGenerator) — ✅ @react-pdf/renderer, CESU persisté en DB/Storage (PR #205)
+[x] Tests E2E (Playwright — Phase 4) — ✅ Playwright + Chromium, 8 tests (PR #244)
 ```
 
 **Timeline**:
@@ -1464,7 +1464,7 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 
 ```
 [ ] Demo banner — bandeau "Mode démo" avec badge, texte explicatif, CTA inscription, bouton fermer (dismissible localStorage)
-[ ] Onboarding banner — 3 étapes avec progression (compte créé ✓, ajouter employé, planifier intervention) + CTA par étape
+[x] Onboarding banner — 3 étapes avec progression (compte créé ✓, ajouter employé, planifier intervention) + CTA par étape — ✅ OnboardingWidget (PR #237)
 [ ] Empty state dashboard — variante onboarding quand aucun employé/intervention (stats à "0", planning vide avec CTA)
 ```
 
