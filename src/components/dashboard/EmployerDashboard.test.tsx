@@ -80,6 +80,19 @@ vi.mock('@/hooks/useComplianceMonitor', () => ({
   useComplianceMonitor: (...args: unknown[]) => mockUseComplianceMonitor(...args),
 }))
 
+// Mock Supabase — requête contracts pour hasEmployees
+const mockSupabaseChain = {
+  from: vi.fn(),
+  select: vi.fn(),
+  eq: vi.fn(),
+  head: vi.fn(),
+}
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockSupabaseChain.from(...args),
+  },
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const profile = createMockProfile({ id: 'employer-1', role: 'employer', firstName: 'Alice' })
@@ -87,12 +100,24 @@ const profile = createMockProfile({ id: 'employer-1', role: 'employer', firstNam
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('EmployerDashboard', () => {
+  // Helper — simule un employeur avec N contrats actifs
+  function mockHasEmployees(count: number) {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      then: vi.fn((cb: (v: { count: number }) => void) => Promise.resolve(cb({ count }))),
+    }
+    mockSupabaseChain.from.mockReturnValue(chain)
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetShifts.mockResolvedValue([])
     mockGetEmployer.mockResolvedValue(null)
     mockGetWeeklyComplianceOverview.mockResolvedValue({ summary: { critical: 0, warnings: 0 } })
     mockUseComplianceMonitor.mockReturnValue(undefined)
+    // Par défaut : 1 employé actif → affiche les widgets principaux
+    mockHasEmployees(1)
   })
 
   describe('Composition des widgets', () => {
@@ -173,6 +198,47 @@ describe('EmployerDashboard', () => {
           enabled: true,
         })
       )
+    })
+  })
+
+  describe('Empty state — aucun employé', () => {
+    it('affiche le message vide et masque les widgets principaux quand aucun contrat actif', async () => {
+      mockHasEmployees(0)
+      renderWithProviders(<EmployerDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByText('Ajoutez votre premier auxiliaire')).toBeInTheDocument()
+      })
+      expect(screen.queryByTestId('today-planning-widget')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('compliance-widget')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('budget-forecast-widget')).not.toBeInTheDocument()
+    })
+
+    it('affiche les CTAs "Ajouter un auxiliaire" et "Voir le planning" dans le empty state', async () => {
+      mockHasEmployees(0)
+      renderWithProviders(<EmployerDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByText('Ajouter un auxiliaire')).toBeInTheDocument()
+        expect(screen.getByText('Voir le planning')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche toujours WelcomeCard et OnboardingWidget même en empty state', async () => {
+      mockHasEmployees(0)
+      renderWithProviders(<EmployerDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('welcome-card')).toBeInTheDocument()
+        expect(screen.getByTestId('onboarding-widget')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les widgets principaux quand il y a des contrats actifs', async () => {
+      mockHasEmployees(2)
+      renderWithProviders(<EmployerDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('today-planning-widget')).toBeInTheDocument()
+        expect(screen.getByTestId('compliance-widget')).toBeInTheDocument()
+      })
+      expect(screen.queryByText('Ajoutez votre premier auxiliaire')).not.toBeInTheDocument()
     })
   })
 })

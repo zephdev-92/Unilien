@@ -13,7 +13,7 @@
 | Catégorie | Complétude | Statut |
 |-----------|------------|--------|
 | **Authentification** | 99% | ✅ Excellent (login, signup, reset, rôles, OAuth Google/Microsoft, 2FA TOTP, recovery codes V2) |
-| **Dashboards** | 95% | ✅ Excellent (3 dashboards rôle-spécifiques + mobile aidant, dark mode, onboarding widget, CTAs dynamiques — demo banner + empty state manquants) |
+| **Dashboards** | 97% | ✅ Excellent (3 dashboards rôle-spécifiques + mobile aidant, dark mode, onboarding widget, CTAs dynamiques, empty state aucun employé ✅ — demo banner manquant) |
 | **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, pièces jointes — réactions emoji/search/archive manquants) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions — recherche avancée, disponibilités, évaluations V2) |
@@ -33,7 +33,7 @@
 - **Services**: 30 services
 - **Hooks**: 24 hooks custom
 - **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
-- **Prototype Gap**: 96/102 items (94%) — 6 restants : demo banner, empty state, contact, palette, confidentialité, empty states onboarding
+- **Prototype Gap**: 97/102 items (95%) — 5 restants : demo banner, contact, palette, confidentialité, empty states onboarding
 
 ---
 
@@ -61,7 +61,7 @@ Audit complet des 9 sections de la roadmap :
 
 - **96/102 items terminés** (était 88/102)
 - 2FA toggle ✅ (PR #220), email notifications ✅ (PR #240), onboarding banner ✅ (PR #237) — mis à jour dans checklist
-- 6 items restants : demo banner, empty state dashboard, contact (optgroups + PJ), palette couleurs, confidentialité toggles, empty states onboarding
+- 5 items restants : demo banner, contact (optgroups + PJ), palette couleurs, confidentialité toggles, empty states onboarding
 
 #### Métriques session (10/04/2026)
 - PRs : #241–#245
@@ -1497,7 +1497,7 @@ Le prototype statique contient plusieurs éléments dashboard absents de l'app R
 ```
 - ❌ Demo banner — bandeau "Mode démo" avec badge, texte explicatif, CTA inscription, bouton fermer (dismissible localStorage)
 - ✅ Onboarding banner — 3 étapes avec progression (compte créé ✓, ajouter employé, planifier intervention) + CTA par étape — ✅ OnboardingWidget (PR #237)
-- ❌ Empty state dashboard — variante onboarding quand aucun employé/intervention (stats à "0", planning vide avec CTA)
+- ✅ Empty state dashboard — variante aucun employé : icône + titre + description + CTAs, widgets masqués (PR feat/dashboard-empty-state)
 ```
 
 #### 7b.2 Greeting & Navigation Contextuelle
@@ -2021,7 +2021,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 
 **Semaines 21-22 (en cours)** :
 - 🔴 Domaine Resend (débloquer email prod)
-- 🟡 Demo banner + empty state dashboard
+- 🟡 Demo banner (empty state dashboard ✅)
 - 🟡 Document search
 - 🟡 Analytics exports
 - 🟡 Profile completion widget
@@ -2174,7 +2174,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 
 2. **Demo banner + Empty state dashboard**
    - ❌ Bandeau "Mode démo" dismissible (localStorage)
-   - ❌ Variante dashboard quand aucun employé/intervention (icône + CTA)
+   - ✅ Variante dashboard quand aucun employé (icône + CTA "Ajouter un auxiliaire")
 
 3. **Document search + table unifiée**
    - ❌ Champ recherche sur la page Documents (nom, type, période)
