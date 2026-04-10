@@ -2190,10 +2190,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
    - ❌ Champs manquants listés avec liens
    - Voir `memory/profile-completion-widget.md`
 
-6. **Présence responsable & présence nuit dans les bulletins de paie**
-   - ❌ Calculer `presenceResponsiblePay` (2/3 du salaire) depuis les shifts `presence_responsable` — actuellement hardcodé à `0` dans `payslipService.ts:105`
-   - ❌ Calculer `nightPresenceAllowance` (indemnité forfaitaire) depuis les shifts de présence nuit — actuellement hardcodé à `0` dans `payslipService.ts:106`
-   - ⚠️ Corriger `sundayMajoration` pour `presence_day` : utiliser `presenceResponsiblePay` comme base au lieu de `basePay`
+6. ✅ **Présence responsable & présence nuit dans les bulletins de paie** — `presenceResponsiblePay` (Art. 137.1, 2/3) et `nightPresenceAllowance` (Art. 148, forfait 1/4 ou 100% si requalifié) calculés dans `declarationService.ts` et transmis au bulletin. `sundayMajoration` pour `presence_day` basée sur `presenceResponsiblePay`.
 
 ### 🟡 P2 — Moyen terme
 
