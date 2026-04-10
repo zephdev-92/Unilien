@@ -53,7 +53,7 @@ Audit complet des 9 sections de la roadmap :
 - Types `accessibility_settings` + `computed_pay` alignés dans `database.ts` ✅
 - Sanitisation 5 services + tests ProtectedRoute vérifiés ✅
 - FAQ intégrée (`HelpPage`) ✅, upload documents Storage ✅, rate limiting Edge Functions ✅
-- Tokens design : colors/typography ✅, spacing custom ⏳
+- Tokens design : colors/typography ✅, spacing custom ✅
 - PWA offline : assets + Storage ✅, `/rest/v1/` exclu volontairement ⏳
 - Table documents : upload + prévisualisation ✅, search + table unifiée ⏳
 
@@ -1593,7 +1593,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 ```
 - ❌ Documentation composants (Storybook?)
 - ❌ Variantes composants (sizes, colors)
-- 🔧 Tokens design (spacing, colors, typography) — colors ✅ + typography ✅ (theme.ts PR #185) | spacing custom ⏳
+- ✅ Tokens design (spacing, colors, typography) — colors ✅ + typography ✅ (theme.ts PR #185) | spacing custom ✅ (PR #250)
 - ❌ Guidelines accessibilité
 ```
 
@@ -1616,7 +1616,7 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 #### 9.3 Responsive Mobile Amélioré
 
 ```
-- 🔧 Optimisation touch targets — AccessibleInput/Select avec tailles min, pas de système global 44px ⏳
+- ✅ Optimisation touch targets — AccessibleInput/Select 44px + globalCss `@media (pointer: coarse)` pour tous les boutons
 - 🔧 Navigation mobile simplifiée — sidebar mobile + overlay existants, pas de simplification dédiée mobile ⏳
 - ❌ Gestes tactiles (swipe, pinch)
 - 🔧 Mode offline (PWA) — Service worker + workbox actif, cache assets + Storage Supabase. /rest/v1/ exclu volontairement (données sensibles) ⏳
@@ -2029,7 +2029,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 **Semaine 23-26** :
 - 🟡 SMS notifications + vérification téléphone
 - 🟡 Tests UI Phase 3 (composants restants)
-- 🟡 Spacing tokens custom
+- ✅ Spacing tokens custom
 - 🟢 Performance (Web Vitals, Sentry)
 - Préparation release v1.0
 
@@ -2204,9 +2204,11 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
    - ❌ Upload pièce jointe (PDF/PNG, 5 Mo max)
 
 9. **Spacing tokens custom** — compléter la migration design tokens
-   - ❌ Espaces custom (`spacing.xs`, etc.) dans le thème Chakra UI v3
+   - ✅ Espaces custom (`spacing.xs`, etc.) dans le thème Chakra UI v3 (PR #250)
 
-10. **Touch targets 44px** — système global pour mobile (AccessibleInput/Select déjà partiels)
+10. **Touch targets 44px** — système global pour mobile
+   - ✅ AccessibleInput/Select : `minH="44px"` hardcodé
+   - ✅ Tous les `button` / `[role="button"]` : `globalCss @media (pointer: coarse)` (PR #251)
 
 11. **Tests UI — Phase 3** — composants restants sans couverture
     - ✅ SettingsPage (66 tests)

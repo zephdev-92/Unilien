@@ -4,6 +4,17 @@ import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react'
 // Palette : --c-primary #3D5166, --c-accent #9BB23B
 // Tous les contrastes texte/fond >= 7:1 (WCAG AAA)
 const config = defineConfig({
+  // WCAG 2.5.5 — cible tactile 44px sur mobile uniquement
+  // pointer: coarse = écran tactile (pas souris desktop)
+  // AccessibleInput/Select ont déjà minH 44px hardcodé (toujours)
+  globalCss: {
+    '@media (pointer: coarse)': {
+      'button, [role="button"]': {
+        minHeight: '44px',
+        minWidth: '44px',
+      },
+    },
+  },
   theme: {
     tokens: {
       // Espaces sémantiques alignés sur le prototype (--sp-N)
