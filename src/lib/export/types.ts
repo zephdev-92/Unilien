@@ -26,6 +26,8 @@ export interface EmployeeDeclarationData {
   holidayMajoration: number
   nightMajoration: number
   overtimeMajoration: number
+  presenceResponsiblePay: number  // Art. 137.1 — présence de jour (1h = 2/3h)
+  nightPresenceAllowance: number  // Art. 148 — présence de nuit (forfait >= 1/4)
   totalGrossPay: number
   // Détails des interventions
   shiftsCount: number

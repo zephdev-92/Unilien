@@ -76,6 +76,8 @@ const mockEmpData = {
   holidayMajoration: 0,
   nightMajoration: 0,
   overtimeMajoration: 0,
+  presenceResponsiblePay: 0,
+  nightPresenceAllowance: 0,
   totalGrossPay: 1000,
   shiftsCount: 10,
   employeeId: 'emp-456',
@@ -235,7 +237,7 @@ describe('getPayslipData', () => {
       expect(result!.shiftsCount).toBe(10)
     })
 
-    it('devrait fixer presenceResponsiblePay et nightPresenceAllowance à 0', async () => {
+    it('devrait transmettre presenceResponsiblePay et nightPresenceAllowance depuis empData', async () => {
       vi.mocked(getMonthlyDeclarationData).mockResolvedValue(mockMonthlyData)
       mockSupabaseQuery({ weekly_hours: 35 })
 
