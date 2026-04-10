@@ -6,6 +6,20 @@ import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react'
 const config = defineConfig({
   theme: {
     tokens: {
+      // Espaces sémantiques alignés sur le prototype (--sp-N)
+      // Usage : p="xs", gap="md", mt="2xl", etc.
+      spacing: {
+        xs:  { value: '4px' },   // --sp-1  : micro-gaps, inline elements
+        sm:  { value: '8px' },   // --sp-2  : badges, boutons sm, listes serrées
+        md:  { value: '12px' },  // --sp-3  : espacement standard composants
+        lg:  { value: '16px' },  // --sp-4  : card padding, sections
+        xl:  { value: '20px' },  // --sp-5
+        '2xl': { value: '24px' }, // --sp-6
+        '3xl': { value: '32px' }, // --sp-8
+        '4xl': { value: '40px' }, // --sp-10
+        '5xl': { value: '48px' }, // --sp-12
+        '6xl': { value: '64px' }, // --sp-16
+      },
       colors: {
         // Brand : slate-blue (prototype --c-primary)
         brand: {
