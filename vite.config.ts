@@ -65,6 +65,50 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return
+
+          // xlsx + pako : import dynamique → chunk séparé, chargé seulement au clic "Exporter Excel"
+          if (id.includes('/xlsx/') || id.includes('/pako/')) return 'vendor-xlsx'
+
+          // @react-pdf/renderer et ses dépendances : chargé seulement sur DocumentsPage/PlanningPage
+          if (
+            id.includes('@react-pdf') ||
+            id.includes('/fontkit/') ||
+            id.includes('/hyphen/') ||
+            id.includes('/linebreak/') ||
+            id.includes('/blob-stream/')
+          ) return 'vendor-pdf'
+
+          // Chakra UI + Emotion + framer-motion + @ark-ui + @floating-ui (toujours chargés, groupés)
+          if (
+            id.includes('@chakra-ui') ||
+            id.includes('@emotion') ||
+            id.includes('framer-motion') ||
+            id.includes('/motion-dom/') ||
+            id.includes('/motion-utils/') ||
+            id.includes('@ark-ui') ||
+            id.includes('@floating-ui')
+          ) return 'vendor-chakra'
+
+          // Supabase
+          if (id.includes('@supabase')) return 'vendor-supabase'
+
+          // date-fns
+          if (id.includes('date-fns')) return 'vendor-dates'
+
+          // Formulaires + validation
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) return 'vendor-forms'
+
+          // Tout le reste (React, react-dom, react-router, zustand, dompurify, etc.)
+          return 'vendor-core'
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': '/src'

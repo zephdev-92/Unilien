@@ -1,13 +1,13 @@
 /**
  * Générateur Excel (.xlsx) pour le planning mensuel
- * Utilise la bibliothèque xlsx (SheetJS)
+ * Utilise la bibliothèque xlsx (SheetJS) — chargée dynamiquement pour réduire le bundle initial
  */
 
-import * as XLSX from 'xlsx'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { PlanningExportData, EmployeePlanningData } from './types'
 import type { ExportResult } from './types'
+import type * as XLSXType from 'xlsx'
 
 const DAYS_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -36,7 +36,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 // ─── Feuille résumé ───────────────────────────────────────────────────────────
 
-function buildSummarySheet(data: PlanningExportData): XLSX.WorkSheet {
+function buildSummarySheet(data: PlanningExportData, XLSX: typeof XLSXType): XLSXType.WorkSheet {
   const rows: (string | number)[][] = [
     [`Planning mensuel — ${data.periodLabel}`],
     [`Employeur : ${data.employerFirstName} ${data.employerLastName}`],
@@ -74,7 +74,7 @@ function buildSummarySheet(data: PlanningExportData): XLSX.WorkSheet {
 
 // ─── Feuille par employé ──────────────────────────────────────────────────────
 
-function buildEmployeeSheet(employee: EmployeePlanningData): XLSX.WorkSheet {
+function buildEmployeeSheet(employee: EmployeePlanningData, XLSX: typeof XLSXType): XLSXType.WorkSheet {
   const rows: (string | number | boolean)[][] = [
     [`${employee.firstName} ${employee.lastName} — ${employee.contractType}`],
     [`Heures/sem. : ${employee.weeklyHours}h`],
@@ -125,17 +125,20 @@ function buildEmployeeSheet(employee: EmployeePlanningData): XLSX.WorkSheet {
 
 // ─── Point d'entrée public ────────────────────────────────────────────────────
 
-export function generatePlanningExcel(data: PlanningExportData): ExportResult {
+export async function generatePlanningExcel(data: PlanningExportData): Promise<ExportResult> {
+  // Import dynamique : xlsx (~500KB) + pako ne sont chargés qu'au moment de l'export
+  const XLSX = await import('xlsx')
+
   try {
     const wb = XLSX.utils.book_new()
 
     // Feuille résumé
-    XLSX.utils.book_append_sheet(wb, buildSummarySheet(data), 'Résumé')
+    XLSX.utils.book_append_sheet(wb, buildSummarySheet(data, XLSX), 'Résumé')
 
     // Une feuille par employé
     for (const employee of data.employees) {
       const sheetName = `${employee.firstName} ${employee.lastName}`.slice(0, 31) // limite Excel
-      XLSX.utils.book_append_sheet(wb, buildEmployeeSheet(employee), sheetName)
+      XLSX.utils.book_append_sheet(wb, buildEmployeeSheet(employee, XLSX), sheetName)
     }
 
     // Sérialisation base64

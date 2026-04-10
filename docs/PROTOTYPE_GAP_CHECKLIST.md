@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 01 avril 2026
+**Derniere mise a jour** : 10 avril 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -13,14 +13,14 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 - [x] Creer la page `/parametres` avec navigation par panneaux ✅
 - [x] **Panneau Profil** — formulaire infos personnelles (nom, email, tel, adresse, langue, format date) ✅
 - [x] **Panneau Securite** — changement mot de passe (actuel, nouveau, confirmation) ✅
-- [ ] **Panneau Securite** — toggle 2FA avec explication _(badge "Bientot", disabled)_
+- [x] **Panneau Securite** — toggle 2FA avec explication ✅ _(TOTP via Supabase MFA, PR #220, 03/04/2026)_
 - [x] **Panneau Securite** — Danger Zone (bordure rouge) : bouton supprimer toutes les donnees ✅ _(RPC `delete_own_data`, double confirmation, PR #207)_
 - [x] **Panneau Securite** — Danger Zone : bouton desactiver le compte (modale confirmation) ✅ _(RPC `delete_own_account`, PR #207)_
 - [x] **Panneau Abonnement** (employeur) — carte plan actuel (nom, prix, date renouvellement, moyen paiement) ✅ _(UI-only, Stripe non integre)_
 - [x] **Panneau Abonnement** — barres usage (employes X/X, bulletins, stockage) ✅ _(UI-only, donnees statiques)_
 - [x] **Panneau Abonnement** — grille 3 forfaits (Starter, Standard, Pro) avec features + CTA ✅ _(UI-only)_
 - [x] **Panneau Notifications** — toggles par canal (push fonctionnel, email disabled "Bientot") ✅
-- [ ] **Panneau Notifications** — notifications email fonctionnelles _(attente backend SendGrid/Resend)_
+- [x] **Panneau Notifications** — notifications email fonctionnelles ✅ _(Resend + Edge Function, préférences opt-in/out, PR #240, 09/04/2026)_
 - [x] **Panneau Convention** (employeur) — parametres convention IDCC 3239 ✅ _(double persistance localStorage + Supabase, migration 048, PR #208)_
 - [x] **Panneau PCH** (aidant) — configuration PCH ✅ _(localStorage)_
 - [x] **Panneau Apparence** — toggle dark/light mode ✅ _(PR #192, tokens semantiques, ~237 hex migres)_
@@ -38,7 +38,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 ## 2. Dashboard — Elements manquants
 
 - [ ] **Demo banner** — bandeau "Mode demo" avec badge, texte explicatif, CTA inscription, bouton fermer
-- [ ] **Onboarding banner** — 3 etapes avec progression (compte cree, ajouter employe, planifier intervention)
+- [x] **Onboarding banner** — 3 etapes avec progression (compte cree, ajouter employe, planifier intervention) ✅ _(OnboardingWidget, PR #237, 09/04/2026)_
 - [x] **Greeting enrichi** — eyebrow jour/date, chips (prochaine intervention + alertes conformite), CTA "Voir le planning" ✅
 - [x] **Greeting skeleton** — skeleton loading sur le bloc greeting ✅
 - [x] **Action nudges** — cartes contextuelles ("X bulletins a generer", "Valider les heures de la semaine") ✅
@@ -179,8 +179,8 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 | Bloc | Items | Done | Priorite |
 |------|-------|------|----------|
-| Settings | 22 | 19 | Moyenne (3 items restants : 2FA, palette couleurs, confidentialite) |
-| Dashboard | 11 | 8 | Moyenne |
+| Settings | 22 | 21 | Basse (2 items restants : palette couleurs, confidentialite) |
+| Dashboard | 11 | 9 | Basse (demo banner, empty state) |
 | Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |
 | Profile | 9 | 9 | ✅ Termine |
@@ -192,4 +192,4 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
 | Patterns UI | 4 | 3 | Basse |
-| **Total** | **102** | **93** | — |
+| **Total** | **102** | **96** | — |
