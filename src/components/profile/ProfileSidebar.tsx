@@ -157,6 +157,8 @@ function LogoutButton() {
 }
 
 export function ProfileSidebar({ profile, employer, employee, caregiver }: ProfileSidebarProps) {
+  const { isEnabled: isMfaEnabled } = useMfa()
+
   return (
     <Stack gap={4} position="sticky" top="100px">
       {/* Widget complétude */}
@@ -165,6 +167,7 @@ export function ProfileSidebar({ profile, employer, employee, caregiver }: Profi
         employer={employer}
         employee={employee}
         caregiver={caregiver}
+        isMfaEnabled={isMfaEnabled}
       />
 
       {/* Widget sécurité */}
