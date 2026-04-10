@@ -14,9 +14,10 @@ interface ProfileCompletionWidgetProps {
   employer?: Employer | null
   employee?: Employee | null
   caregiver?: Caregiver | null
+  isMfaEnabled?: boolean
 }
 
-function getEmployerChecklist(profile: Profile, employer?: Employer | null): CheckItem[] {
+function getEmployerChecklist(profile: Profile, employer?: Employer | null, isMfaEnabled?: boolean): CheckItem[] {
   const hasAddress = !!(employer?.address?.street && employer?.address?.city)
   const hasHandicap = !!employer?.handicapType
   const hasPch = !!employer?.pchBeneficiary
@@ -30,10 +31,11 @@ function getEmployerChecklist(profile: Profile, employer?: Employer | null): Che
     { label: 'Numéro CESU', done: hasCesu, link: { label: 'Renseigner', to: '#section-situation' } },
     { label: 'PCH configurée', done: hasPch, link: { label: 'Configurer', to: '#section-situation' } },
     { label: "Contacts d'urgence", done: hasEmergencyContacts, link: { label: 'Ajouter', to: '#section-urgence' } },
+    { label: 'Double authentification', done: !!isMfaEnabled, link: { label: 'Activer', to: '/parametres' } },
   ]
 }
 
-function getEmployeeChecklist(profile: Profile, employee?: Employee | null): CheckItem[] {
+function getEmployeeChecklist(profile: Profile, employee?: Employee | null, isMfaEnabled?: boolean): CheckItem[] {
   const hasSSN = !!employee?.socialSecurityNumber
   const hasEmergencyContacts = (employee?.emergencyContacts?.length ?? 0) > 0
   const hasLicense = !!employee?.driversLicense?.hasLicense
@@ -47,27 +49,29 @@ function getEmployeeChecklist(profile: Profile, employee?: Employee | null): Che
     { label: "Contacts d'urgence", done: hasEmergencyContacts, link: { label: 'Ajouter', to: '#section-urgence-employee' } },
     { label: 'Permis / mobilité', done: hasLicense, link: { label: 'Renseigner', to: '#section-metier' } },
     { label: 'IBAN', done: hasIban, link: { label: 'Renseigner', to: '#section-metier' } },
+    { label: 'Double authentification', done: !!isMfaEnabled, link: { label: 'Activer', to: '/parametres' } },
   ]
 }
 
-function getCaregiverChecklist(profile: Profile, caregiver?: Caregiver | null): CheckItem[] {
+function getCaregiverChecklist(profile: Profile, caregiver?: Caregiver | null, isMfaEnabled?: boolean): CheckItem[] {
   const hasRelationship = !!caregiver?.relationship
-  const hasPermissions = !!caregiver?.permissions
+  const hasPch = !!caregiver?.availabilityHours
 
   return [
     { label: 'Informations personnelles', done: !!(profile.firstName && profile.lastName && profile.phone) },
     { label: 'Lien de parenté', done: hasRelationship, link: { label: 'Renseigner', to: '#section-aidant' } },
-    { label: "Droits d'accès", done: hasPermissions },
+    { label: 'Enveloppe PCH', done: hasPch, link: { label: 'Configurer', to: '/parametres' } },
+    { label: 'Double authentification', done: !!isMfaEnabled, link: { label: 'Activer', to: '/parametres' } },
   ]
 }
 
-export function ProfileCompletionWidget({ profile, employer, employee, caregiver }: ProfileCompletionWidgetProps) {
+export function ProfileCompletionWidget({ profile, employer, employee, caregiver, isMfaEnabled }: ProfileCompletionWidgetProps) {
   const checklist =
     profile.role === 'employer'
-      ? getEmployerChecklist(profile, employer)
+      ? getEmployerChecklist(profile, employer, isMfaEnabled)
       : profile.role === 'employee'
-        ? getEmployeeChecklist(profile, employee)
-        : getCaregiverChecklist(profile, caregiver)
+        ? getEmployeeChecklist(profile, employee, isMfaEnabled)
+        : getCaregiverChecklist(profile, caregiver, isMfaEnabled)
 
   const doneCount = checklist.filter((item) => item.done).length
   const percentage = Math.round((doneCount / checklist.length) * 100)

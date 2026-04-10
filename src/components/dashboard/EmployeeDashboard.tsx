@@ -92,23 +92,18 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
         <OnboardingWidget profile={profile} userRole="employee" />
       </GridItem>
 
-      {/* 8 mobile / 3 desktop. Stats — full width */}
+      {/* 3. Stats — full width */}
       <GridItem order={{ base: 8, lg: 0 }} gridColumn={{ base: '1', lg: '1 / -1' }} gridRow={{ lg: '3' }}>
         <StatsWidget userRole="employee" profileId={profile.id} />
       </GridItem>
 
-      {/* 2. Timeline — main col */}
-      <GridItem order={{ base: 2, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '3' }}>
+      {/* 4. Timeline — main col */}
+      <GridItem order={{ base: 2, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '4' }}>
         <EmployeeShiftTimeline employeeId={profile.id} />
       </GridItem>
 
-      {/* 3. Messages — aside col */}
-      <GridItem order={{ base: 3, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '4' }}>
-        <RecentMessagesWidget userId={profile.id} />
-      </GridItem>
-
       {/* 4. Clock-in — aside col */}
-      <GridItem order={{ base: 4, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '3' }}>
+      <GridItem order={{ base: 4, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '4' }}>
         <ClockInWidget
           hasActiveShift={!!activeShift}
           activeShiftLabel={activeShift ? `Intervention ${activeShift.startTime.slice(0, 5)} – ${activeShift.endTime.slice(0, 5)}` : undefined}
@@ -116,17 +111,22 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
       </GridItem>
 
       {/* 5. Heures du mois — main col */}
-      <GridItem order={{ base: 5, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '4' }}>
+      <GridItem order={{ base: 5, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '5' }}>
         <EmployeeHoursProgress employeeId={profile.id} />
       </GridItem>
 
+      {/* 5. Messages — aside col */}
+      <GridItem order={{ base: 3, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '5' }}>
+        <RecentMessagesWidget userId={profile.id} />
+      </GridItem>
+
       {/* 6. Congés & absences — main col */}
-      <GridItem order={{ base: 6, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '5' }}>
+      <GridItem order={{ base: 6, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '6' }}>
         <EmployeeLeaveWidget employeeId={profile.id} />
       </GridItem>
 
-      {/* 7. Mes documents — aside col */}
-      <GridItem order={{ base: 7, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '5' }}>
+      {/* 6. Mes documents — aside col */}
+      <GridItem order={{ base: 7, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '6' }}>
         <EmployeeDocumentsWidget employeeId={profile.id} />
       </GridItem>
     </Grid>
