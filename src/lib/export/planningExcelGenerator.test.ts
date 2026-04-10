@@ -65,31 +65,31 @@ function makeData(overrides: Partial<PlanningExportData> = {}): PlanningExportDa
 }
 
 describe('generatePlanningExcel', () => {
-  it('retourne un résultat réussi', () => {
-    const result = generatePlanningExcel(makeData())
+  it('retourne un résultat réussi', async () => {
+    const result = await generatePlanningExcel(makeData())
     expect(result.success).toBe(true)
     expect(result.filename).toMatch(/\.xlsx$/)
     expect(result.mimeType).toContain('spreadsheetml')
   })
 
-  it('le contenu est la valeur retournée par XLSX.write', () => {
-    const result = generatePlanningExcel(makeData())
+  it('le contenu est la valeur retournée par XLSX.write', async () => {
+    const result = await generatePlanningExcel(makeData())
     expect(result.content).toBe('MOCK_BASE64_XLSX')
   })
 
-  it(`le nom de fichier contient le nom de l'employé si un seul employé`, () => {
-    const result = generatePlanningExcel(makeData())
+  it(`le nom de fichier contient le nom de l'employé si un seul employé`, async () => {
+    const result = await generatePlanningExcel(makeData())
     expect(result.filename).toContain('curie')
     expect(result.filename).toContain('2024')
     expect(result.filename).toContain('03')
   })
 
-  it('le nom de fichier est générique si plusieurs employés', () => {
+  it('le nom de fichier est générique si plusieurs employés', async () => {
     const data = makeData({
       employees: [makeEmployee(), makeEmployee({ employeeId: 'emp-2', firstName: 'Paul', lastName: 'Martin' })],
       totalEmployees: 2,
     })
-    const result = generatePlanningExcel(data)
+    const result = await generatePlanningExcel(data)
     expect(result.filename).toMatch(/planning_.*\.xlsx/)
   })
 
@@ -98,7 +98,7 @@ describe('generatePlanningExcel', () => {
     vi.mocked(XLSX.write).mockImplementationOnce(() => {
       throw new Error('XLSX error')
     })
-    const result = generatePlanningExcel(makeData())
+    const result = await generatePlanningExcel(makeData())
     expect(result.success).toBe(false)
     expect(result.error).toBe('XLSX error')
   })

@@ -154,7 +154,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
           result = await generatePlanningPdf(planningData)
           break
         case 'excel':
-          result = generatePlanningExcel(planningData)
+          result = await generatePlanningExcel(planningData)
           break
         case 'ical':
           result = generatePlanningIcal(planningData)
