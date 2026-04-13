@@ -83,16 +83,21 @@ export default defineConfig({
             id.includes('/blob-stream/')
           ) return 'vendor-pdf'
 
-          // Chakra UI + Emotion + framer-motion + @ark-ui + @floating-ui (toujours chargés, groupés)
+          // @ark-ui + @zag-js en premier (dépendances primitives de Chakra)
+          if (id.includes('@ark-ui') || id.includes('@zag-js') || id.includes('@zagjs')) return 'vendor-ark'
+
+          // Emotion (CSS-in-JS runtime, chargé avant Chakra)
+          if (id.includes('@emotion')) return 'vendor-emotion'
+
+          // framer-motion / motion
           if (
-            id.includes('@chakra-ui') ||
-            id.includes('@emotion') ||
             id.includes('framer-motion') ||
             id.includes('/motion-dom/') ||
-            id.includes('/motion-utils/') ||
-            id.includes('@ark-ui') ||
-            id.includes('@floating-ui')
-          ) return 'vendor-chakra'
+            id.includes('/motion-utils/')
+          ) return 'vendor-motion'
+
+          // Chakra UI + @floating-ui (dépend d'Emotion + Ark)
+          if (id.includes('@chakra-ui') || id.includes('@floating-ui')) return 'vendor-chakra'
 
           // Supabase
           if (id.includes('@supabase')) return 'vendor-supabase'
