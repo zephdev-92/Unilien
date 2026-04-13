@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 10 avril 2026 (2210 tests / 126 fichiers — revue roadmap complète, 96/102 prototype items, E2E Playwright, email Resend, 2FA TOTP, OAuth)
+**Dernière mise à jour**: 10 avril 2026 (2251 tests / 128 fichiers — Tests UI Phase 3 : LiaisonPage 13 tests + LogbookPage 24 tests)
 **Version**: 1.15.0
 **Statut projet**: 🟡 En développement actif
 
@@ -20,14 +20,14 @@
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 90% | 🟡 Bon (bulletins v2, @react-pdf/renderer, CESU, planning exports — search + table unifiée manquants) |
 | **Notifications** | 85% | 🟡 Bon (in-app + push + email Resend OK — SMS + vérification tél manquants) |
-| **Tests** | 54% stmts | 🟡 Bon (2210 tests / 126 fichiers, E2E Playwright 8 tests — Phase 3 UI + plus de scénarios E2E à faire) |
+| **Tests** | 54% stmts | 🟡 Bon (2251 tests / 128 fichiers, E2E Playwright 8 tests — Phase 3 UI terminée, plus de scénarios E2E à faire) |
 | **Sécurité** | 98% | ✅ Excellent (RLS renforcé 041-049, RGPD art. 9, audit trail, droit effacement, CSP enforced — pgsodium V3) |
 | **Qualité code** | 98% | ✅ Excellent (0 `select('*')`, 0 Supabase direct dans composants, Provider snippet v3, 0 `as any`, 0 `eslint-disable` type) |
 
 ### Métriques Clés
 
 - **Fichiers source**: ~270 fichiers TS/TSX (hors tests)
-- **Tests**: 2210 tests / 126 fichiers (54% stmts — 54/40/40/50 seuils) + 8 tests E2E Playwright
+- **Tests**: 2251 tests / 128 fichiers (54% stmts — 54/40/40/50 seuils) + 8 tests E2E Playwright
 - **Migrations DB**: 49 migrations
 - **Composants UI**: ~145 composants
 - **Services**: 30 services
@@ -1994,7 +1994,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 - ✅ Compliance redesign (score ring, alert cards, IDCC checks)
 - 🟡 Notifications Email
 - 🟡 Vérification téléphone SMS
-- 🟡 Tests composants UI critiques restants (Phase 3)
+- ✅ Tests composants UI critiques restants (Phase 3) — LiaisonPage + LogbookPage (PR #253)
 - ✅ Documentation sécurité / accessibilité / SEO alignée (`041` + `SECURITY_CHECK` — 26–27/03/2026)
 - ✅ Design tokens sémantiques (~237 hex migrés) — PR #185
 - ✅ Dark mode complet — PR #192
@@ -2028,7 +2028,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 
 **Semaine 23-26** :
 - 🟡 SMS notifications + vérification téléphone
-- 🟡 Tests UI Phase 3 (composants restants)
+- ✅ Tests UI Phase 3 (composants restants) — PR #253
 - ✅ Spacing tokens custom
 - 🟢 Performance (Web Vitals, Sentry)
 - Préparation release v1.0
@@ -2210,10 +2210,10 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
    - ✅ AccessibleInput/Select : `minH="44px"` hardcodé
    - ✅ Tous les `button` / `[role="button"]` : `globalCss @media (pointer: coarse)` (PR #251)
 
-11. **Tests UI — Phase 3** — composants restants sans couverture
+11. **Tests UI — Phase 3** — composants restants sans couverture ✅
     - ✅ SettingsPage (66 tests)
-    - ❌ LiaisonPage — pas de tests
-    - ❌ LogbookPage — pas de tests
+    - ✅ LiaisonPage (13 tests — PR #253)
+    - ✅ LogbookPage (24 tests — PR #253)
     - ❌ Nouveaux tests E2E (création shift, export CESU, notifications)
 
 ### 🟢 V2 — Long terme
@@ -2376,7 +2376,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 - **Mensuel**: Analyse métriques, retrospective
 - **Trimestriel**: Stratégie, budget, recrutement
 
-> **Dernière review**: 10 avril 2026 — Revue complète roadmap (PR #245) : 9 sections auditées, prototype gap 96/102 (94%), E2E Playwright, email Resend, 2FA TOTP, OAuth ; métriques : **2210 tests / 126 fichiers** (Semaine 20 — 10/04/2026).
+> **Dernière review**: 10 avril 2026 — Tests UI Phase 3 terminée (PR #253) : LiaisonPage 13 tests + LogbookPage 24 tests ; métriques : **2251 tests / 128 fichiers** (Semaine 20 — 10/04/2026).
 
 ---
 
