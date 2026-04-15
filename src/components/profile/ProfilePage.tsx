@@ -544,7 +544,7 @@ function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; 
           {(employee?.qualifications?.length ?? 0) > 0 ? (
             <Flex gap={2} flexWrap="wrap">
               {employee?.qualifications.map((q) => (
-                <Box key={q} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="brand.subtle" color="brand.500">{q}</Box>
+                <Box key={q} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" bg="brand.subtle" color="brand.fg">{q}</Box>
               ))}
             </Flex>
           ) : (
@@ -556,7 +556,7 @@ function EmployeeViewMode({ employee, isLoading }: { employee: Employee | null; 
               <Text fontSize="sm" fontWeight={600} color="text.muted" mb={2}>Langues</Text>
               <Flex gap={2} flexWrap="wrap">
                 {employee?.languages.map((l) => (
-                  <Box key={l} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" borderWidth="1px" borderColor="border.default" color="text.secondary">{l}</Box>
+                  <Box key={l} fontSize="xs" fontWeight={600} px="10px" py="3px" borderRadius="full" borderWidth="1px" borderColor="border.strong" color="brand.fg">{l}</Box>
                 ))}
               </Flex>
             </Box>
