@@ -39,7 +39,10 @@ export function QualificationsSubSection({
         {qualifications.map((qual) => (
           <Badge
             key={qual}
-            colorPalette="brand"
+            variant="plain"
+            bg="brand.500"
+            color="white"
+            _dark={{ bg: 'brand.200', color: 'brand.900' }}
             px={3}
             py={1}
             borderRadius="full"
@@ -73,13 +76,17 @@ export function QualificationsSubSection({
         {AVAILABLE_QUALIFICATIONS.filter((q) => !qualifications.includes(q)).map((qual) => (
           <Badge
             key={qual}
-            variant="outline"
-            colorPalette="gray"
+            variant="plain"
+            bg="transparent"
+            color="text.default"
+            borderWidth="1px"
+            borderColor="border.strong"
+            _dark={{ borderColor: 'brand.200', color: 'brand.200' }}
             px={3}
             py={1}
             borderRadius="full"
             cursor="pointer"
-            _hover={{ bg: 'bg.surface.hover' }}
+            _hover={{ bg: 'brand.subtle' }}
             onClick={() => onAdd(qual)}
           >
             + {qual}

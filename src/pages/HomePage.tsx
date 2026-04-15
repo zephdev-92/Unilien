@@ -681,8 +681,8 @@ export function HomePage() {
                 bg="danger.subtle"
                 borderRadius="md"
                 borderLeftWidth="3px"
-                borderLeftColor="danger.500"
-                color="danger.500"
+                borderLeftColor="danger.solid"
+                color="danger.fg"
                 role="alert"
               >
                 <Box w="18px" h="18px" flexShrink={0} mt="2px">
@@ -704,8 +704,8 @@ export function HomePage() {
                 bg="warm.subtle"
                 borderRadius="md"
                 borderLeftWidth="3px"
-                borderLeftColor="warm.600"
-                color="warm.600"
+                borderLeftColor="warm.solid"
+                color="warm.fg"
                 role="alert"
               >
                 <Box w="18px" h="18px" flexShrink={0} mt="2px">

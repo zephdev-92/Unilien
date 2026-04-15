@@ -1,6 +1,6 @@
 # Checklist — Ecarts Prototype vs React
 
-**Derniere mise a jour** : 10 avril 2026
+**Derniere mise a jour** : 15 avril 2026
 **Reference prototype** : `/media/zephdev/Jeux/warp/template-final/`
 **Reference React** : `/media/zephdev/Jeux/warp/unilien/src/`
 
@@ -25,7 +25,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 - [x] **Panneau PCH** (aidant) — configuration PCH ✅ _(localStorage)_
 - [x] **Panneau Apparence** — toggle dark/light mode ✅ _(PR #192, tokens semantiques, ~237 hex migres)_
 - [x] **Panneau Apparence** — selecteur densite (confortable/compact) ✅ _(localStorage)_
-- [ ] **Panneau Apparence** — selecteur palette couleurs
+- [x] **Panneau Apparence** — selecteur palette couleurs ✅ _(4 palettes : Ardoise, Foret, Indigo, Rubis — CSS vars runtime, localStorage, 15/04/2026)_
 - [x] **Panneau Accessibilite** — toggle contraste eleve ✅ _(Zustand + localStorage)_
 - [x] **Panneau Accessibilite** — controle echelle texte (slider 80-150%) ✅
 - [x] **Panneau Accessibilite** — toggle optimisation lecteur ecran ✅
@@ -179,7 +179,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 | Bloc | Items | Done | Priorite |
 |------|-------|------|----------|
-| Settings | 22 | 21 | Basse (2 items restants : palette couleurs, confidentialite) |
+| Settings | 22 | 22 | ✅ Termine (confidentialite : badge "Bientot" intentionnel) |
 | Dashboard | 11 | 9 | Basse (demo banner, empty state) |
 | Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |
@@ -192,4 +192,4 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
 | Patterns UI | 4 | 3 | Basse |
-| **Total** | **102** | **96** | — |
+| **Total** | **102** | **97** | — |
