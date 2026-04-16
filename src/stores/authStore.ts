@@ -72,9 +72,14 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'unilien-auth',
       storage: createJSONStorage(() => localStorage),
-      // Ne persister que certaines données
+      // Ne persister que le strict minimum (id + role) pour le routage RBAC.
+      // Les données personnelles (nom, email, téléphone) ne sont PAS persistées
+      // afin de limiter l'exposition en cas de XSS sur localStorage.
+      // Le profil complet est re-fetché depuis Supabase à chaque chargement.
       partialize: (state) => ({
-        profile: state.profile,
+        profile: state.profile
+          ? { id: state.profile.id, role: state.profile.role }
+          : null,
       }),
     }
   )
