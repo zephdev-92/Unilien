@@ -11,6 +11,7 @@ import { AccessibleButton } from '@/components/ui'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Shift } from '@/types'
 import { formatTime } from './clockInUtils'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface ClockInProgressSectionProps {
   activeShift: Shift
@@ -112,7 +113,7 @@ export function ClockInProgressSection({
             <Box p={4} bg="purple.50" borderRadius="12px" borderWidth="1px" borderColor="purple.200">
               <Text fontWeight="medium" color="purple.800" mb={1}>
                 <span aria-hidden="true">🌙 </span>
-                Heures de nuit : {nightHoursForActive.toFixed(1)}h
+                Heures de nuit : {formatHoursCompact(nightHoursForActive)}
               </Text>
               <Text fontSize="sm" color="purple.600" mb={3}>
                 La majoration +20% s'applique uniquement si vous effectuez un acte (soin,

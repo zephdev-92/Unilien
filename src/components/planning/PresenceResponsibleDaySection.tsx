@@ -1,4 +1,5 @@
 import { Box, Flex, Text } from '@chakra-ui/react'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface EditProps {
   mode?: 'edit'
@@ -52,14 +53,14 @@ export function PresenceResponsibleDaySection({ mode = 'edit', durationHours, ef
         <>
           <Flex justify="space-between" align="center">
             <Text fontSize="sm" color="text.muted">Présence</Text>
-            <Text fontSize="sm">{durationHours.toFixed(1)}h</Text>
+            <Text fontSize="sm">{formatHoursCompact(durationHours)}</Text>
           </Flex>
           <Flex justify="space-between" align="center" mt={1}>
             <Text fontSize="sm" color="text.muted">Équivalent travail (×2/3)</Text>
             <Text fontSize="sm" fontWeight="bold" color="brand.700">
               {effectiveHoursComputed != null
-                ? `${effectiveHoursComputed.toFixed(1)}h`
-                : `${(durationHours * (2 / 3)).toFixed(1)}h`
+                ? formatHoursCompact(effectiveHoursComputed)
+                : formatHoursCompact(durationHours * (2 / 3))
               }
             </Text>
           </Flex>
@@ -68,12 +69,12 @@ export function PresenceResponsibleDaySection({ mode = 'edit', durationHours, ef
         <Box p={3} bg="bg.surface" borderRadius="10px">
           <Flex justify="space-between" align="center">
             <Text fontSize="sm" color="text.muted">Présence responsable</Text>
-            <Text fontSize="sm" fontWeight="medium">{durationHours.toFixed(1)}h</Text>
+            <Text fontSize="sm" fontWeight="medium">{formatHoursCompact(durationHours)}</Text>
           </Flex>
           <Flex justify="space-between" align="center" mt={1}>
             <Text fontSize="sm" color="text.muted">Équivalent travail effectif (×2/3)</Text>
             <Text fontSize="sm" fontWeight="bold" color="brand.700">
-              {effectiveHoursComputed != null ? `${effectiveHoursComputed.toFixed(1)}h` : '—h'}
+              {effectiveHoursComputed != null ? formatHoursCompact(effectiveHoursComputed) : '—'}
             </Text>
           </Flex>
         </Box>

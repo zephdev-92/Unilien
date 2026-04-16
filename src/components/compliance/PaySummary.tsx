@@ -13,6 +13,7 @@ import {
 } from '@chakra-ui/react'
 import type { ComputedPay } from '@/types'
 import { formatCurrency, getPayBreakdown } from '@/lib/compliance'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface PaySummaryProps {
   pay: ComputedPay
@@ -43,7 +44,7 @@ export function PaySummary({
     return (
       <Flex justify="space-between" align="center" p={2} bg="bg.page" borderRadius="10px">
         <Text fontSize="sm" color="text.muted">
-          {durationHours.toFixed(1)}h × {formatCurrency(hourlyRate)}
+          {formatHoursCompact(durationHours)} × {formatCurrency(hourlyRate)}
           {hasMajorations && ' + majorations'}
         </Text>
         <Text fontWeight="bold" color="brand.600">
@@ -76,8 +77,8 @@ export function PaySummary({
         </Flex>
         <Text fontSize="sm" color="text.muted" mt={1}>
           {isGuard24h
-            ? `Garde 24h — ${durationHours.toFixed(1)}h × ${formatCurrency(hourlyRate)}/h (selon segments)`
-            : `${durationHours.toFixed(1)} heures × ${formatCurrency(hourlyRate)}/h`}
+            ? `Garde 24h — ${formatHoursCompact(durationHours)} × ${formatCurrency(hourlyRate)}/h (selon segments)`
+            : `${formatHoursCompact(durationHours)} × ${formatCurrency(hourlyRate)}/h`}
         </Text>
       </Box>
 

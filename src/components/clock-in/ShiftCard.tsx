@@ -3,6 +3,7 @@ import { Box, Flex, Text, Badge } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { calculateNightHours } from '@/lib/compliance'
 import { sanitizeText } from '@/lib/sanitize'
+import { formatHoursCompact } from '@/lib/formatHours'
 import type { Shift } from '@/types'
 import { formatTime } from './clockInUtils'
 
@@ -55,7 +56,7 @@ export function ShiftCard({
             <Flex align="center" gap={1} mt={1}>
               <Text fontSize="xs" color="purple.600">
                 <span aria-hidden="true">🌙 </span>
-                {nightHours.toFixed(1)}h de nuit
+                {formatHoursCompact(nightHours)} de nuit
                 {shift.hasNightAction ? ' (acte)' : ' (présence)'}
               </Text>
             </Flex>

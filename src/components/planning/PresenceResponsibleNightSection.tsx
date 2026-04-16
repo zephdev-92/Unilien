@@ -1,6 +1,7 @@
 import { Box, Flex, Text } from '@chakra-ui/react'
 import { AccessibleInput } from '@/components/ui'
 import { REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface EditProps {
   mode: 'edit'
@@ -50,8 +51,8 @@ export function PresenceResponsibleNightSection(props: Props) {
           </Text>
           <Text fontSize="sm" fontWeight="bold" color={isRequalified ? 'orange.700' : 'purple.700'}>
             {isRequalified
-              ? `${displayDuration.toFixed(1)}h effectives`
-              : `${(displayDuration * 0.25).toFixed(1)}h équiv.`
+              ? `${formatHoursCompact(displayDuration)} effectives`
+              : `${formatHoursCompact(displayDuration * 0.25)} équiv.`
             }
           </Text>
         </Flex>
@@ -94,7 +95,7 @@ export function PresenceResponsibleNightSection(props: Props) {
         <Box p={3} bg="bg.surface" borderRadius="10px">
           <Flex justify="space-between" align="center">
             <Text fontSize="sm" color="text.muted">Durée de présence</Text>
-            <Text fontSize="sm" fontWeight="medium">{durationHours.toFixed(1)}h</Text>
+            <Text fontSize="sm" fontWeight="medium">{formatHoursCompact(durationHours)}</Text>
           </Flex>
           <Flex justify="space-between" align="center" mt={1}>
             <Text fontSize="sm" color="text.muted">
@@ -102,8 +103,8 @@ export function PresenceResponsibleNightSection(props: Props) {
             </Text>
             <Text fontSize="sm" fontWeight="bold" color={isRequalified ? 'orange.700' : 'purple.700'}>
               {isRequalified
-                ? `${durationHours.toFixed(1)}h effectives`
-                : `${(durationHours * 0.25).toFixed(1)}h équiv.`
+                ? `${formatHoursCompact(durationHours)} effectives`
+                : `${formatHoursCompact(durationHours * 0.25)} équiv.`
               }
             </Text>
           </Flex>
