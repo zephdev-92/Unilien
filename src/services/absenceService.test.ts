@@ -36,6 +36,7 @@ vi.mock('@/lib/logger', () => ({
 
 vi.mock('@/lib/sanitize', () => ({
   sanitizeText: vi.fn((text: string) => text.trim()),
+  sanitizeFileExtension: vi.fn((ext: string) => ext.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || 'bin'),
 }))
 
 const mockValidateAbsenceRequest = vi.fn()

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeFileExtension } from '@/lib/sanitize'
 import type { Absence } from '@/types'
 
 const JUSTIFICATIONS_BUCKET = 'justifications'
@@ -79,7 +80,7 @@ export async function uploadJustification(
     throw new Error(validation.error)
   }
 
-  const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf'
+  const fileExt = sanitizeFileExtension(file.name.split('.').pop() || 'pdf')
   const fileName = generateJustificationFileName(employeeId, fileExt, options)
 
   const { error: uploadError } = await supabase.storage

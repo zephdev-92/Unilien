@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeText, sanitizeBasicHtml, escapeHtml, cleanUserInput } from './sanitize'
+import { sanitizeText, sanitizeBasicHtml, escapeHtml, cleanUserInput, sanitizeFileExtension, sanitizeFileName } from './sanitize'
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
@@ -131,5 +131,68 @@ describe('cleanUserInput', () => {
 
   it('retourne le texte propre sans modification si déjà propre', () => {
     expect(cleanUserInput('Texte propre')).toBe('Texte propre')
+  })
+})
+
+describe('sanitizeFileExtension', () => {
+  it('conserve une extension valide', () => {
+    expect(sanitizeFileExtension('pdf')).toBe('pdf')
+  })
+
+  it('convertit en minuscules', () => {
+    expect(sanitizeFileExtension('PDF')).toBe('pdf')
+  })
+
+  it('supprime les caractères spéciaux (path traversal)', () => {
+    expect(sanitizeFileExtension('pdf../../x')).toBe('pdfx')
+  })
+
+  it('supprime les slashes', () => {
+    expect(sanitizeFileExtension('pdf/../../etc/passwd')).toBe('pdfetcpass')
+  })
+
+  it('retourne "bin" pour une extension vide', () => {
+    expect(sanitizeFileExtension('')).toBe('bin')
+  })
+
+  it('retourne "bin" si que des caractères spéciaux', () => {
+    expect(sanitizeFileExtension('../../')).toBe('bin')
+  })
+
+  it('tronque les extensions trop longues', () => {
+    expect(sanitizeFileExtension('a'.repeat(50))).toHaveLength(10)
+  })
+})
+
+describe('sanitizeFileName', () => {
+  it('conserve un nom valide', () => {
+    expect(sanitizeFileName('bulletin_curie_2026_01.pdf')).toBe('bulletin_curie_2026_01.pdf')
+  })
+
+  it('remplace les caractères spéciaux par des underscores', () => {
+    expect(sanitizeFileName('fichier<script>.pdf')).toBe('fichier_script_.pdf')
+  })
+
+  it('bloque le path traversal (double points)', () => {
+    const result = sanitizeFileName('../../etc/passwd')
+    expect(result).not.toContain('..')
+    expect(result).not.toContain('/')
+  })
+
+  it('remplace les espaces par des underscores', () => {
+    expect(sanitizeFileName('mon fichier.pdf')).toBe('mon_fichier.pdf')
+  })
+
+  it('décode les noms URL-encodés', () => {
+    expect(sanitizeFileName('fichier%20test.pdf')).toBe('fichier_test.pdf')
+  })
+
+  it('tronque les noms trop longs à 200 caractères', () => {
+    const longName = 'a'.repeat(250) + '.pdf'
+    expect(sanitizeFileName(longName).length).toBeLessThanOrEqual(200)
+  })
+
+  it('retourne un nom par défaut si le résultat est vide', () => {
+    expect(sanitizeFileName('')).toMatch(/^file_\d+$/)
   })
 })

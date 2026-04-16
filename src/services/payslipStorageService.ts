@@ -10,6 +10,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { sanitizeFileName } from '@/lib/sanitize'
 import type { Payslip } from '@/types'
 import type { PayslipDbRow } from '@/types/database'
 import type { PayslipData } from '@/lib/export/types'
@@ -75,7 +76,8 @@ export async function uploadPayslipPdf(
   pdfDataUri: string
 ): Promise<string | null> {
   const blob = dataUriToBlob(pdfDataUri)
-  const path = `${employerId}/${employeeId}/${year}/${String(month).padStart(2, '0')}/${filename}`
+  const safeName = sanitizeFileName(filename)
+  const path = `${employerId}/${employeeId}/${year}/${String(month).padStart(2, '0')}/${safeName}`
 
   const { error } = await supabase.storage
     .from(BUCKET)
