@@ -3,6 +3,7 @@
 // ============================================
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { createRateLimiter } from '../_shared/rateLimit.ts'
 
 interface EmailPayload {
   to: string
@@ -24,21 +25,7 @@ function getCorsOrigin(req: Request): string {
   return ALLOWED_ORIGINS[0]
 }
 
-// Rate limiting en mémoire par userId (reset au redéploiement)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_MAX = 10       // max 10 emails
-const RATE_LIMIT_WINDOW = 60000 // par minute
-
-function isRateLimited(userId: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(userId)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW })
-    return false
-  }
-  entry.count++
-  return entry.count > RATE_LIMIT_MAX
-}
+const rateLimiter = createRateLimiter(10) // max 10 emails/min
 
 serve(async (req) => {
   const corsOrigin = getCorsOrigin(req)
@@ -94,11 +81,8 @@ serve(async (req) => {
     }
 
     // Rate limiting
-    if (isRateLimited(user.id)) {
-      return new Response(JSON.stringify({ error: 'Too many requests' }), {
-        status: 429,
-        headers: corsHeaders,
-      })
+    if (rateLimiter.isLimited(user.id)) {
+      return rateLimiter.tooManyRequestsResponse(corsHeaders)
     }
 
     const payload: EmailPayload = await req.json()
