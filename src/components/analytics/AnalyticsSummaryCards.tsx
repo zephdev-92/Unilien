@@ -1,5 +1,6 @@
 import { Box, SimpleGrid, Flex, Text } from '@chakra-ui/react'
 import type { AnalyticsSummary } from '@/services/analyticsService'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface AnalyticsSummaryCardsProps {
   data: AnalyticsSummary
@@ -40,8 +41,8 @@ export function AnalyticsSummaryCards({ data, isEmployer }: AnalyticsSummaryCard
   const cards: CardData[] = [
     {
       label: 'Total heures',
-      value: `${totals.totalHours}h`,
-      sub: `Moy. ${totals.avgHoursPerMonth}h/mois`,
+      value: formatHoursCompact(totals.totalHours),
+      sub: `Moy. ${formatHoursCompact(totals.avgHoursPerMonth)}/mois`,
       iconPath: 'M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.42V7z',
       iconBg: 'blue.50',
       iconColor: 'blue.500',
@@ -56,8 +57,8 @@ export function AnalyticsSummaryCards({ data, isEmployer }: AnalyticsSummaryCard
     },
     {
       label: 'Heures ce mois',
-      value: currentMonth ? `${currentMonth.totalHours}h` : '0h',
-      sub: hoursDiff > 0 ? `+${hoursDiff}h vs mois dernier` : hoursDiff < 0 ? `${hoursDiff}h vs mois dernier` : '= mois dernier',
+      value: currentMonth ? formatHoursCompact(currentMonth.totalHours) : '0h',
+      sub: hoursDiff > 0 ? `+${formatHoursCompact(hoursDiff)} vs mois dernier` : hoursDiff < 0 ? `${formatHoursCompact(hoursDiff)} vs mois dernier` : '= mois dernier',
       iconPath: 'M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z',
       iconBg: 'blue.50',
       iconColor: 'blue.500',

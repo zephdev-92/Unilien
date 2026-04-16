@@ -8,6 +8,7 @@ import { AccessibleInput, AccessibleButton } from '@/components/ui'
 import { calculateShiftDuration } from '@/lib/compliance/utils'
 import { REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import type { GuardSegment } from '@/types'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface Guard24hSectionProps {
   guardSegments: GuardSegment[]
@@ -239,7 +240,7 @@ export function Guard24hSection({
         <Text fontSize="14px" color="brand.500">
           Travail effectif :{' '}
           <Text as="span" fontWeight="bold" color={(effectiveHoursComputed ?? 0) > 12 ? '#DC2626' : 'brand.500'}>
-            {(effectiveHoursComputed ?? 0).toFixed(1)}h
+            {formatHoursCompact(effectiveHoursComputed ?? 0)}
           </Text>
           {' '}/ 12h max
         </Text>

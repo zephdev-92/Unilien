@@ -1,4 +1,5 @@
 import { Box, Flex, Text, Switch } from '@chakra-ui/react'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface EditProps {
   mode: 'edit'
@@ -30,7 +31,7 @@ export function NightActionToggle(props: Props) {
         <Flex align="center" gap={2}>
           <Box>
             <Text fontSize="sm" fontWeight="medium" color="purple.800">
-              {nightHoursCount.toFixed(1)}h de nuit
+              {formatHoursCompact(nightHoursCount)} de nuit
               {hasNightAction
                 ? ' — Acte effectué (majoration +20%)'
                 : ' — Présence seule (pas de majoration)'
@@ -48,7 +49,7 @@ export function NightActionToggle(props: Props) {
       <Flex justify="space-between" align="center" mb={2}>
         <Box flex={1}>
           <Text fontWeight="medium" color="purple.800">
-            Heures de nuit détectées ({nightHoursCount.toFixed(1)}h)
+            Heures de nuit détectées ({formatHoursCompact(nightHoursCount)})
           </Text>
           <Text fontSize="sm" color="purple.600" mt={1}>
             La majoration de nuit (+20%) ne s'applique que si l'auxiliaire
@@ -73,7 +74,7 @@ export function NightActionToggle(props: Props) {
       </Flex>
       {hasNightAction && (
         <Text fontSize="xs" color="green.600" mt={2}>
-          Majoration de nuit appliquée : +20% sur {nightHoursCount.toFixed(1)}h
+          Majoration de nuit appliquée : +20% sur {formatHoursCompact(nightHoursCount)}
         </Text>
       )}
       {!hasNightAction && (

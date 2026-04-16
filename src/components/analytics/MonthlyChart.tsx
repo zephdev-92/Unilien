@@ -1,5 +1,6 @@
 import { Box, Flex, Text } from '@chakra-ui/react'
 import type { MonthlyData } from '@/services/analyticsService'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface MonthlyChartProps {
   data: MonthlyData[]
@@ -54,10 +55,10 @@ export function MonthlyChart({ data, metric, title }: MonthlyChartProps) {
               align="center"
               h="100%"
               justify="flex-end"
-              title={`${d.label}: ${metric === 'hours' ? `${value}h` : formatCurrency(value)}`}
+              title={`${d.label}: ${metric === 'hours' ? formatHoursCompact(value) : formatCurrency(value)}`}
             >
               <Text fontSize="xs" fontWeight="semibold" color="text.secondary" mb={1}>
-                {metric === 'hours' ? `${value}h` : `${Math.round(value / 1000)}k`}
+                {metric === 'hours' ? formatHoursCompact(value) : `${Math.round(value / 1000)}k`}
               </Text>
               <Box
                 w="100%"

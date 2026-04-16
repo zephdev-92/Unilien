@@ -3,6 +3,7 @@ import { Box, Flex, Text } from '@chakra-ui/react'
 import { format, isToday, isFuture } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { getShiftDurationMinutes } from '@/lib/compliance'
+import { formatHoursCompact } from '@/lib/formatHours'
 import { supabase } from '@/lib/supabase/client'
 import type { Shift, Absence } from '@/types'
 
@@ -243,13 +244,13 @@ function getEmployeeItems(stats: { totalHours: number; weeklyHours: number; shif
     {
       icon: <ClockIcon />,
       iconColor: 'blue' as IconColor,
-      value: `${stats.totalHours}h`,
+      value: formatHoursCompact(stats.totalHours),
       label: 'Heures effectuées',
     },
     {
       icon: <ActivityIcon />,
       iconColor: 'green' as IconColor,
-      value: stats.weeklyHours > 0 ? `${stats.weeklyHours}h` : '—',
+      value: stats.weeklyHours > 0 ? formatHoursCompact(stats.weeklyHours) : '—',
       label: 'Heures contractuelles',
     },
     {
@@ -278,19 +279,19 @@ function getCaregiverItems(
     {
       icon: <ClockIcon />,
       iconColor: 'blue' as IconColor,
-      value: `${stats.totalHours}h`,
+      value: formatHoursCompact(stats.totalHours),
       label: 'Heures effectuées',
     },
     {
       icon: <ShieldIcon />,
       iconColor: 'warn' as IconColor,
-      value: quota > 0 ? `${quota}h` : '—',
+      value: quota > 0 ? formatHoursCompact(quota) : '—',
       label: 'Quota PCH mensuel',
     },
     {
       icon: <ActivityIcon />,
       iconColor: 'green' as IconColor,
-      value: quota > 0 ? `${remaining}h` : '—',
+      value: quota > 0 ? formatHoursCompact(remaining) : '—',
       label: 'Restant ce mois',
     },
     {

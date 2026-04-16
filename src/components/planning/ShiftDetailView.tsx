@@ -7,6 +7,7 @@
 import { Box, Stack, Flex, Text } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { PaySummary } from '@/components/compliance'
+import { formatHoursCompact } from '@/lib/formatHours'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
@@ -82,8 +83,8 @@ export function ShiftDetailView({
         </Text>
         <Text fontSize="12px" color="text.muted" mt="2px">
           {shift.shiftType === 'guard_24h'
-            ? `${displayDuration.toFixed(1)}h travail effectif`
-            : `${displayDuration.toFixed(1)}h`}
+            ? `${formatHoursCompact(displayDuration)} travail effectif`
+            : formatHoursCompact(displayDuration)}
           {shift.breakDuration > 0 && ` (pause ${shift.breakDuration} min)`}
         </Text>
       </DetailRow>

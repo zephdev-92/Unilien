@@ -3,6 +3,7 @@ import { Box, SimpleGrid, Text, Flex, Skeleton } from '@chakra-ui/react'
 import { NavIcon } from '@/components/ui'
 import type { UserRole } from '@/types'
 import { logger } from '@/lib/logger'
+import { formatHoursCompact } from '@/lib/formatHours'
 import {
   getEmployerStats,
   getEmployeeStats,
@@ -80,9 +81,9 @@ function formatHoursDiff(diff: number): { text: string; type: 'positive' | 'nega
   if (diff === 0) {
     return { text: '= mois dernier', type: 'neutral' }
   } else if (diff > 0) {
-    return { text: `+${diff}h vs mois dernier`, type: 'positive' }
+    return { text: `+${formatHoursCompact(diff)} vs mois dernier`, type: 'positive' }
   } else {
-    return { text: `${diff}h vs mois dernier`, type: 'negative' }
+    return { text: `${formatHoursCompact(diff)} vs mois dernier`, type: 'negative' }
   }
 }
 
@@ -92,7 +93,7 @@ function formatEmployerStats(stats: EmployerStats): Stat[] {
   return [
     {
       label: 'Heures ce mois',
-      value: `${stats.hoursThisMonth}h`,
+      value: formatHoursCompact(stats.hoursThisMonth),
       change: hoursDiff.type === 'positive' ? `\u2191 ${hoursDiff.text}` : hoursDiff.type === 'negative' ? `\u2193 ${hoursDiff.text}` : hoursDiff.text,
       changeType: hoursDiff.type,
       iconType: 'clock',
@@ -137,7 +138,7 @@ function formatEmployeeStats(stats: EmployeeStats): Stat[] {
     },
     {
       label: 'Heures ce mois',
-      value: `${stats.hoursThisMonth}h`,
+      value: formatHoursCompact(stats.hoursThisMonth),
       change: stats.contractualHours > 0 ? `sur ${stats.contractualHours}h contractuelles` : 'Ce mois',
       changeType: 'neutral',
       iconType: 'clock',
@@ -174,7 +175,7 @@ function formatCaregiverStats(stats: CaregiverStats): Stat[] {
     },
     {
       label: 'Heures ce mois',
-      value: `${stats.hoursThisMonth}h`,
+      value: formatHoursCompact(stats.hoursThisMonth),
       change: stats.pchMonthlyHours > 0 ? `sur ${stats.pchMonthlyHours}h allouées PCH` : 'Ce mois',
       changeType: 'positive',
       iconType: 'clock',
@@ -182,7 +183,7 @@ function formatCaregiverStats(stats: CaregiverStats): Stat[] {
     },
     {
       label: 'Enveloppe PCH restante',
-      value: `${stats.pchRemaining}h`,
+      value: formatHoursCompact(stats.pchRemaining),
       change: new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
       changeType: 'neutral',
       iconType: 'shield',

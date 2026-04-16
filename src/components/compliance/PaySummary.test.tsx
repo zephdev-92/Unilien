@@ -48,7 +48,7 @@ describe('PaySummary', () => {
       renderWithProviders(
         <PaySummary pay={paySimple} hourlyRate={10} durationHours={8} compact />
       )
-      expect(screen.getByText(/8\.0h × 10,00 €/)).toBeInTheDocument()
+      expect(screen.getByText(/8h × 10,00 €/)).toBeInTheDocument()
     })
 
     it('affiche le total pay en mode compact', () => {
@@ -90,11 +90,11 @@ describe('PaySummary', () => {
       expect(amounts.length).toBeGreaterThan(0)
     })
 
-    it('affiche la description des heures (ex: 8.0 heures × taux/h)', () => {
+    it('affiche la description des heures (ex: 8h × taux/h)', () => {
       renderWithProviders(
         <PaySummary pay={paySimple} hourlyRate={12.5} durationHours={8} />
       )
-      expect(screen.getByText(/8\.0 heures × 12,50 €\/h/)).toBeInTheDocument()
+      expect(screen.getByText(/8h × 12,50 €\/h/)).toBeInTheDocument()
     })
 
     it('affiche le texte "Garde 24h" pour shiftType=guard_24h', () => {
@@ -108,7 +108,7 @@ describe('PaySummary', () => {
       renderWithProviders(
         <PaySummary pay={paySimple} hourlyRate={10} durationHours={8} shiftType="effective" />
       )
-      expect(screen.getByText(/8\.0 heures × 10,00 €\/h/)).toBeInTheDocument()
+      expect(screen.getByText(/8h × 10,00 €\/h/)).toBeInTheDocument()
     })
   })
 

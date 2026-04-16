@@ -3,6 +3,7 @@ import { Box, Flex, Text, Badge, Stack, Center, Spinner } from '@chakra-ui/react
 import { AccessibleButton } from '@/components/ui'
 import { calculateNightHours, getShiftDurationMinutes } from '@/lib/compliance'
 import { sanitizeText } from '@/lib/sanitize'
+import { formatHoursCompact } from '@/lib/formatHours'
 import type { Shift } from '@/types'
 import { formatTime, formatDayLabel, formatHours } from './clockInUtils'
 
@@ -72,7 +73,7 @@ function HistoryShiftRow({ shift }: { shift: Shift }) {
                 variant="subtle"
               >
                 <span aria-hidden="true">🌙 </span>
-                {nightHours.toFixed(1)}h {shift.hasNightAction ? '(acte)' : '(présence)'}
+                {formatHoursCompact(nightHours)} {shift.hasNightAction ? '(acte)' : '(présence)'}
               </Badge>
             )}
           </Flex>
