@@ -57,13 +57,13 @@ Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenn
   - Suivre `npm audit` (ex. chaîne `vite-plugin-pwa` / `serialize-javascript`) et appliquer les correctifs sans régression PWA.
 
 - **Stockage client**
-  - `localStorage` contient le profil utilisateur (sans tokens). En cas de XSS, ce profil reste exposé : limiter les champs persistés au strict nécessaire.
+  - `localStorage` ne contient plus que `id` et `role` du profil (PR #262). Les données personnelles (nom, email, téléphone) ne sont plus exposées en cas de XSS.
 
 - **Chiffrement des données sensibles**
   - Données de santé isolées dans `employer_health_data` et protégées par RLS owner-only ; chiffrement au repos (`pgsodium`) reste un objectif après migration Supabase self-hosted.
 
 - **Rate limiting**
-  - Pas encore de politique homogène sur tous les points sensibles (auth, upload, notifications) — à planifier selon l’hébergeur / Edge.
+  - Politique homogène sur toutes les Edge Functions : `send-email` (10/min), `send-push` (30/min), `invite-caregiver` (5/min), `invite-employee` (5/min). Module partagé `_shared/rateLimit.ts` (PR #264). Auth rate-limité nativement par Supabase.
 
 - **Pièces jointes / noms de fichiers**
   - Sanitisation du nom de fichier dans `attachmentService` (path traversal) — toujours pertinente.
@@ -97,7 +97,7 @@ Conclusion : la base de sécurité est saine et nettement au-dessus de la moyenn
   - Maintenir les dépendances à jour et rejouer les scénarios de non-régression décrits dans les rapports pentest après chaque migration RLS.
 
 - **Moyen terme**
-  - Chiffrement au repos pour données de santé ; rate limiting ciblé ; sanitisation stricte des noms de fichiers uploadés.
+  - Chiffrement au repos pour données de santé ; ~~rate limiting ciblé~~ ✅ ; ~~sanitisation stricte des noms de fichiers uploadés~~ ✅ (PR #263).
 
 - **Continu**
   - Auditer les policies RLS à chaque évolution de schéma ; tests d’autorisation sur les fonctions edge et tables clés.
