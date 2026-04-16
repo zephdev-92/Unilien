@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
-import { sanitizeText } from '@/lib/sanitize'
+import { sanitizeText, sanitizeFileExtension } from '@/lib/sanitize'
 import { logAudit } from '@/services/auditService'
 import type { Profile, Employer, Employee, PchType } from '@/types'
 import type { ProfileDbRow } from '@/types/database'
@@ -144,7 +144,7 @@ export async function uploadAvatar(
   }
 
   // Générer un nom de fichier unique
-  const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const fileExt = sanitizeFileExtension(file.name.split('.').pop() || 'jpg')
   const fileName = `${profileId}/${Date.now()}.${fileExt}`
 
   // Supprimer l'ancien avatar s'il existe

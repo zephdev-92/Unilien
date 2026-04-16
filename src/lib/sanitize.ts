@@ -62,6 +62,29 @@ export function escapeHtml(text: string | null | undefined): string {
 }
 
 /**
+ * Sanitise une extension de fichier — n'autorise que [a-z0-9].
+ * Prévient le path traversal via des extensions malveillantes (ex: `pdf../../x`).
+ */
+export function sanitizeFileExtension(ext: string): string {
+  return ext.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || 'bin'
+}
+
+/**
+ * Sanitise un nom de fichier pour le stockage Supabase.
+ * Whitelist : alphanumérique, underscore, tiret, point.
+ * Prévient le path traversal et les caractères spéciaux.
+ */
+export function sanitizeFileName(name: string): string {
+  const decoded = (() => { try { return decodeURIComponent(name) } catch { return name } })()
+  return decoded
+    .replace(/[^a-zA-Z0-9_.\- ]/g, '_')
+    .replace(/\.{2,}/g, '_')
+    .replace(/\s+/g, '_')
+    .slice(0, 200)
+    || `file_${Date.now()}`
+}
+
+/**
  * Nettoie et normalise le texte utilisateur
  * - Supprime le HTML
  * - Normalise les espaces multiples
