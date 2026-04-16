@@ -5,6 +5,9 @@
 // ============================================
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { createRateLimiter } from '../_shared/rateLimit.ts'
+
+const rateLimiter = createRateLimiter(5) // max 5 invitations/min
 
 interface InvitePayload {
   email: string
@@ -68,6 +71,12 @@ serve(async (req: Request) => {
     // Verify the caller is actually the employer
     const token = authHeader.replace('Bearer ', '')
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token)
+
+    // Rate limiting par utilisateur authentifié
+    if (caller && rateLimiter.isLimited(caller.id)) {
+      return rateLimiter.tooManyRequestsResponse({ ...corsHeaders(req), 'Content-Type': 'application/json' })
+    }
+
     if (authError || !caller || caller.id !== employerId) {
       console.error('Auth check failed:', authError?.message, 'caller:', caller?.id, 'employerId:', employerId)
       return new Response(
