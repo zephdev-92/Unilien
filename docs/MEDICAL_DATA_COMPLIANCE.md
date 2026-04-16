@@ -97,7 +97,7 @@ Le traitement de donnees de sante est **interdit par defaut** sauf exceptions. L
 |----------|------------------------|
 | **Minimisation** (art. 5.1c) | Tous les champs medicaux sont optionnels — OK |
 | **Limitation de la finalite** (art. 5.1b) | Les donnees servent uniquement a adapter l'accompagnement et calculer les droits PCH |
-| **Limitation de conservation** (art. 5.1e) | A definir : supprimer les donnees X mois apres la fin de tous les contrats |
+| **Limitation de conservation** (art. 5.1e) | Defini : purge automatique apres fin de tous les contrats (migration 050, table `data_retention_policy`) |
 | **Integrite et confidentialite** (art. 5.1f) | Chiffrement + RLS + controle d'acces |
 | **Responsabilite** (art. 5.2) | Registre des traitements + mentions legales |
 
@@ -139,7 +139,7 @@ La certification HDS (articles L.1111-8 et R.1111-8-8 du Code de la sante publiq
 | Mesure | Priorite | Description |
 |--------|----------|-------------|
 | **Chiffrement colonnes** | Haute | Chiffrer `handicap_type`, `handicap_name`, `specific_needs` avec `pgsodium` — en attente migration Supabase self-hosted |
-| **Duree de conservation** | Moyenne | Politique de suppression automatique apres fin des contrats |
+| ~~**Duree de conservation**~~ | ~~Moyenne~~ | ✅ Table `data_retention_policy` + RPC `purge_expired_data()` (migration 050) |
 | **Registre des traitements** | Basse | Document formel pour la CNIL |
 
 ---
@@ -226,5 +226,6 @@ SELECT pgsodium.create_key(name := 'medical_data_key');
 - [x] Droit a l'effacement donnees (RPC `delete_own_data`) — migration 047
 - [x] Suppression de compte (RPC `delete_own_account` + double confirmation UI) — migration 047
 - [ ] Chiffrer les colonnes sensibles (pgsodium) — en attente migration self-hosted
-- [ ] Definir la duree de conservation et la politique de purge
+- [x] Definir la duree de conservation et la politique de purge — migration 050 (`data_retention_policy` + `purge_expired_data()`)
 - [ ] Creer le registre des traitements (document CNIL)
+- [ ] Activer l'execution automatique de `purge_expired_data()` via pg_cron (Supabase Pro) ou Edge Function schedulee
