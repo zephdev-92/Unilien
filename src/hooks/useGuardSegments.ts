@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance'
 import type { GuardSegment } from '@/types'
 
 /**
@@ -34,6 +34,22 @@ export function applyMinBreaks(segments: GuardSegment[]): GuardSegment[] {
     if (seg.type !== 'effective') return seg
     const minBreak = getMinBreakForSegment(i, segments)
     return { ...seg, breakMinutes: minBreak }
+  })
+}
+
+/**
+ * Re-detect presence_day/presence_night for presence segments based on time range.
+ * A segment is presence_night if majority of its hours fall in 21h-6h window.
+ */
+function redetectPresenceTypes(segments: GuardSegment[]): GuardSegment[] {
+  return segments.map((seg, i) => {
+    if (seg.type !== 'presence_day' && seg.type !== 'presence_night') return seg
+    const segEnd = segments[i + 1]?.startTime ?? segments[0].startTime
+    const totalHours = calculateShiftDuration(seg.startTime, segEnd, 0) / 60
+    if (totalHours <= 0) return seg
+    const nightHours = calculateNightHours(new Date(), seg.startTime, segEnd)
+    const detectedType = nightHours > totalHours / 2 ? 'presence_night' : 'presence_day'
+    return detectedType !== seg.type ? { ...seg, type: detectedType } : seg
   })
 }
 
@@ -84,7 +100,7 @@ export function useGuardSegments() {
       if (index + 1 < next.length) {
         next[index + 1] = { ...next[index + 1], startTime: newEndTime }
       }
-      return applyMinBreaks(next)
+      return applyMinBreaks(redetectPresenceTypes(next))
     })
   }, [])
 
