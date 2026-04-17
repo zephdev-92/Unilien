@@ -5,7 +5,7 @@ import {
   Text,
 } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton } from '@/components/ui'
-import { calculateShiftDuration } from '@/lib/compliance/utils'
+import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance/utils'
 import { REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import type { GuardSegment } from '@/types'
 import { formatHoursCompact } from '@/lib/formatHours'
@@ -25,14 +25,25 @@ interface Guard24hSectionProps {
 
 const SEG_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
-  { value: 'presence_day', label: 'Présence responsable (jour)' },
-  { value: 'presence_night', label: 'Présence (nuit)' },
+  { value: 'presence', label: 'Présence responsable' },
 ]
 
 const SEG_COLORS: Record<string, string> = {
   effective: '#93B4D1',
   presence_day: '#B3D4A0',
   presence_night: '#C4B5E0',
+}
+
+/** Map DB type to select value */
+function toSelectValue(type: GuardSegment['type']): string {
+  return type === 'presence_day' || type === 'presence_night' ? 'presence' : type
+}
+
+/** Auto-detect presence_day or presence_night based on segment time range */
+function detectPresenceType(startTime: string, endTime: string): GuardSegment['type'] {
+  const nightHours = calculateNightHours(new Date(), startTime, endTime)
+  const totalHours = calculateShiftDuration(startTime, endTime, 0) / 60
+  return nightHours > totalHours / 2 ? 'presence_night' : 'presence_day'
 }
 
 export function Guard24hSection({
@@ -64,7 +75,7 @@ export function Guard24hSection({
         color="text.muted"
         mb={3}
       >
-        Segments de la garde
+        Découpage des 24h
       </Text>
 
       {/* Barre visuelle — proto: guard-bar (10px, full radius) */}
@@ -129,8 +140,16 @@ export function Guard24hSection({
 
               {/* Select type — inline, pas de label */}
               <select
-                value={seg.type}
-                onChange={(e) => onUpdateSegmentType(i, e.target.value as GuardSegment['type'])}
+                value={toSelectValue(seg.type)}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === 'presence') {
+                    const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+                    onUpdateSegmentType(i, detectPresenceType(seg.startTime, segEnd))
+                  } else {
+                    onUpdateSegmentType(i, val as GuardSegment['type'])
+                  }
+                }}
                 style={{
                   fontSize: '13px',
                   fontWeight: 500,
@@ -151,10 +170,12 @@ export function Guard24hSection({
               {/* Break — inline petit input + "min" */}
               {seg.type === 'effective' ? (
                 <Flex align="center" gap={1} fontSize="12px" color="text.muted">
+                  <Text fontSize="12px" color="text.muted">Pause</Text>
                   <input
                     type="number"
                     value={seg.breakMinutes ?? 0}
                     onChange={(e) => onUpdateSegmentBreak(i, Math.max(0, parseInt(e.target.value) || 0))}
+                    aria-label="Pause en minutes"
                     style={{
                       width: '50px',
                       padding: '4px 6px',
@@ -167,9 +188,21 @@ export function Guard24hSection({
                   />
                   <Text fontSize="12px" color="text.muted">min</Text>
                 </Flex>
-              ) : (
-                <Text fontSize="12px" color="text.muted" px={2}>—</Text>
-              )}
+              ) : (() => {
+                const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+                const totalMins = calculateShiftDuration(seg.startTime, segEnd, 0)
+                const totalH = totalMins / 60
+                const nightH = calculateNightHours(new Date(), seg.startTime, segEnd)
+                const dayH = Math.max(0, totalH - nightH)
+                return (
+                  <Text fontSize="12px" color="text.muted" px={2} whiteSpace="nowrap">
+                    {dayH > 0 && `${formatHoursCompact(dayH)} jour`}
+                    {dayH > 0 && nightH > 0 && ' · '}
+                    {nightH > 0 && `${formatHoursCompact(nightH)} nuit`}
+                    {dayH === 0 && nightH === 0 && '—'}
+                  </Text>
+                )
+              })()}
 
               {/* Bouton ÷ — proto: btn-icon-sm */}
               <Flex
@@ -229,35 +262,83 @@ export function Guard24hSection({
       </Stack>
 
       {/* Footer — proto: guard-footer */}
-      <Flex
-        justify="space-between"
-        align="center"
-        pt={3}
-        borderTopWidth="1px"
-        borderColor="border.default"
-        mb={4}
-      >
-        <Text fontSize="14px" color="brand.500">
-          Travail effectif :{' '}
-          <Text as="span" fontWeight="bold" color={(effectiveHoursComputed ?? 0) > 12 ? '#DC2626' : 'brand.500'}>
-            {formatHoursCompact(effectiveHoursComputed ?? 0)}
-          </Text>
-          {' '}/ 12h max
-        </Text>
-        <AccessibleButton
-          variant="outline"
-          size="sm"
-          bg="transparent"
-          color="brand.500"
-          borderWidth="1.5px"
-          borderColor="border.default"
-          _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
-          onClick={() => onAddSegment(guardSegments.length - 1)}
-          accessibleLabel="Ajouter un segment"
-        >
-          + Ajouter un segment
-        </AccessibleButton>
-      </Flex>
+      {(() => {
+        let presenceDayH = 0
+        let presenceNightH = 0
+        guardSegments.forEach((seg, i) => {
+          if (seg.type !== 'presence_day' && seg.type !== 'presence_night') return
+          const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+          const totalH = calculateShiftDuration(seg.startTime, segEnd, 0) / 60
+          const nightH = calculateNightHours(new Date(), seg.startTime, segEnd)
+          presenceDayH += Math.max(0, totalH - nightH)
+          presenceNightH += nightH
+        })
+        const effective = effectiveHoursComputed ?? 0
+        const totalCumul = effective + presenceDayH + presenceNightH
+        const hasPresence = presenceDayH > 0 || presenceNightH > 0
+
+        return (
+          <Stack
+            gap={1.5}
+            pt={3}
+            borderTopWidth="1px"
+            borderColor="border.default"
+            mb={4}
+          >
+            <Flex justify="space-between" align="center" gap={3}>
+              <Text fontSize="14px" color="brand.500">
+                Travail effectif :{' '}
+                <Text as="span" fontWeight="bold" color={effective > 12 ? '#DC2626' : 'brand.500'}>
+                  {formatHoursCompact(effective)}
+                </Text>
+                {' '}/ 12h max
+              </Text>
+              <AccessibleButton
+                variant="outline"
+                size="sm"
+                bg="transparent"
+                color="brand.500"
+                borderWidth="1.5px"
+                borderColor="border.default"
+                _hover={{ borderColor: 'brand.500', bg: 'brand.subtle' }}
+                onClick={() => onAddSegment(guardSegments.length - 1)}
+                accessibleLabel="Ajouter une plage"
+              >
+                + Ajouter une plage
+              </AccessibleButton>
+            </Flex>
+
+            {hasPresence && (
+              <Stack gap={0.5} fontSize="13px" color="text.muted">
+                {presenceDayH > 0 && (
+                  <Flex gap={2}>
+                    <Text minW="220px">Présence responsable (jour) :</Text>
+                    <Text fontWeight="600" color="text.default">
+                      {formatHoursCompact(presenceDayH)}
+                    </Text>
+                  </Flex>
+                )}
+                {presenceNightH > 0 && (
+                  <Flex gap={2}>
+                    <Text minW="220px">Présence responsable (nuit) :</Text>
+                    <Text fontWeight="600" color="text.default">
+                      {formatHoursCompact(presenceNightH)}
+                    </Text>
+                  </Flex>
+                )}
+              </Stack>
+            )}
+
+            <Text fontSize="13px" color="text.default" fontWeight="600">
+              Total cumulé :{' '}
+              <Text as="span" color={totalCumul > 24 ? '#DC2626' : 'text.default'}>
+                {formatHoursCompact(totalCumul)}
+              </Text>
+              {' '}/ 24h
+            </Text>
+          </Stack>
+        )
+      })()}
 
       {/* Nombre d'interventions nocturnes */}
       <Box mb={nightInterventionsCount >= REQUALIFICATION_THRESHOLD ? 3 : 0}>
