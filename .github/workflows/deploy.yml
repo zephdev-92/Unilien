@@ -44,21 +44,40 @@ jobs:
           path: dist/
           retention-days: 30
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      - name: Check secret presence
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "ERROR: VPS_SSH_PRIVATE_KEY is empty"
+            exit 1
+          fi
+          echo "SSH_KEY length: ${#SSH_KEY}"
+          echo "VPS_HOST set: ${VPS_HOST:+yes}"
+          echo "VPS_USER set: ${VPS_USER:+yes}"
 
-      - name: Add VPS to known_hosts
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           rsync -avz --delete \
             --exclude='.DS_Store' \
-            dist/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/unilien/
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien/"
 
       - name: Health check
         run: |
