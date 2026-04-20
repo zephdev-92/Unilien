@@ -10,7 +10,7 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: env_unilien
       url: ${{ vars.VITE_APP_URL }}
 
     steps:
@@ -44,32 +44,44 @@ jobs:
           path: dist/
           retention-days: 30
 
-      # Décommentez et configurez selon votre plateforme de déploiement
-      
-      # Exemple: Déploiement sur Vercel
-      # - name: Deploy to Vercel
-      #   uses: amondnet/vercel-action@v25
-      #   with:
-      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
-      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-      #     vercel-args: '--prod'
-      
-      # Exemple: Déploiement sur Netlify
-      # - name: Deploy to Netlify
-      #   uses: nwtgck/actions-netlify@v3
-      #   with:
-      #     publish-dir: './dist'
-      #     production-branch: main
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     deploy-message: "Deploy from GitHub Actions"
-      #   env:
-      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      
-      # Exemple: Déploiement sur GitHub Pages
-      # - name: Deploy to GitHub Pages
-      #   uses: peaceiris/actions-gh-pages@v3
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     publish_dir: ./dist
+      - name: Check secret presence
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "ERROR: VPS_SSH_PRIVATE_KEY is empty"
+            exit 1
+          fi
+          echo "SSH_KEY length: ${#SSH_KEY}"
+          echo "VPS_HOST set: ${VPS_HOST:+yes}"
+          echo "VPS_USER set: ${VPS_USER:+yes}"
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "Key fingerprint:"
+          ssh-keygen -l -f ~/.ssh/deploy_key || (echo "INVALID KEY FORMAT" && exit 1)
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien/"
+
+      - name: Health check
+        run: |
+          sleep 3
+          curl -fsS -o /dev/null -w "HTTP %{http_code}\n" https://unilien.app || (echo "Health check failed" && exit 1)
