@@ -31,7 +31,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-hook-form": "^7.72.1",
-    "react-router-dom": "^7.14.0",
+    "react-router-dom": "^7.14.1",
     "xlsx": "npm:@e965/xlsx@^0.20.3",
     "zod": "^4.3.5",
     "zustand": "^5.0.12"
@@ -63,7 +63,7 @@
     "vitest": "^4.0.17"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.60.1"
+    "@rollup/rollup-win32-x64-msvc": "^4.60.2"
   },
   "overrides": {
     "serialize-javascript": "^7.0.3"
