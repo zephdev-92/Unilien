@@ -44,32 +44,23 @@ jobs:
           path: dist/
           retention-days: 30
 
-      # Décommentez et configurez selon votre plateforme de déploiement
-      
-      # Exemple: Déploiement sur Vercel
-      # - name: Deploy to Vercel
-      #   uses: amondnet/vercel-action@v25
-      #   with:
-      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
-      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-      #     vercel-args: '--prod'
-      
-      # Exemple: Déploiement sur Netlify
-      # - name: Deploy to Netlify
-      #   uses: nwtgck/actions-netlify@v3
-      #   with:
-      #     publish-dir: './dist'
-      #     production-branch: main
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     deploy-message: "Deploy from GitHub Actions"
-      #   env:
-      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      
-      # Exemple: Déploiement sur GitHub Pages
-      # - name: Deploy to GitHub Pages
-      #   uses: peaceiris/actions-gh-pages@v3
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     publish_dir: ./dist
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Add VPS to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            dist/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/unilien/
+
+      - name: Health check
+        run: |
+          sleep 3
+          curl -fsS -o /dev/null -w "HTTP %{http_code}\n" https://unilien.app || (echo "Health check failed" && exit 1)
