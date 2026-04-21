@@ -2,13 +2,14 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     environment:
       name: env_unilien
       url: ${{ vars.VITE_APP_URL }}
