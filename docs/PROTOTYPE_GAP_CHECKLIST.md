@@ -53,8 +53,8 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 ## 3. Clock-in — ✅ Termine
 
-- [x] **Horloge digitale** — grande horloge HH:MM:SS live avec mise a jour chaque seconde _(LiveClock.tsx)_
-- [x] **Affichage date** — date complete sous l'horloge _(LiveClock.tsx)_
+- [~] ~~Horloge digitale~~ — retirée suite feedback réunion 16/04 (perturbant, inutile)
+- [~] ~~Affichage date~~ — retiré avec l'horloge
 - [x] **Resume semaine** — sidebar avec barres horizontales Lun-Dim + total heures _(WeeklySummary.tsx)_
 - [x] **Anomalies detectees** — sidebar alertes _(AnomaliesPanel.tsx)_
 - [x] **Saisie manuelle** — formulaire ajout heure manuelle avec selecteur auxiliaire _(ManualEntryForm.tsx)_
