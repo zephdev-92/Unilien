@@ -15,6 +15,7 @@ import {
 } from '@/lib/compliance'
 import { addDays, subDays, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 export interface EmployeeComplianceStatus {
   employeeId: string
@@ -202,13 +203,13 @@ function calculateEmployeeStatus(
     alerts.push({
       type: 'weekly_hours',
       severity: 'critical',
-      message: `Dépassement: ${currentWeekHours.toFixed(1)}h cette semaine (max 48h)`,
+      message: `Dépassement: ${formatHoursCompact(currentWeekHours)} cette semaine (max 48h)`,
     })
   } else if (currentWeekHours > 44) {
     alerts.push({
       type: 'weekly_hours',
       severity: 'warning',
-      message: `Attention: ${currentWeekHours.toFixed(1)}h cette semaine (seuil 44h)`,
+      message: `Attention: ${formatHoursCompact(currentWeekHours)} cette semaine (seuil 44h)`,
     })
   }
 
@@ -217,7 +218,7 @@ function calculateEmployeeStatus(
     alerts.push({
       type: 'weekly_rest',
       severity: 'critical',
-      message: `Repos insuffisant: ${weeklyRestStatus.longestRest.toFixed(1)}h (min 35h)`,
+      message: `Repos insuffisant: ${formatHoursCompact(weeklyRestStatus.longestRest)} (min 35h)`,
     })
   }
 
@@ -232,7 +233,7 @@ function calculateEmployeeStatus(
     alerts.push({
       type: 'daily_hours',
       severity: 'warning',
-      message: `Seulement ${remainingDailyHours.toFixed(1)}h disponibles aujourd'hui`,
+      message: `Seulement ${formatHoursCompact(remainingDailyHours)} disponibles aujourd'hui`,
     })
   }
 

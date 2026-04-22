@@ -13,6 +13,7 @@ import { validateDailyHours, getRemainingDailyHours } from './rules/validateDail
 import { validateOverlap, findOverlappingShifts } from './rules/validateOverlap'
 import { validateWeeklyRest, getWeeklyRestStatus } from './rules/validateWeeklyRest'
 import { validateAbsenceConflict, type AbsenceForValidation } from './rules/validateAbsenceConflict'
+import { formatHoursCompact } from '@/lib/formatHours'
 import { validateNightPresenceDuration } from './rules/validateNightPresenceDuration'
 import { validateConsecutiveNights } from './rules/validateConsecutiveNights'
 import { validateGuardAmplitude } from './rules/validateGuardAmplitude'
@@ -224,19 +225,19 @@ export function getComplianceSummary(
 
   if (remainingDailyHours <= 2) {
     recommendations.push(
-      `Attention : seulement ${remainingDailyHours.toFixed(1)}h disponibles aujourd'hui.`
+      `Attention : seulement ${formatHoursCompact(remainingDailyHours)} disponibles aujourd'hui.`
     )
   }
 
   if (remainingWeeklyHours <= 8) {
     recommendations.push(
-      `Attention : seulement ${remainingWeeklyHours.toFixed(1)}h disponibles cette semaine.`
+      `Attention : seulement ${formatHoursCompact(remainingWeeklyHours)} disponibles cette semaine.`
     )
   }
 
   if (!weeklyRestStatus.isCompliant) {
     recommendations.push(
-      `Repos hebdomadaire insuffisant : ${weeklyRestStatus.longestRest.toFixed(1)}h (minimum 35h).`
+      `Repos hebdomadaire insuffisant : ${formatHoursCompact(weeklyRestStatus.longestRest)} (minimum 35h).`
     )
   }
 

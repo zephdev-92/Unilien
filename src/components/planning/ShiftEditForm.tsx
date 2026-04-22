@@ -15,6 +15,7 @@ import { NightActionToggle } from './NightActionToggle'
 import { TaskSelector } from './TaskSelector'
 import type { Shift, Contract, ComplianceResult, ComputedPay } from '@/types'
 import type { ShiftDetailFormData } from '@/lib/validation/shiftSchemas'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -135,7 +136,7 @@ export function ShiftEditForm({
         {/* Durée affichée */}
         {durationHours > 0 && (
           <Text fontSize="sm" color="text.muted">
-            Durée : {durationHours.toFixed(1)} heures
+            Durée : {formatHoursCompact(durationHours)}
             {(watchedBreakDuration ?? 0) > 0 &&
               ` (pause de ${watchedBreakDuration} min déduite)`
             }

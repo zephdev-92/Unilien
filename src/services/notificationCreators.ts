@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { formatHoursCompact } from '@/lib/formatHours'
 import type { Notification, NotificationType, NotificationPriority } from '@/types'
 import {
   createNotification,
@@ -38,19 +39,19 @@ export async function createComplianceWarningNotification(
   const messages: Record<string, { title: string; message: string }> = {
     weekly_hours: {
       title: 'Heures hebdomadaires - Attention',
-      message: `${employeeName} a atteint ${currentValue.toFixed(1)}h cette semaine. Seuil d'alerte: ${threshold}h.`,
+      message: `${employeeName} a atteint ${formatHoursCompact(currentValue)} cette semaine. Seuil d'alerte: ${threshold}h.`,
     },
     daily_hours: {
       title: 'Heures quotidiennes - Attention',
-      message: `${employeeName} a atteint ${currentValue.toFixed(1)}h aujourd'hui. Seuil d'alerte: ${threshold}h.`,
+      message: `${employeeName} a atteint ${formatHoursCompact(currentValue)} aujourd'hui. Seuil d'alerte: ${threshold}h.`,
     },
     weekly_rest: {
       title: 'Repos hebdomadaire insuffisant',
-      message: `${employeeName} n'a que ${currentValue.toFixed(1)}h de repos cette semaine. Minimum requis: ${threshold}h.`,
+      message: `${employeeName} n'a que ${formatHoursCompact(currentValue)} de repos cette semaine. Minimum requis: ${threshold}h.`,
     },
     daily_rest: {
       title: 'Repos quotidien insuffisant',
-      message: `${employeeName} n'a que ${currentValue.toFixed(1)}h de repos avant la prochaine intervention. Minimum requis: ${threshold}h.`,
+      message: `${employeeName} n'a que ${formatHoursCompact(currentValue)} de repos avant la prochaine intervention. Minimum requis: ${threshold}h.`,
     },
   }
 
@@ -87,19 +88,19 @@ export async function createComplianceCriticalNotification(
   const messages: Record<string, { title: string; message: string }> = {
     weekly_hours: {
       title: 'DÉPASSEMENT HEURES HEBDO',
-      message: `${employeeName} a dépassé la limite légale avec ${currentValue.toFixed(1)}h cette semaine (max: ${threshold}h).`,
+      message: `${employeeName} a dépassé la limite légale avec ${formatHoursCompact(currentValue)} cette semaine (max: ${threshold}h).`,
     },
     daily_hours: {
       title: 'DÉPASSEMENT HEURES QUOTIDIENNES',
-      message: `${employeeName} a dépassé la limite légale avec ${currentValue.toFixed(1)}h aujourd'hui (max: ${threshold}h).`,
+      message: `${employeeName} a dépassé la limite légale avec ${formatHoursCompact(currentValue)} aujourd'hui (max: ${threshold}h).`,
     },
     weekly_rest: {
       title: 'VIOLATION REPOS HEBDOMADAIRE',
-      message: `${employeeName} n'a que ${currentValue.toFixed(1)}h de repos cette semaine. Le minimum légal est ${threshold}h.`,
+      message: `${employeeName} n'a que ${formatHoursCompact(currentValue)} de repos cette semaine. Le minimum légal est ${threshold}h.`,
     },
     daily_rest: {
       title: 'VIOLATION REPOS QUOTIDIEN',
-      message: `${employeeName} n'a que ${currentValue.toFixed(1)}h de repos. Le minimum légal est ${threshold}h.`,
+      message: `${employeeName} n'a que ${formatHoursCompact(currentValue)} de repos. Le minimum légal est ${threshold}h.`,
     },
   }
 

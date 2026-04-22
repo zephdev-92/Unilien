@@ -135,9 +135,9 @@ describe('Garde 24h (guard_24h) avec segments', () => {
     const result = validateBreak(shift)
     expect(result.valid).toBe(false)
     expect(result.message).toContain('20 min')
-    // Le message doit afficher ~9.5h, pas 24h
-    expect(result.message).toContain('9.5')
-    expect(result.message).not.toContain('24.0')
+    // Le message doit afficher ~9h30, pas 24h
+    expect(result.message).toContain('9h30')
+    expect(result.message).not.toContain('24h')
   })
 
   it('devrait valider si travail effectif > 6h avec pause suffisante', () => {
@@ -183,7 +183,7 @@ describe('Garde 24h (guard_24h) avec segments', () => {
     ])
     const result = validateBreak(shift)
     expect(result.valid).toBe(false)
-    expect(result.message).toContain('7.0')
+    expect(result.message).toContain('7h')
   })
 })
 

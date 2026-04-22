@@ -61,35 +61,37 @@ export const COMPLIANCE_RULES = {
 
 export type ComplianceRuleCode = (typeof COMPLIANCE_RULES)[keyof typeof COMPLIANCE_RULES]
 
+import { formatHoursCompact as fh } from '@/lib/formatHours'
+
 // Messages d'erreur en français
 export const COMPLIANCE_MESSAGES = {
   DAILY_REST: {
     error: (hours: number, minHour: string) =>
-      `Repos quotidien insuffisant : ${hours.toFixed(1)}h au lieu de 11h minimum. ` +
+      `Repos quotidien insuffisant : ${fh(hours)} au lieu de 11h minimum. ` +
       `L'intervention ne peut pas commencer avant ${minHour}.`,
     rule: 'Repos quotidien minimum de 11h consécutives (Art. L3131-1 Code du travail)',
   },
   WEEKLY_REST: {
     error: (hours: number) =>
-      `Repos hebdomadaire insuffisant : ${hours.toFixed(1)}h au lieu de 35h minimum.`,
+      `Repos hebdomadaire insuffisant : ${fh(hours)} au lieu de 35h minimum.`,
     rule: 'Repos hebdomadaire minimum de 35h consécutives (Art. L3132-2 Code du travail)',
   },
   MANDATORY_BREAK: {
     warning: (duration: number, breakDuration: number) =>
-      `Pause insuffisante : ${breakDuration} min pour une intervention de ${(duration / 60).toFixed(1)}h. ` +
+      `Pause insuffisante : ${breakDuration} min pour une intervention de ${fh(duration / 60)}. ` +
       `Une pause de 20 min minimum est obligatoire au-delà de 6h de travail.`,
     rule: 'Pause de 20 min obligatoire après 6h de travail (Art. L3121-16 Code du travail)',
   },
   WEEKLY_MAX_HOURS: {
     error: (hours: number) =>
-      `Durée maximale hebdomadaire dépassée : ${hours.toFixed(1)}h au lieu de 48h maximum.`,
+      `Durée maximale hebdomadaire dépassée : ${fh(hours)} au lieu de 48h maximum.`,
     warning: (hours: number) =>
-      `Attention : ${hours.toFixed(1)}h cette semaine (maximum recommandé : 44h).`,
+      `Attention : ${fh(hours)} cette semaine (maximum recommandé : 44h).`,
     rule: 'Durée maximale de travail de 48h par semaine (Art. L3121-20 Code du travail)',
   },
   DAILY_MAX_HOURS: {
     error: (hours: number) =>
-      `Durée maximale quotidienne dépassée : ${hours.toFixed(1)}h au lieu de 10h maximum.`,
+      `Durée maximale quotidienne dépassée : ${fh(hours)} au lieu de 10h maximum.`,
     rule: 'Durée maximale de travail de 10h par jour (Art. L3121-18 Code du travail)',
   },
   SHIFT_OVERLAP: {
@@ -104,7 +106,7 @@ export const COMPLIANCE_MESSAGES = {
   },
   NIGHT_PRESENCE_MAX_DURATION: {
     error: (hours: number) =>
-      `Présence de nuit trop longue : ${hours.toFixed(1)}h au lieu de 12h maximum consécutives.`,
+      `Présence de nuit trop longue : ${fh(hours)} au lieu de 12h maximum consécutives.`,
     rule: 'Présence responsable de nuit limitée à 12h consécutives (Art. 148 IDCC 3239)',
   },
   CONSECUTIVE_NIGHTS_MAX: {
@@ -114,14 +116,14 @@ export const COMPLIANCE_MESSAGES = {
   },
   GUARD_MAX_AMPLITUDE: {
     error: (hours: number) =>
-      `Amplitude de garde trop longue : ${hours.toFixed(1)}h au lieu de 24h maximum. Le cumul travail effectif + présence responsable ne peut pas dépasser 24h.`,
+      `Amplitude de garde trop longue : ${fh(hours)} au lieu de 24h maximum. Le cumul travail effectif + présence responsable ne peut pas dépasser 24h.`,
     rule: 'Amplitude maximale de garde de 24h (IDCC 3239)',
   },
   GUARD_24H_EFFECTIVE_MAX: {
     error: (hours: number) =>
-      `Total travail effectif trop long : ${hours.toFixed(1)}h (maximum 12h par jour, Art. L3121-18). Réduisez les segments effectifs.`,
+      `Total travail effectif trop long : ${fh(hours)} (maximum 12h par jour, Art. L3121-18). Réduisez les segments effectifs.`,
     warningNight: (hours: number) =>
-      `Présence de nuit longue : ${hours.toFixed(1)}h. Vérifiez que cela est conforme à votre accord avec l'employé.`,
+      `Présence de nuit longue : ${fh(hours)}. Vérifiez que cela est conforme à votre accord avec l'employé.`,
     missingSegments: 'Aucun segment défini pour cette garde 24h. Ajoutez au moins 2 segments.',
     rule: 'Garde 24h : total travail effectif ≤ 12h (Art. L3121-18 Code du travail)',
   },
