@@ -202,7 +202,7 @@ export async function createMessageNotification(
         recipientName,
         senderName,
         preview: messagePreview.substring(0, 120),
-        conversationUrl: 'https://unilien.fr/messagerie',
+        conversationUrl: 'https://unilien.app/messagerie',
       })
     }
   } catch (err) {
