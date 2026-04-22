@@ -1,0 +1,30 @@
+unilien.app, www.unilien.app {
+    encode zstd gzip
+    root * /var/www/unilien
+    try_files {path} /index.html
+    file_server
+
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.unilien.app wss://api.unilien.app; img-src 'self' data: blob: https://api.unilien.app; font-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    }
+
+    @assets path /assets/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+
+    @sw path /sw.js /workbox-*.js
+    header @sw Cache-Control "public, max-age=0, must-revalidate"
+}
+
+api.unilien.app {
+    encode zstd gzip
+    reverse_proxy localhost:8000
+}
+
+studio.unilien.app {
+    encode zstd gzip
+    reverse_proxy localhost:8000
+}
