@@ -4,7 +4,7 @@
  */
 
 import type React from 'react'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Box, Stack, Flex, Text, Textarea, Separator } from '@chakra-ui/react'
 import type { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { AccessibleInput, AccessibleSelect } from '@/components/ui'
@@ -16,12 +16,17 @@ import { TaskSelector } from './TaskSelector'
 import type { Shift, Contract, ComplianceResult, ComputedPay } from '@/types'
 import type { ShiftDetailFormData } from '@/lib/validation/shiftSchemas'
 import { formatHoursCompact } from '@/lib/formatHours'
+import { detectPresenceType } from '@/lib/presence/detectPresenceType'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
-  { value: 'presence_day', label: 'Présence responsable (jour)' },
-  { value: 'presence_night', label: 'Présence responsable (nuit)' },
+  { value: 'presence', label: 'Présence responsable' },
 ]
+
+const isPresenceType = (t: Shift['shiftType']): t is 'presence_day' | 'presence_night' =>
+  t === 'presence_day' || t === 'presence_night'
+
+const toSelectValue = (t: Shift['shiftType']): string => (isPresenceType(t) ? 'presence' : t)
 
 const STATUS_OPTIONS = [
   { value: 'planned', label: 'Planifié' },
@@ -35,6 +40,8 @@ interface ShiftEditFormProps {
   register: UseFormRegister<ShiftDetailFormData>
   errors: FieldErrors<ShiftDetailFormData>
   watchedBreakDuration: number | undefined
+  watchedStartTime: string | undefined
+  watchedEndTime: string | undefined
   onSubmit: React.FormEventHandler<HTMLFormElement>
   // Reducer state (champs métier hors form)
   shiftType: Shift['shiftType']
@@ -69,6 +76,8 @@ export function ShiftEditForm({
   register,
   errors,
   watchedBreakDuration,
+  watchedStartTime,
+  watchedEndTime,
   onSubmit,
   shiftType,
   hasNightAction,
@@ -98,6 +107,16 @@ export function ShiftEditForm({
     setTasksArray(tasks)
     setValue('tasks', tasks.join('\n'))
   }, [setValue])
+
+  // Re-détecter presence_day / presence_night quand les horaires changent
+  useEffect(() => {
+    if (!isPresenceType(shiftType)) return
+    if (!watchedStartTime || !watchedEndTime) return
+    const detected = detectPresenceType(watchedStartTime, watchedEndTime)
+    if (detected !== shiftType) {
+      onShiftTypeChange(detected)
+    }
+  }, [watchedStartTime, watchedEndTime, shiftType, onShiftTypeChange])
 
   return (
     <form id="edit-shift-form" onSubmit={onSubmit}>
@@ -165,9 +184,15 @@ export function ShiftEditForm({
         <AccessibleSelect
           label="Type d'intervention"
           options={SHIFT_TYPE_OPTIONS}
-          value={shiftType}
+          value={toSelectValue(shiftType)}
           onChange={(e) => {
-            onShiftTypeChange(e.target.value as Shift['shiftType'])
+            const selected = e.target.value
+            // "presence" = choix unifié → auto-détection jour/nuit selon horaires
+            const newType =
+              selected === 'presence'
+                ? detectPresenceType(watchedStartTime ?? '09:00', watchedEndTime ?? '12:00')
+                : (selected as Shift['shiftType'])
+            onShiftTypeChange(newType)
           }}
         />
 

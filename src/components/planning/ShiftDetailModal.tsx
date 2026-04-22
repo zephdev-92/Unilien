@@ -467,6 +467,8 @@ export function ShiftDetailModal({
           register={register}
           errors={errors}
           watchedBreakDuration={watchedValues.breakDuration}
+          watchedStartTime={watchedValues.startTime}
+          watchedEndTime={watchedValues.endTime}
           onSubmit={handleSubmit(onSubmit)}
           shiftType={shiftType}
           hasNightAction={hasNightAction}

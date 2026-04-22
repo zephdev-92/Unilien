@@ -5,10 +5,10 @@ import {
   Text,
 } from '@chakra-ui/react'
 import { AccessibleInput, AccessibleButton } from '@/components/ui'
-import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance/utils'
 import { REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import type { GuardSegment } from '@/types'
 import { formatHoursCompact } from '@/lib/formatHours'
+import { detectPresenceType } from '@/lib/presence/detectPresenceType'
 
 interface Guard24hSectionProps {
   guardSegments: GuardSegment[]
@@ -37,13 +37,6 @@ const SEG_COLORS: Record<string, string> = {
 /** Map DB type to select value */
 function toSelectValue(type: GuardSegment['type']): string {
   return type === 'presence_day' || type === 'presence_night' ? 'presence' : type
-}
-
-/** Auto-detect presence_day or presence_night based on segment time range */
-function detectPresenceType(startTime: string, endTime: string): GuardSegment['type'] {
-  const nightHours = calculateNightHours(new Date(), startTime, endTime)
-  const totalHours = calculateShiftDuration(startTime, endTime, 0) / 60
-  return nightHours > totalHours / 2 ? 'presence_night' : 'presence_day'
 }
 
 export function Guard24hSection({

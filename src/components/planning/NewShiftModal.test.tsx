@@ -228,7 +228,7 @@ describe('NewShiftModal', () => {
 
     // Vérifier que les options clés sont présentes dans le DOM
     expect(screen.getByText('Travail effectif')).toBeInTheDocument()
-    expect(screen.getByText(/présence responsable \(jour\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/^présence responsable$/i)).toBeInTheDocument()
   })
 
   // 8. createShift est appelée lors de la soumission d'un formulaire valide
