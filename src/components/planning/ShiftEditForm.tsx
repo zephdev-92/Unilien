@@ -16,7 +16,8 @@ import { TaskSelector } from './TaskSelector'
 import type { Shift, Contract, ComplianceResult, ComputedPay } from '@/types'
 import type { ShiftDetailFormData } from '@/lib/validation/shiftSchemas'
 import { formatHoursCompact } from '@/lib/formatHours'
-import { detectPresenceType } from '@/lib/presence/detectPresenceType'
+import { detectPresenceType, getPresenceMix } from '@/lib/presence/detectPresenceType'
+import { PresenceMixedWarning } from './PresenceMixedWarning'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -195,6 +196,14 @@ export function ShiftEditForm({
             onShiftTypeChange(newType)
           }}
         />
+
+        {/* Avertissement présence à cheval jour/nuit */}
+        {isPresenceType(shiftType) && watchedStartTime && watchedEndTime && (() => {
+          const mix = getPresenceMix(watchedStartTime, watchedEndTime)
+          return mix.isMixed ? (
+            <PresenceMixedWarning dayHours={mix.dayHours} nightHours={mix.nightHours} />
+          ) : null
+        })()}
 
         {/* Section présence responsable JOUR */}
         {shiftType === 'presence_day' && (

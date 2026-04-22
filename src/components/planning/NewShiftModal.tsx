@@ -26,7 +26,8 @@ import { TaskSelector } from './TaskSelector'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
 import { formatHoursCompact } from '@/lib/formatHours'
-import { detectPresenceType } from '@/lib/presence/detectPresenceType'
+import { detectPresenceType, getPresenceMix } from '@/lib/presence/detectPresenceType'
+import { PresenceMixedWarning } from './PresenceMixedWarning'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -349,6 +350,14 @@ export function NewShiftModal({
                       {...register('breakDuration')}
                     />
                   )}
+
+                  {/* Avertissement présence à cheval jour/nuit */}
+                  {isPresenceType(shiftType) && watchedValues.startTime && watchedValues.endTime && (() => {
+                    const mix = getPresenceMix(watchedValues.startTime, watchedValues.endTime)
+                    return mix.isMixed ? (
+                      <PresenceMixedWarning dayHours={mix.dayHours} nightHours={mix.nightHours} />
+                    ) : null
+                  })()}
 
                   {/* Section présence responsable JOUR */}
                   {shiftType === 'presence_day' && (

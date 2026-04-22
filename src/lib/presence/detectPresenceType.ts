@@ -16,3 +16,29 @@ export function detectPresenceType(
   const nightHours = calculateNightHours(new Date(), startTime, endTime)
   return nightHours > totalHours / 2 ? 'presence_night' : 'presence_day'
 }
+
+/**
+ * Détaille la répartition jour/nuit d'une plage horaire.
+ * Utile pour avertir quand une présence responsable chevauche les deux
+ * régimes (calculs de paie différents : ×2/3 jour vs ×1/4 nuit).
+ */
+export function getPresenceMix(
+  startTime: string,
+  endTime: string,
+): { totalHours: number; dayHours: number; nightHours: number; isMixed: boolean } {
+  if (!startTime || !endTime) {
+    return { totalHours: 0, dayHours: 0, nightHours: 0, isMixed: false }
+  }
+  const totalHours = calculateShiftDuration(startTime, endTime, 0) / 60
+  if (totalHours <= 0) {
+    return { totalHours: 0, dayHours: 0, nightHours: 0, isMixed: false }
+  }
+  const nightHours = calculateNightHours(new Date(), startTime, endTime)
+  const dayHours = Math.max(0, totalHours - nightHours)
+  return {
+    totalHours,
+    dayHours,
+    nightHours,
+    isMixed: dayHours > 0 && nightHours > 0,
+  }
+}
