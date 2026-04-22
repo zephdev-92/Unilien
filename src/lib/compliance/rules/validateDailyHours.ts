@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale'
 import type { ShiftForValidation, RuleValidationResult } from '../types'
 import { COMPLIANCE_RULES, COMPLIANCE_MESSAGES } from '../types'
 import { getEffectiveHours } from '../utils'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 const MAXIMUM_DAILY_HOURS = 10
 
@@ -42,7 +43,7 @@ export function validateDailyHours(
   if (totalHours > MAXIMUM_DAILY_HOURS) {
     const restHours = 24 - totalHours
     const restInfo = restHours < 11
-      ? ` Attention : il ne restera que ${restHours.toFixed(1)}h de repos (minimum légal : 11h consécutives).`
+      ? ` Attention : il ne restera que ${formatHoursCompact(restHours)} de repos (minimum légal : 11h consécutives).`
       : ''
 
     return {

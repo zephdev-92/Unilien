@@ -38,6 +38,7 @@ import {
 import type { CesuDeclarationRecord } from '@/types'
 import { toaster } from '@/lib/toaster'
 import { logger } from '@/lib/logger'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 interface Props {
   employerId: string
@@ -135,7 +136,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
       setShowDialog(false)
       toaster.create({
         title: 'Declaration CESU',
-        description: `${saved.periodLabel} — ${saved.totalEmployees} employe${saved.totalEmployees > 1 ? 's' : ''}, ${saved.totalHours.toFixed(2).replace('.', ',')}h`,
+        description: `${saved.periodLabel} — ${saved.totalEmployees} employe${saved.totalEmployees > 1 ? 's' : ''}, ${formatHoursCompact(saved.totalHours)}`,
         type: 'success',
       })
     } catch (err) {
@@ -281,7 +282,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
                   </Table.Cell>
                   <Table.Cell textAlign="right">
                     <Text fontSize="sm">
-                      {r.totalHours.toFixed(2).replace('.', ',')} h
+                      {formatHoursCompact(r.totalHours)}
                     </Text>
                   </Table.Cell>
                   <Table.Cell textAlign="right">

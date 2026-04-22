@@ -46,6 +46,7 @@ import {
 } from '@/services/payslipStorageService'
 import { MONTHS_FR } from '@/lib/export/types'
 import { logger } from '@/lib/logger'
+import { formatHoursCompact } from '@/lib/formatHours'
 import type { Payslip } from '@/types'
 
 interface Props {
@@ -394,7 +395,7 @@ export function PayslipSection({ employerId }: Props) {
                   </Table.Cell>
                   <Table.Cell textAlign="right">
                     <Text fontSize="sm">
-                      {p.totalHours.toFixed(2).replace('.', ',')} h
+                      {formatHoursCompact(p.totalHours)}
                     </Text>
                   </Table.Cell>
                   <Table.Cell textAlign="right">

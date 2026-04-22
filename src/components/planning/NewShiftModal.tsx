@@ -25,6 +25,7 @@ import { SHIFT_TYPE_LABELS } from './shiftTypeLabels'
 import { TaskSelector } from './TaskSelector'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
+import { formatHoursCompact } from '@/lib/formatHours'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -305,7 +306,7 @@ export function NewShiftModal({
                   {/* Durée affichée */}
                   {durationHours > 0 && (
                     <Text fontSize="sm" color="text.muted">
-                      Durée : {durationHours.toFixed(1)} heures
+                      Durée : {formatHoursCompact(durationHours)}
                       {watchedValues.breakDuration > 0 &&
                         ` (pause de ${watchedValues.breakDuration} min déduite)`
                       }

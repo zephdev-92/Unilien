@@ -64,7 +64,12 @@ export function euro(n: number): string {
 }
 
 export function hrs(n: number): string {
-  return n.toFixed(2).replace('.', ',') + ' h'
+  if (n === 0) return '0h'
+  const hours = Math.floor(Math.abs(n))
+  const mins = Math.round((Math.abs(n) - hours) * 60)
+  const sign = n < 0 ? '-' : ''
+  if (mins === 0) return `${sign}${hours}h`
+  return `${sign}${hours}h${mins < 10 ? '0' : ''}${mins}`
 }
 
 export function pct(r: number): string {
