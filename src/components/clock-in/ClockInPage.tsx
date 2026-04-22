@@ -13,7 +13,6 @@ import { getContractsForEmployer } from '@/services/contractService'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
 import type { Shift } from '@/types'
-import { LiveClock } from './LiveClock'
 import { EmployeeClockWidget } from './EmployeeClockWidget'
 import { ClockInProgressSection } from './ClockInProgressSection'
 import { ClockInTodaySection } from './ClockInTodaySection'
@@ -184,9 +183,6 @@ export function ClockInPage() {
       >
         {/* Colonne principale */}
         <Stack gap={6} flex={1} minW={0}>
-
-          {/* Employeur : horloge simple */}
-          {isEmployer && <LiveClock />}
 
           {/* Employé : barre de navigation par date */}
           {!isEmployer && (

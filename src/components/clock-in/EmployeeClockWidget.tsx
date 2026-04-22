@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { Box, Flex, Text, Button } from '@chakra-ui/react'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import type { Shift } from '@/types'
 import { formatTime } from './clockInUtils'
 
@@ -67,20 +65,7 @@ export function EmployeeClockWidget({
   onCancel,
   containerRef,
 }: EmployeeClockWidgetProps) {
-  const [now, setNow] = useState(new Date())
   const noteRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const time = now.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-  const date = format(now, 'EEEE d MMMM yyyy', { locale: fr })
 
   const nextShift = plannedShifts
     .filter((s) => s.status === 'planned' && s.id !== activeShift?.id)
@@ -112,26 +97,6 @@ export function EmployeeClockWidget({
       textAlign="center"
       aria-label="Suivi des heures"
     >
-      {/* Clock face */}
-      <Box mb={4}>
-        <Text
-          fontSize="56px"
-          fontWeight="900"
-          color="text.default"
-          fontFamily="heading"
-          letterSpacing="-0.03em"
-          lineHeight="1"
-          mb={1}
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {time}
-        </Text>
-        <Text fontSize="sm" color="text.muted" fontWeight="500" textTransform="capitalize">
-          {date}
-        </Text>
-      </Box>
-
       {/* Idle state */}
       {isIdle && (
         <Flex direction="column" align="center" gap={4}>
