@@ -110,7 +110,7 @@ function emailLayout(content: string): string {
             <td style="padding:20px 32px;border-top:1px solid #f0f0f0;background:#fafafa;">
               <p style="margin:0;font-size:12px;color:#999;text-align:center;">
                 Unilien — Gestion de vos auxiliaires de vie<br/>
-                <a href="https://unilien.fr" style="color:#2563eb;text-decoration:none;">unilien.fr</a>
+                <a href="https://unilien.app" style="color:#2563eb;text-decoration:none;">unilien.app</a>
               </p>
             </td>
           </tr>
@@ -157,7 +157,7 @@ function shiftReminderTemplate(data: ShiftReminderData): string {
       </table>
     </div>
 
-    <a href="https://unilien.fr/planning" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">
+    <a href="https://unilien.app/planning" style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;">
       Voir le planning
     </a>
   `)

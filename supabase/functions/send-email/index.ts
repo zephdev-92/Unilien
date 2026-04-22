@@ -13,9 +13,8 @@ interface EmailPayload {
 }
 
 const ALLOWED_ORIGINS = [
-  'https://unilien.fr',
-  'https://www.unilien.fr',
-  'https://unilien.netlify.app',
+  'https://unilien.app',
+  'https://www.unilien.app',
 ]
 
 function getCorsOrigin(req: Request): string {
@@ -101,7 +100,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Unilien <onboarding@resend.dev>',
+        from: 'Unilien <notifications@unilien.app>',
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
