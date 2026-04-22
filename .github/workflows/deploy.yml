@@ -82,6 +82,24 @@ jobs:
             -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien/"
 
+      - name: Deploy Edge Functions to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          # Sync Edge Functions (preserve main/ and hello/ — runtime entrypoints)
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            --exclude='*.test.ts' \
+            --exclude='main/' \
+            --exclude='hello/' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            supabase/functions/ "$VPS_USER@$VPS_HOST:/opt/supabase/docker/volumes/functions/"
+
+          # Restart edge-runtime container to pick up new code
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
+            "sudo -n docker compose --project-directory /opt/supabase/docker restart functions"
+
       - name: Health check
         run: |
           sleep 3
