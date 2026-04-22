@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Box,
   Stack,
@@ -26,13 +26,19 @@ import { TaskSelector } from './TaskSelector'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
 import { formatHoursCompact } from '@/lib/formatHours'
+import { detectPresenceType, getPresenceMix } from '@/lib/presence/detectPresenceType'
+import { PresenceMixedWarning } from './PresenceMixedWarning'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
-  { value: 'presence_day', label: 'Présence responsable (jour)' },
-  { value: 'presence_night', label: 'Présence responsable (nuit)' },
+  { value: 'presence', label: 'Présence responsable' },
   { value: 'guard_24h', label: 'Garde 24h' },
 ]
+
+const isPresenceType = (t: ShiftType): t is 'presence_day' | 'presence_night' =>
+  t === 'presence_day' || t === 'presence_night'
+
+const toSelectValue = (t: ShiftType): string => (isPresenceType(t) ? 'presence' : t)
 
 interface NewShiftModalProps {
   isOpen: boolean
@@ -93,6 +99,18 @@ export function NewShiftModal({
 
   const baseDate = watchedValues.date ? new Date(watchedValues.date) : defaultDate
   const repeatConfig = useRepeatConfig(baseDate)
+
+  // Re-détecter presence_day / presence_night quand les horaires changent
+  useEffect(() => {
+    if (!isPresenceType(shiftType)) return
+    if (!watchedValues.startTime || !watchedValues.endTime) return
+    const detected = detectPresenceType(watchedValues.startTime, watchedValues.endTime)
+    if (detected !== shiftType) {
+      setShiftType(detected)
+      setValue('shiftType', detected)
+      if (detected !== 'presence_night') setNightInterventionsCount(0)
+    }
+  }, [watchedValues.startTime, watchedValues.endTime, shiftType, setShiftType, setValue, setNightInterventionsCount])
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false)
@@ -236,9 +254,17 @@ export function NewShiftModal({
                   <AccessibleSelect
                     label="Type d'intervention"
                     options={SHIFT_TYPE_OPTIONS}
-                    value={shiftType}
+                    value={toSelectValue(shiftType)}
                     onChange={(e) => {
-                      const newType = e.target.value as ShiftType
+                      const selected = e.target.value
+                      // "presence" = choix unifié → auto-détection jour/nuit selon horaires
+                      const newType: ShiftType =
+                        selected === 'presence'
+                          ? detectPresenceType(
+                              watchedValues.startTime ?? '09:00',
+                              watchedValues.endTime ?? '12:00',
+                            )
+                          : (selected as ShiftType)
                       setShiftType(newType)
                       setValue('shiftType', newType)
                       if (newType !== 'presence_night' && newType !== 'guard_24h') {
@@ -247,10 +273,11 @@ export function NewShiftModal({
                       if (newType !== 'effective') {
                         setHasNightAction(false)
                       }
-                      if (newType === 'presence_night') {
-                        setValue('startTime', '21:00')
-                        setValue('endTime', '07:00')
-                      } else if (newType !== 'guard_24h') {
+                      if (newType === 'guard_24h') {
+                        // géré par useEffect du hook
+                      } else if (selected === 'presence') {
+                        // on garde les horaires courants (l'auto-détection s'en occupe)
+                      } else {
                         setValue('startTime', '09:00')
                         setValue('endTime', '12:00')
                       }
@@ -323,6 +350,14 @@ export function NewShiftModal({
                       {...register('breakDuration')}
                     />
                   )}
+
+                  {/* Avertissement présence à cheval jour/nuit */}
+                  {isPresenceType(shiftType) && watchedValues.startTime && watchedValues.endTime && (() => {
+                    const mix = getPresenceMix(watchedValues.startTime, watchedValues.endTime)
+                    return mix.isMixed ? (
+                      <PresenceMixedWarning dayHours={mix.dayHours} nightHours={mix.nightHours} />
+                    ) : null
+                  })()}
 
                   {/* Section présence responsable JOUR */}
                   {shiftType === 'presence_day' && (
