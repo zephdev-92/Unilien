@@ -58,7 +58,11 @@ export async function getAbsencesForEmployer(
     return []
   }
 
-  const employeeIds = contracts.map((c) => c.employee_id)
+  const employeeIds = contracts
+    .map((c) => c.employee_id)
+    .filter((id): id is string => Boolean(id))
+
+  if (employeeIds.length === 0) return []
 
   const { data, error } = await supabase
     .from('absences')
@@ -91,7 +95,11 @@ export async function getPendingAbsencesForEmployer(
     return []
   }
 
-  const employeeIds = contracts.map((c) => c.employee_id)
+  const employeeIds = contracts
+    .map((c) => c.employee_id)
+    .filter((id): id is string => Boolean(id))
+
+  if (employeeIds.length === 0) return []
 
   const { data, error } = await supabase
     .from('absences')
