@@ -77,7 +77,7 @@ export function QuickActionsWidget({ userRole, permissions }: QuickActionsWidget
       <SimpleGrid columns={2} gap={2} p={4}>
         {actions.map((action) => (
           <Flex
-            key={action.href}
+            key={action.label}
             as={RouterLink}
             to={action.href}
             direction="column"
