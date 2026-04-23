@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { newShiftSchema as shiftSchema, type NewShiftFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
+import {
+  newShiftSchema as shiftSchema,
+  type NewShiftFormData as ShiftFormData,
+  MANDATORY_BREAK_MINIMUM_MINUTES,
+  MANDATORY_BREAK_THRESHOLD_MINUTES,
+} from '@/lib/validation/shiftSchemas'
 import { format } from 'date-fns'
 import { createShift } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
@@ -97,6 +102,24 @@ export function useNewShiftForm({
       setValue('breakDuration', totalBreak)
     }
   }, [shiftType, guardSegments, setValue])
+
+  // Auto-bump de la pause à 20 min quand la durée dépasse 6 h (art. L3121-16).
+  // Skip pour guard_24h : règle gérée segment par segment via useGuardSegments.
+  useEffect(() => {
+    if (shiftType === 'guard_24h') return
+    if (!watchedValues.startTime || !watchedValues.endTime) return
+    const [sh, sm] = watchedValues.startTime.split(':').map(Number)
+    const [eh, em] = watchedValues.endTime.split(':').map(Number)
+    if ([sh, sm, eh, em].some((v) => Number.isNaN(v))) return
+    const startTotal = sh * 60 + sm
+    let endTotal = eh * 60 + em
+    if (endTotal <= startTotal) endTotal += 24 * 60
+    const durationMinutes = endTotal - startTotal
+    const current = watchedValues.breakDuration ?? 0
+    if (durationMinutes > MANDATORY_BREAK_THRESHOLD_MINUTES && current < MANDATORY_BREAK_MINIMUM_MINUTES) {
+      setValue('breakDuration', MANDATORY_BREAK_MINIMUM_MINUTES, { shouldValidate: true })
+    }
+  }, [shiftType, watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, setValue])
 
   const { nightHoursCount, hasNightHours } = useShiftNightHours({
     startTime: watchedValues.startTime,

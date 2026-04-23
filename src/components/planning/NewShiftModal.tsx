@@ -28,6 +28,10 @@ import { toaster } from '@/lib/toaster'
 import { formatHoursCompact } from '@/lib/formatHours'
 import { detectPresenceType, getPresenceMix } from '@/lib/presence/detectPresenceType'
 import { PresenceMixedWarning } from './PresenceMixedWarning'
+import {
+  MANDATORY_BREAK_MINIMUM_MINUTES,
+  MANDATORY_BREAK_THRESHOLD_MINUTES,
+} from '@/lib/validation/shiftSchemas'
 
 const SHIFT_TYPE_OPTIONS = [
   { value: 'effective', label: 'Travail effectif' },
@@ -341,15 +345,26 @@ export function NewShiftModal({
                   )}
 
                   {/* Pause globale — masquée pour guard_24h */}
-                  {shiftType !== 'guard_24h' && (
-                    <AccessibleInput
-                      label="Pause (minutes)"
-                      type="number"
-                      helperText="Durée de la pause en minutes (20 min obligatoire si > 6h)"
-                      error={errors.breakDuration?.message}
-                      {...register('breakDuration')}
-                    />
-                  )}
+                  {shiftType !== 'guard_24h' && (() => {
+                    const breakRequired = durationHours * 60 > MANDATORY_BREAK_THRESHOLD_MINUTES
+                    return (
+                      <Box>
+                        <AccessibleInput
+                          label="Pause (minutes)"
+                          type="number"
+                          min={breakRequired ? MANDATORY_BREAK_MINIMUM_MINUTES : 0}
+                          step={5}
+                          helperText={
+                            breakRequired
+                              ? `Intervention > 6 h : ${MANDATORY_BREAK_MINIMUM_MINUTES} min minimum obligatoire (art. L3121-16).`
+                              : 'Durée de la pause en minutes.'
+                          }
+                          error={errors.breakDuration?.message}
+                          {...register('breakDuration')}
+                        />
+                      </Box>
+                    )
+                  })()}
 
                   {/* Avertissement présence à cheval jour/nuit */}
                   {isPresenceType(shiftType) && watchedValues.startTime && watchedValues.endTime && (() => {
