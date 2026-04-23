@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 10 avril 2026 (2251 tests / 128 fichiers — Tests UI Phase 3 : LiaisonPage 13 tests + LogbookPage 24 tests)
-**Version**: 1.15.0
+**Dernière mise à jour**: 23 avril 2026 (2266 tests / 130 fichiers — chantier upload bulletin URSSAF + pause L3121-16 enforced)
+**Version**: 1.16.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -14,30 +14,81 @@
 |-----------|------------|--------|
 | **Authentification** | 99% | ✅ Excellent (login, signup, reset, rôles, OAuth Google/Microsoft, 2FA TOTP, recovery codes V2) |
 | **Dashboards** | 97% | ✅ Excellent (3 dashboards rôle-spécifiques + mobile aidant, dark mode, onboarding widget, CTAs dynamiques, empty state aucun employé ✅ — demo banner manquant) |
-| **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses) |
+| **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses, pause L3121-16 auto-enforced) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, pièces jointes — réactions emoji/search/archive manquants) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions — recherche avancée, disponibilités, évaluations V2) |
 | **Conformité** | 95% | ✅ Excellent |
-| **Documents/Export** | 90% | 🟡 Bon (bulletins v2, @react-pdf/renderer, CESU, planning exports — search + table unifiée manquants) |
+| **Documents/Export** | 92% | 🟡 Bon (upload bulletin URSSAF employeur + lecture employé, CESU, planning exports — search + table unifiée manquants, génération PDF bulletin retirée) |
 | **Notifications** | 85% | 🟡 Bon (in-app + push + email Resend OK — SMS + vérification tél manquants) |
-| **Tests** | 54% stmts | 🟡 Bon (2251 tests / 128 fichiers, E2E Playwright 8 tests — Phase 3 UI terminée, plus de scénarios E2E à faire) |
+| **Tests** | 54% stmts | 🟡 Bon (2266 tests / 130 fichiers, E2E Playwright 8 tests — Phase 3 UI terminée, plus de scénarios E2E à faire) |
 | **Sécurité** | 98% | ✅ Excellent (RLS renforcé 041-049, RGPD art. 9, audit trail, droit effacement, CSP enforced — pgsodium V3) |
 | **Qualité code** | 98% | ✅ Excellent (0 `select('*')`, 0 Supabase direct dans composants, Provider snippet v3, 0 `as any`, 0 `eslint-disable` type) |
 
 ### Métriques Clés
 
-- **Fichiers source**: ~270 fichiers TS/TSX (hors tests)
-- **Tests**: 2251 tests / 128 fichiers (54% stmts — 54/40/40/50 seuils) + 8 tests E2E Playwright
-- **Migrations DB**: 49 migrations
+- **Fichiers source**: ~265 fichiers TS/TSX (hors tests — génération bulletin retirée)
+- **Tests**: 2266 tests / 130 fichiers (54% stmts — 54/40/40/50 seuils) + 8 tests E2E Playwright
+- **Migrations DB**: 52 migrations (052 : payslips computed columns nullable)
 - **Composants UI**: ~145 composants
 - **Services**: 30 services
 - **Hooks**: 24 hooks custom
-- **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel)
-- **Prototype Gap**: 97/102 items (95%) — 5 restants : demo banner, contact, palette, confidentialité, empty states onboarding
+- **Routes**: 18 routes francisées (dont 10 protégées avec ErrorBoundary individuel — `/documents` désormais accessible aux employés)
+- **Prototype Gap**: 98/102 items (96%) — 4 restants : demo banner, contact, confidentialité, empty states onboarding
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-20 - Février/Avril 2026)
+## ✅ Réalisations Récentes (Semaines 6-21 - Février/Avril 2026)
+
+### Semaine 21 — 22-23 avril 2026 (PRs #281–#302)
+
+#### Chantier "Upload bulletin URSSAF" (PRs #293–#297 ✅)
+
+Abandon de la génération PDF côté app au profit de l'upload du bulletin officiel reçu du portail CESU (art. L3121-33 : l'URSSAF est la source de vérité légale). 5 PRs découpées :
+
+- **#293** — Migration 052 : `gross_pay` / `net_pay` / `total_hours` / `period_label` passent nullable dans `payslips`
+- **#294** — `uploadExternalPayslip()` dans `payslipStorageService` (PDF File, validation ≤ 5 Mo, résolution auto du contrat `employment` actif) + 11 tests
+- **#295** — Refonte `PayslipSection` (employeur) : remplacement `PayslipGeneratorModal` par flow upload (dropzone style absence modal, `contractId` explicite)
+- **#296** — `EmployeePayslipSection` (vue employé en lecture seule) + `getPayslipsForEmployee()` protégé par RLS, exposition de `/documents` au rôle `employee` (menu + route + onglets filtrés) + 8 tests
+- **#297** — Cleanup : suppression `payslipService` + `payslipPdfGenerator` + `PayslipGeneratorModal` + `PayslipData` / `PayslipPchData` types + helpers storage legacy (−1519 lignes nettes)
+
+Gardé intentionnellement : `cotisationsCalculator` + types `CotisationsResult` / `CotisationLine` pour un futur dashboard prévisionnel.
+
+#### Pause L3121-16 enforced (PR #298 ✅)
+
+Feedback Marie : la pause était éditable librement avec juste un helper-text, on pouvait sauvegarder 0 min sur un 8h. Désormais :
+- Constantes `MANDATORY_BREAK_THRESHOLD_MINUTES` (6 h) / `MANDATORY_BREAK_MINIMUM_MINUTES` (20) dans `shiftSchemas.ts`
+- Zod refine sur `newShiftSchema` + `shiftDetailSchema` (gère overnight, exempté pour `guard_24h`)
+- UI `NewShiftModal` / `ShiftEditForm` : `min={20}` dynamique + helper text rappelant l'article
+- Auto-bump à 20 min quand la durée franchit 6 h dans `useNewShiftForm` et `ShiftDetailModal`
+- 7 tests schéma
+
+#### Fixes console + UI (PRs #290–#292, #299, #302 ✅)
+
+- **#290** — Fix clé React dupliquée `/documents` dans `QuickActionsWidget` (key = `label`)
+- **#291** — Filter `null` employee ids dans `absenceService` avant `.in()` Supabase (fix HTTP 400 UUID)
+- **#292** — Dédupe employés dans `PlanningExportSection` (contrats multiples → même employé)
+- **#299** — Retrait du barré sur labels onboarding complétés
+- **#302** — Copy "à générer" → "à uploader" dans nudge dashboard + FAQ `HelpPage` refondue
+
+#### Self-host + CSP (PRs #281–#289)
+
+- **#281** — Domaine Resend `unilien.app` (avatars)
+- **#282** — Templates email palette Ardoise
+- **#283** — CI Edge Functions
+- **#284** — Caddyfile versionné + CSP
+- **#285** — Docs self-host
+- **#286** — Format heures `XhYY` partout (feedback Marie)
+- **#287** — Suppression horloge live pointage (feedback Marie "perturbant")
+- **#288** — CSP prod : `img-src *.supabase.co` + `script-src 'unsafe-eval'` (déploiement Caddyfile manuel VPS)
+- **#289** — Fusion options "Présence responsable jour/nuit" + auto-détection `detectPresenceType` + `PresenceMixedWarning` (avertissement shift à cheval 18h–23h)
+
+#### Métriques session (23/04/2026)
+- PRs : #281–#302 (21 PRs)
+- Tests : 2266 / 130 fichiers (+56 par rapport à S20)
+- Migrations : 52 (+3 : self-host buckets, data retention, payslips nullable)
+- Code net : **−1519 lignes** (chantier cleanup génération)
+
+---
 
 ### Semaine 20 — 10 avril 2026 (PRs #241–#245)
 
@@ -1315,20 +1366,19 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 
 **Manquants**:
 
-#### 6.1 Export Bulletins de Paie ✅ (19/02/2026)
+#### 6.1 Bulletins de Paie — Upload URSSAF ✅ (23/04/2026)
 
-**Format**: PDF — jsPDF · **Taux** : IDCC 3239 / 2025 — indicatif
+**Approche** : abandon de la génération PDF côté app. L'employeur upload le bulletin officiel reçu du portail CESU. L'URSSAF reste la source de vérité légale.
 
 ```
-- ✅ Design template bulletin (5 sections : header, parties, brut, cotisations, nets)
-- ✅ Calculs cotisations sociales salariales (CSG/CRDS/vieillesse/AGIRC-ARRCO T1)
-- ✅ Calculs cotisations patronales (maladie/vieillesse/alloc. fam./chômage/FNAL/CSA/AT-MP)
-- ✅ Exonération cotisations patronales SS (Art. L241-10 CSS — employeurs PCH/invalide/MTP/PCTP)
-- ✅ Génération PDF (jsPDF) — téléchargement direct
-- ✅ Onglet "Bulletins de paie" dans DocumentManagementSection
-- ✅ Stockage documents (Supabase Storage) — v2 ✅ PR #117
-- ✅ Historique bulletins (table DB) — v2 ✅ PR #117
-- ✅ Taux PAS configurable par employé (contrats) — v2 ✅ PR #117
+- ✅ Upload PDF URSSAF (5 Mo max) par couple employé × mois — PR #294
+- ✅ Refonte PayslipSection employeur (dropzone) — PR #295
+- ✅ EmployeePayslipSection (vue employé lecture seule) — PR #296
+- ✅ Migration 052 : colonnes calculées nullable — PR #293
+- ✅ Cleanup génération (jsPDF, payslipService, PayslipGeneratorModal, 1519 lignes) — PR #297
+- ✅ /documents accessible au rôle employee (sidebar + spotlight) — PR #296
+- ♻️  Historique : génération in-app jsPDF (PR #117, 19/02/2026) — retirée le 23/04/2026
+- ✅ cotisationsCalculator + types CotisationsResult conservés pour futur dashboard prévisionnel
 ```
 
 ---
