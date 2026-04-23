@@ -359,10 +359,10 @@ export interface PayslipDbRow {
   contract_id: string
   year: number
   month: number
-  period_label: string
-  gross_pay: number
-  net_pay: number
-  total_hours: number
+  period_label: string | null
+  gross_pay: number | null
+  net_pay: number | null
+  total_hours: number | null
   pas_rate: number
   is_exempt_patronal_ss: boolean
   storage_path: string | null
