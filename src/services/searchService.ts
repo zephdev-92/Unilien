@@ -72,7 +72,7 @@ const NAV_PAGES: NavPage[] = [
   { label: 'Messagerie', href: '/messagerie', icon: 'message' },
   { label: 'Cahier de liaison', href: '/cahier-de-liaison', icon: 'book' },
   { label: 'Conformité', href: '/conformite', icon: 'shield', roles: ['employer'] },
-  { label: 'Documents', href: '/documents', icon: 'file', roles: ['employer'] },
+  { label: 'Documents', href: '/documents', icon: 'file', roles: ['employer', 'employee'] },
   { label: 'Suivi des heures', href: '/suivi-des-heures', icon: 'clock' },
   { label: 'Analytique', href: '/analytique', icon: 'barchart' },
   { label: 'Mon profil', href: '/profil', icon: 'user' },

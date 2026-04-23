@@ -19,6 +19,7 @@ import {
   CesuDeclarationSection,
   ContractsSection,
   DocumentManagementSection,
+  EmployeePayslipSection,
   PayslipSection,
   PlanningExportSection,
 } from '@/components/documents'
@@ -61,6 +62,8 @@ export function DocumentsPage() {
     return <Navigate to="/tableau-de-bord" replace />
   }
 
+  const isEmployee = profile.role === 'employee'
+
   return (
     <DashboardLayout title="Documents">
       <Container maxW="container.xl" py={6}>
@@ -70,22 +73,30 @@ export function DocumentsPage() {
               <Tabs.Trigger value="payslips">
                 Bulletins de paie
               </Tabs.Trigger>
-              <Tabs.Trigger value="contracts">
-                Contrats
-              </Tabs.Trigger>
-              <Tabs.Trigger value="absences">
-                Absences
-              </Tabs.Trigger>
+              {!isEmployee && (
+                <Tabs.Trigger value="contracts">
+                  Contrats
+                </Tabs.Trigger>
+              )}
+              {!isEmployee && (
+                <Tabs.Trigger value="absences">
+                  Absences
+                </Tabs.Trigger>
+              )}
               <Tabs.Trigger value="planning">
                 Export planning
               </Tabs.Trigger>
-              <Tabs.Trigger value="declarations">
-                Déclarations CESU
-              </Tabs.Trigger>
+              {!isEmployee && (
+                <Tabs.Trigger value="declarations">
+                  Déclarations CESU
+                </Tabs.Trigger>
+              )}
             </Tabs.List>
 
             <Tabs.Content value="payslips" pt={6}>
-              {effectiveEmployerId ? (
+              {isEmployee ? (
+                <EmployeePayslipSection employeeId={profile.id} />
+              ) : effectiveEmployerId ? (
                 <PayslipSection employerId={effectiveEmployerId} />
               ) : (
                 <Alert.Root status="warning">
@@ -95,27 +106,31 @@ export function DocumentsPage() {
               )}
             </Tabs.Content>
 
-            <Tabs.Content value="contracts" pt={6}>
-              {effectiveEmployerId ? (
-                <ContractsSection employerId={effectiveEmployerId} />
-              ) : (
-                <Alert.Root status="warning">
-                  <Alert.Indicator />
-                  <Alert.Title>Impossible de charger les contrats</Alert.Title>
-                </Alert.Root>
-              )}
-            </Tabs.Content>
+            {!isEmployee && (
+              <Tabs.Content value="contracts" pt={6}>
+                {effectiveEmployerId ? (
+                  <ContractsSection employerId={effectiveEmployerId} />
+                ) : (
+                  <Alert.Root status="warning">
+                    <Alert.Indicator />
+                    <Alert.Title>Impossible de charger les contrats</Alert.Title>
+                  </Alert.Root>
+                )}
+              </Tabs.Content>
+            )}
 
-            <Tabs.Content value="absences" pt={6}>
-              {effectiveEmployerId ? (
-                <DocumentManagementSection employerId={effectiveEmployerId} />
-              ) : (
-                <Alert.Root status="warning">
-                  <Alert.Indicator />
-                  <Alert.Title>Impossible de charger les absences</Alert.Title>
-                </Alert.Root>
-              )}
-            </Tabs.Content>
+            {!isEmployee && (
+              <Tabs.Content value="absences" pt={6}>
+                {effectiveEmployerId ? (
+                  <DocumentManagementSection employerId={effectiveEmployerId} />
+                ) : (
+                  <Alert.Root status="warning">
+                    <Alert.Indicator />
+                    <Alert.Title>Impossible de charger les absences</Alert.Title>
+                  </Alert.Root>
+                )}
+              </Tabs.Content>
+            )}
 
             <Tabs.Content value="planning" pt={6}>
               <PlanningExportSection
@@ -125,16 +140,18 @@ export function DocumentsPage() {
               />
             </Tabs.Content>
 
-            <Tabs.Content value="declarations" pt={6}>
-              {effectiveEmployerId ? (
-                <CesuDeclarationSection employerId={effectiveEmployerId} />
-              ) : (
-                <Alert.Root status="warning">
-                  <Alert.Indicator />
-                  <Alert.Title>Impossible de charger les declarations</Alert.Title>
-                </Alert.Root>
-              )}
-            </Tabs.Content>
+            {!isEmployee && (
+              <Tabs.Content value="declarations" pt={6}>
+                {effectiveEmployerId ? (
+                  <CesuDeclarationSection employerId={effectiveEmployerId} />
+                ) : (
+                  <Alert.Root status="warning">
+                    <Alert.Indicator />
+                    <Alert.Title>Impossible de charger les declarations</Alert.Title>
+                  </Alert.Root>
+                )}
+              </Tabs.Content>
+            )}
           </Tabs.Root>
         </VStack>
       </Container>

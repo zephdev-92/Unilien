@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   validatePayslipFile,
   uploadExternalPayslip,
+  getPayslipsForEmployee,
   PAYSLIP_MAX_FILE_SIZE,
 } from './payslipStorageService'
 
@@ -216,5 +217,69 @@ describe('uploadExternalPayslip', () => {
     const res = await uploadExternalPayslip(baseParams)
     expect(res.success).toBe(false)
     expect(res.error).toMatch(/upload/i)
+  })
+})
+
+// ─── getPayslipsForEmployee ─────────────────────────────────────────
+
+describe('getPayslipsForEmployee', () => {
+  beforeEach(() => {
+    mockFrom.mockReset()
+  })
+
+  function mockPayslipQuery(rows: Array<Record<string, unknown>> | null, error: unknown = null) {
+    const order2 = vi.fn().mockResolvedValue({ data: rows, error })
+    const order1 = vi.fn().mockReturnValue({ order: order2 })
+    const eq = vi.fn().mockReturnValue({ order: order1 })
+    const select = vi.fn().mockReturnValue({ eq })
+    return { select, eq }
+  }
+
+  it('retourne la liste mappée des bulletins de l\'employé', async () => {
+    const rows = [
+      {
+        id: 'p1',
+        employer_id: 'emp-1',
+        employee_id: 'me',
+        contract_id: 'c-1',
+        year: 2026,
+        month: 3,
+        period_label: null,
+        gross_pay: null,
+        net_pay: null,
+        total_hours: null,
+        pas_rate: 0,
+        is_exempt_patronal_ss: false,
+        storage_path: 'emp-1/me/2026/03/bulletin.pdf',
+        storage_url: null,
+        generated_at: '2026-04-05T10:00:00Z',
+        created_at: '2026-04-05T10:00:00Z',
+      },
+    ]
+    const query = mockPayslipQuery(rows)
+    mockFrom.mockReturnValue({ select: query.select })
+
+    const result = await getPayslipsForEmployee('me')
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('p1')
+    expect(result[0].employeeId).toBe('me')
+    expect(result[0].storagePath).toBe('emp-1/me/2026/03/bulletin.pdf')
+    expect(query.eq).toHaveBeenCalledWith('employee_id', 'me')
+  })
+
+  it('retourne [] sur erreur', async () => {
+    const query = mockPayslipQuery(null, { message: 'boom' })
+    mockFrom.mockReturnValue({ select: query.select })
+
+    const result = await getPayslipsForEmployee('me')
+    expect(result).toEqual([])
+  })
+
+  it('retourne [] si data est null sans erreur', async () => {
+    const query = mockPayslipQuery(null)
+    mockFrom.mockReturnValue({ select: query.select })
+
+    const result = await getPayslipsForEmployee('me')
+    expect(result).toEqual([])
   })
 })

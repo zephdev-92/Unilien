@@ -28,6 +28,9 @@ vi.mock('@/components/documents', () => ({
     <div data-testid="doc-section" data-employer-id={employerId} />
   ),
   PayslipSection: () => <div data-testid="payslip-section" />,
+  EmployeePayslipSection: ({ employeeId }: { employeeId: string }) => (
+    <div data-testid="employee-payslip-section" data-employee-id={employeeId} />
+  ),
   PlanningExportSection: () => <div data-testid="planning-export-section" />,
 }))
 

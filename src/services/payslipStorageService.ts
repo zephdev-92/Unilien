@@ -165,6 +165,26 @@ export async function savePayslipRecord(params: SavePayslipParams): Promise<Pays
 }
 
 /**
+ * Récupère l'historique des bulletins d'un employé (sa propre vue).
+ * Protégé par la policy RLS `payslips_employee_select`.
+ */
+export async function getPayslipsForEmployee(employeeId: string): Promise<Payslip[]> {
+  const { data, error } = await supabase
+    .from('payslips')
+    .select('id, employer_id, employee_id, contract_id, year, month, period_label, gross_pay, net_pay, total_hours, pas_rate, is_exempt_patronal_ss, storage_path, storage_url, generated_at, created_at')
+    .eq('employee_id', employeeId)
+    .order('year', { ascending: false })
+    .order('month', { ascending: false })
+
+  if (error) {
+    logger.error('Erreur récupération bulletins employé:', error)
+    return []
+  }
+
+  return (data || []).map((row) => mapFromDb(row as PayslipDbRow))
+}
+
+/**
  * Récupère l'historique des bulletins d'un employeur.
  * Si employeeId est fourni, filtre par employé.
  */
