@@ -48,7 +48,7 @@ export const FAMILY_EVENT_DAYS: Record<FamilyEventType, number> = {
   death_sibling: 3,
   death_in_law: 3,
   child_marriage: 1,
-  disability_announcement: 2,
+  disability_announcement: 5,
 }
 
 // Labels français pour les événements familiaux
@@ -63,5 +63,5 @@ export const FAMILY_EVENT_LABELS: Record<FamilyEventType, string> = {
   death_sibling: 'Décès d\'un frère/sœur',
   death_in_law: 'Décès d\'un beau-parent',
   child_marriage: 'Mariage d\'un enfant',
-  disability_announcement: 'Annonce handicap d\'un enfant',
+  disability_announcement: 'Annonce du handicap d\'un enfant',
 }

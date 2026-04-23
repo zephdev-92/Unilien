@@ -25,7 +25,7 @@ vi.mock('@/lib/absence', () => ({
     death_sibling: 'Décès d\'un frère/sœur',
     death_in_law: 'Décès beau-parent',
     child_marriage: 'Mariage d\'un enfant',
-    disability_announcement: 'Annonce handicap enfant',
+    disability_announcement: 'Annonce du handicap d\'un enfant',
   },
   FAMILY_EVENT_DAYS: {
     marriage: 4,
@@ -38,7 +38,7 @@ vi.mock('@/lib/absence', () => ({
     death_sibling: 3,
     death_in_law: 3,
     child_marriage: 1,
-    disability_announcement: 2,
+    disability_announcement: 5,
   },
 }))
 
