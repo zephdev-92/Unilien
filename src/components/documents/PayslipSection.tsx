@@ -1,56 +1,56 @@
 /**
- * Section "Bulletins de paie" dans la page Documents.
+ * Section "Bulletins de paie" de la page Documents (vue employeur).
  *
- * Structure (alignee sur le prototype) :
- *  1. Toolbar : filtres employe/periode a gauche, bouton "Generer" a droite
- *  2. Status-hint avec legende des pills
- *  3. Tableau recapitulatif (Employe, Periode, Heures, Net, Statut, Actions)
- *  4. Formulaire de generation dans un Dialog
+ * Workflow :
+ *  1. L'URSSAF (CESU déclaratif) envoie le bulletin officiel à l'employeur.
+ *  2. L'employeur upload le PDF reçu, rattaché à un couple employé × mois.
+ *  3. L'app archive le fichier (bucket "payslips") et affiche l'historique.
+ *
+ * La génération PDF côté app a été abandonnée : voir historique git.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Box,
   VStack,
   HStack,
   Text,
   Button,
-  Badge,
   Alert,
   Spinner,
   Center,
   Table,
   IconButton,
   NativeSelect,
-  Input,
   Field,
   EmptyState,
   Dialog,
   CloseButton,
+  Input,
 } from '@chakra-ui/react'
 import { toaster } from '@/lib/toaster'
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import {
-  getPayslipData,
-} from '@/lib/export/payslipService'
-import {
-  generatePayslipPdf,
-  downloadExport,
-} from '@/lib/export'
-import {
-  uploadPayslipPdf,
+  uploadExternalPayslip,
+  validatePayslipFile,
   getPayslipSignedUrl,
-  savePayslipRecord,
   getPayslipsHistory,
   deletePayslipRecord,
 } from '@/services/payslipStorageService'
 import { MONTHS_FR } from '@/lib/export/types'
 import { logger } from '@/lib/logger'
-import { formatHoursCompact } from '@/lib/formatHours'
 import type { Payslip } from '@/types'
 
 interface Props {
   employerId: string
+}
+
+function formatUploadDate(date: Date): string {
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function periodLabelFor(year: number, month: number): string {
+  return `${MONTHS_FR[month - 1]} ${year}`
 }
 
 export function PayslipSection({ employerId }: Props) {
@@ -58,36 +58,26 @@ export function PayslipSection({ employerId }: Props) {
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
 
-  // Le dernier mois clôturé (mois précédent)
+  // Par défaut : mois précédent (bulletin du mois écoulé)
   const defaultMonth = currentMonth === 1 ? 12 : currentMonth - 1
   const defaultYear = currentMonth === 1 ? currentYear - 1 : currentYear
 
-  // Un mois est clôturé si on est au moins le 1er du mois suivant
-  const isMonthClosed = (year: number, month: number) => {
-    const firstOfNext = new Date(year, month, 1) // month est 1-based → sert de mois suivant (0-based)
-    return now >= firstOfNext
-  }
-
-  // ── Contrats actifs
+  // ── Contrats actifs (employés employer)
   const [contracts, setContracts] = useState<ContractWithEmployee[]>([])
   const [selectedContractId, setSelectedContractId] = useState<string>('')
 
-  // ── Periode
+  // ── Formulaire d'upload
   const [selectedYear, setSelectedYear] = useState(defaultYear)
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  // ── Taux PAS
-  const [pasRateInput, setPasRateInput] = useState('0')
-
-  // ── Exemption patronale
-  const [isExemptPatronal, setIsExemptPatronal] = useState(false)
-
-  // ── Etats UI
-  const [isGenerating, setIsGenerating] = useState(false)
+  // ── États UI
+  const [isUploading, setIsUploading] = useState(false)
   const [dialogError, setDialogError] = useState<string | null>(null)
-  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
 
-  // ── Tous les bulletins (tableau recapitulatif)
+  // ── Historique
   const [allPayslips, setAllPayslips] = useState<Payslip[]>([])
   const [isLoadingAll, setIsLoadingAll] = useState(false)
 
@@ -97,28 +87,16 @@ export function PayslipSection({ employerId }: Props) {
 
   const years = [currentYear, currentYear - 1, currentYear - 2]
 
-  // Charger les contrats au montage
   useEffect(() => {
     getContractsForEmployer(employerId).then((list) => {
-      setContracts(list)
-      if (list.length > 0) {
-        setSelectedContractId(list[0].id)
-        const rate = list[0].pasRate ?? 0
-        setPasRateInput((rate * 100).toFixed(2))
+      const employmentContracts = list.filter((c) => c.contractCategory === 'employment')
+      setContracts(employmentContracts)
+      if (employmentContracts.length > 0) {
+        setSelectedContractId(employmentContracts[0].id)
       }
     })
   }, [employerId])
 
-  // Mettre a jour le taux PAS quand le contrat change
-  useEffect(() => {
-    const contract = contracts.find((c) => c.id === selectedContractId)
-    if (contract) {
-      const rate = contract.pasRate ?? 0
-      setPasRateInput((rate * 100).toFixed(2))
-    }
-  }, [selectedContractId, contracts])
-
-  // Charger tous les bulletins
   const loadAllPayslips = useCallback(async () => {
     setIsLoadingAll(true)
     const list = await getPayslipsHistory(employerId)
@@ -130,17 +108,14 @@ export function PayslipSection({ employerId }: Props) {
     loadAllPayslips()
   }, [loadAllPayslips])
 
-  // ── Helpers
-
   const getEmployeeName = (employeeId: string): string => {
     const contract = contracts.find((c) => c.employeeId === employeeId)
     if (contract?.employee) {
       return `${contract.employee.firstName} ${contract.employee.lastName}`
     }
-    return 'Employe inconnu'
+    return 'Employé inconnu'
   }
 
-  // Options employes uniques pour le filtre
   const employeeFilterOptions = useMemo(() => {
     const seen = new Map<string, string>()
     for (const p of allPayslips) {
@@ -149,140 +124,109 @@ export function PayslipSection({ employerId }: Props) {
       }
     }
     return Array.from(seen, ([id, name]) => ({ id, name }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPayslips, contracts])
 
-  // Periodes uniques pour le filtre
   const periodFilterOptions = useMemo(() => {
     const periods = new Set<string>()
     for (const p of allPayslips) {
-      periods.add(p.periodLabel)
+      periods.add(periodLabelFor(p.year, p.month))
     }
     return Array.from(periods)
   }, [allPayslips])
 
-  // Bulletins filtres
   const filteredPayslips = useMemo(() => {
     let result = allPayslips
     if (filterEmployeeId) {
       result = result.filter((p) => p.employeeId === filterEmployeeId)
     }
     if (filterPeriod) {
-      result = result.filter((p) => p.periodLabel === filterPeriod)
+      result = result.filter((p) => periodLabelFor(p.year, p.month) === filterPeriod)
     }
     return result
   }, [allPayslips, filterEmployeeId, filterPeriod])
 
-  // ── Generation
-
   const selectedContract = contracts.find((c) => c.id === selectedContractId)
-  const pasRateDecimal = Math.min(1, Math.max(0, parseFloat(pasRateInput || '0') / 100))
 
-  const handleGenerate = async (saveToStorage: boolean) => {
-    if (!selectedContract) return
-
-    setIsGenerating(true)
+  const resetDialog = () => {
+    setSelectedFile(null)
     setDialogError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
-    if (!isMonthClosed(selectedYear, selectedMonth)) {
-      setDialogError('Ce mois n\'est pas encore termine. Le bulletin sera disponible a partir du 1er du mois suivant.')
-      setIsGenerating(false)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    setDialogError(null)
+    if (!file) {
+      setSelectedFile(null)
       return
     }
+    const validation = validatePayslipFile(file)
+    if (!validation.valid) {
+      setDialogError(validation.error ?? 'Fichier invalide.')
+      setSelectedFile(null)
+      return
+    }
+    setSelectedFile(file)
+  }
+
+  const handleUpload = async () => {
+    if (!selectedContract || !selectedFile) return
+
+    setIsUploading(true)
+    setDialogError(null)
 
     try {
-      const payslipData = await getPayslipData(
+      const result = await uploadExternalPayslip({
         employerId,
-        selectedContract.employeeId,
-        selectedYear,
-        selectedMonth,
-        pasRateDecimal,
-        isExemptPatronal
-      )
-
-      if (!payslipData) {
-        setDialogError('Aucune donnee trouvee pour cette periode')
-        return
-      }
-
-      const result = await generatePayslipPdf(payslipData)
+        employeeId: selectedContract.employeeId,
+        contractId: selectedContract.id,
+        year: selectedYear,
+        month: selectedMonth,
+        file: selectedFile,
+      })
 
       if (!result.success) {
-        setDialogError(result.error ?? 'Erreur lors de la generation du PDF')
+        setDialogError(result.error ?? 'Échec de l\'upload.')
         return
       }
 
-      downloadExport(result)
+      await loadAllPayslips()
 
       const employeeName = selectedContract.employee
         ? `${selectedContract.employee.firstName} ${selectedContract.employee.lastName}`
-        : 'Employe'
-      const periodLabel = `${MONTHS_FR[selectedMonth - 1]} ${selectedYear}`
+        : 'Employé'
+      toaster.create({
+        title: 'Bulletin uploadé',
+        description: `${employeeName} — ${periodLabelFor(selectedYear, selectedMonth)}`,
+        type: 'success',
+      })
 
-      if (saveToStorage) {
-        const storagePath = await uploadPayslipPdf(
-          employerId,
-          selectedContract.employeeId,
-          selectedYear,
-          selectedMonth,
-          result.filename,
-          result.content
-        )
-
-        const storageUrl = storagePath
-          ? await getPayslipSignedUrl(storagePath)
-          : null
-
-        await savePayslipRecord({
-          data: payslipData,
-          contractId: selectedContractId,
-          storagePath,
-          storageUrl,
-        })
-
-        await loadAllPayslips()
-        toaster.create({
-          title: 'Bulletin de paie',
-          description: `${employeeName} — ${periodLabel} genere et sauvegarde`,
-          type: 'success',
-        })
-      } else {
-        toaster.create({
-          title: 'Bulletin de paie',
-          description: `${employeeName} — ${periodLabel} telecharge`,
-          type: 'success',
-        })
-      }
-
-      setShowGenerateDialog(false)
+      setShowUploadDialog(false)
+      resetDialog()
     } catch (err) {
-      logger.error('Erreur generation bulletin:', err)
-      setDialogError('Une erreur est survenue lors de la generation.')
+      logger.error('Erreur upload bulletin:', err)
+      setDialogError('Une erreur est survenue lors de l\'upload.')
     } finally {
-      setIsGenerating(false)
+      setIsUploading(false)
     }
   }
 
-  const handleReDownload = async (payslip: Payslip) => {
+  const handleDownload = async (payslip: Payslip) => {
     if (!payslip.storagePath) return
     const url = await getPayslipSignedUrl(payslip.storagePath)
     if (!url) {
       toaster.create({
         title: 'Erreur',
-        description: 'Impossible de generer le lien de telechargement.',
+        description: 'Impossible de générer le lien de téléchargement.',
         type: 'error',
       })
       return
     }
     const a = document.createElement('a')
     a.href = url
-    a.download = `bulletin_${payslip.periodLabel.toLowerCase().replace(/\s+/g, '_')}.pdf`
+    a.download = `bulletin_${payslip.year}-${String(payslip.month).padStart(2, '0')}.pdf`
     a.click()
-    toaster.create({
-      title: 'Bulletin de paie',
-      description: `${payslip.periodLabel} telecharge`,
-      type: 'success',
-    })
   }
 
   const handleDelete = async (payslipId: string) => {
@@ -296,7 +240,7 @@ export function PayslipSection({ employerId }: Props) {
     return (
       <Alert.Root status="info">
         <Alert.Indicator />
-        <Alert.Title>Aucun contrat actif trouve pour generer un bulletin.</Alert.Title>
+        <Alert.Title>Aucun contrat d'emploi actif : rien à uploader pour l'instant.</Alert.Title>
       </Alert.Root>
     )
   }
@@ -310,9 +254,9 @@ export function PayslipSection({ employerId }: Props) {
             <NativeSelect.Field
               value={filterEmployeeId}
               onChange={(e) => setFilterEmployeeId(e.target.value)}
-              aria-label="Filtrer par employe"
+              aria-label="Filtrer par employé"
             >
-              <option value="">Tous les employes</option>
+              <option value="">Tous les employés</option>
               {employeeFilterOptions.map((emp) => (
                 <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
@@ -324,9 +268,9 @@ export function PayslipSection({ employerId }: Props) {
             <NativeSelect.Field
               value={filterPeriod}
               onChange={(e) => setFilterPeriod(e.target.value)}
-              aria-label="Filtrer par periode"
+              aria-label="Filtrer par période"
             >
-              <option value="">Toutes les periodes</option>
+              <option value="">Toutes les périodes</option>
               {periodFilterOptions.map((period) => (
                 <option key={period} value={period}>{period}</option>
               ))}
@@ -339,23 +283,19 @@ export function PayslipSection({ employerId }: Props) {
           size="sm"
           colorPalette="brand"
           onClick={() => {
-            setDialogError(null)
-            setShowGenerateDialog(true)
+            resetDialog()
+            setShowUploadDialog(true)
           }}
         >
-          Generer un bulletin de paie
+          Uploader un bulletin
         </Button>
       </HStack>
 
-      {/* ── Status hint ── */}
       <Text fontSize="xs" color="text.muted">
-        <Badge colorPalette="green" variant="subtle" size="sm">Envoye</Badge>
-        {' = bulletin deja transmis · '}
-        <Badge colorPalette="orange" variant="subtle" size="sm">A envoyer</Badge>
-        {' = a verifier avant l\'envoi.'}
+        Uploadez le bulletin officiel reçu de l'URSSAF (CESU déclaratif). PDF uniquement, 5 Mo max.
       </Text>
 
-      {/* ── Tableau recapitulatif ── */}
+      {/* ── Historique ── */}
       {isLoadingAll ? (
         <Center py={6}>
           <Spinner />
@@ -363,9 +303,9 @@ export function PayslipSection({ employerId }: Props) {
       ) : filteredPayslips.length === 0 ? (
         <EmptyState.Root>
           <EmptyState.Content>
-            <EmptyState.Title>Aucun bulletin</EmptyState.Title>
+            <EmptyState.Title>Aucun bulletin archivé</EmptyState.Title>
             <EmptyState.Description>
-              Les bulletins apparaitront ici une fois generes.
+              Les bulletins uploadés apparaîtront ici.
             </EmptyState.Description>
           </EmptyState.Content>
         </EmptyState.Root>
@@ -374,11 +314,9 @@ export function PayslipSection({ employerId }: Props) {
           <Table.Root size="sm">
             <Table.Header>
               <Table.Row>
-                <Table.ColumnHeader>Employe</Table.ColumnHeader>
-                <Table.ColumnHeader>Periode</Table.ColumnHeader>
-                <Table.ColumnHeader textAlign="right">Heures</Table.ColumnHeader>
-                <Table.ColumnHeader textAlign="right">Net a payer</Table.ColumnHeader>
-                <Table.ColumnHeader textAlign="center">Statut</Table.ColumnHeader>
+                <Table.ColumnHeader>Employé</Table.ColumnHeader>
+                <Table.ColumnHeader>Période</Table.ColumnHeader>
+                <Table.ColumnHeader>Uploadé le</Table.ColumnHeader>
                 <Table.ColumnHeader textAlign="center">Actions</Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
@@ -391,37 +329,23 @@ export function PayslipSection({ employerId }: Props) {
                     </Text>
                   </Table.Cell>
                   <Table.Cell>
-                    <Text fontSize="sm">{p.periodLabel}</Text>
+                    <Text fontSize="sm">{periodLabelFor(p.year, p.month)}</Text>
                   </Table.Cell>
-                  <Table.Cell textAlign="right">
-                    <Text fontSize="sm">
-                      {formatHoursCompact(p.totalHours)}
+                  <Table.Cell>
+                    <Text fontSize="sm" color="text.muted">
+                      {formatUploadDate(p.generatedAt)}
                     </Text>
-                  </Table.Cell>
-                  <Table.Cell textAlign="right">
-                    <Text fontWeight="bold" fontSize="sm">
-                      {p.netPay.toFixed(2).replace('.', ',')} €
-                    </Text>
-                  </Table.Cell>
-                  <Table.Cell textAlign="center">
-                    <Badge
-                      colorPalette={p.storagePath ? 'green' : 'orange'}
-                      variant="subtle"
-                      size="sm"
-                    >
-                      {p.storagePath ? 'Envoye' : 'A envoyer'}
-                    </Badge>
                   </Table.Cell>
                   <Table.Cell textAlign="center">
                     <HStack gap={1} justify="center">
                       {p.storagePath && (
                         <IconButton
-                          aria-label="Telecharger"
+                          aria-label="Télécharger"
                           size="xs"
                           variant="ghost"
                           colorPalette="brand"
-                          title="Telecharger le PDF"
-                          onClick={() => handleReDownload(p)}
+                          title="Télécharger le PDF"
+                          onClick={() => handleDownload(p)}
                         >
                           ↓
                         </IconButton>
@@ -445,13 +369,19 @@ export function PayslipSection({ employerId }: Props) {
         </Box>
       )}
 
-      {/* ── Dialog de generation ── */}
-      <Dialog.Root open={showGenerateDialog} onOpenChange={(e) => setShowGenerateDialog(e.open)}>
+      {/* ── Dialog d'upload ── */}
+      <Dialog.Root
+        open={showUploadDialog}
+        onOpenChange={(e) => {
+          setShowUploadDialog(e.open)
+          if (!e.open) resetDialog()
+        }}
+      >
         <Dialog.Backdrop />
         <Dialog.Positioner>
           <Dialog.Content maxW="lg">
             <Dialog.Header>
-              <Dialog.Title>Generer un bulletin de paie</Dialog.Title>
+              <Dialog.Title>Uploader un bulletin de paie</Dialog.Title>
               <Dialog.CloseTrigger asChild>
                 <CloseButton />
               </Dialog.CloseTrigger>
@@ -459,9 +389,8 @@ export function PayslipSection({ employerId }: Props) {
 
             <Dialog.Body>
               <VStack gap={5} align="stretch">
-                {/* Employe */}
                 <Field.Root>
-                  <Field.Label>Employe</Field.Label>
+                  <Field.Label>Employé</Field.Label>
                   <NativeSelect.Root>
                     <NativeSelect.Field
                       value={selectedContractId}
@@ -471,8 +400,7 @@ export function PayslipSection({ employerId }: Props) {
                         <option key={c.id} value={c.id}>
                           {c.employee
                             ? `${c.employee.firstName} ${c.employee.lastName}`
-                            : `Contrat ${c.contractType}`}{' '}
-                          — {c.contractType}
+                            : `Contrat ${c.contractType}`}
                         </option>
                       ))}
                     </NativeSelect.Field>
@@ -480,7 +408,6 @@ export function PayslipSection({ employerId }: Props) {
                   </NativeSelect.Root>
                 </Field.Root>
 
-                {/* Periode */}
                 <HStack gap={4} flexWrap="wrap">
                   <Field.Root flex={2}>
                     <Field.Label>Mois</Field.Label>
@@ -498,7 +425,7 @@ export function PayslipSection({ employerId }: Props) {
                   </Field.Root>
 
                   <Field.Root flex={1}>
-                    <Field.Label>Annee</Field.Label>
+                    <Field.Label>Année</Field.Label>
                     <NativeSelect.Root>
                       <NativeSelect.Field
                         value={selectedYear}
@@ -513,45 +440,22 @@ export function PayslipSection({ employerId }: Props) {
                   </Field.Root>
                 </HStack>
 
-                {/* Taux PAS */}
-                <HStack gap={4} align="flex-end">
-                  <Field.Root flex={1}>
-                    <Field.Label>Taux PAS (%)</Field.Label>
-                    <Field.HelperText>Pre-rempli depuis le contrat</Field.HelperText>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.01}
-                      value={pasRateInput}
-                      onChange={(e) => setPasRateInput(e.target.value)}
-                    />
-                  </Field.Root>
-                  <Field.Root flex={1}>
-                    <Field.Label>Exoneration patronale SS</Field.Label>
-                    <Field.HelperText>Art. L241-10 CSS</Field.HelperText>
-                    <Button
-                      size="sm"
-                      variant={isExemptPatronal ? 'solid' : 'outline'}
-                      colorPalette={isExemptPatronal ? 'green' : 'gray'}
-                      onClick={() => setIsExemptPatronal((v) => !v)}
-                      alignSelf="flex-start"
-                      mt={1}
-                    >
-                      {isExemptPatronal ? 'Activee' : 'Desactivee'}
-                    </Button>
-                  </Field.Root>
-                </HStack>
-
-                {/* Messages */}
-                {!isMonthClosed(selectedYear, selectedMonth) && (
-                  <Alert.Root status="info">
-                    <Alert.Indicator />
-                    <Alert.Title>
-                      Ce mois n'est pas encore termine. Vous pourrez generer le bulletin a partir du {new Date(selectedYear, selectedMonth, 1).toLocaleDateString('fr-FR')}.
-                    </Alert.Title>
-                  </Alert.Root>
-                )}
+                <Field.Root>
+                  <Field.Label>Fichier PDF</Field.Label>
+                  <Field.HelperText>Bulletin officiel URSSAF, 5 Mo maximum</Field.HelperText>
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={handleFileChange}
+                    p={1}
+                  />
+                  {selectedFile && (
+                    <Text fontSize="sm" color="text.muted" mt={2}>
+                      {selectedFile.name} — {(selectedFile.size / 1024).toFixed(0)} Ko
+                    </Text>
+                  )}
+                </Field.Root>
 
                 {dialogError && (
                   <Alert.Root status="error">
@@ -567,29 +471,22 @@ export function PayslipSection({ employerId }: Props) {
                 <Button
                   variant="outline"
                   colorPalette="gray"
-                  onClick={() => setShowGenerateDialog(false)}
+                  onClick={() => {
+                    setShowUploadDialog(false)
+                    resetDialog()
+                  }}
                 >
                   Annuler
                 </Button>
                 <Button
-                  variant="outline"
                   colorPalette="brand"
                   flex={1}
-                  onClick={() => handleGenerate(false)}
-                  loading={isGenerating}
-                  disabled={isGenerating || !isMonthClosed(selectedYear, selectedMonth)}
+                  onClick={handleUpload}
+                  loading={isUploading}
+                  loadingText="Upload…"
+                  disabled={!selectedFile || !selectedContract || isUploading}
                 >
-                  Generer (sans sauvegarder)
-                </Button>
-                <Button
-                  colorPalette="brand"
-                  flex={1}
-                  onClick={() => handleGenerate(true)}
-                  loading={isGenerating}
-                  loadingText="Generation…"
-                  disabled={!isMonthClosed(selectedYear, selectedMonth)}
-                >
-                  Generer et sauvegarder
+                  Uploader
                 </Button>
               </HStack>
             </Dialog.Footer>
