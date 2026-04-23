@@ -21,6 +21,10 @@ const BUCKET = 'payslips'
 // Durée de validité des URL signées (1 heure)
 const SIGNED_URL_TTL_SECONDS = 3600
 
+// Limites upload bulletin externe (PDF reçu de l'URSSAF)
+export const PAYSLIP_MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
+export const PAYSLIP_ACCEPTED_MIME_TYPES = ['application/pdf'] as const
+
 // ─── Helpers privés ──────────────────────────────────────────────────────────
 
 function mapFromDb(row: PayslipDbRow): Payslip {
@@ -223,4 +227,148 @@ export async function deletePayslipRecord(payslipId: string): Promise<void> {
       logger.error('Erreur suppression PDF storage:', storageError)
     }
   }
+}
+
+// ─── Upload bulletin externe (URSSAF) ─────────────────────────────────────────
+
+export interface ValidatePayslipFileResult {
+  valid: boolean
+  error?: string
+}
+
+/**
+ * Valide un fichier de bulletin avant upload : type MIME PDF + taille ≤ 5 MB.
+ */
+export function validatePayslipFile(file: File): ValidatePayslipFileResult {
+  if (!PAYSLIP_ACCEPTED_MIME_TYPES.includes(file.type as typeof PAYSLIP_ACCEPTED_MIME_TYPES[number])) {
+    return { valid: false, error: 'Le fichier doit être un PDF.' }
+  }
+  if (file.size === 0) {
+    return { valid: false, error: 'Le fichier est vide.' }
+  }
+  if (file.size > PAYSLIP_MAX_FILE_SIZE) {
+    return { valid: false, error: 'Le fichier dépasse 5 Mo.' }
+  }
+  return { valid: true }
+}
+
+/**
+ * Résout le contract_id du contrat d'emploi actif pour un couple
+ * (employeur, employé). Retourne null si aucun contrat actif ou plus d'un
+ * (cas non géré sans sélection explicite).
+ */
+async function resolveActiveEmploymentContractId(
+  employerId: string,
+  employeeId: string
+): Promise<{ contractId: string | null; error?: string }> {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('id')
+    .eq('employer_id', employerId)
+    .eq('employee_id', employeeId)
+    .eq('contract_category', 'employment')
+    .eq('status', 'active')
+
+  if (error) {
+    logger.error('Erreur résolution contrat actif:', error)
+    return { contractId: null, error: 'Impossible de déterminer le contrat actif.' }
+  }
+
+  if (!data || data.length === 0) {
+    return { contractId: null, error: 'Aucun contrat d\'emploi actif pour cet employé.' }
+  }
+
+  if (data.length > 1) {
+    return { contractId: null, error: 'Plusieurs contrats actifs trouvés. Sélection explicite requise.' }
+  }
+
+  return { contractId: data[0].id as string }
+}
+
+export interface UploadExternalPayslipParams {
+  employerId: string
+  employeeId: string
+  year: number
+  month: number
+  file: File
+  /** Si fourni, court-circuite la résolution automatique. */
+  contractId?: string
+}
+
+export interface UploadExternalPayslipResult {
+  success: boolean
+  payslip?: Payslip
+  error?: string
+}
+
+/**
+ * Upload un bulletin officiel (PDF URSSAF) et enregistre la ligne en DB.
+ * Les colonnes calculées (gross_pay, net_pay, total_hours, period_label)
+ * sont laissées à null — elles ne sont pas extraites du PDF.
+ *
+ * Upsert idempotent sur (employee_id, contract_id, year, month) :
+ * uploader à nouveau remplace le fichier et met à jour la ligne.
+ */
+export async function uploadExternalPayslip(
+  params: UploadExternalPayslipParams
+): Promise<UploadExternalPayslipResult> {
+  const { employerId, employeeId, year, month, file } = params
+
+  if (month < 1 || month > 12) {
+    return { success: false, error: 'Mois invalide.' }
+  }
+
+  const validation = validatePayslipFile(file)
+  if (!validation.valid) {
+    return { success: false, error: validation.error }
+  }
+
+  let contractId = params.contractId
+  if (!contractId) {
+    const resolved = await resolveActiveEmploymentContractId(employerId, employeeId)
+    if (!resolved.contractId) {
+      return { success: false, error: resolved.error }
+    }
+    contractId = resolved.contractId
+  }
+
+  const safeName = sanitizeFileName(file.name || 'bulletin.pdf')
+  const path = `${employerId}/${employeeId}/${year}/${String(month).padStart(2, '0')}/${safeName}`
+
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    logger.error('Erreur upload bulletin externe:', uploadError)
+    return { success: false, error: 'Échec de l\'upload du fichier.' }
+  }
+
+  const { data, error } = await supabase
+    .from('payslips')
+    .upsert(
+      {
+        employer_id: employerId,
+        employee_id: employeeId,
+        contract_id: contractId,
+        year,
+        month,
+        storage_path: path,
+        storage_url: null,
+        generated_at: new Date().toISOString(),
+      },
+      { onConflict: 'employee_id,contract_id,year,month' }
+    )
+    .select()
+    .single()
+
+  if (error || !data) {
+    logger.error('Erreur sauvegarde bulletin uploadé:', error)
+    return { success: false, error: 'Échec de l\'enregistrement du bulletin.' }
+  }
+
+  return { success: true, payslip: mapFromDb(data as PayslipDbRow) }
 }
