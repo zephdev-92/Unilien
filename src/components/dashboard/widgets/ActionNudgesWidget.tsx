@@ -83,8 +83,8 @@ export function ActionNudgesWidget({ employerId }: ActionNudgesWidgetProps) {
         if (missingCount > 0) {
           const prevMonthLabel = format(prevMonthDate, 'MMMM yyyy', { locale: fr })
           result.push({
-            id: 'generate-payslips',
-            title: `${missingCount} bulletin${missingCount > 1 ? 's' : ''} de paie à générer`,
+            id: 'upload-payslips',
+            title: `${missingCount} bulletin${missingCount > 1 ? 's' : ''} de paie à uploader`,
             subtitle: `${prevMonthLabel.charAt(0).toUpperCase() + prevMonthLabel.slice(1)} — ${nameStr}`,
             href: '/documents',
             color: 'orange',

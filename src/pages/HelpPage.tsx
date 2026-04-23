@@ -121,22 +121,23 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: '📄',
     items: [
       {
-        question: 'Comment générer un bulletin de paie ?',
+        question: 'Comment archiver un bulletin de paie ?',
         answer: (
           <Stack gap={2}>
-            <Text>Depuis <strong>Documents</strong>, section <strong>Bulletins de paie</strong>, cliquez sur <strong>Générer un bulletin</strong>.</Text>
-            <Text>Sélectionnez l'employé et la période (le mois doit être clôturé).</Text>
-            <Text>Le bulletin est calculé selon la Convention Collective IDCC 3239 avec les majorations applicables.</Text>
-            <Text>Vous pouvez le télécharger en PDF et/ou le sauvegarder dans l'application.</Text>
+            <Text>Une fois votre déclaration CESU faite, l'URSSAF vous envoie le bulletin officiel par mail ou sur votre compte.</Text>
+            <Text>Depuis <strong>Documents</strong>, section <strong>Bulletins de paie</strong>, cliquez sur <strong>Uploader un bulletin</strong>.</Text>
+            <Text>Sélectionnez l'employé, la période et le PDF reçu de l'URSSAF (5 Mo max).</Text>
+            <Text>L'employé concerné peut ensuite le télécharger depuis son espace Documents.</Text>
           </Stack>
         ),
       },
       {
-        question: 'Pourquoi je ne peux pas générer le bulletin du mois en cours ?',
+        question: 'Pourquoi le bulletin n\'est plus généré par l\'application ?',
         answer: (
           <Text>
-            Le bulletin n'est disponible qu'à partir du 1er du mois suivant, une fois toutes les interventions
-            du mois terminées et les heures validées. Cela garantit l'exactitude des calculs.
+            Avec le CESU déclaratif, c'est l'URSSAF qui calcule les cotisations et édite le bulletin officiel.
+            Générer un second bulletin côté app créerait un risque d'incohérence avec le document qui fait foi légalement.
+            L'app se concentre donc sur l'archivage et le partage du bulletin officiel reçu.
           </Text>
         ),
       },
