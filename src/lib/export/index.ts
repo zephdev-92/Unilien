@@ -21,11 +21,12 @@ export { getMonthlyDeclarationData } from './declarationService'
 export { generateCesuCsv, generateCesuSummary } from './cesuGenerator'
 export { generateCesuPdf } from './cesuPdfGenerator'
 
-// ─── Bulletin de paie ────────────────────────────────────────────────────────
-export type { PayslipData, CotisationsResult, CotisationLine } from './types'
+// ─── Calculs paie (prévisionnel / simulation) ────────────────────────────────
+// Note : la génération PDF du bulletin a été retirée au profit de l'upload
+// du bulletin officiel URSSAF. Les calculs restent utiles pour un dashboard
+// prévisionnel ou des contrôles de cohérence côté app.
+export type { CotisationsResult, CotisationLine } from './types'
 export { calculateCotisations, PASS_MONTHLY_2025, SMIC_MONTHLY_2025 } from './cotisationsCalculator'
-export { getPayslipData } from './payslipService'
-export { generatePayslipPdf } from './payslipPdfGenerator'
 
 // ─── Export Planning ─────────────────────────────────────────────────────────
 export type {
