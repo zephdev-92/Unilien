@@ -109,12 +109,18 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
     setIsLoadingEmployees(true)
     getContractsForEmployer(employerId)
       .then((contracts) => {
-        const opts: EmployeeOption[] = contracts.map((c) => ({
-          value: c.employeeId,
-          label: c.employee
-            ? `${c.employee.firstName} ${c.employee.lastName}`
-            : `Employe (${c.contractType})`,
-        }))
+        const seen = new Set<string>()
+        const opts: EmployeeOption[] = []
+        for (const c of contracts) {
+          if (!c.employeeId || seen.has(c.employeeId)) continue
+          seen.add(c.employeeId)
+          opts.push({
+            value: c.employeeId,
+            label: c.employee
+              ? `${c.employee.firstName} ${c.employee.lastName}`
+              : `Employe (${c.contractType})`,
+          })
+        }
         setEmployees(opts)
       })
       .catch((err) => {
