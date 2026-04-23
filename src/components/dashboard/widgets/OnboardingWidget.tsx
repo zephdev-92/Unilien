@@ -227,7 +227,6 @@ export function OnboardingWidget({ profile, userRole }: OnboardingWidgetProps) {
                   fontWeight="600"
                   fontSize="sm"
                   color={step.done ? 'text.muted' : 'text.default'}
-                  textDecoration={step.done ? 'line-through' : 'none'}
                   transition="color 0.15s"
                 >
                   {step.label}
