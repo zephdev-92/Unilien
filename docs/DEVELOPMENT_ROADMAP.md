@@ -62,6 +62,14 @@ Feedback Marie : la pause était éditable librement avec juste un helper-text, 
 - Auto-bump à 20 min quand la durée franchit 6 h dans `useNewShiftForm` et `ShiftDetailModal`
 - 7 tests schéma
 
+#### Motifs d'absence — mise à jour légale (PR #304 ✅)
+
+Feedback Marie : audit des 11 événements familiaux contre Art. L3142-4 du Code du travail (version 2024) :
+- **Correction** : `disability_announcement` passe de 2 à **5 jours** (L3142-4 6°, loi du 21 février 2022 "prise en charge des cancers pédiatriques")
+- **Reformulation** : `"Annonce handicap d'un enfant"` → `"Annonce du handicap d'un enfant"`
+- 10 autres valeurs conformes au minimum légal
+- Cas particulier `death_child` à 5 j (minimum) : 7 j si enfant < 25 ans ou lui-même parent — traitement laissé à la catégorie "Autre" pour l'instant
+
 #### Fixes console + UI (PRs #290–#292, #299, #302 ✅)
 
 - **#290** — Fix clé React dupliquée `/documents` dans `QuickActionsWidget` (key = `label`)
@@ -69,6 +77,7 @@ Feedback Marie : la pause était éditable librement avec juste un helper-text, 
 - **#292** — Dédupe employés dans `PlanningExportSection` (contrats multiples → même employé)
 - **#299** — Retrait du barré sur labels onboarding complétés
 - **#302** — Copy "à générer" → "à uploader" dans nudge dashboard + FAQ `HelpPage` refondue
+- **#303** — Mise à jour de la roadmap (Semaine 21)
 
 #### Self-host + CSP (PRs #281–#289)
 
@@ -83,7 +92,7 @@ Feedback Marie : la pause était éditable librement avec juste un helper-text, 
 - **#289** — Fusion options "Présence responsable jour/nuit" + auto-détection `detectPresenceType` + `PresenceMixedWarning` (avertissement shift à cheval 18h–23h)
 
 #### Métriques session (23/04/2026)
-- PRs : #281–#302 (21 PRs)
+- PRs : #281–#304 (23 PRs)
 - Tests : 2266 / 130 fichiers (+56 par rapport à S20)
 - Migrations : 52 (+3 : self-host buckets, data retention, payslips nullable)
 - Code net : **−1519 lignes** (chantier cleanup génération)
