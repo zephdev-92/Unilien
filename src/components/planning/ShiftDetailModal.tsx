@@ -1,4 +1,4 @@
-import { useReducer, useMemo, useCallback } from 'react'
+import { useReducer, useMemo, useCallback, useEffect } from 'react'
 import {
   Flex,
   Text,
@@ -6,7 +6,12 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { shiftDetailSchema as shiftSchema, type ShiftDetailFormData as ShiftFormData } from '@/lib/validation/shiftSchemas'
+import {
+  shiftDetailSchema as shiftSchema,
+  type ShiftDetailFormData as ShiftFormData,
+  MANDATORY_BREAK_MINIMUM_MINUTES,
+  MANDATORY_BREAK_THRESHOLD_MINUTES,
+} from '@/lib/validation/shiftSchemas'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AccessibleButton, StatusPill, GhostButton, PrimaryButton } from '@/components/ui'
@@ -206,6 +211,23 @@ export function ShiftDetailModal({
   })
 
   const watchedValues = useWatch({ control })
+
+  // Auto-bump pause à 20 min quand la durée dépasse 6 h (art. L3121-16).
+  // La garde 24h n'entre pas ici (shiftType est 'effective' | 'presence_*').
+  useEffect(() => {
+    if (!watchedValues.startTime || !watchedValues.endTime) return
+    const [sh, sm] = watchedValues.startTime.split(':').map(Number)
+    const [eh, em] = watchedValues.endTime.split(':').map(Number)
+    if ([sh, sm, eh, em].some((v) => Number.isNaN(v))) return
+    const startTotal = sh * 60 + sm
+    let endTotal = eh * 60 + em
+    if (endTotal <= startTotal) endTotal += 24 * 60
+    const durationMinutes = endTotal - startTotal
+    const current = watchedValues.breakDuration ?? 0
+    if (durationMinutes > MANDATORY_BREAK_THRESHOLD_MINUTES && current < MANDATORY_BREAK_MINIMUM_MINUTES) {
+      setValue('breakDuration', MANDATORY_BREAK_MINIMUM_MINUTES, { shouldValidate: true })
+    }
+  }, [watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, setValue])
 
   // Callback stable pour le reset du formulaire (passé à useShiftDetailData)
   const handleResetForm = useCallback(
