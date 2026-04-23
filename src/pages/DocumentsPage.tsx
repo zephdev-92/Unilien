@@ -19,6 +19,7 @@ import {
   CesuDeclarationSection,
   ContractsSection,
   DocumentManagementSection,
+  EmployeePayslipSection,
   PayslipSection,
   PlanningExportSection,
 } from '@/components/documents'
@@ -85,7 +86,9 @@ export function DocumentsPage() {
             </Tabs.List>
 
             <Tabs.Content value="payslips" pt={6}>
-              {effectiveEmployerId ? (
+              {profile.role === 'employee' ? (
+                <EmployeePayslipSection employeeId={profile.id} />
+              ) : effectiveEmployerId ? (
                 <PayslipSection employerId={effectiveEmployerId} />
               ) : (
                 <Alert.Root status="warning">
