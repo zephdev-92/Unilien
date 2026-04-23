@@ -53,7 +53,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Gestion',
     items: [
       { label: 'Conformité', href: '/conformite', icon: 'shield', ariaLabel: 'Voir la conformité', roles: ['employer'] },
-      { label: 'Documents', href: '/documents', icon: 'file', ariaLabel: 'Gérer les documents', roles: ['employer'] },
+      { label: 'Documents', href: '/documents', icon: 'file', ariaLabel: 'Gérer les documents', roles: ['employer', 'employee'] },
       { label: 'Suivi des heures', href: '/suivi-des-heures', icon: 'clock', ariaLabel: 'Accéder au suivi des heures' },
       { label: 'Analytique', href: '/analytique', icon: 'barchart', ariaLabel: 'Voir les statistiques détaillées' },
     ],

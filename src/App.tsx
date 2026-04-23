@@ -188,7 +188,7 @@ function App() {
           <Route path="/suivi-des-heures" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/equipe" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><TeamPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/conformite" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><CompliancePage /></ErrorBoundary></ProtectedRoute>} />
-          <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/analytique" element={<ProtectedRoute><ErrorBoundary><AnalyticsPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/aide" element={<ProtectedRoute><ErrorBoundary><HelpPage /></ErrorBoundary></ProtectedRoute>} />
 
