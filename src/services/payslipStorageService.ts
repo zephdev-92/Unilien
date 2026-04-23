@@ -13,7 +13,6 @@ import { logger } from '@/lib/logger'
 import { sanitizeFileName } from '@/lib/sanitize'
 import type { Payslip } from '@/types'
 import type { PayslipDbRow } from '@/types/database'
-import type { PayslipData } from '@/lib/export/types'
 
 // ─── Bucket ──────────────────────────────────────────────────────────────────
 const BUCKET = 'payslips'
@@ -48,55 +47,7 @@ function mapFromDb(row: PayslipDbRow): Payslip {
   }
 }
 
-/**
- * Convertit un dataURI base64 (sortie jsPDF) en Blob binaire.
- */
-function dataUriToBlob(dataUri: string): Blob {
-  const [header, base64] = dataUri.split(',')
-  const mimeMatch = header.match(/:(.*?);/)
-  const mime = mimeMatch ? mimeMatch[1] : 'application/pdf'
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return new Blob([bytes], { type: mime })
-}
-
 // ─── Publics ─────────────────────────────────────────────────────────────────
-
-/**
- * Upload le PDF d'un bulletin dans Supabase Storage.
- *
- * Chemin : `<employerId>/<employeeId>/<year>/<month>/<filename>.pdf`
- * Retourne le storage_path relatif, ou null en cas d'erreur.
- */
-export async function uploadPayslipPdf(
-  employerId: string,
-  employeeId: string,
-  year: number,
-  month: number,
-  filename: string,
-  pdfDataUri: string
-): Promise<string | null> {
-  const blob = dataUriToBlob(pdfDataUri)
-  const safeName = sanitizeFileName(filename)
-  const path = `${employerId}/${employeeId}/${year}/${String(month).padStart(2, '0')}/${safeName}`
-
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, blob, {
-      contentType: 'application/pdf',
-      upsert: true,
-    })
-
-  if (error) {
-    logger.error('Erreur upload bulletin PDF:', error)
-    return null
-  }
-
-  return path
-}
 
 /**
  * Génère une URL signée valable SIGNED_URL_TTL_SECONDS secondes.
@@ -112,56 +63,6 @@ export async function getPayslipSignedUrl(storagePath: string): Promise<string |
   }
 
   return data.signedUrl
-}
-
-// ─── Enregistrements DB ───────────────────────────────────────────────────────
-
-export interface SavePayslipParams {
-  data: PayslipData
-  contractId: string
-  storagePath: string | null
-  storageUrl: string | null
-}
-
-/**
- * Insère (ou met à jour si déjà existant) un enregistrement de bulletin en DB.
- * Upsert basé sur la contrainte unique (employee_id, contract_id, year, month).
- */
-export async function savePayslipRecord(params: SavePayslipParams): Promise<Payslip | null> {
-  const { data: payslip, storagePath, storageUrl, contractId } = params
-  const { cotisations } = payslip
-
-  const row = {
-    employer_id: payslip.employerId,
-    employee_id: payslip.employeeId,
-    contract_id: contractId,
-    year: payslip.year,
-    month: payslip.month,
-    period_label: payslip.periodLabel,
-    gross_pay: payslip.totalGrossPay,
-    net_pay: cotisations.netAPayer,
-    total_hours: payslip.totalHours,
-    pas_rate: cotisations.pasRate,
-    is_exempt_patronal_ss: payslip.isExemptPatronalSS,
-    storage_path: storagePath,
-    storage_url: storageUrl,
-    generated_at: payslip.generatedAt.toISOString(),
-  }
-
-  const { data, error } = await supabase
-    .from('payslips')
-    .upsert(row, {
-      onConflict: 'employee_id,contract_id,year,month',
-    })
-    .select()
-    .single()
-
-  if (error) {
-    logger.error('Erreur sauvegarde bulletin:', error)
-    return null
-  }
-
-  return mapFromDb(data as PayslipDbRow)
 }
 
 /**
