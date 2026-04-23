@@ -14,6 +14,7 @@ import {
   Box,
   VStack,
   HStack,
+  Flex,
   Text,
   Button,
   Alert,
@@ -26,8 +27,8 @@ import {
   EmptyState,
   Dialog,
   CloseButton,
-  Input,
 } from '@chakra-ui/react'
+import { AccessibleButton } from '@/components/ui'
 import { toaster } from '@/lib/toaster'
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import {
@@ -70,6 +71,7 @@ export function PayslipSection({ employerId }: Props) {
   const [selectedYear, setSelectedYear] = useState(defaultYear)
   const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   // ── États UI
@@ -150,24 +152,32 @@ export function PayslipSection({ employerId }: Props) {
 
   const resetDialog = () => {
     setSelectedFile(null)
+    setFileError(null)
     setDialogError(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
-    setDialogError(null)
+    setFileError(null)
     if (!file) {
       setSelectedFile(null)
       return
     }
     const validation = validatePayslipFile(file)
     if (!validation.valid) {
-      setDialogError(validation.error ?? 'Fichier invalide.')
+      setFileError(validation.error ?? 'Fichier invalide.')
       setSelectedFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
     setSelectedFile(file)
+  }
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null)
+    setFileError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleUpload = async () => {
@@ -440,22 +450,69 @@ export function PayslipSection({ employerId }: Props) {
                   </Field.Root>
                 </HStack>
 
-                <Field.Root>
-                  <Field.Label>Fichier PDF</Field.Label>
-                  <Field.HelperText>Bulletin officiel URSSAF, 5 Mo maximum</Field.HelperText>
-                  <Input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={handleFileChange}
-                    p={1}
-                  />
-                  {selectedFile && (
-                    <Text fontSize="sm" color="text.muted" mt={2}>
-                      {selectedFile.name} — {(selectedFile.size / 1024).toFixed(0)} Ko
-                    </Text>
-                  )}
-                </Field.Root>
+                <Box>
+                  <Text fontWeight="medium" fontSize="md" mb={2}>
+                    Fichier PDF <Text as="span" color="red.500">*</Text>
+                  </Text>
+                  <Box
+                    borderWidth="2px"
+                    borderStyle="dashed"
+                    borderColor={fileError ? 'red.500' : selectedFile ? 'green.300' : 'border.default'}
+                    borderRadius="12px"
+                    p={4}
+                    bg={fileError ? 'red.50' : selectedFile ? 'accent.subtle' : 'bg.page'}
+                    transition="all 0.2s"
+                  >
+                    {!selectedFile ? (
+                      <Flex direction="column" align="center" gap={2}>
+                        <Text fontSize="sm" color="text.muted" textAlign="center">
+                          Joignez le bulletin officiel URSSAF (PDF, max 5 Mo)
+                        </Text>
+                        <AccessibleButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          accessibleLabel="Sélectionner un bulletin"
+                        >
+                          Parcourir...
+                        </AccessibleButton>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          onChange={handleFileChange}
+                          style={{ display: 'none' }}
+                          aria-label="Sélectionner un bulletin de paie"
+                        />
+                      </Flex>
+                    ) : (
+                      <Flex justify="space-between" align="center">
+                        <Flex align="center" gap={2}>
+                          <Box color="green.600">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                          </Box>
+                          <Box>
+                            <Text fontSize="sm" fontWeight="medium" color="text.default">{selectedFile.name}</Text>
+                            <Text fontSize="xs" color="text.muted">{(selectedFile.size / 1024 / 1024).toFixed(2)} Mo</Text>
+                          </Box>
+                        </Flex>
+                        <AccessibleButton
+                          variant="ghost"
+                          size="sm"
+                          colorPalette="red"
+                          onClick={handleRemoveFile}
+                          accessibleLabel="Supprimer le fichier"
+                        >
+                          Supprimer
+                        </AccessibleButton>
+                      </Flex>
+                    )}
+                  </Box>
+                  {fileError && <Text fontSize="sm" color="red.600" mt={2}>{fileError}</Text>}
+                </Box>
 
                 {dialogError && (
                   <Alert.Root status="error">
