@@ -444,10 +444,10 @@ export interface Payslip {
   contractId: string
   year: number
   month: number
-  periodLabel: string
-  grossPay: number
-  netPay: number
-  totalHours: number
+  periodLabel: string | null
+  grossPay: number | null
+  netPay: number | null
+  totalHours: number | null
   pasRate: number
   isExemptPatronalSS: boolean
   storagePath: string | null
