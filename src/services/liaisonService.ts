@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Attachment, Conversation, LiaisonMessage, LiaisonMessageWithSender, UserRole } from '@/types'
@@ -66,7 +67,7 @@ export async function getConversations(
             id: profile.id,
             firstName: profile.first_name,
             lastName: profile.last_name,
-            avatarUrl: profile.avatar_url || undefined,
+            avatarUrl: resolveAvatarUrl(profile.avatar_url),
           }
         }
       }
@@ -137,7 +138,7 @@ export async function getOrCreatePrivateConversation(
             id: profile.id,
             firstName: profile.first_name,
             lastName: profile.last_name,
-            avatarUrl: profile.avatar_url || undefined,
+            avatarUrl: resolveAvatarUrl(profile.avatar_url),
           }
         : undefined,
       unreadCount: 0,
@@ -172,7 +173,7 @@ export async function getOrCreatePrivateConversation(
           id: profile.id,
           firstName: profile.first_name,
           lastName: profile.last_name,
-          avatarUrl: profile.avatar_url || undefined,
+          avatarUrl: resolveAvatarUrl(profile.avatar_url),
         }
       : undefined,
     unreadCount: 0,
@@ -727,7 +728,7 @@ function mapMessageFromDb(data: LiaisonMessageDbRow | Record<string, unknown>): 
       ? {
           firstName: row.sender.first_name,
           lastName: row.sender.last_name,
-          avatarUrl: row.sender.avatar_url || undefined,
+          avatarUrl: resolveAvatarUrl(row.sender.avatar_url),
         }
       : undefined,
   }

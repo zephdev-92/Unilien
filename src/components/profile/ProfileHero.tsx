@@ -73,7 +73,7 @@ export function ProfileHero({ profile, isEditing, onToggleEdit, onAvatarClick }:
               fontWeight={800}
               fontSize="1.8rem"
             />
-            {profile.avatarUrl && <Avatar.Image src={profile.avatarUrl} />}
+            {profile.avatarUrl && <Avatar.Image key={profile.avatarUrl} src={profile.avatarUrl} />}
           </Avatar.Root>
           {onAvatarClick && (
             <Box

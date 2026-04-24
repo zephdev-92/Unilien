@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import type {
   CaregiverPermissions,
@@ -307,7 +308,7 @@ function mapCaregiverWithProfileFromDb(data: CaregiverDbRow): CaregiverWithProfi
       lastName: data.profile?.last_name || '',
       email: data.profile?.email || '',
       phone: data.profile?.phone || undefined,
-      avatarUrl: data.profile?.avatar_url || undefined,
+      avatarUrl: resolveAvatarUrl(data.profile?.avatar_url),
     },
   }
 }

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import type { Contract, Employee, Profile } from '@/types'
 import type {
@@ -214,7 +215,7 @@ function mapAuxiliaryFromDb(data: ContractWithEmployeeDbRow): AuxiliarySummary {
     lastName: profile?.last_name || '',
     email: profile?.email || undefined,
     phone: profile?.phone || undefined,
-    avatarUrl: profile?.avatar_url || undefined,
+    avatarUrl: resolveAvatarUrl(profile?.avatar_url),
     qualifications: data.employee_profile?.qualifications || [],
     contractType: data.contract_type,
     contractStatus: data.status,
@@ -271,7 +272,7 @@ function mapProfileFromDb(data: ProfileDbRow | undefined): Profile {
     lastName: data.last_name,
     email: data.email || '',
     phone: data.phone || undefined,
-    avatarUrl: data.avatar_url || undefined,
+    avatarUrl: resolveAvatarUrl(data.avatar_url),
     accessibilitySettings: data.accessibility_settings || {
       highContrast: false,
       largeText: false,

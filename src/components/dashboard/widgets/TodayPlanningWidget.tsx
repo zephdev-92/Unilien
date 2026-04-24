@@ -10,6 +10,7 @@ import {
 } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import { SHIFT_STATUS_LABELS, SHIFT_TYPE_LABELS } from '@/lib/constants/statusMaps'
 import type { Shift } from '@/types'
@@ -108,7 +109,7 @@ export function TodayPlanningWidget({ employerId }: TodayPlanningWidgetProps) {
               status: row.status as Shift['status'],
               employeeFirstName: (profile?.first_name as string) ?? '',
               employeeLastName: (profile?.last_name as string) ?? '',
-              employeeAvatarUrl: profile?.avatar_url as string | undefined,
+              employeeAvatarUrl: resolveAvatarUrl(profile?.avatar_url as string | null | undefined),
             }
           })
           setShifts(mapped)

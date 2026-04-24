@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import type { Shift, ShiftType, GuardSegment, UserRole } from '@/types'
@@ -102,7 +103,7 @@ export async function getShifts(
     if (contractJoin?.employee?.profile) {
       const p = contractJoin.employee.profile
       shift.employeeName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || undefined
-      shift.employeeAvatarUrl = p.avatar_url || undefined
+      shift.employeeAvatarUrl = resolveAvatarUrl(p.avatar_url)
     }
     // Pour les contrats aidants PCH, récupérer le nom depuis caregiver_profile
     if (contractJoin?.caregiver_id && contractJoin?.caregiver_profile) {
@@ -110,7 +111,7 @@ export async function getShifts(
       if (!shift.employeeId) shift.employeeId = contractJoin.caregiver_id
       if (!shift.employeeName) {
         shift.employeeName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || undefined
-        shift.employeeAvatarUrl = p.avatar_url || undefined
+        shift.employeeAvatarUrl = resolveAvatarUrl(p.avatar_url)
       }
     }
     return shift

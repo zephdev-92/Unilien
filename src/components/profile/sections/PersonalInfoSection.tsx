@@ -167,7 +167,7 @@ export function PersonalInfoSection({ profile, onSave, onAvatarChange }: Persona
           <Box position="relative">
             <Avatar.Root size="xl">
               <Avatar.Fallback name={`${profile.firstName} ${profile.lastName}`} />
-              {displayAvatarUrl && <Avatar.Image src={displayAvatarUrl} />}
+              {displayAvatarUrl && <Avatar.Image key={displayAvatarUrl} src={displayAvatarUrl} />}
             </Avatar.Root>
             {avatarLoading && (
               <Box

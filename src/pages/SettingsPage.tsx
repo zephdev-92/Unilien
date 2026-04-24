@@ -28,7 +28,7 @@ import {
 } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard'
 import { useAuth } from '@/hooks/useAuth'
-import { useAccessibilityStore } from '@/stores/authStore'
+import { useAccessibilityStore, useAuthStore } from '@/stores/authStore'
 import { updateProfile, uploadAvatar, deleteAvatar, validateAvatarFile, getEmployer, upsertEmployer, getEmployee, upsertEmployee } from '@/services/profileService'
 import type { Address, UserRole } from '@/types'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
@@ -390,6 +390,7 @@ function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: 
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const setStoreProfile = useAuthStore((s) => s.setProfile)
 
   // Charger l'adresse depuis la table du rôle
   useEffect(() => {
@@ -453,6 +454,11 @@ function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: 
     try {
       const result = await uploadAvatar(profile.id, file)
       setAvatarUrl(result.url)
+      // Propage au store pour que la navbar/sidebar se re-render
+      const current = useAuthStore.getState().profile
+      if (current) {
+        setStoreProfile({ ...current, avatarUrl: result.url, updatedAt: new Date() })
+      }
       setFeedback({ type: 'success', msg: 'Photo mise à jour.' })
     } catch (err) {
       setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Erreur upload.' })
@@ -467,6 +473,10 @@ function ProfilPanel({ profile, userRole }: { profile: { id: string; firstName: 
     try {
       await deleteAvatar(profile.id)
       setAvatarUrl('')
+      const current = useAuthStore.getState().profile
+      if (current) {
+        setStoreProfile({ ...current, avatarUrl: undefined, updatedAt: new Date() })
+      }
       setFeedback({ type: 'success', msg: 'Photo supprimée.' })
     } catch (err) {
       setFeedback({ type: 'error', msg: err instanceof Error ? err.message : 'Erreur suppression.' })

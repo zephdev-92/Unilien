@@ -1,5 +1,6 @@
 import type { ProfileDbRow } from '@/types/database'
 import type { Profile, UserRole } from '@/types'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 
 /**
  * Convertit une ligne profil DB (snake_case) en objet Profile app (camelCase)
@@ -12,7 +13,7 @@ export function mapProfileFromDb(data: ProfileDbRow, emailOverride?: string): Pr
     lastName: data.last_name,
     email: emailOverride || data.email || '',
     phone: data.phone || undefined,
-    avatarUrl: data.avatar_url || undefined,
+    avatarUrl: resolveAvatarUrl(data.avatar_url),
     accessibilitySettings: data.accessibility_settings || {},
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
