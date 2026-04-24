@@ -59,6 +59,14 @@ vi.mock('@/lib/mappers', () => ({
   createDefaultProfile: vi.fn(),
 }))
 
+vi.mock('@/lib/supabase/avatars', () => ({
+  resolveAvatarUrl: vi.fn((value: string | null | undefined) => {
+    if (!value) return undefined
+    if (value.startsWith('http')) return value
+    return `https://api.unilien.app/storage/v1/object/public/avatars/${value}`
+  }),
+}))
+
 describe('profileService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -193,21 +201,27 @@ describe('profileService', () => {
   })
 
   describe('uploadAvatar', () => {
-    it('devrait uploader un avatar avec succès', async () => {
+    it('stocke le path (pas l\'URL) en DB et retourne une URL résolue', async () => {
       const file = new File(['content'], 'avatar.jpg', { type: 'image/jpeg' })
       Object.defineProperty(file, 'size', { value: 500 * 1024 })
 
       mockList.mockResolvedValue({ data: [], error: null })
       mockUpload.mockResolvedValue({ error: null })
-      mockGetPublicUrl.mockReturnValue({
-        data: { publicUrl: 'https://storage.example.com/avatars/profile-123/123.jpg' },
-      })
       mockEq.mockResolvedValue({ error: null })
 
       const result = await uploadAvatar('profile-123', file)
 
-      expect(result.url).toContain('avatars')
+      // Le payload envoyé à .update() doit contenir un PATH, pas une URL complète
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          avatar_url: expect.stringMatching(/^profile-123\/\d+\.jpg$/),
+        })
+      )
+      // L'URL retournée au caller est résolue (préfixe self-host)
+      expect(result.url).toMatch(/^https:\/\/api\.unilien\.app\/.+profile-123\/\d+\.jpg$/)
       expect(mockUpload).toHaveBeenCalled()
+      // getPublicUrl n'est plus appelé dans uploadAvatar (on passe par le helper)
+      expect(mockGetPublicUrl).not.toHaveBeenCalled()
     })
 
     it('devrait lancer une erreur pour un fichier invalide', async () => {
@@ -230,9 +244,6 @@ describe('profileService', () => {
       })
       mockRemove.mockResolvedValue({ error: null })
       mockUpload.mockResolvedValue({ error: null })
-      mockGetPublicUrl.mockReturnValue({
-        data: { publicUrl: 'https://storage.example.com/new.jpg' },
-      })
       mockEq.mockResolvedValue({ error: null })
 
       await uploadAvatar('profile-123', file)

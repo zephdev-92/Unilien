@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import { sanitizeText, sanitizeFileExtension } from '@/lib/sanitize'
 import { logAudit } from '@/services/auditService'
@@ -175,18 +176,11 @@ export async function uploadAvatar(
     throw new Error('Erreur lors de l\'upload de l\'image.')
   }
 
-  // Obtenir l'URL publique
-  const { data: urlData } = supabase.storage
-    .from(AVATAR_BUCKET)
-    .getPublicUrl(fileName)
-
-  const avatarUrl = urlData.publicUrl
-
-  // Mettre à jour le profil avec la nouvelle URL
+  // Stocker le path dans la DB (pas l'URL publique — immuable face aux migrations)
   const { error: updateError } = await supabase
     .from('profiles')
     .update({
-      avatar_url: avatarUrl,
+      avatar_url: fileName,
       updated_at: new Date().toISOString(),
     })
     .eq('id', profileId)
@@ -196,7 +190,11 @@ export async function uploadAvatar(
     throw new Error('Erreur lors de la mise à jour du profil.')
   }
 
-  return { url: avatarUrl }
+  const resolved = resolveAvatarUrl(fileName)
+  if (!resolved) {
+    throw new Error('Impossible de résoudre l\'URL de l\'avatar uploadé.')
+  }
+  return { url: resolved }
 }
 
 /**

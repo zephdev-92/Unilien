@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '@/lib/supabase/client'
+import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import type { ShiftForValidation } from '@/lib/compliance/types'
 import {
@@ -153,7 +154,7 @@ async function getActiveEmployees(employerId: string): Promise<
   return (data as ContractRow[] || []).map((c) => ({
     employeeId: c.employee_id,
     employeeName: `${c.employee_profile?.profile?.first_name || ''} ${c.employee_profile?.profile?.last_name || ''}`.trim(),
-    avatarUrl: c.employee_profile?.profile?.avatar_url ?? undefined,
+    avatarUrl: resolveAvatarUrl(c.employee_profile?.profile?.avatar_url),
     contractId: c.id,
     weeklyHours: c.weekly_hours,
   }))

@@ -390,7 +390,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
               >
                 <Avatar.Root size="xs">
                   <Avatar.Fallback name={profile ? `${profile.firstName} ${profile.lastName}` : undefined} />
-                  {profile?.avatarUrl && <Avatar.Image src={profile.avatarUrl} />}
+                  {profile?.avatarUrl && <Avatar.Image key={profile.avatarUrl} src={profile.avatarUrl} />}
                 </Avatar.Root>
                 <svg
                   width="14" height="14" viewBox="0 0 24 24"
@@ -593,7 +593,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
           <Flex align="center" gap={2}>
             <Avatar.Root size="sm">
               <Avatar.Fallback name={profile ? `${profile.firstName} ${profile.lastName}` : undefined} />
-              {profile?.avatarUrl && <Avatar.Image src={profile.avatarUrl} />}
+              {profile?.avatarUrl && <Avatar.Image key={profile.avatarUrl} src={profile.avatarUrl} />}
             </Avatar.Root>
             <Box flex={1} minW={0}>
               <Text fontSize="sm" fontWeight="bold" color="text.default" truncate>
