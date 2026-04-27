@@ -226,3 +226,163 @@ CREATE INDEX idx_contracts_clock_in_qr_token ON contracts(clock_in_qr_token)
 | Refus caméra par l'auxi | Faible | Fallback manuel + sensibilisation onboarding |
 | Faux positif géoloc (auxi habite à côté) | Possible | Seuil `suspicious` à 200m, pas blocage automatique |
 | Données géo mal cadrées RGPD | Élevé si négligé | DPIA + consentement + minimisation (cf. § 4) |
+
+---
+
+## 11. Implémentation technique — génération QR
+
+### Dépendances à ajouter
+
+```bash
+npm install qrcode
+npm install -D @types/qrcode
+```
+
+`@react-pdf/renderer` est déjà dans le projet (utilisé pour les exports PDF).
+
+### Stratégie de contenu du QR
+
+**Le QR encode uniquement le token UUID brut** (`550e8400-e29b-41d4-a716-446655440000`), pas une URL. Raisons :
+
+- Empêche un scan via l'app caméra native iOS/Android d'ouvrir un navigateur lambda — le scan ne fonctionne **que** depuis la PWA Unilien
+- Plus court → QR plus dense → plus tolérant à la dégradation du sticker
+- Pas de fuite d'information sur l'URL de prod si le QR est photographié
+
+### Affichage à l'écran (preview)
+
+```tsx
+// src/components/clock-in/ClockInBadgePreview.tsx
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
+import { Box, Image, Spinner } from '@chakra-ui/react'
+
+interface Props {
+  token: string
+  size?: number
+}
+
+export function ClockInBadgePreview({ token, size = 256 }: Props) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    QRCode.toDataURL(token, {
+      width: size,
+      errorCorrectionLevel: 'M', // tolère ~15% de dégradation
+      margin: 2,
+      color: { dark: '#1a2435', light: '#ffffff' },
+    }).then(setDataUrl)
+  }, [token, size])
+
+  if (!dataUrl) return <Spinner />
+  return <Image src={dataUrl} alt="QR de pointage" boxSize={`${size}px`} />
+}
+```
+
+### Génération PDF imprimable
+
+> ⚠️ `@react-pdf/renderer` ne supporte pas `<canvas>` — il faut générer le DataURL en amont via `QRCode.toDataURL()` puis le passer en `<Image src={...} />`.
+
+```tsx
+// src/lib/export/clockInBadgePdf.tsx
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
+import QRCode from 'qrcode'
+
+const styles = StyleSheet.create({
+  page: { padding: 40, fontFamily: 'Helvetica', alignItems: 'center' },
+  title: { fontSize: 20, fontWeight: 700, marginBottom: 8 },
+  subtitle: { fontSize: 12, color: '#5a6573', marginBottom: 24 },
+  qr: { width: 320, height: 320, marginBottom: 24 },
+  beneficiary: { fontSize: 16, fontWeight: 600, marginBottom: 4 },
+  contract: { fontSize: 12, color: '#5a6573', marginBottom: 32 },
+  instructions: { fontSize: 10, color: '#5a6573', textAlign: 'center', maxWidth: 400 },
+})
+
+interface BadgeProps {
+  token: string
+  beneficiaryName: string
+  contractLabel: string
+}
+
+export async function buildClockInBadgePdf({ token, beneficiaryName, contractLabel }: BadgeProps) {
+  const qrDataUrl = await QRCode.toDataURL(token, {
+    width: 800, // grande taille pour impression nette
+    errorCorrectionLevel: 'H', // 30% — résiste à un sticker abîmé
+    margin: 1,
+  })
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.title}>Badge de pointage</Text>
+        <Text style={styles.subtitle}>À coller à un endroit fixe du domicile</Text>
+        <Image src={qrDataUrl} style={styles.qr} />
+        <Text style={styles.beneficiary}>{beneficiaryName}</Text>
+        <Text style={styles.contract}>{contractLabel}</Text>
+        <Text style={styles.instructions}>
+          L'auxiliaire scanne ce QR depuis l'application Unilien à son arrivée et à son départ.
+          Si le badge est abîmé ou perdu, l'employeur peut en générer un nouveau depuis ses paramètres.
+        </Text>
+      </Page>
+    </Document>
+  )
+}
+```
+
+### Trigger du téléchargement
+
+```tsx
+import { pdf } from '@react-pdf/renderer'
+import { buildClockInBadgePdf } from '@/lib/export/clockInBadgePdf'
+
+export async function downloadClockInBadge(
+  token: string,
+  beneficiaryName: string,
+  contractLabel: string,
+) {
+  const document = await buildClockInBadgePdf({ token, beneficiaryName, contractLabel })
+  const blob = await pdf(document).toBlob()
+
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `badge-pointage-${beneficiaryName.toLowerCase().replace(/\s+/g, '-')}.pdf`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+```
+
+### Génération du token côté serveur
+
+Pas de génération front — la migration SQL s'en charge :
+
+```sql
+ALTER TABLE contracts
+  ADD COLUMN clock_in_qr_token uuid UNIQUE DEFAULT gen_random_uuid();
+```
+
+Chaque contrat a son token unique stable dès la création.
+
+### Régénération (révocation + nouveau token)
+
+RPC Supabase à appeler depuis l'employeur si le badge est compromis :
+
+```sql
+CREATE FUNCTION regenerate_clockin_qr_token(p_contract_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  new_token uuid := gen_random_uuid();
+BEGIN
+  UPDATE contracts
+  SET clock_in_qr_token = new_token,
+      clock_in_qr_revoked_at = now()
+  WHERE id = p_contract_id
+    AND employer_id = auth.uid();  -- RLS: employeur uniquement
+
+  RETURN new_token;
+END;
+$$;
+```
+
+L'ancien token devient invalide automatiquement via le `WHERE clock_in_qr_revoked_at IS NULL` de l'index/lookup côté validation.
