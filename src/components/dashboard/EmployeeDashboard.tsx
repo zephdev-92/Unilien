@@ -118,8 +118,8 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
         <EmployeeHoursProgress employeeId={profile.id} />
       </GridItem>
 
-      {/* 5. Messages — aside col */}
-      <GridItem order={{ base: 3, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '5' }}>
+      {/* 5. Messages — aside col (remonte d'une row si clock-in désactivé) */}
+      <GridItem order={{ base: 3, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: FEATURES.clockIn ? '5' : '4' }}>
         <RecentMessagesWidget userId={profile.id} />
       </GridItem>
 
@@ -128,8 +128,8 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
         <EmployeeLeaveWidget employeeId={profile.id} />
       </GridItem>
 
-      {/* 6. Mes documents — aside col */}
-      <GridItem order={{ base: 7, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '6' }}>
+      {/* 6. Mes documents — aside col (remonte d'une row si clock-in désactivé) */}
+      <GridItem order={{ base: 7, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: FEATURES.clockIn ? '6' : '5' }}>
         <EmployeeDocumentsWidget employeeId={profile.id} />
       </GridItem>
     </Grid>
