@@ -7,6 +7,7 @@ import type { Shift, Conversation, UserRole, CaregiverPermissions } from '@/type
 import type { AuxiliarySummary } from '@/services/auxiliaryService'
 import type { LogEntryWithAuthor } from '@/services/logbookService'
 import type { DocumentWithEmployee } from '@/services/documentService'
+import { FEATURES } from '@/lib/featureFlags'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,7 +74,9 @@ const NAV_PAGES: NavPage[] = [
   { label: 'Cahier de liaison', href: '/cahier-de-liaison', icon: 'book' },
   { label: 'Conformité', href: '/conformite', icon: 'shield', roles: ['employer'] },
   { label: 'Documents', href: '/documents', icon: 'file', roles: ['employer', 'employee'] },
-  { label: 'Suivi des heures', href: '/suivi-des-heures', icon: 'clock' },
+  ...(FEATURES.clockIn
+    ? [{ label: 'Suivi des heures', href: '/suivi-des-heures', icon: 'clock' } as NavPage]
+    : []),
   { label: 'Analytique', href: '/analytique', icon: 'barchart' },
   { label: 'Mon profil', href: '/profil', icon: 'user' },
   { label: 'Paramètres', href: '/parametres', icon: 'settings' },

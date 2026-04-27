@@ -18,6 +18,7 @@ import { SpotlightSearch } from '@/components/dashboard/SpotlightSearch'
 import { useSpotlightSearch } from '@/hooks/useSpotlightSearch'
 import { getCaregiver } from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
+import { FEATURES } from '@/lib/featureFlags'
 
 import type { UserRole, CaregiverPermissions } from '@/types'
 
@@ -54,7 +55,9 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Conformité', href: '/conformite', icon: 'shield', ariaLabel: 'Voir la conformité', roles: ['employer'] },
       { label: 'Documents', href: '/documents', icon: 'file', ariaLabel: 'Gérer les documents', roles: ['employer', 'employee'] },
-      { label: 'Suivi des heures', href: '/suivi-des-heures', icon: 'clock', ariaLabel: 'Accéder au suivi des heures' },
+      ...(FEATURES.clockIn
+        ? [{ label: 'Suivi des heures', href: '/suivi-des-heures', icon: 'clock', ariaLabel: 'Accéder au suivi des heures' } as NavItem]
+        : []),
       { label: 'Analytique', href: '/analytique', icon: 'barchart', ariaLabel: 'Voir les statistiques détaillées' },
     ],
   },

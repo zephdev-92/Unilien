@@ -20,6 +20,7 @@ import { PlanningModal } from './PlanningModal'
 import { updateShift, deleteShift, validateShift } from '@/services/shiftService'
 import { toaster } from '@/lib/toaster'
 import { logger } from '@/lib/logger'
+import { FEATURES } from '@/lib/featureFlags'
 import type { Shift, UserRole } from '@/types'
 import { SHIFT_STATUS_VARIANTS as statusVariants, SHIFT_STATUS_LABELS as statusLabels } from '@/lib/constants/statusMaps'
 import { useShiftDetailData } from '@/hooks/useShiftDetailData'
@@ -449,7 +450,7 @@ export function ShiftDetailModal({
         {canValidate && hasValidated && (
           <Text fontSize="sm" color="green.600" alignSelf="center">Vous avez validé cette intervention</Text>
         )}
-        {userRole === 'employee' && shift && shift.status === 'planned' && (
+        {FEATURES.clockIn && userRole === 'employee' && shift && shift.status === 'planned' && (
           <PrimaryButton onClick={() => navigate('/suivi-des-heures')} accessibleLabel="Aller au pointage pour cette intervention">
             Pointer
           </PrimaryButton>

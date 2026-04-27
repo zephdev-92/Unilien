@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Box, SimpleGrid, Text, Flex } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { NavIcon } from '@/components/ui'
+import { FEATURES } from '@/lib/featureFlags'
 import type { UserRole, CaregiverPermissions } from '@/types'
 
 interface QuickAction {
@@ -40,7 +41,11 @@ interface QuickActionsWidgetProps {
 export function QuickActionsWidget({ userRole, permissions }: QuickActionsWidgetProps) {
   // Filtrer les actions selon les permissions pour les aidants
   const actions = useMemo(() => {
-    const roleActions = actionsByRole[userRole]
+    let roleActions = actionsByRole[userRole]
+
+    if (!FEATURES.clockIn) {
+      roleActions = roleActions.filter((a) => a.href !== '/suivi-des-heures')
+    }
 
     if (userRole !== 'caregiver' || !permissions) {
       return roleActions

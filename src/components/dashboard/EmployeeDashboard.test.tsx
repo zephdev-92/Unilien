@@ -112,7 +112,8 @@ describe('EmployeeDashboard', () => {
       })
     })
 
-    it('affiche le ClockInWidget', async () => {
+    // Désactivé tant que FEATURES.clockIn = false (v1).
+    it.skip('affiche le ClockInWidget', async () => {
       renderWithProviders(<EmployeeDashboard profile={profile} />)
       await waitFor(() => {
         expect(screen.getByTestId('clock-in-widget')).toBeInTheDocument()

@@ -8,6 +8,7 @@ import { RouteAnnouncer } from '@/components/accessibility/RouteAnnouncer'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase/client'
+import { FEATURES } from '@/lib/featureFlags'
 import type { UserRole } from '@/types'
 
 // Pages chargées dynamiquement (code splitting)
@@ -185,7 +186,9 @@ function App() {
           <Route path="/messagerie" element={<ProtectedRoute><ErrorBoundary><LiaisonPage /></ErrorBoundary></ProtectedRoute>} />
 
           {/* Routes protégées avec restriction de rôle */}
-          <Route path="/suivi-des-heures" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
+          {FEATURES.clockIn && (
+            <Route path="/suivi-des-heures" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><ClockInPage /></ErrorBoundary></ProtectedRoute>} />
+          )}
           <Route path="/equipe" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><TeamPage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/conformite" element={<ProtectedRoute allowedRoles={['employer', 'caregiver']}><ErrorBoundary><CompliancePage /></ErrorBoundary></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute allowedRoles={['employer', 'employee', 'caregiver']}><ErrorBoundary><DocumentsPage /></ErrorBoundary></ProtectedRoute>} />

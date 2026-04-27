@@ -199,7 +199,8 @@ describe('CaregiverDashboard', () => {
       })
     })
 
-    it('affiche le ClockInWidget avec variant warm', async () => {
+    // Désactivé tant que FEATURES.clockIn = false (v1).
+    it.skip('affiche le ClockInWidget avec variant warm', async () => {
       renderWithProviders(<CaregiverDashboard profile={profile} />)
       await waitFor(() => {
         const widgets = screen.getAllByTestId('clockin-widget')

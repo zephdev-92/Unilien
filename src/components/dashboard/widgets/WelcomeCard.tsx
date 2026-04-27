@@ -1,5 +1,6 @@
 import { Box, Flex, Text, Skeleton } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
+import { FEATURES } from '@/lib/featureFlags'
 import type { Profile, Shift } from '@/types'
 
 interface WelcomeCardProps {
@@ -184,8 +185,8 @@ export function WelcomeCard({
       <Box flexShrink={0}>
         <Box
           as={RouterLink}
-          to={profile.role === 'employee'
-            ? (todayShiftCount ? '/suivi-des-heures' : '/planning')
+          to={profile.role === 'employee' && FEATURES.clockIn && todayShiftCount
+            ? '/suivi-des-heures'
             : '/planning'}
           display="inline-flex"
           alignItems="center"

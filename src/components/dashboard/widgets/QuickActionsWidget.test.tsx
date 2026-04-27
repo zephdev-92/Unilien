@@ -52,15 +52,16 @@ describe('QuickActionsWidget', () => {
   })
 
   describe('Rôle employee', () => {
-    it('affiche les 4 actions employee', () => {
+    it('affiche les actions employee (sans Pointer tant que FEATURES.clockIn = false)', () => {
       renderWithProviders(<QuickActionsWidget userRole="employee" />)
-      expect(screen.getByText('Pointer')).toBeInTheDocument()
+      expect(screen.queryByText('Pointer')).not.toBeInTheDocument()
       expect(screen.getByText('Planning')).toBeInTheDocument()
       expect(screen.getByText('Cahier')).toBeInTheDocument()
       expect(screen.getByText('Absence')).toBeInTheDocument()
     })
 
-    it("le lien 'Pointer' pointe vers /suivi-des-heures", () => {
+    // Désactivé tant que FEATURES.clockIn = false (v1).
+    it.skip("le lien 'Pointer' pointe vers /suivi-des-heures", () => {
       renderWithProviders(<QuickActionsWidget userRole="employee" />)
       const links = screen.getAllByRole('link')
       const hrefs = links.map((l) => l.getAttribute('href'))
