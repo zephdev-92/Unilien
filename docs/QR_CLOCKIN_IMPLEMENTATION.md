@@ -193,7 +193,11 @@ CREATE INDEX idx_contracts_clock_in_qr_token ON contracts(clock_in_qr_token)
 
 - **Lecteur QR PWA** : [`html5-qrcode`](https://github.com/mebjas/html5-qrcode) (~150kb, BSD-3, PWA-friendly, iOS Safari OK)
   - Alternative : `react-qr-scanner` (plus léger mais moins maintenu)
-- **Génération QR PDF** : [`qrcode`](https://www.npmjs.com/package/qrcode) côté serveur ou `react-qr-code` côté client + `@react-pdf/renderer` (déjà utilisé dans le projet)
+- **Génération QR — 2 options à arbitrer plus tard** :
+  - [`qrcode`](https://www.npmjs.com/package/qrcode) (~30kb) — minimaliste, juste un QR noir/blanc. Suffisant pour un MVP fonctionnel.
+  - [`qr-code-styling`](https://www.npmjs.com/package/qr-code-styling) (~50kb gzipped) — supporte logo central, dots arrondis, couleurs custom, corners stylisés. Plus pro pour un badge imprimé.
+  - Décision : ship MVP avec `qrcode` puis migrer vers `qr-code-styling` quand on veut un rendu branded, ou partir directement sur `qr-code-styling` si Marie veut un badge "présentable" dès le départ.
+- **PDF** : `@react-pdf/renderer` (déjà utilisé dans le projet)
 
 ---
 
@@ -231,7 +235,13 @@ CREATE INDEX idx_contracts_clock_in_qr_token ON contracts(clock_in_qr_token)
 
 ## 11. Implémentation technique — génération QR
 
-### Dépendances à ajouter
+> Deux variantes documentées ci-dessous. Le choix sera tranché au moment du dev (cf. § 7) :
+> - **Variante A (minimaliste)** : `qrcode` — QR sobre noir/blanc, plus léger, suffisant pour un MVP
+> - **Variante B (brandée)** : `qr-code-styling` — logo central, dots arrondis, couleurs charte
+
+### Variante A — `qrcode` (minimaliste)
+
+#### Dépendances
 
 ```bash
 npm install qrcode
@@ -386,3 +396,107 @@ $$;
 ```
 
 L'ancien token devient invalide automatiquement via le `WHERE clock_in_qr_revoked_at IS NULL` de l'index/lookup côté validation.
+
+### Variante B — `qr-code-styling` (avec logo Unilien)
+
+#### Dépendances
+
+```bash
+npm install qr-code-styling
+```
+
+Pas de `@types/...` nécessaire — la lib expose ses propres types TypeScript.
+
+#### Caveats à respecter
+
+Insérer un logo réduit la lisibilité du QR. Pour compenser :
+
+- **`errorCorrectionLevel: 'H'`** obligatoire (30% de tolérance, vs 15% en `M`)
+- **Logo max 20-25%** de la surface du QR (`imageSize: 0.22`) — au-delà, beaucoup de scanners galèrent
+- **Logo simple et contrasté** (logo Unilien Ardoise sur fond blanc → idéal)
+- **Marge blanche autour du logo** (`margin: 8`) pour séparer visuellement du pattern
+
+#### Génération du QR avec logo
+
+```tsx
+// src/lib/qr/buildBrandedQrDataUrl.ts
+import QRCodeStyling from 'qr-code-styling'
+import logoUrl from '@/assets/logo-unilien.svg'
+
+export async function buildBrandedQrDataUrl(token: string, size = 800): Promise<string> {
+  const qr = new QRCodeStyling({
+    width: size,
+    height: size,
+    type: 'canvas',
+    data: token,
+    image: logoUrl,
+    qrOptions: {
+      errorCorrectionLevel: 'H', // ← obligatoire avec logo
+    },
+    imageOptions: {
+      crossOrigin: 'anonymous',
+      margin: 8,
+      imageSize: 0.22, // 22% — sweet spot lisibilité/visibilité
+      hideBackgroundDots: true,
+    },
+    dotsOptions: {
+      type: 'rounded',
+      color: '#1a2435', // Ardoise (charte Unilien)
+    },
+    cornersSquareOptions: {
+      type: 'extra-rounded',
+      color: '#1a2435',
+    },
+    cornersDotOptions: {
+      type: 'dot',
+      color: '#1a2435',
+    },
+    backgroundOptions: {
+      color: '#ffffff',
+    },
+  })
+
+  const blob = await qr.getRawData('png')
+  if (!blob) throw new Error('QR generation failed')
+
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob as Blob)
+  })
+}
+```
+
+#### Intégration dans le PDF
+
+Identique à la variante A, mais on remplace l'appel à `QRCode.toDataURL()` par `buildBrandedQrDataUrl()` :
+
+```tsx
+// dans buildClockInBadgePdf
+- const qrDataUrl = await QRCode.toDataURL(token, { ... })
++ const qrDataUrl = await buildBrandedQrDataUrl(token, 800)
+```
+
+Le reste du `<Document>` ne change pas.
+
+#### Aperçu visuel attendu
+
+- Carré 800×800, fond blanc
+- Dots arrondis Ardoise (`#1a2435`)
+- 3 corners avec carrés extra-arrondis
+- Logo Unilien centré avec marge blanche
+
+→ Cohérent avec la charte visuelle du projet, "présentable" pour l'impression chez le bénéficiaire.
+
+### Décision à prendre au moment du dev
+
+| Critère | Variante A (`qrcode`) | Variante B (`qr-code-styling`) |
+|---------|----------------------|-------------------------------|
+| Taille bundle | ~30kb | ~50kb gzipped |
+| Logo | Non | Oui |
+| Style custom | Couleurs uniquement | Dots, corners, gradients |
+| Effort intégration | Direct | +30 min de paramétrage |
+| Rendu "pro" pour impression | Sobre | Brandé Unilien |
+
+**Reco par défaut** : démarrer sur la variante A pour shipper vite, basculer sur B au moment de la review esthétique avec Marie. Les deux utilisent le même token côté serveur, donc la migration A→B ne touche pas la DB ni la logique de validation.
