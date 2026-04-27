@@ -39,7 +39,12 @@ const employeeStats: EmployeeStats = {
   shiftsToday: 2,
   activeShiftsNow: 1,
   upcomingShifts: 3,
-  presenceRate: 95,
+  nextShift: {
+    date: '2099-01-15',
+    startTime: '09:00',
+    endTime: '13:00',
+    durationHours: 4,
+  },
 }
 
 const caregiverStats: CaregiverStats = {
@@ -174,13 +179,26 @@ describe('StatsWidget', () => {
       })
     })
 
-    it('affiche le taux de présence', async () => {
+    it('affiche la prochaine intervention', async () => {
       renderWithProviders(
         <StatsWidget userRole="employee" profileId="employee-1" />
       )
       await waitFor(() => {
-        expect(screen.getByText('95%')).toBeInTheDocument()
-        expect(screen.getByText('Excellent')).toBeInTheDocument()
+        expect(screen.getByText('Prochaine intervention')).toBeInTheDocument()
+        expect(screen.getByText(/09:00 → 13:00 · 4h/)).toBeInTheDocument()
+      })
+    })
+
+    it('affiche "Aucune planifiée" quand pas de prochain shift', async () => {
+      mockGetEmployeeStats.mockResolvedValue({
+        ...employeeStats,
+        nextShift: null,
+      })
+      renderWithProviders(
+        <StatsWidget userRole="employee" profileId="employee-1" />
+      )
+      await waitFor(() => {
+        expect(screen.getByText('Aucune planifiée')).toBeInTheDocument()
       })
     })
 
