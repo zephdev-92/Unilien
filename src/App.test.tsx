@@ -155,7 +155,9 @@ describe('App', () => {
       })
     })
 
-    it('affiche /suivi-des-heures pour un employé', async () => {
+    // Désactivé tant que FEATURES.clockIn = false (v1).
+    // Réactiver quand le flag passe à true (cf. docs/QR_CLOCKIN_IMPLEMENTATION.md).
+    it.skip('affiche /suivi-des-heures pour un employé', async () => {
       mockUseAuth.mockReturnValue({
         isAuthenticated: true,
         isLoading: false,

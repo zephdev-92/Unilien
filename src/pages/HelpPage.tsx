@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { Box, Container, Flex, Stack, Text, Link, Collapsible } from '@chakra-ui/react'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
+import { FEATURES } from '@/lib/featureFlags'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -439,6 +440,7 @@ function AccordionItem({ question, answer, isOpen, onToggle }: {
 
 export default function HelpPage() {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set())
+  const sections = FEATURES.clockIn ? GUIDE_SECTIONS : GUIDE_SECTIONS.filter(s => s.id !== 'hours')
 
   const toggleItem = (id: string) => {
     setOpenItems(prev => {
@@ -476,7 +478,7 @@ export default function HelpPage() {
             Sommaire
           </Text>
           <Flex gap={2} flexWrap="wrap">
-            {GUIDE_SECTIONS.map((section) => (
+            {sections.map((section) => (
               <Link
                 key={section.id}
                 href={`#${section.id}`}
@@ -498,7 +500,7 @@ export default function HelpPage() {
 
         {/* Sections */}
         <Stack gap={8}>
-          {GUIDE_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <Box
               key={section.id}
               id={section.id}

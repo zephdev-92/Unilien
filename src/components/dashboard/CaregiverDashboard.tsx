@@ -28,6 +28,7 @@ import {
   getCaregiver,
   getUpcomingShiftsForCaregiver,
 } from '@/services/caregiverService'
+import { FEATURES } from '@/lib/featureFlags'
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 
@@ -165,7 +166,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
             </GridItem>
             <GridItem minW={0}>
               <Stack gap={6}>
-                <ClockInWidget variant="warm" />
+                {FEATURES.clockIn && <ClockInWidget variant="warm" />}
                 <PchMiniWidget employerId={caregiver.employerId} />
                 <RecentMessagesWidget userId={profile.id} />
                 <QuickActionsWidget userRole="caregiver" permissions={caregiver.permissions} />
@@ -180,7 +181,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
         {caregiver.permissions.canViewPlanning && (
           <CaregiverShiftTimeline profileId={profile.id} employerName={employerName} />
         )}
-        <ClockInWidget variant="warm" />
+        {FEATURES.clockIn && <ClockInWidget variant="warm" />}
         <RecentMessagesWidget userId={profile.id} />
         <PchEnvelopeWidget employerId={caregiver.employerId} />
         <QuickActionsWidget userRole="caregiver" permissions={caregiver.permissions} />

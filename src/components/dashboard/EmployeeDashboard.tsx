@@ -14,6 +14,7 @@ import {
 } from './widgets'
 import { getShifts } from '@/services/shiftService'
 import { logger } from '@/lib/logger'
+import { FEATURES } from '@/lib/featureFlags'
 
 interface EmployeeDashboardProps {
   profile: Profile
@@ -103,12 +104,14 @@ export function EmployeeDashboard({ profile }: EmployeeDashboardProps) {
       </GridItem>
 
       {/* 4. Clock-in — aside col */}
-      <GridItem order={{ base: 4, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '4' }}>
-        <ClockInWidget
-          hasActiveShift={!!activeShift}
-          activeShiftLabel={activeShift ? `Intervention ${activeShift.startTime.slice(0, 5)} – ${activeShift.endTime.slice(0, 5)}` : undefined}
-        />
-      </GridItem>
+      {FEATURES.clockIn && (
+        <GridItem order={{ base: 4, lg: 0 }} gridColumn={{ lg: '2' }} gridRow={{ lg: '4' }}>
+          <ClockInWidget
+            hasActiveShift={!!activeShift}
+            activeShiftLabel={activeShift ? `Intervention ${activeShift.startTime.slice(0, 5)} – ${activeShift.endTime.slice(0, 5)}` : undefined}
+          />
+        </GridItem>
+      )}
 
       {/* 5. Heures du mois — main col */}
       <GridItem order={{ base: 5, lg: 0 }} gridColumn={{ lg: '1' }} gridRow={{ lg: '5' }}>
