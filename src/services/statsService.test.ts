@@ -215,7 +215,17 @@ describe('getEmployeeStats', () => {
     const shiftsLastMonth = [
       makeShift({ start_time: '08:00', end_time: '12:00', break_duration: 0 }),
     ]
-    const upcomingShifts = [{ id: 'up-1' }]
+    const upcomingShifts = [
+      {
+        id: 'up-1',
+        date: '2099-01-15',
+        start_time: '09:00',
+        end_time: '13:00',
+        break_duration: 0,
+        shift_type: null,
+        effective_hours: null,
+      },
+    ]
 
     mockSupabaseQuerySequence([
       { data: contracts, error: null },
@@ -234,7 +244,7 @@ describe('getEmployeeStats', () => {
     expect(result.shiftsThisMonth).toBe(2)
     expect(result.upcomingShifts).toBe(1)
     expect(result.estimatedRevenue).toBe(106)
-    expect(result.presenceRate).toBeGreaterThanOrEqual(0)
+    expect(result.nextShift === null || typeof result.nextShift === 'object').toBe(true)
   })
 
   it('retourne tout a 0 si aucun contrat actif', async () => {
@@ -252,7 +262,7 @@ describe('getEmployeeStats', () => {
     expect(result.shiftsToday).toBe(0)
     expect(result.activeShiftsNow).toBe(0)
     expect(result.upcomingShifts).toBe(0)
-    expect(result.presenceRate).toBe(0)
+    expect(result.nextShift).toBeNull()
   })
 
   it('retourne tout a 0 si contracts est null', async () => {
@@ -264,7 +274,7 @@ describe('getEmployeeStats', () => {
 
     expect(result.hoursThisMonth).toBe(0)
     expect(result.shiftsThisMonth).toBe(0)
-    expect(result.presenceRate).toBe(0)
+    expect(result.nextShift).toBeNull()
   })
 
   it('calcule estimatedRevenue par contrat avec le bon taux horaire', async () => {

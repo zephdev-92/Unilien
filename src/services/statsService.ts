@@ -18,6 +18,13 @@ export interface EmployerStats {
   upcomingShifts: number
 }
 
+export interface NextShift {
+  date: string
+  startTime: string
+  endTime: string
+  durationHours: number
+}
+
 export interface EmployeeStats {
   hoursThisMonth: number
   hoursLastMonth: number
@@ -29,7 +36,7 @@ export interface EmployeeStats {
   shiftsToday: number
   activeShiftsNow: number
   upcomingShifts: number
-  presenceRate: number
+  nextShift: NextShift | null
 }
 
 export interface CaregiverStats {
@@ -156,7 +163,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
       shiftsToday: 0,
       activeShiftsNow: 0,
       upcomingShifts: 0,
-      presenceRate: 0,
+      nextShift: null,
     }
   }
 
@@ -180,13 +187,15 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
     .lte('date', format(lastMonthEnd, 'yyyy-MM-dd'))
     .eq('status', 'completed')
 
-  // Récupérer les shifts à venir
+  // Récupérer les shifts à venir (avec détails pour Prochaine intervention)
   const { data: upcomingShiftsData } = await supabase
     .from('shifts')
-    .select('id')
+    .select('id, date, start_time, end_time, break_duration, shift_type, effective_hours')
     .in('contract_id', contractIds)
     .gte('date', todayStr)
     .eq('status', 'planned')
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true })
 
   // Calculer les heures
   const hoursThisMonth = calculateTotalHours(shiftsThisMonth || [])
@@ -209,11 +218,29 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
     return nowMinutes >= sh * 60 + sm && nowMinutes <= eh * 60 + em
   }).length
 
-  // Taux de présence : completed / (completed + cancelled)
-  const allStatuses = (shiftsThisMonth || [])
-  const completedCount = allStatuses.filter(s => s.status === 'completed').length
-  const totalForRate = allStatuses.length
-  const presenceRate = totalForRate > 0 ? Math.round((completedCount / totalForRate) * 100) : 100
+  // Prochaine intervention planifiée (en excluant les shifts du jour déjà commencés)
+  const nextUpcoming = (upcomingShiftsData || []).find(s => {
+    if (s.date > todayStr) return true
+    if (s.date < todayStr) return false
+    const [sh, sm] = s.start_time.split(':').map(Number)
+    return sh * 60 + sm > nowMinutes
+  })
+
+  const nextShift: NextShift | null = nextUpcoming
+    ? {
+        date: nextUpcoming.date,
+        startTime: nextUpcoming.start_time.slice(0, 5),
+        endTime: nextUpcoming.end_time.slice(0, 5),
+        durationHours:
+          nextUpcoming.shift_type === 'guard_24h' && nextUpcoming.effective_hours != null
+            ? nextUpcoming.effective_hours
+            : calculateShiftDuration(
+                nextUpcoming.start_time,
+                nextUpcoming.end_time,
+                nextUpcoming.break_duration || 0
+              ) / 60,
+      }
+    : null
 
   // Calculer les revenus estimés (brut)
   let estimatedRevenue = 0
@@ -238,7 +265,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
     shiftsToday,
     activeShiftsNow,
     upcomingShifts: upcomingShiftsData?.length || 0,
-    presenceRate,
+    nextShift,
   }
 }
 

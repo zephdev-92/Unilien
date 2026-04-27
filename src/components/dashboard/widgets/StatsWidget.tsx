@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, SimpleGrid, Text, Flex, Skeleton } from '@chakra-ui/react'
+import { format, isToday, isTomorrow, parseISO } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import { NavIcon } from '@/components/ui'
 import type { UserRole } from '@/types'
 import { logger } from '@/lib/logger'
@@ -11,7 +13,23 @@ import {
   type EmployerStats,
   type EmployeeStats,
   type CaregiverStats,
+  type NextShift,
 } from '@/services/statsService'
+
+function formatNextShiftDay(date: string): string {
+  const d = parseISO(date)
+  if (isToday(d)) return "Aujourd'hui"
+  if (isTomorrow(d)) return 'Demain'
+  return format(d, 'EEE d MMM', { locale: fr })
+}
+
+function formatNextShiftValue(next: NextShift): string {
+  return `${formatNextShiftDay(next.date)} · ${next.startTime}`
+}
+
+function formatNextShiftSub(next: NextShift): string {
+  return `${next.startTime} → ${next.endTime} · ${formatHoursCompact(next.durationHours)}`
+}
 
 type StatIconType = 'clock' | 'money' | 'calendar' | 'users' | 'home' | 'notebook' | 'shield' | 'file'
 type StatIconColor = 'blue' | 'green' | 'orange' | 'warn'
@@ -137,20 +155,20 @@ function formatEmployeeStats(stats: EmployeeStats): Stat[] {
       iconColor: 'blue',
     },
     {
+      label: 'Prochaine intervention',
+      value: stats.nextShift ? formatNextShiftValue(stats.nextShift) : 'Aucune',
+      change: stats.nextShift ? formatNextShiftSub(stats.nextShift) : 'Aucune planifiée',
+      changeType: stats.nextShift ? 'positive' : 'neutral',
+      iconType: 'calendar',
+      iconColor: 'blue',
+    },
+    {
       label: 'Heures ce mois',
       value: formatHoursCompact(stats.hoursThisMonth),
       change: stats.contractualHours > 0 ? `sur ${stats.contractualHours}h contractuelles` : 'Ce mois',
       changeType: 'neutral',
       iconType: 'clock',
       iconColor: 'green',
-    },
-    {
-      label: 'Taux de pr\u00e9sence',
-      value: `${stats.presenceRate}%`,
-      change: stats.presenceRate >= 95 ? 'Excellent' : stats.presenceRate >= 80 ? 'Bon' : 'À am\u00e9liorer',
-      changeType: stats.presenceRate >= 80 ? 'positive' : 'negative',
-      iconType: 'money',
-      iconColor: 'blue',
     },
     {
       label: 'Interventions ce mois',
