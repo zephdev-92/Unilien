@@ -111,3 +111,21 @@ export function parseShoppingItemString(str: string): ShoppingItem {
 export function shoppingItemKey(item: ShoppingItem): string {
   return `${item.name}::${item.brand}`
 }
+
+/**
+ * Indique si la tâche "Courses" est cochée et combien d'articles ont été saisis.
+ * Utile pour afficher des rappels (pastille calendrier) ou un compteur (détail shift).
+ */
+export function getShoppingState(tasks: string[] | null | undefined): {
+  hasCoursesTask: boolean
+  itemCount: number
+} {
+  if (!tasks || tasks.length === 0) return { hasCoursesTask: false, itemCount: 0 }
+  let hasCoursesTask = false
+  let itemCount = 0
+  for (const t of tasks) {
+    if (t === 'Courses') hasCoursesTask = true
+    else if (t.startsWith(COURSES_PREFIX)) itemCount++
+  }
+  return { hasCoursesTask, itemCount }
+}

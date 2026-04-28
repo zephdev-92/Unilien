@@ -439,6 +439,12 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                     )}
                   </Flex>
 
+                  {shoppingCount === 0 && (
+                    <Text fontSize="xs" color="text.muted" fontStyle="italic" px={2} mb={2}>
+                      💡 Pas obligatoire maintenant — vous pourrez compléter la liste plus tard depuis le détail de l&apos;intervention.
+                    </Text>
+                  )}
+
                   <Stack gap={0}>
                     {allShoppingItems.length === 0 && (
                       <Text fontSize="xs" color="text.muted" px={6} py={1}>
