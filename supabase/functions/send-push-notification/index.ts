@@ -11,9 +11,8 @@ interface PushPayload {
 }
 
 const ALLOWED_ORIGINS = [
-  'https://unilien.fr',
-  'https://www.unilien.fr',
-  'https://unilien.netlify.app',
+  'https://unilien.app',
+  'https://www.unilien.app',
 ]
 
 function getCorsOrigin(req: Request): string {
