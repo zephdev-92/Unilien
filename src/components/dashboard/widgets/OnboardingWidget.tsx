@@ -44,9 +44,9 @@ export function OnboardingWidget({ profile, userRole }: OnboardingWidgetProps) {
         const newSteps: OnboardingStep[] = [
           {
             id: 'profile',
-            label: 'Completer votre profil',
+            label: 'Compléter votre profil',
             description: profileDone
-              ? 'Profil complete'
+              ? 'Profil complété'
               : 'Ajoutez vos informations personnelles et votre adresse',
             href: '/profil',
             done: profileDone,
@@ -56,8 +56,8 @@ export function OnboardingWidget({ profile, userRole }: OnboardingWidgetProps) {
                 id: 'team',
                 label: 'Ajouter un auxiliaire',
                 description: teamDone
-                  ? 'Equipe configuree'
-                  : 'Ajoutez votre premier auxiliaire de vie et creez son contrat',
+                  ? 'Équipe configurée'
+                  : 'Ajoutez votre premier auxiliaire de vie et créez son contrat',
                 href: '/equipe',
                 done: teamDone,
               }
@@ -67,7 +67,7 @@ export function OnboardingWidget({ profile, userRole }: OnboardingWidgetProps) {
                   label: 'Lien avec votre employeur',
                   description: teamDone
                     ? 'Contrat actif'
-                    : "Demandez a votre employeur de vous ajouter depuis son espace",
+                    : "Demandez à votre employeur de vous ajouter depuis son espace",
                   href: '/profil',
                   done: teamDone,
                 }
@@ -75,21 +75,21 @@ export function OnboardingWidget({ profile, userRole }: OnboardingWidgetProps) {
                   id: 'team',
                   label: 'Lien avec votre proche',
                   description: teamDone
-                    ? 'Lie a un employeur'
-                    : "Demandez a votre proche de vous ajouter comme aidant",
+                    ? 'Lié à un employeur'
+                    : "Demandez à votre proche de vous ajouter comme aidant",
                   href: '/profil',
                   done: teamDone,
                 },
           {
             id: 'shifts',
             label: userRole === 'employer'
-              ? 'Creer une intervention'
-              : 'Premiere intervention',
+              ? 'Créer une intervention'
+              : 'Première intervention',
             description: shiftsDone
-              ? 'Interventions enregistrees'
+              ? 'Interventions enregistrées'
               : userRole === 'employer'
-                ? 'Planifiez votre premiere intervention depuis le planning'
-                : "Une fois lie, vos interventions apparaitront ici",
+                ? 'Planifiez votre première intervention depuis le planning'
+                : "Une fois lié, vos interventions apparaîtront ici",
             href: '/planning',
             done: shiftsDone,
           },

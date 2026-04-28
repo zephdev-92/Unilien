@@ -200,10 +200,10 @@ describe('LogbookPage', () => {
       })
     })
 
-    it('affiche le bouton "Creer la premiere entree" pour un employeur', async () => {
+    it('affiche le bouton "Créer la première entrée" pour un employeur', async () => {
       renderWithProviders(<LogbookPage />)
       await waitFor(() => {
-        expect(screen.getByText('Creer la premiere entree')).toBeInTheDocument()
+        expect(screen.getByText('Créer la première entrée')).toBeInTheDocument()
       })
     })
 
@@ -217,7 +217,7 @@ describe('LogbookPage', () => {
       mockGetLogEntries.mockResolvedValue({ entries: [], totalCount: 0, hasMore: false })
       renderWithProviders(<LogbookPage />)
       await waitFor(() => {
-        expect(screen.queryByText('Creer la premiere entree')).not.toBeInTheDocument()
+        expect(screen.queryByText('Créer la première entrée')).not.toBeInTheDocument()
       })
     })
   })

@@ -308,7 +308,7 @@ export function LogbookPage() {
                 variant="outline"
                 onClick={() => setIsNewEntryModalOpen(true)}
               >
-                Creer la premiere entree
+                Créer la première entrée
               </AccessibleButton>
             )}
           </Box>

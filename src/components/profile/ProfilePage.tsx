@@ -76,7 +76,7 @@ export function ProfilePage() {
               Profil incomplet
             </Text>
             <Text color="text.muted">
-              Votre profil n'a pas ete trouve dans la base de donnees.
+              Votre profil n'a pas été trouvé dans la base de données.
               Veuillez contacter le support ou vous reconnecter.
             </Text>
           </Box>

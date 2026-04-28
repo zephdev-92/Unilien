@@ -157,10 +157,10 @@ export function ContractsSection({ employerId }: Props) {
               <Button
                 size="sm"
                 variant="ghost"
-                aria-label={`Telecharger contrat ${contract.employee?.firstName ?? ''} ${contract.employee?.lastName ?? ''}`}
+                aria-label={`Télécharger contrat ${contract.employee?.firstName ?? ''} ${contract.employee?.lastName ?? ''}`}
               >
                 <DownloadIcon />
-                Telecharger
+                Télécharger
               </Button>
               <Badge
                 colorPalette={STATUS_COLORS[contract.status] || 'gray'}

@@ -25,10 +25,10 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
         boxShadow="sm"
       >
         <Text fontSize="lg" fontWeight="semibold" color="text.default" mb={4}>
-          Repartition par auxiliaire
+          Répartition par auxiliaire
         </Text>
         <Text fontSize="sm" color="text.muted" textAlign="center" py={4}>
-          Aucune donnee ce mois
+          Aucune donnée ce mois
         </Text>
       </Box>
     )
@@ -49,7 +49,7 @@ export function AuxiliaryBreakdownWidget({ data }: AuxiliaryBreakdownWidgetProps
       <Flex justify="space-between" align="center" mb={4}>
         <Box>
           <Text fontSize="lg" fontWeight="semibold" color="text.default">
-            Repartition par auxiliaire
+            Répartition par auxiliaire
           </Text>
           <Text fontSize="sm" color="text.muted">
             Mois en cours
