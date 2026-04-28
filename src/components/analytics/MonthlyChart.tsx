@@ -103,11 +103,11 @@ export function MonthlyChart({ data, metric, title }: MonthlyChartProps) {
         <Flex gap={4} mt={4} justify="center">
           <Flex align="center" gap={1}>
             <Box w={3} h={3} borderRadius="sm" bg="brand.500" />
-            <Text fontSize="xs" color="text.muted">Effectuees</Text>
+            <Text fontSize="xs" color="text.muted">Effectuées</Text>
           </Flex>
           <Flex align="center" gap={1}>
             <Box w={3} h={3} borderRadius="sm" bg="brand.100" />
-            <Text fontSize="xs" color="text.muted">Planifiees</Text>
+            <Text fontSize="xs" color="text.muted">Planifiées</Text>
           </Flex>
         </Flex>
       )}

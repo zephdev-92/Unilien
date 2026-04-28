@@ -117,7 +117,7 @@ describe('PlanningExportSection', () => {
   it('affiche la selection employe pour un employeur', async () => {
     renderWithProviders(<PlanningExportSection {...defaultProps} />)
     await waitFor(() => {
-      expect(screen.getByText('Tous les employes')).toBeInTheDocument()
+      expect(screen.getByText('Tous les employés')).toBeInTheDocument()
       expect(screen.getByText('Marie Curie')).toBeInTheDocument()
     })
   })
@@ -131,7 +131,7 @@ describe('PlanningExportSection', () => {
       />
     )
     await waitFor(() => {
-      expect(screen.queryByText('Tous les employes')).not.toBeInTheDocument()
+      expect(screen.queryByText('Tous les employés')).not.toBeInTheDocument()
     })
   })
 
@@ -164,7 +164,7 @@ describe('PlanningExportSection', () => {
     await userEvent.click(screen.getByText('Exporter'))
 
     await waitFor(() => {
-      expect(screen.getByText('Aucune donnee disponible pour cette periode')).toBeInTheDocument()
+      expect(screen.getByText('Aucune donnée disponible pour cette période')).toBeInTheDocument()
     })
   })
 

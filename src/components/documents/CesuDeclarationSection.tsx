@@ -87,7 +87,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
     setDialogError(null)
 
     if (!isMonthClosed(selectedYear, selectedMonth)) {
-      setDialogError('Ce mois n\'est pas encore termine. La declaration CESU sera disponible a partir du 1er du mois suivant.')
+      setDialogError('Ce mois n\'est pas encore terminé. La déclaration CESU sera disponible à partir du 1er du mois suivant.')
       setIsGenerating(false)
       return
     }
@@ -100,12 +100,12 @@ export function CesuDeclarationSection({ employerId }: Props) {
       })
 
       if (!data) {
-        setDialogError('Aucune donnee disponible pour cette periode')
+        setDialogError('Aucune donnée disponible pour cette période')
         return
       }
 
       if (data.employees.length === 0) {
-        setDialogError('Aucune intervention enregistree pour cette periode')
+        setDialogError('Aucune intervention enregistrée pour cette période')
         return
       }
 
@@ -119,7 +119,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
       // Persister en base (upsert) avec le chemin du PDF
       const saved = await saveCesuDeclaration(employerId, data, storagePath)
       if (!saved) {
-        setDialogError('Erreur lors de la sauvegarde de la declaration')
+        setDialogError('Erreur lors de la sauvegarde de la déclaration')
         return
       }
 
@@ -135,13 +135,13 @@ export function CesuDeclarationSection({ employerId }: Props) {
 
       setShowDialog(false)
       toaster.create({
-        title: 'Declaration CESU',
-        description: `${saved.periodLabel} — ${saved.totalEmployees} employe${saved.totalEmployees > 1 ? 's' : ''}, ${formatHoursCompact(saved.totalHours)}`,
+        title: 'Déclaration CESU',
+        description: `${saved.periodLabel} — ${saved.totalEmployees} employé${saved.totalEmployees > 1 ? 's' : ''}, ${formatHoursCompact(saved.totalHours)}`,
         type: 'success',
       })
     } catch (err) {
-      logger.error('Erreur generation CESU:', err)
-      setDialogError('Erreur lors de la generation des donnees')
+      logger.error('Erreur génération CESU:', err)
+      setDialogError('Erreur lors de la génération des données')
     } finally {
       setIsGenerating(false)
     }
@@ -156,8 +156,8 @@ export function CesuDeclarationSection({ employerId }: Props) {
       if (url) {
         window.open(url, '_blank')
         toaster.create({
-          title: 'Declaration CESU',
-          description: `${declaration.periodLabel} telecharge en PDF`,
+          title: 'Déclaration CESU',
+          description: `${declaration.periodLabel} téléchargé en PDF`,
           type: 'success',
         })
         return
@@ -181,14 +181,14 @@ export function CesuDeclarationSection({ employerId }: Props) {
     if (result.success) {
       downloadExport(result)
       toaster.create({
-        title: 'Declaration CESU',
-        description: `${declaration.periodLabel} telecharge en ${format.toUpperCase()}`,
+        title: 'Déclaration CESU',
+        description: `${declaration.periodLabel} téléchargé en ${format.toUpperCase()}`,
         type: 'success',
       })
     } else {
       toaster.create({
         title: 'Erreur',
-        description: result.error || 'Erreur lors du telechargement',
+        description: result.error || 'Erreur lors du téléchargement',
         type: 'error',
       })
     }
@@ -199,14 +199,14 @@ export function CesuDeclarationSection({ employerId }: Props) {
     if (success) {
       setDeclarations((prev) => prev.filter((r) => r.id !== record.id))
       toaster.create({
-        title: 'Declaration supprimee',
+        title: 'Déclaration supprimée',
         description: record.periodLabel,
         type: 'info',
       })
     } else {
       toaster.create({
         title: 'Erreur',
-        description: 'Impossible de supprimer la declaration',
+        description: 'Impossible de supprimer la déclaration',
         type: 'error',
       })
     }
@@ -218,7 +218,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
       <HStack justify="space-between" flexWrap="wrap" gap={3}>
         <HStack gap={3}>
           <Text fontSize="sm" color="text.muted">
-            {declarations.length} declaration{declarations.length > 1 ? 's' : ''} generee{declarations.length > 1 ? 's' : ''}
+            {declarations.length} déclaration{declarations.length > 1 ? 's' : ''} générée{declarations.length > 1 ? 's' : ''}
           </Text>
         </HStack>
 
@@ -230,27 +230,27 @@ export function CesuDeclarationSection({ employerId }: Props) {
             setShowDialog(true)
           }}
         >
-          Generer une declaration
+          Générer une déclaration
         </Button>
       </HStack>
 
       {/* ── Status hint ── */}
       <Text fontSize="xs" color="text.muted">
-        Generez un recapitulatif mensuel pour chaque periode, puis telechargez-le en PDF ou CSV pour votre declaration sur cesu.urssaf.fr.
+        Générez un récapitulatif mensuel pour chaque période, puis téléchargez-le en PDF ou CSV pour votre déclaration sur cesu.urssaf.fr.
       </Text>
 
       {/* ── Tableau ── */}
       {isLoading ? (
         <HStack justify="center" py={8}>
           <Spinner size="sm" />
-          <Text fontSize="sm" color="text.muted">Chargement des declarations…</Text>
+          <Text fontSize="sm" color="text.muted">Chargement des déclarations…</Text>
         </HStack>
       ) : declarations.length === 0 ? (
         <EmptyState.Root>
           <EmptyState.Content>
-            <EmptyState.Title>Aucune declaration</EmptyState.Title>
+            <EmptyState.Title>Aucune déclaration</EmptyState.Title>
             <EmptyState.Description>
-              Generez votre premiere declaration CESU avec le bouton ci-dessus.
+              Générez votre première déclaration CESU avec le bouton ci-dessus.
             </EmptyState.Description>
           </EmptyState.Content>
         </EmptyState.Root>
@@ -259,7 +259,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
           <Table.Root size="sm">
             <Table.Header>
               <Table.Row>
-                <Table.ColumnHeader>Periode</Table.ColumnHeader>
+                <Table.ColumnHeader>Période</Table.ColumnHeader>
                 <Table.ColumnHeader textAlign="right">Employes</Table.ColumnHeader>
                 <Table.ColumnHeader textAlign="right">Heures</Table.ColumnHeader>
                 <Table.ColumnHeader textAlign="right">Total brut</Table.ColumnHeader>
@@ -331,7 +331,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
         <Dialog.Positioner>
           <Dialog.Content maxW="lg">
             <Dialog.Header>
-              <Dialog.Title>Generer une declaration CESU</Dialog.Title>
+              <Dialog.Title>Générer une déclaration CESU</Dialog.Title>
               <Dialog.CloseTrigger asChild>
                 <CloseButton />
               </Dialog.CloseTrigger>
@@ -355,7 +355,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
                     </NativeSelect.Root>
                   </Box>
                   <Box flex={1}>
-                    <Text fontSize="sm" fontWeight="medium" mb={2}>Annee</Text>
+                    <Text fontSize="sm" fontWeight="medium" mb={2}>Année</Text>
                     <NativeSelect.Root>
                       <NativeSelect.Field
                         value={selectedYear}
@@ -374,7 +374,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
                   <Alert.Root status="info">
                     <Alert.Indicator />
                     <Alert.Title>
-                      Ce mois n'est pas encore termine. Vous pourrez generer la declaration a partir du {new Date(selectedYear, selectedMonth, 1).toLocaleDateString('fr-FR')}.
+                      Ce mois n'est pas encore terminé. Vous pourrez générer la déclaration à partir du {new Date(selectedYear, selectedMonth, 1).toLocaleDateString('fr-FR')}.
                     </Alert.Title>
                   </Alert.Root>
                 )}
@@ -397,10 +397,10 @@ export function CesuDeclarationSection({ employerId }: Props) {
                   colorPalette="brand"
                   onClick={handleGenerate}
                   loading={isGenerating}
-                  loadingText="Generation…"
+                  loadingText="Génération…"
                   disabled={!isMonthClosed(selectedYear, selectedMonth)}
                 >
-                  Generer l'apercu pour {MONTHS_FR[selectedMonth - 1]} {selectedYear}
+                  Générer l'aperçu pour {MONTHS_FR[selectedMonth - 1]} {selectedYear}
                 </Button>
               </HStack>
             </Dialog.Footer>

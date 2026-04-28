@@ -124,7 +124,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
         setEmployees(opts)
       })
       .catch((err) => {
-        logger.error('Erreur chargement employes:', err)
+        logger.error('Erreur chargement employés:', err)
       })
       .finally(() => setIsLoadingEmployees(false))
   }, [employerId, canSelectEmployee])
@@ -145,12 +145,12 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
       }
 
       if (!planningData) {
-        setError('Aucune donnee disponible pour cette periode')
+        setError('Aucune donnée disponible pour cette période')
         return
       }
 
       if (planningData.employees.length === 0) {
-        setError('Aucune intervention ni absence pour cette periode')
+        setError('Aucune intervention ni absence pour cette période')
         return
       }
 
@@ -168,7 +168,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
       }
 
       if (!result.success) {
-        setError(result.error ?? 'Erreur lors de la generation')
+        setError(result.error ?? 'Erreur lors de la génération')
         return
       }
 
@@ -176,13 +176,13 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
 
       const formatLabels = { pdf: 'PDF', excel: 'Excel', ical: 'iCal' }
       toaster.create({
-        title: 'Export planning telecharge',
+        title: 'Export planning téléchargé',
         description: `Fichier ${formatLabels[selectedFormat]} pret`,
         type: 'success',
       })
     } catch (err) {
       logger.error('Erreur export planning:', err)
-      setError('Une erreur est survenue lors de la generation')
+      setError('Une erreur est survenue lors de la génération')
     } finally {
       setIsGenerating(false)
     }
@@ -217,7 +217,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
                     value={selectedEmployeeId}
                     onChange={(e) => setSelectedEmployeeId(e.target.value)}
                   >
-                    <option value="all">Tous les employes</option>
+                    <option value="all">Tous les employés</option>
                     {employees.map((e) => (
                       <option key={e.value} value={e.value}>{e.label}</option>
                     ))}
@@ -245,7 +245,7 @@ export function PlanningExportSection({ employerId, profileRole, profileId }: Pr
               </Field.Root>
 
               <Field.Root flex={1}>
-                <Field.Label>Annee</Field.Label>
+                <Field.Label>Année</Field.Label>
                 <NativeSelect.Root>
                   <NativeSelect.Field
                     value={selectedYear}

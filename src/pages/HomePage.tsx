@@ -1013,16 +1013,16 @@ export function HomePage() {
                 answer="Oui. Unilien vise le niveau WCAG AAA : navigation clavier complete, compatibilite lecteurs d'ecran (NVDA, VoiceOver), commande vocale integree, mode contraste eleve, taille de texte ajustable, reduction de mouvement. Elle est concue par et pour des personnes en situation de handicap."
               />
               <FaqItem
-                question="Puis-je importer mes donnees depuis Excel ?"
-                answer="L'import Excel est en cours de developpement (roadmap Q2 2026). En attendant, vos donnees sont exportables en CSV, JSON et PDF a tout moment depuis la section Parametres."
+                question="Puis-je importer mes données depuis Excel ?"
+                answer="L'import Excel est en cours de développement (roadmap Q2 2026). En attendant, vos données sont exportables en CSV, JSON et PDF à tout moment depuis la section Paramètres."
               />
               <FaqItem
-                question="Mes donnees sont-elles securisees ?"
-                answer="Vos donnees sont hebergees en Europe sur Supabase (PostgreSQL), protegees par des politiques RLS (Row Level Security), chiffrees en transit (TLS) et au repos. Unilien ne vend ni ne partage vos donnees. Vous pouvez les exporter ou les supprimer a tout moment."
+                question="Mes données sont-elles sécurisées ?"
+                answer="Vos données sont hébergées en Europe sur Supabase (PostgreSQL), protégées par des politiques RLS (Row Level Security), chiffrées en transit (TLS) et au repos. Unilien ne vend ni ne partage vos données. Vous pouvez les exporter ou les supprimer à tout moment."
               />
               <FaqItem
                 question="Comment fonctionne la PCH dans Unilien ?"
-                answer="Le widget PCH affiche votre enveloppe mensuelle (heures allouees x tarif 2026), le cout reel employeur, le reste a charge et l'economie realisee grace a l'exoneration patronale SS. Les tarifs sont mis a jour annuellement."
+                answer="Le widget PCH affiche votre enveloppe mensuelle (heures allouées × tarif 2026), le coût réel employeur, le reste à charge et l'économie réalisée grâce à l'exonération patronale SS. Les tarifs sont mis à jour annuellement."
               />
             </Stack>
           </Stack>
