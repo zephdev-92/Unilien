@@ -45,7 +45,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
-    const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:contact@unilien.fr'
+    const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:contact@unilien.app'
 
     // Vérification interne du JWT : valider que l'appelant est authentifié
     const authHeader = req.headers.get('authorization') || ''

@@ -162,7 +162,7 @@ Cette note synthétise les points de sécurité observés dans le code front-end
 
 #### 6. ~~CORS permissif sur les fonctions edge~~ ✅ Corrigé
 
-Les fonctions `send-push-notification` et `invite-employee` restreignent déjà les origines via `ALLOWED_ORIGINS` (unilien.fr, netlify.app, localhost).
+Les fonctions `send-push-notification` et `invite-employee` restreignent déjà les origines via `ALLOWED_ORIGINS` (unilien.app, netlify.app, localhost).
 
 #### 7. ~~Cache PWA sur endpoints API~~ ✅ Corrigé
 

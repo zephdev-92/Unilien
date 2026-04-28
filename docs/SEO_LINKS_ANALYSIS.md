@@ -142,11 +142,11 @@ Dans `ContactPage.tsx`, les coordonnées sont affichées en texte pur sans attri
 
 ```tsx
 // Actuellement — texte pur
-<Text>contact@unilien.fr</Text>
+<Text>contact@unilien.app</Text>
 <Text>01 23 45 67 89</Text>
 
 // À corriger
-<Link href="mailto:contact@unilien.fr">contact@unilien.fr</Link>
+<Link href="mailto:contact@unilien.app">contact@unilien.app</Link>
 <Link href="tel:+33123456789">01 23 45 67 89</Link>
 ```
 
@@ -247,14 +247,14 @@ cp public/pwa-192x192.png public/apple-touch-icon.png
 <title>Unilien — Gestion des auxiliaires de vie</title>
 <meta name="description" content="Application de gestion pour employeurs particuliers et auxiliaires de vie. Plannings, déclarations CESU, bulletins de paie, conformité IDCC 3239." />
 <meta name="theme-color" content="#2B6CB0" />
-<link rel="canonical" href="https://unilien.fr/" />
+<link rel="canonical" href="https://unilien.app/" />
 
 <!-- Open Graph -->
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://unilien.fr/" />
+<meta property="og:url" content="https://unilien.app/" />
 <meta property="og:title" content="Unilien — Gestion des auxiliaires de vie" />
 <meta property="og:description" content="Application de gestion pour employeurs particuliers et auxiliaires de vie. Plannings, déclarations CESU, bulletins de paie, conformité IDCC 3239." />
-<meta property="og:image" content="https://unilien.fr/og-image.png" />
+<meta property="og:image" content="https://unilien.app/og-image.png" />
 <meta property="og:locale" content="fr_FR" />
 <meta property="og:site_name" content="Unilien" />
 
@@ -262,7 +262,7 @@ cp public/pwa-192x192.png public/apple-touch-icon.png
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Unilien — Gestion des auxiliaires de vie" />
 <meta name="twitter:description" content="Application de gestion pour employeurs particuliers et auxiliaires de vie." />
-<meta name="twitter:image" content="https://unilien.fr/og-image.png" />
+<meta name="twitter:image" content="https://unilien.app/og-image.png" />
 ```
 
 Créer également `public/og-image.png` (1200×630px).
@@ -288,7 +288,7 @@ Disallow: /signup
 Disallow: /forgot-password
 Disallow: /reset-password
 
-Sitemap: https://unilien.fr/sitemap.xml
+Sitemap: https://unilien.app/sitemap.xml
 ```
 
 #### P5 — Corriger les liens morts dans `QuickActionsWidget.tsx`
@@ -377,12 +377,12 @@ Créer les 3 pages manquantes et mettre à jour le footer :
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://unilien.fr/</loc>
+    <loc>https://unilien.app/</loc>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://unilien.fr/contact</loc>
+    <loc>https://unilien.app/contact</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -401,7 +401,7 @@ import Sitemap from 'vite-plugin-sitemap'
 
 plugins: [
   Sitemap({
-    hostname: 'https://unilien.fr',
+    hostname: 'https://unilien.app',
     dynamicRoutes: ['/', '/contact'],
     exclude: ['/dashboard', '/settings', '/planning', /* ... */],
   }),
@@ -433,7 +433,7 @@ export function NotFoundPage() {
 #### P13 — Coordonnées cliquables dans `ContactPage.tsx`
 
 ```tsx
-<Link href="mailto:contact@unilien.fr">contact@unilien.fr</Link>
+<Link href="mailto:contact@unilien.app">contact@unilien.app</Link>
 <Link href="tel:+33123456789">01 23 45 67 89</Link>
 ```
 

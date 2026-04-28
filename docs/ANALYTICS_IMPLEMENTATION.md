@@ -57,7 +57,7 @@ export function Analytics() {
   return (
     <script
       defer
-      data-domain="app.unilien.fr"
+      data-domain="app.unilien.app"
       src="https://plausible.ton-domaine.fr/js/script.js"
     />
   )
@@ -136,4 +136,4 @@ Le toggle "Cookies de performance" n'a de sens que si un outil futur en pose (ex
 ## Prérequis
 
 - Un serveur/VPS pour héberger Plausible (ou utiliser le cloud à 9€/mois)
-- Un domaine/sous-domaine pour le dashboard (ex: `plausible.unilien.fr`)
+- Un domaine/sous-domaine pour le dashboard (ex: `plausible.unilien.app`)
