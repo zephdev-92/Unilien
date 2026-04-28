@@ -9,6 +9,7 @@ import { REQUALIFICATION_THRESHOLD } from '@/hooks/useShiftRequalification'
 import type { GuardSegment } from '@/types'
 import { formatHoursCompact } from '@/lib/formatHours'
 import { detectPresenceType } from '@/lib/presence/detectPresenceType'
+import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance'
 
 interface Guard24hSectionProps {
   guardSegments: GuardSegment[]

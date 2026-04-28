@@ -11,6 +11,7 @@ import { formatHoursCompact } from '@/lib/formatHours'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
+import { Guard24hRecap } from './Guard24hRecap'
 import { sanitizeText } from '@/lib/sanitize'
 import { COURSES_PREFIX, parseShoppingItemString } from '@/lib/constants/taskDefaults'
 import { SHIFT_TYPE_LABELS } from '@/lib/constants/statusMaps'
@@ -111,6 +112,18 @@ export function ShiftDetailView({
           )}
         </Flex>
       </DetailRow>
+
+      {/* Détail garde 24h — récap segments + totaux */}
+      {shift.shiftType === 'guard_24h' && shift.guardSegments && shift.guardSegments.length > 0 && (
+        <Box py={3} borderBottomWidth="1px" borderColor="border.default">
+          <Guard24hRecap
+            guardSegments={shift.guardSegments}
+            effectiveHoursComputed={shift.effectiveHours}
+            nightInterventionsCount={shift.nightInterventionsCount}
+            isRequalified={shift.isRequalified}
+          />
+        </Box>
+      )}
 
       {/* Détail présence responsable JOUR */}
       {shift.shiftType === 'presence_day' && (
