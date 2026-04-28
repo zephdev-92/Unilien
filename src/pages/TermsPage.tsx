@@ -46,7 +46,7 @@ export default function TermsPage() {
               situation de handicap.
             </Text>
             <Text>
-              Le Service est édité par Vincent Zepharren et accessible à l&apos;adresse{' '}
+              Le Service est édité par l&apos;équipe Unilien et accessible à l&apos;adresse{' '}
               <Link href="https://unilien.app" color="brand.solid">unilien.app</Link>.
               Voir les <Link as={RouterLink} to="/mentions-legales" color="brand.solid">mentions légales</Link>{' '}
               pour les coordonnées complètes de l&apos;éditeur.

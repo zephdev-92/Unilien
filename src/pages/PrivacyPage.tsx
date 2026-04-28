@@ -54,7 +54,7 @@ export default function PrivacyPage() {
 
           <Section title="1. Responsable du traitement">
             <Text>
-              Le responsable du traitement des données est Vincent Zepharren, éditeur du Service.<br />
+              Le responsable du traitement des données est l&apos;équipe Unilien, éditrice du Service.<br />
               Contact : <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>
             </Text>
             <Text>

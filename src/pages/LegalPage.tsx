@@ -45,22 +45,21 @@ export default function LegalPage() {
               Statut : en cours de développement — projet personnel.
             </Text>
             <Text>
-              Responsable de la publication : Vincent Zepharren<br />
+              Responsable de la publication : l&apos;équipe Unilien<br />
               Contact : <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>
             </Text>
           </Section>
 
           <Section title="2. Hébergement">
             <Text>
-              L&apos;application est hébergée par :<br />
-              <strong>Vercel Inc.</strong> — 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis<br />
-              Site : <Link href="https://vercel.com" color="brand.solid" target="_blank" rel="noopener noreferrer">vercel.com</Link>
+              L&apos;application et la base de données sont hébergées en France par :<br />
+              <strong>OVH SAS</strong> — 2 rue Kellermann, 59100 Roubaix, France<br />
+              Site : <Link href="https://www.ovhcloud.com" color="brand.solid" target="_blank" rel="noopener noreferrer">ovhcloud.com</Link>
             </Text>
             <Text>
-              Les données sont stockées par :<br />
-              <strong>Supabase Inc.</strong> — 970 Toa Payoh North #07-04, Singapore 318992<br />
-              Infrastructure : Amazon Web Services (région eu-west).<br />
-              Site : <Link href="https://supabase.com" color="brand.solid" target="_blank" rel="noopener noreferrer">supabase.com</Link>
+              La pile applicative s&apos;appuie sur <strong>Supabase</strong> (PostgreSQL, Auth, Storage,
+              Edge Functions) déployé en auto-hébergement sur le VPS OVH ci-dessus. Aucune donnée
+              n&apos;est transférée vers les serveurs cloud de Supabase.
             </Text>
           </Section>
 
@@ -71,7 +70,7 @@ export default function LegalPage() {
               à protéger vos données personnelles.
             </Text>
             <Box as="ul" pl={5} listStyleType="disc">
-              <Box as="li"><strong>Responsable du traitement :</strong> Vincent Zepharren</Box>
+              <Box as="li"><strong>Responsable du traitement :</strong> l&apos;équipe Unilien</Box>
               <Box as="li"><strong>Finalité :</strong> gestion des interventions, plannings, suivi des heures et communication entre employeurs particuliers, employés et auxiliaires de vie</Box>
               <Box as="li"><strong>Base légale :</strong> exécution du contrat (article 6.1.b RGPD) et consentement explicite pour les données de santé (article 9.2.a RGPD)</Box>
               <Box as="li"><strong>Durée de conservation :</strong> les données sont conservées pendant la durée de la relation contractuelle, puis supprimées dans un délai de 12 mois après clôture du compte</Box>
