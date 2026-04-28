@@ -17,9 +17,8 @@ interface InvitePayload {
 }
 
 const ALLOWED_ORIGINS = [
-  'https://unilien.fr',
-  'https://www.unilien.fr',
-  'https://unilien.netlify.app',
+  'https://unilien.app',
+  'https://www.unilien.app',
 ]
 
 function getCorsOrigin(req: Request): string {
@@ -113,7 +112,7 @@ serve(async (req: Request) => {
           role: 'employee',
           invited_by: employerId,
         },
-        redirectTo: `${Deno.env.get('SITE_URL') || 'https://unilien.netlify.app'}/reinitialisation`,
+        redirectTo: `${Deno.env.get('SITE_URL') || 'https://unilien.app'}/reinitialisation`,
       },
     )
 
