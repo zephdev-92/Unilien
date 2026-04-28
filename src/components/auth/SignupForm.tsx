@@ -332,9 +332,9 @@ export function SignupForm() {
               <input type="checkbox" required style={{ width: 'auto' }} />
               <Text fontSize="sm">
                 J&apos;accepte les{' '}
-                <Link href="#" color="brand.500" fontWeight="700">Conditions d&apos;utilisation</Link>
+                <Link as={RouterLink} to="/conditions-utilisation" target="_blank" rel="noopener noreferrer" color="brand.500" fontWeight="700">Conditions d&apos;utilisation</Link>
                 {' '}et la{' '}
-                <Link href="#" color="brand.500" fontWeight="700">Politique de confidentialité</Link>
+                <Link as={RouterLink} to="/politique-confidentialite" target="_blank" rel="noopener noreferrer" color="brand.500" fontWeight="700">Politique de confidentialité</Link>
               </Text>
             </Flex>
 
