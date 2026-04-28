@@ -43,17 +43,13 @@ export function RecentMessagesWidget({ userId }: RecentMessagesWidgetProps) {
 
     async function load() {
       try {
-        // Get recent messages where user is participant
+        // RLS filters liaison_messages to conversations the user can read
         const { data, error } = await supabase
           .from('liaison_messages')
           .select(`
             id, content, created_at, sender_id, read_by,
-            conversation:liaison_conversations!inner(
-              id, employer_id, employee_id
-            ),
             sender:profiles!sender_id(first_name, last_name)
           `)
-          .or(`conversation.employer_id.eq.${userId},conversation.employee_id.eq.${userId}`)
           .neq('sender_id', userId)
           .order('created_at', { ascending: false })
           .limit(3)
