@@ -46,7 +46,7 @@ export default function LegalPage() {
             </Text>
             <Text>
               Responsable de la publication : Vincent Zepharren<br />
-              Contact : <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>
+              Contact : <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>
             </Text>
           </Section>
 
@@ -109,7 +109,7 @@ export default function LegalPage() {
             </Box>
             <Text>
               Pour exercer ces droits, contactez-nous à{' '}
-              <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>.
+              <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>.
               Nous répondrons dans un délai de 30 jours.
             </Text>
             <Text>

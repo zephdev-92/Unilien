@@ -55,7 +55,7 @@ export default function PrivacyPage() {
           <Section title="1. Responsable du traitement">
             <Text>
               Le responsable du traitement des données est Vincent Zepharren, éditeur du Service.<br />
-              Contact : <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>
+              Contact : <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>
             </Text>
             <Text>
               <em>
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
             </Box>
             <Text>
               Pour exercer ces droits, contactez-nous à{' '}
-              <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>.
+              <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>.
               Nous répondrons dans un délai d&apos;un mois maximum.
             </Text>
             <Text>
@@ -200,7 +200,7 @@ export default function PrivacyPage() {
           <Section title="11. Contact">
             <Text>
               Pour toute question relative à cette politique ou à vos données personnelles :{' '}
-              <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>
+              <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>
             </Text>
           </Section>
 

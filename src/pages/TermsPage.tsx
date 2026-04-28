@@ -117,7 +117,7 @@ export default function TermsPage() {
               <strong>Note :</strong> Unilien est actuellement en phase de développement.
               Des évolutions, corrections et changements de fonctionnalités peuvent intervenir
               régulièrement. Les utilisateurs sont invités à signaler tout dysfonctionnement à{' '}
-              <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>.
+              <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>.
             </Text>
           </Section>
 
@@ -178,7 +178,7 @@ export default function TermsPage() {
           <Section title="11. Contact">
             <Text>
               Pour toute question relative aux présentes CGU, vous pouvez nous contacter à{' '}
-              <Link href="mailto:contact@unilien.fr" color="brand.solid">contact@unilien.fr</Link>.
+              <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>.
             </Text>
           </Section>
 
