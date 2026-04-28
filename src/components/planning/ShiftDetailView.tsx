@@ -13,7 +13,7 @@ import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSecti
 import { NightActionToggle } from './NightActionToggle'
 import { Guard24hRecap } from './Guard24hRecap'
 import { sanitizeText } from '@/lib/sanitize'
-import { COURSES_PREFIX, parseShoppingItemString } from '@/lib/constants/taskDefaults'
+import { COURSES_PREFIX, parseShoppingItemString, getShoppingState } from '@/lib/constants/taskDefaults'
 import { SHIFT_TYPE_LABELS } from '@/lib/constants/statusMaps'
 import type { Shift, Contract } from '@/types'
 
@@ -173,13 +173,30 @@ export function ShiftDetailView({
       {shift.tasks.length > 0 && (
         <DetailRow label="Tâches">
           <Stack gap={1}>
-            {shift.tasks.filter(t => !t.startsWith(COURSES_PREFIX)).map((task, index) => (
+            {shift.tasks.filter(t => !t.startsWith(COURSES_PREFIX)).map((task, index) => {
+              const isCourses = task === 'Courses'
+              const shoppingCount = isCourses ? getShoppingState(shift.tasks).itemCount : 0
+              return (
               <Box key={index}>
                 <Flex align="center" gap={2}>
                   <Box w="5px" h="5px" borderRadius="full" bg="brand.500" flexShrink={0} />
                   <Text fontSize="14px">{sanitizeText(task)}</Text>
+                  {isCourses && (
+                    <Text
+                      as="span"
+                      fontSize="12px"
+                      fontWeight="600"
+                      color={shoppingCount === 0 ? 'orange.600' : 'brand.500'}
+                      bg={shoppingCount === 0 ? 'orange.50' : 'brand.subtle'}
+                      px={2}
+                      py="2px"
+                      borderRadius="full"
+                    >
+                      🛒 {shoppingCount === 0 ? 'à compléter' : `${shoppingCount} article${shoppingCount > 1 ? 's' : ''}`}
+                    </Text>
+                  )}
                 </Flex>
-                {task === 'Courses' && (
+                {isCourses && (
                   <Stack gap={0} ml={5} mt={1} pl={3} borderLeftWidth="2px" borderColor="brand.200">
                     {shift.tasks
                       .filter(t => t.startsWith(COURSES_PREFIX))
@@ -212,7 +229,8 @@ export function ShiftDetailView({
                   </Stack>
                 )}
               </Box>
-            ))}
+              )
+            })}
           </Stack>
         </DetailRow>
       )}

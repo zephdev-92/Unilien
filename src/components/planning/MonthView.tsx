@@ -17,6 +17,7 @@ import {
   ABSENCE_STATUS_COLORS as absenceStatusColors,
   ABSENCE_TYPE_LABELS as absenceTypeLabels,
 } from '@/lib/constants/statusMaps'
+import { getShoppingState } from '@/lib/constants/taskDefaults'
 
 interface MonthViewProps {
   currentDate: Date
@@ -198,8 +199,12 @@ interface MonthShiftCardProps {
 }
 
 function MonthShiftCard({ shift, isContinuation, onClick }: MonthShiftCardProps) {
+  const shopping = getShoppingState(shift.tasks)
+  const showShoppingReminder = shopping.hasCoursesTask && shopping.itemCount === 0 && !isContinuation
+
   return (
     <Box
+      position="relative"
       px={1}
       py={0.5}
       bg={`${statusColors[shift.status]}.100`}
@@ -220,6 +225,19 @@ function MonthShiftCard({ shift, isContinuation, onClick }: MonthShiftCardProps)
         }
       }}
     >
+      {showShoppingReminder && (
+        <Box
+          position="absolute"
+          top="2px"
+          right="2px"
+          w="6px"
+          h="6px"
+          borderRadius="full"
+          bg="orange.400"
+          title="Liste de courses à compléter"
+          aria-label="Liste de courses à compléter"
+        />
+      )}
       <Text fontSize="2xs" fontWeight="medium" color={`${statusColors[shift.status]}.700`} lineClamp={1}>
         {isContinuation ? `...${shift.endTime}` : `${shift.startTime}-${shift.endTime}`}
       </Text>

@@ -6,6 +6,7 @@ import type { Shift, UserRole, Absence } from '@/types'
 import {
   ABSENCE_TYPE_LABELS as absenceTypeLabels,
 } from '@/lib/constants/statusMaps'
+import { getShoppingState } from '@/lib/constants/taskDefaults'
 
 // ── Config ──
 
@@ -299,6 +300,8 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
               {dayShifts.map(({ shift, isContinuation }) => {
                 const style = getBlockStyle(shift.startTime, shift.endTime, isContinuation)
                 const colors = SHIFT_BG[shift.shiftType] ?? SHIFT_BG.effective
+                const shopping = getShoppingState(shift.tasks)
+                const showShoppingReminder = shopping.hasCoursesTask && shopping.itemCount === 0 && !isContinuation
 
                 return (
                   <Box
@@ -328,6 +331,19 @@ export function WeekView({ weekStart, shifts, absences = [], userRole, onShiftCl
                       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onShiftClick?.(shift) }
                     }}
                   >
+                    {showShoppingReminder && (
+                      <Box
+                        position="absolute"
+                        top="3px"
+                        right="3px"
+                        w="8px"
+                        h="8px"
+                        borderRadius="full"
+                        bg="orange.400"
+                        title="Liste de courses à compléter"
+                        aria-label="Liste de courses à compléter"
+                      />
+                    )}
                     {isEmployer && shift.employeeName && !isContinuation && (
                       <Text fontSize="11px" fontWeight="700" color="text.default" lineClamp={1}>
                         {shift.employeeName}
