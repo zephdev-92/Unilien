@@ -110,6 +110,15 @@ export function SignupForm() {
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      role: '',
+      password: '',
+      confirmPassword: '',
+    },
   })
 
   const watchedRole = watch('role')
