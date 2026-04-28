@@ -97,11 +97,14 @@ function App() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Rediriger vers /reinitialisation si le flux recovery arrive sur une autre page
+  // Rediriger vers /reinitialisation si le flux recovery/invite arrive sur une autre page
   // (ex. Supabase redirige vers / car redirect_to n'est pas dans la whitelist)
   useEffect(() => {
-    // Cas 1: hash contient type=recovery au chargement (Supabase a redirigé vers /)
-    if (location.pathname !== '/reinitialisation' && location.hash.includes('type=recovery')) {
+    const isAuthSetupHash =
+      location.hash.includes('type=recovery') || location.hash.includes('type=invite')
+
+    // Cas 1: hash contient type=recovery|invite au chargement (Supabase a redirigé vers /)
+    if (location.pathname !== '/reinitialisation' && isAuthSetupHash) {
       navigate(`/reinitialisation${location.hash}`, { replace: true })
       return
     }
