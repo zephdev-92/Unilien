@@ -244,7 +244,7 @@ export function ContactPage() {
                     <ContactInfo
                       icon="📧"
                       title="Email"
-                      content="contact@unilien.fr"
+                      content="contact@unilien.app"
                     />
                     <ContactInfo
                       icon="📞"

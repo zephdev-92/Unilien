@@ -144,7 +144,7 @@ function NotificationSettings() {
 ### Variables d'environnement
 ```env
 RESEND_API_KEY=re_xxxxx
-EMAIL_FROM=notifications@unilien.fr
+EMAIL_FROM=notifications@unilien.app
 ```
 
 ### Coût estimé

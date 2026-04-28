@@ -26,6 +26,8 @@ const CompliancePage = lazy(() => import('@/pages/CompliancePage'))
 const DocumentsPage = lazy(() => import('@/pages/DocumentsPage'))
 const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'))
 const LegalPage = lazy(() => import('@/pages/LegalPage'))
+const TermsPage = lazy(() => import('@/pages/TermsPage'))
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'))
 const HelpPage = lazy(() => import('@/pages/HelpPage'))
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage'))
 const OnboardingRolePage = lazy(() => import('@/pages/OnboardingRolePage'))
@@ -130,6 +132,8 @@ function App() {
           {/* Pages publiques */}
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/mentions-legales" element={<LegalPage />} />
+          <Route path="/conditions-utilisation" element={<TermsPage />} />
+          <Route path="/politique-confidentialite" element={<PrivacyPage />} />
 
           {/* Routes publiques */}
           <Route

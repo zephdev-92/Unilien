@@ -90,7 +90,7 @@ describe('ContactPage', () => {
 
     it('affiche l\'adresse email de contact', () => {
       renderWithProviders(<ContactPage />)
-      expect(screen.getByText('contact@unilien.fr')).toBeInTheDocument()
+      expect(screen.getByText('contact@unilien.app')).toBeInTheDocument()
     })
 
     it('affiche la section FAQ', () => {

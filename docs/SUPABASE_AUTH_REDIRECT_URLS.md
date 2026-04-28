@@ -17,7 +17,7 @@ Si le lien de réinitialisation dans l’email renvoie vers la racine (`https://
 3. Aller dans **Authentication** → **URL Configuration**
 4. Dans **Redirect URLs**, ajouter :
    - `https://unilien.netlify.app/reinitialisation`
-   - `https://unilien.fr/reinitialisation` (si domaine custom utilisé)
+   - `https://unilien.app/reinitialisation` (si domaine custom utilisé)
    - `http://localhost:5173/reinitialisation` (développement local, souvent déjà présent)
 
 5. Vérifier que **Site URL** pointe bien vers l’origine de production, par ex. `https://unilien.netlify.app`

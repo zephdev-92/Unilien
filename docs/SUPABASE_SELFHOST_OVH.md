@@ -122,16 +122,16 @@ SERVICE_ROLE_KEY=<généré>
 DASHBOARD_USERNAME=admin
 DASHBOARD_PASSWORD=<strong>
 
-SITE_URL=https://test.unilien.fr       # ton front de test
-API_EXTERNAL_URL=https://api-test.unilien.fr
-SUPABASE_PUBLIC_URL=https://api-test.unilien.fr
+SITE_URL=https://test.unilien.app       # ton front de test
+API_EXTERNAL_URL=https://api-test.unilien.app
+SUPABASE_PUBLIC_URL=https://api-test.unilien.app
 
 # SMTP (optionnel, pour reset password etc.)
 SMTP_HOST=smtp.resend.com
 SMTP_PORT=465
 SMTP_USER=resend
 SMTP_PASS=<resend_api_key>
-SMTP_ADMIN_EMAIL=noreply@unilien.fr
+SMTP_ADMIN_EMAIL=noreply@unilien.app
 SMTP_SENDER_NAME=Unilien
 ```
 
@@ -175,18 +175,18 @@ sudo apt update && sudo apt install caddy
 ### DNS OVH
 
 Crée deux enregistrements A pointant vers l'IP du VPS :
-- `api-test.unilien.fr` → `<IP_VPS>`
-- `studio-test.unilien.fr` → `<IP_VPS>`
+- `api-test.unilien.app` → `<IP_VPS>`
+- `studio-test.unilien.app` → `<IP_VPS>`
 
 ### `/etc/caddy/Caddyfile`
 
 ```caddy
-api-test.unilien.fr {
+api-test.unilien.app {
     reverse_proxy localhost:8000
     encode gzip
 }
 
-studio-test.unilien.fr {
+studio-test.unilien.app {
     # Protection additionnelle basique (Studio n'a pas d'auth built-in robuste)
     basicauth {
         admin <hash_bcrypt>
@@ -213,7 +213,7 @@ Caddy récupère automatiquement les certificats Let's Encrypt au premier hit.
 
 Dans `.env.local` du front (pour un build de test) :
 ```bash
-VITE_SUPABASE_URL=https://api-test.unilien.fr
+VITE_SUPABASE_URL=https://api-test.unilien.app
 VITE_SUPABASE_ANON_KEY=<ANON_KEY générée à l'étape 5>
 ```
 

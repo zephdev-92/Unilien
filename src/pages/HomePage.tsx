@@ -1105,16 +1105,16 @@ export function HomePage() {
               Légal
             </Text>
             <Stack gap={2}>
-              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+              <Link as={RouterLink} to="/mentions-legales" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 Mentions légales
               </Link>
-              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+              <Link as={RouterLink} to="/politique-confidentialite" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 Politique de confidentialité
               </Link>
-              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+              <Link as={RouterLink} to="/conditions-utilisation" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 CGU
               </Link>
-              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
+              <Link as={RouterLink} to="/politique-confidentialite" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 RGPD
               </Link>
             </Stack>
