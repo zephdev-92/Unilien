@@ -10,6 +10,8 @@ import { PaySummary } from '@/components/compliance'
 import { formatHoursCompact } from '@/lib/formatHours'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
+import { PresenceMixedWarning } from './PresenceMixedWarning'
+import { getPresenceMix } from '@/lib/presence/detectPresenceType'
 import { NightActionToggle } from './NightActionToggle'
 import { Guard24hRecap } from './Guard24hRecap'
 import { sanitizeText } from '@/lib/sanitize'
@@ -124,6 +126,20 @@ export function ShiftDetailView({
           />
         </Box>
       )}
+
+      {/* Avertissement présence à cheval jour/nuit */}
+      {(shift.shiftType === 'presence_day' || shift.shiftType === 'presence_night') && (() => {
+        const mix = getPresenceMix(shift.startTime, shift.endTime)
+        return mix.isMixed ? (
+          <Box py={3} borderBottomWidth="1px" borderColor="border.default">
+            <PresenceMixedWarning
+              dayHours={mix.dayHours}
+              nightHours={mix.nightHours}
+              mode="view"
+            />
+          </Box>
+        ) : null
+      })()}
 
       {/* Détail présence responsable JOUR */}
       {shift.shiftType === 'presence_day' && (
