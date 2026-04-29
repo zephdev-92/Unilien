@@ -4,7 +4,7 @@
  */
 
 import type React from 'react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Box, Stack, Flex, Text, Textarea, Separator } from '@chakra-ui/react'
 import type { UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { AccessibleInput, AccessibleSelect } from '@/components/ui'
@@ -113,10 +113,18 @@ export function ShiftEditForm({
     setValue('tasks', tasks.join('\n'))
   }, [setValue])
 
-  // Re-détecter presence_day / presence_night quand les horaires changent
+  // Re-détecter presence_day / presence_night quand l'utilisateur change les horaires.
+  // On skip le premier render pour respecter le type stocké en DB :
+  // un vieux shift `presence_day` (créé avant l'unification PR #289) ne doit pas
+  // basculer silencieusement à l'ouverture du modal d'édition.
+  const isInitialMount = useRef(true)
   useEffect(() => {
     if (!isPresenceType(shiftType)) return
     if (!watchedStartTime || !watchedEndTime) return
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
     const detected = detectPresenceType(watchedStartTime, watchedEndTime)
     if (detected !== shiftType) {
       onShiftTypeChange(detected)
