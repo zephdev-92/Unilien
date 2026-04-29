@@ -40,11 +40,11 @@ import {
   generatePlanningIcal,
   downloadExport,
 } from '@/lib/export'
-import type { Shift, Absence, Caregiver, ShiftType } from '@/types'
+import type { Shift, Absence, Caregiver } from '@/types'
 
 type ViewMode = 'week' | 'month'
 type ShiftStatusFilter = 'all' | 'planned' | 'completed' | 'cancelled'
-type ShiftTypeFilter = 'all' | ShiftType
+type ShiftTypeFilter = 'all' | 'effective' | 'presence' | 'guard_24h'
 
 export function PlanningPage() {
   const { profile, isInitialized } = useAuth()
@@ -195,7 +195,11 @@ export function PlanningPage() {
     if (statusFilter !== 'all') {
       result = result.filter((s) => s.status === statusFilter)
     }
-    if (typeFilter !== 'all') {
+    if (typeFilter === 'presence') {
+      result = result.filter(
+        (s) => s.shiftType === 'presence_day' || s.shiftType === 'presence_night',
+      )
+    } else if (typeFilter !== 'all') {
       result = result.filter((s) => s.shiftType === typeFilter)
     }
     if (employeeFilter) {
@@ -528,8 +532,7 @@ export function PlanningPage() {
                 >
                   <option value="all">Tous les types</option>
                   <option value="effective">Travail effectif</option>
-                  <option value="presence_day">Présence jour</option>
-                  <option value="presence_night">Présence nuit</option>
+                  <option value="presence">Présence responsable</option>
                   <option value="guard_24h">Garde 24h</option>
                 </Box>
               </Flex>
