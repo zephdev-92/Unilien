@@ -4,6 +4,7 @@ import { formatHoursCompact } from '@/lib/formatHours'
 interface PresenceMixedWarningProps {
   dayHours: number
   nightHours: number
+  mode?: 'edit' | 'view'
 }
 
 /**
@@ -11,8 +12,11 @@ interface PresenceMixedWarningProps {
  * le jour et la nuit. Les régimes de paie sont radicalement différents
  * (jour : équivalent ×2/3 — nuit : indemnité ×1/4, Art. 137 & 148 IDCC 3239),
  * donc un seul type ne peut refléter fidèlement la rémunération.
+ *
+ * - `edit` (défaut) : conseil de créer deux interventions ou une garde 24h.
+ * - `view` : conseil de modifier l'intervention existante pour la diviser.
  */
-export function PresenceMixedWarning({ dayHours, nightHours }: PresenceMixedWarningProps) {
+export function PresenceMixedWarning({ dayHours, nightHours, mode = 'edit' }: PresenceMixedWarningProps) {
   return (
     <Box
       p={3}
@@ -29,9 +33,19 @@ export function PresenceMixedWarning({ dayHours, nightHours }: PresenceMixedWarn
         Les régimes de paie diffèrent (×2/3 jour vs ×1/4 nuit, Art. 137 & 148 IDCC 3239).
       </Text>
       <Text fontSize="xs" color="warm.700" mt={2}>
-        Pour un calcul juste, créez plutôt <Text as="strong">deux interventions</Text>{' '}
-        (une jour, une nuit) ou utilisez une <Text as="strong">garde 24h</Text> qui
-        gère les segments jour/nuit automatiquement.
+        {mode === 'view' ? (
+          <>
+            <Text as="strong">Modifiez</Text> cette intervention pour la diviser
+            en deux régimes (jour + nuit), ou convertissez-la en{' '}
+            <Text as="strong">garde 24h</Text>.
+          </>
+        ) : (
+          <>
+            Pour un calcul juste, créez plutôt <Text as="strong">deux interventions</Text>{' '}
+            (une jour, une nuit) ou utilisez une <Text as="strong">garde 24h</Text> qui
+            gère les segments jour/nuit automatiquement.
+          </>
+        )}
       </Text>
     </Box>
   )
