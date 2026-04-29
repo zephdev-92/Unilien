@@ -311,7 +311,8 @@ describe('calculateShiftPay', () => {
 
   describe('Présence de nuit (presence_night)', () => {
     it('devrait calculer indemnité forfaitaire 1/4 du taux horaire sans requalification', () => {
-      // 10h de présence nuit, 0 interventions
+      // 10h de présence 21:00-07:00 = 9h nuit (21h-6h) + 1h jour (6h-7h)
+      // Calcul splitté : nuit ×1/4 + jour ×2/3 (Art. 137 & 148 IDCC 3239)
       const shift: ShiftForValidation = {
         ...createShift('2025-01-15', '21:00', '07:00'),
         shiftType: 'presence_night',
@@ -321,12 +322,29 @@ describe('calculateShiftPay', () => {
 
       const pay = calculateShiftPay(shift, contract)
 
-      expect(pay.nightPresenceAllowance).toBe(30) // 10h * 12€ * 0.25
-      expect(pay.totalPay).toBe(30)
+      expect(pay.nightPresenceAllowance).toBe(27) // 9h nuit × 12€ × 0.25
+      expect(pay.presenceResponsiblePay).toBe(8) // 1h jour × 2/3 × 12€
+      expect(pay.totalPay).toBe(35)
     })
 
-    it('devrait requalifier en travail effectif à 100% si >= 4 interventions (Art. 148 IDCC 3239)', () => {
-      // 10h de présence nuit, 4 interventions → requalification
+    it('devrait calculer une présence nuit pure (homogène) sans part jour', () => {
+      // 21:00-06:00 = 9h, intégralement sur la plage nuit (21h-6h)
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-15', '21:00', '06:00'),
+        shiftType: 'presence_night',
+        nightInterventionsCount: 0,
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.nightPresenceAllowance).toBe(27) // 9h × 12€ × 0.25
+      expect(pay.presenceResponsiblePay).toBe(0)
+      expect(pay.totalPay).toBe(27)
+    })
+
+    it('devrait requalifier la part nuit à 100% si >= 4 interventions (Art. 148 IDCC 3239)', () => {
+      // 10h 21:00-07:00 requalifié = 9h nuit ×100% + 1h jour ×2/3
       const shift: ShiftForValidation = {
         ...createShift('2025-01-15', '21:00', '07:00'),
         shiftType: 'presence_night',
@@ -336,8 +354,64 @@ describe('calculateShiftPay', () => {
 
       const pay = calculateShiftPay(shift, contract)
 
-      expect(pay.nightPresenceAllowance).toBe(120) // 10h * 12€ * 1.00
-      expect(pay.totalPay).toBe(120)
+      expect(pay.nightPresenceAllowance).toBe(108) // 9h × 12€ × 1.00
+      expect(pay.presenceResponsiblePay).toBe(8) // 1h jour × 2/3 × 12€
+      expect(pay.totalPay).toBe(116)
+    })
+  })
+
+  describe('Présence responsable mixte jour/nuit', () => {
+    it('devrait splitter le calcul pour un shift presence_day chevauchant la nuit', () => {
+      // 18h-23h = 3h jour (18-21) + 2h nuit (21-23), classifié presence_day
+      // Calcul attendu : 3h × 2/3 × 12 + 2h × 0.25 × 12 = 24 + 6 = 30€
+      // Avant fix : 5h × 2/3 × 12 = 40€ (surévalué)
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-15', '18:00', '23:00'),
+        shiftType: 'presence_day',
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.presenceResponsiblePay).toBe(24) // 3h × 2/3 × 12€
+      expect(pay.nightPresenceAllowance).toBe(6) // 2h × 12€ × 0.25
+      expect(pay.totalPay).toBe(30)
+    })
+
+    it('devrait répartir la pause au prorata jour/nuit', () => {
+      // 18h-23h avec 1h de pause = 4h effectives
+      // Ratio brut : 3h jour + 2h nuit, pause au prorata = 4/5 du brut
+      // dayH effectives = 3 × 0.8 = 2.4 → presence = 2.4 × 2/3 × 12 = 19.2€
+      // nightH effectives = 2 × 0.8 = 1.6 → forfait = 1.6 × 12 × 0.25 = 4.8€
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-15', '18:00', '23:00'),
+        shiftType: 'presence_day',
+        breakDuration: 60,
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      expect(pay.presenceResponsiblePay).toBe(19.2)
+      expect(pay.nightPresenceAllowance).toBe(4.8)
+      expect(pay.totalPay).toBe(24)
+    })
+
+    it('devrait appliquer majoration dimanche sur le total (jour + nuit)', () => {
+      // Dimanche 18h-23h presence_day mixte
+      const shift: ShiftForValidation = {
+        ...createShift('2025-01-19', '18:00', '23:00'),
+        shiftType: 'presence_day',
+      }
+      const contract = createContract(12, 35)
+
+      const pay = calculateShiftPay(shift, contract)
+
+      // base : 24 + 6 = 30€, majoration dimanche : 30 × 0.30 = 9€
+      expect(pay.presenceResponsiblePay).toBe(24)
+      expect(pay.nightPresenceAllowance).toBe(6)
+      expect(pay.sundayMajoration).toBe(9)
+      expect(pay.totalPay).toBe(39)
     })
   })
 
