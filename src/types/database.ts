@@ -419,6 +419,16 @@ export interface ShoppingArticleHistoryDbRow {
   last_used_at: string
 }
 
+export interface ShoppingListTemplateDbRow {
+  id: string
+  employer_id: string
+  name: string
+  is_default: boolean
+  items: ShoppingItemDb[]
+  created_at: string
+  updated_at: string
+}
+
 // ============================================================
 // CONVENTION SETTINGS
 // ============================================================
