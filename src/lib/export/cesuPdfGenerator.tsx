@@ -1,7 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 /**
  * Générateur PDF pour les déclarations CESU
- * Récapitulatif mensuel des heures et salaires.
+ * Récapitulatif mensuel détaillé : heures, décomposition de la rémunération
+ * (présence jour/nuit, majorations) et net estimé.
+ *
+ * Conçu pour que Marie puisse reporter directement chaque ligne dans CESU
+ * (rubrique « heures travaillées » + sous-rubrique « compléments de salaire »).
  *
  * Utilise @react-pdf/renderer pour un rendu vectoriel net.
  */
@@ -63,6 +67,11 @@ const s = StyleSheet.create({
     padding: '4px 10px',
     borderRadius: 4,
   },
+  periodLine: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 6,
+  },
   // Employee card
   employeeCard: {
     border: `1px solid ${colors.border}`,
@@ -74,7 +83,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   empName: {
     fontSize: 14,
@@ -89,44 +98,104 @@ const s = StyleSheet.create({
     borderRadius: 4,
     textTransform: 'uppercase',
   },
-  cardGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  cardSubline: {
+    fontSize: 9.5,
+    color: colors.textMuted,
     marginBottom: 12,
   },
-  cardMetric: {
-    width: '50%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingRight: 12,
-    marginBottom: 4,
+  // Décomposition (table)
+  breakdown: {
+    marginBottom: 10,
   },
-  metricLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  metricValue: {
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  cardTotal: {
-    backgroundColor: colors.greenBg,
-    borderRadius: 6,
-    padding: '8px 12px',
+  breakdownRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 4,
+    borderBottom: `1px solid ${colors.border}`,
   },
-  cardTotalLabel: {
+  breakdownRowLast: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  breakdownLabelGroup: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    flex: 1,
+  },
+  breakdownLabel: {
+    fontSize: 10.5,
+    color: colors.text,
+  },
+  breakdownDetail: {
+    fontSize: 9,
+    color: colors.textMuted,
+  },
+  breakdownAmount: {
+    fontSize: 10.5,
+    fontWeight: 600,
+  },
+  breakdownSubLabel: {
+    fontSize: 9.5,
+    color: colors.textMuted,
+    paddingLeft: 12,
+  },
+  breakdownSubAmount: {
+    fontSize: 9.5,
+    color: colors.textMuted,
+  },
+  // Totaux
+  totalBlock: {
+    marginTop: 8,
+  },
+  totalGrossRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#EDF1F5',
+    padding: '6px 10px',
+    borderRadius: 5,
+    marginBottom: 4,
+  },
+  totalGrossLabel: {
+    fontSize: 10.5,
+    fontWeight: 600,
+    color: colors.navy,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  totalGrossAmount: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: colors.navy,
+  },
+  totalNetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.greenBg,
+    padding: '8px 12px',
+    borderRadius: 6,
+  },
+  totalNetLabel: {
     fontSize: 11,
     fontWeight: 600,
     color: colors.greenDark,
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
-  cardTotalAmount: {
-    fontSize: 15,
+  totalNetAmount: {
+    fontSize: 14,
     fontWeight: 600,
     color: colors.greenDark,
+  },
+  totalNetSub: {
+    fontSize: 8.5,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   // Grand total
   grandTotal: {
@@ -138,6 +207,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
+  grandTotalLeft: {
+    flex: 1,
+  },
   grandTotalTitle: {
     fontSize: 13,
     fontWeight: 600,
@@ -146,17 +218,33 @@ const s = StyleSheet.create({
     letterSpacing: 0.3,
   },
   grandTotalSub: {
-    fontSize: 11,
+    fontSize: 10,
     color: 'white',
     opacity: 0.75,
     marginTop: 2,
   },
-  grandTotalAmount: {
-    fontSize: 24,
+  grandTotalAmounts: {
+    alignItems: 'flex-end',
+  },
+  grandTotalNet: {
+    fontSize: 20,
     fontWeight: 600,
     color: 'white',
   },
-  // How-to (exact proto sizes)
+  grandTotalNetLabel: {
+    fontSize: 9,
+    color: 'white',
+    opacity: 0.75,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  grandTotalGross: {
+    fontSize: 11,
+    color: 'white',
+    opacity: 0.85,
+    marginTop: 2,
+  },
+  // How-to
   howto: {
     backgroundColor: '#EDF1F5',
     border: `1px solid ${colors.borderDark}`,
@@ -245,6 +333,10 @@ export async function generateCesuPdf(data: MonthlyDeclarationData): Promise<Exp
   }
 }
 
+function formatShortDate(date: Date): string {
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 function CesuDocument({ data }: { data: MonthlyDeclarationData }) {
   return (
     <Document>
@@ -268,6 +360,9 @@ function CesuDocument({ data }: { data: MonthlyDeclarationData }) {
                 <Text style={s.cesuNumber}>N° CESU : {data.cesuNumber}</Text>
               )}
             </View>
+            <Text style={s.periodLine}>
+              Période d{'’'}emploi : du {formatShortDate(data.periodStartDate)} au {formatShortDate(data.periodEndDate)}
+            </Text>
           </View>
 
           <SectionTitle>Employés ({data.totalEmployees})</SectionTitle>
@@ -278,11 +373,15 @@ function CesuDocument({ data }: { data: MonthlyDeclarationData }) {
 
           {/* Grand total */}
           <View style={s.grandTotal} wrap={false}>
-            <View>
+            <View style={s.grandTotalLeft}>
               <Text style={s.grandTotalTitle}>Total général</Text>
-              <Text style={s.grandTotalSub}>{hrs(data.totalHours)} travaillées</Text>
+              <Text style={s.grandTotalSub}>{hrs(data.totalHours)} travaillées sur la période</Text>
             </View>
-            <Text style={s.grandTotalAmount}>{euro(data.totalGrossPay)}</Text>
+            <View style={s.grandTotalAmounts}>
+              <Text style={s.grandTotalNetLabel}>Net à verser</Text>
+              <Text style={s.grandTotalNet}>{euro(data.totalNetPay)}</Text>
+              <Text style={s.grandTotalGross}>Brut : {euro(data.totalGrossPay)}</Text>
+            </View>
           </View>
 
           {/* How-to */}
@@ -298,12 +397,82 @@ function CesuDocument({ data }: { data: MonthlyDeclarationData }) {
   )
 }
 
+interface BreakdownLine {
+  label: string
+  detail?: string
+  amount: number
+}
+
+function buildBreakdown(emp: EmployeeDeclarationData): BreakdownLine[] {
+  const lines: BreakdownLine[] = []
+
+  if (emp.basePay > 0) {
+    lines.push({
+      label: 'Travail effectif',
+      detail: `${hrs(emp.effectiveWorkHours)} × ${euro(emp.hourlyRate)}/h`,
+      amount: emp.basePay,
+    })
+  }
+  if (emp.presenceResponsiblePay > 0) {
+    lines.push({
+      label: 'Présence responsable jour',
+      detail: `${hrs(emp.presenceDayHours)} × 2/3 (Art. 137.1)`,
+      amount: emp.presenceResponsiblePay,
+    })
+  }
+  if (emp.nightPresenceAllowance > 0) {
+    lines.push({
+      label: 'Présence responsable nuit',
+      detail: `${hrs(emp.presenceNightHours)} (forfait ×1/4 ou requalif. Art. 148)`,
+      amount: emp.nightPresenceAllowance,
+    })
+  }
+  if (emp.sundayMajoration > 0) {
+    lines.push({
+      label: 'Majoration dimanche (+30%)',
+      detail: `${hrs(emp.sundayHours)} le dimanche`,
+      amount: emp.sundayMajoration,
+    })
+  }
+  if (emp.holidayMajoration > 0) {
+    lines.push({
+      label: 'Majoration jour férié',
+      detail: `${hrs(emp.holidayHours)} sur jour férié`,
+      amount: emp.holidayMajoration,
+    })
+  }
+  if (emp.nightMajoration > 0) {
+    lines.push({
+      label: 'Majoration heures de nuit (+20%)',
+      detail: `${hrs(emp.nightHours)} entre 21h et 6h`,
+      amount: emp.nightMajoration,
+    })
+  }
+  if (emp.overtimeMajoration > 0) {
+    lines.push({
+      label: 'Heures supplémentaires (+25% / +50%)',
+      detail: `${hrs(emp.overtimeHours)} au-delà de l{'’'}horaire contractuel`,
+      amount: emp.overtimeMajoration,
+    })
+  }
+  return lines
+}
+
 function EmployeeCard({ emp }: { emp: EmployeeDeclarationData }) {
-  const totalMajorations =
-    emp.sundayMajoration +
-    emp.holidayMajoration +
-    emp.nightMajoration +
-    emp.overtimeMajoration
+  const lines = buildBreakdown(emp)
+  const contractLine = (() => {
+    const parts: string[] = [`${euro(emp.hourlyRate)}/h`]
+    if (emp.contractStartDate) {
+      const start = formatShortDate(emp.contractStartDate)
+      if (emp.contractEndDate) {
+        parts.push(`du ${start} au ${formatShortDate(emp.contractEndDate)}`)
+      } else {
+        parts.push(`depuis le ${start}`)
+      }
+    }
+    parts.push(`${emp.shiftsCount} intervention${emp.shiftsCount > 1 ? 's' : ''}`)
+    return parts.join(' · ')
+  })()
 
   return (
     <View style={s.employeeCard} wrap={false}>
@@ -311,27 +480,39 @@ function EmployeeCard({ emp }: { emp: EmployeeDeclarationData }) {
         <Text style={s.empName}>{emp.firstName} {emp.lastName}</Text>
         <Text style={s.contractBadge}>{emp.contractType}</Text>
       </View>
-      <View style={s.cardGrid}>
-        <View style={s.cardMetric}>
-          <Text style={s.metricLabel}>Heures totales</Text>
-          <Text style={s.metricValue}>{hrs(emp.totalHours)}</Text>
-        </View>
-        <View style={s.cardMetric}>
-          <Text style={s.metricLabel}>Interventions</Text>
-          <Text style={s.metricValue}>{emp.shiftsCount}</Text>
-        </View>
-        <View style={s.cardMetric}>
-          <Text style={s.metricLabel}>Salaire de base</Text>
-          <Text style={s.metricValue}>{euro(emp.basePay)}</Text>
-        </View>
-        <View style={s.cardMetric}>
-          <Text style={s.metricLabel}>Majorations</Text>
-          <Text style={s.metricValue}>{euro(totalMajorations)}</Text>
-        </View>
+      <Text style={s.cardSubline}>{contractLine}</Text>
+
+      {/* Décomposition de la rémunération */}
+      <View style={s.breakdown}>
+        {lines.map((line, i) => {
+          const isLast = i === lines.length - 1
+          return (
+            <View key={i} style={isLast ? s.breakdownRowLast : s.breakdownRow}>
+              <View style={s.breakdownLabelGroup}>
+                <Text style={s.breakdownLabel}>{line.label}</Text>
+                {line.detail && <Text style={s.breakdownDetail}>{line.detail}</Text>}
+              </View>
+              <Text style={s.breakdownAmount}>{euro(line.amount)}</Text>
+            </View>
+          )
+        })}
       </View>
-      <View style={s.cardTotal}>
-        <Text style={s.cardTotalLabel}>Total brut</Text>
-        <Text style={s.cardTotalAmount}>{euro(emp.totalGrossPay)}</Text>
+
+      {/* Totaux brut + net */}
+      <View style={s.totalBlock}>
+        <View style={s.totalGrossRow}>
+          <Text style={s.totalGrossLabel}>Total brut</Text>
+          <Text style={s.totalGrossAmount}>{euro(emp.totalGrossPay)}</Text>
+        </View>
+        <View style={s.totalNetRow}>
+          <View>
+            <Text style={s.totalNetLabel}>Net à verser</Text>
+            <Text style={s.totalNetSub}>
+              Cotisations salariales déduites ({euro(emp.totalEmployeeDeductions)})
+            </Text>
+          </View>
+          <Text style={s.totalNetAmount}>{euro(emp.netPay)}</Text>
+        </View>
       </View>
     </View>
   )
@@ -347,8 +528,8 @@ const HOWTO_STEPS = [
     desc: null, // filled dynamically
   },
   {
-    title: 'Reportez les heures et le salaire net de ce récapitulatif',
-    desc: 'Pour chaque employé, renseignez le nombre d\u2019heures totales et le salaire net versé (hors congés payés si inclus).',
+    title: 'Reportez les heures totales et le salaire net à verser',
+    desc: 'Saisissez le nombre d’heures et le total NET à verser. Pour les compléments (présence responsable, heures de nuit), utilisez la rubrique « compléments de salaire ».',
   },
   {
     title: 'Validez la déclaration',
@@ -389,9 +570,11 @@ function HowToSection({ periodLabel }: { periodLabel: string }) {
       </Link>
 
       <Text style={s.howtoNote}>
-        Date limite de déclaration : avant le 15 du mois suivant la période d{'\u2019'}emploi.
-        En cas de retard, des pénalités peuvent s{'\u2019'}appliquer.
+        Date limite de déclaration : avant le 5 du mois suivant la période d{'’'}emploi.
+        En cas de retard, des pénalités peuvent s{'’'}appliquer.
         Les cotisations sont prélevées automatiquement sur votre compte bancaire environ 2 jours ouvrés après la déclaration.
+        {'\n'}
+        Le net affiché est une estimation IDCC 3239 (taux 2025) ; le montant exact figure sur le bulletin officiel CESU.
       </Text>
     </View>
   )

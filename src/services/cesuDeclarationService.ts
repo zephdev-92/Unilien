@@ -25,18 +25,22 @@ const SIGNED_URL_TTL_SECONDS = 3600
  * Convertit les objets Date en strings ISO.
  */
 function serializeDeclarationData(data: MonthlyDeclarationData): Record<string, unknown> {
+  const dateToIso = (d: Date | string | undefined): string | undefined => {
+    if (!d) return undefined
+    return d instanceof Date ? d.toISOString() : d
+  }
   return {
     ...data,
-    generatedAt: data.generatedAt instanceof Date
-      ? data.generatedAt.toISOString()
-      : data.generatedAt,
+    generatedAt: dateToIso(data.generatedAt as Date),
+    periodStartDate: dateToIso(data.periodStartDate as Date),
+    periodEndDate: dateToIso(data.periodEndDate as Date),
     employees: data.employees.map((emp) => ({
       ...emp,
+      contractStartDate: dateToIso(emp.contractStartDate),
+      contractEndDate: dateToIso(emp.contractEndDate),
       shiftsDetails: emp.shiftsDetails.map((shift) => ({
         ...shift,
-        date: shift.date instanceof Date
-          ? shift.date.toISOString()
-          : shift.date,
+        date: dateToIso(shift.date as Date),
       })),
     })),
   }
@@ -48,11 +52,17 @@ function serializeDeclarationData(data: MonthlyDeclarationData): Record<string, 
  */
 function deserializeDeclarationData(raw: Record<string, unknown>): MonthlyDeclarationData {
   const data = raw as unknown as MonthlyDeclarationData
+  const isoToDate = (v: string | Date | undefined): Date | undefined =>
+    v ? (v instanceof Date ? v : new Date(v)) : undefined
   return {
     ...data,
     generatedAt: new Date(data.generatedAt as unknown as string),
+    periodStartDate: isoToDate(data.periodStartDate as unknown as string)!,
+    periodEndDate: isoToDate(data.periodEndDate as unknown as string)!,
     employees: (data.employees || []).map((emp) => ({
       ...emp,
+      contractStartDate: isoToDate(emp.contractStartDate as unknown as string),
+      contractEndDate: isoToDate(emp.contractEndDate as unknown as string),
       shiftsDetails: (emp.shiftsDetails || []).map((shift) => ({
         ...shift,
         date: new Date(shift.date as unknown as string),

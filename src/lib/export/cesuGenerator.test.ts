@@ -29,6 +29,9 @@ function makeEmployee(overrides: Partial<MonthlyDeclarationData['employees'][0]>
     hourlyRate: 12.5,
     totalHours: 80,
     normalHours: 72,
+    effectiveWorkHours: 80,
+    presenceDayHours: 0,
+    presenceNightHours: 0,
     sundayHours: 8,
     holidayHours: 0,
     nightHours: 4,
@@ -38,7 +41,11 @@ function makeEmployee(overrides: Partial<MonthlyDeclarationData['employees'][0]>
     holidayMajoration: 0,
     nightMajoration: 10,
     overtimeMajoration: 0,
+    presenceResponsiblePay: 0,
+    nightPresenceAllowance: 0,
     totalGrossPay: 940,
+    netPay: 740,
+    totalEmployeeDeductions: 200,
     shiftsCount: 1,
     shiftsDetails: [makeShiftDetail()],
     ...overrides,
@@ -49,6 +56,8 @@ const baseData: MonthlyDeclarationData = {
   year: 2026,
   month: 2,
   periodLabel: 'Février 2026',
+  periodStartDate: new Date('2026-02-01'),
+  periodEndDate: new Date('2026-02-28'),
   employerId: 'employer-1',
   employerFirstName: 'Marie',
   employerLastName: 'Dupont',
@@ -57,6 +66,7 @@ const baseData: MonthlyDeclarationData = {
   employees: [makeEmployee()],
   totalHours: 80,
   totalGrossPay: 940,
+  totalNetPay: 740,
   totalEmployees: 1,
   generatedAt: new Date('2026-02-20T10:00:00'),
 }
@@ -69,17 +79,19 @@ const dataNoCesu: MonthlyDeclarationData = {
 const dataMultiEmployees: MonthlyDeclarationData = {
   ...baseData,
   employees: [
-    makeEmployee({ employeeId: 'emp-1', firstName: 'Sophie', lastName: 'Martin', totalGrossPay: 940 }),
+    makeEmployee({ employeeId: 'emp-1', firstName: 'Sophie', lastName: 'Martin', totalGrossPay: 940, netPay: 740 }),
     makeEmployee({
       employeeId: 'emp-2',
       firstName: 'Luc',
       lastName: 'Bernard',
       totalGrossPay: 600,
+      netPay: 470,
       shiftsDetails: [makeShiftDetail({ date: new Date('2026-02-05'), isSunday: true })],
     }),
   ],
   totalHours: 160,
   totalGrossPay: 1540,
+  totalNetPay: 1210,
   totalEmployees: 2,
 }
 
@@ -277,14 +289,14 @@ describe('generateCesuSummary', () => {
       expect(content).not.toContain('Heures jours fériés')
     })
 
-    it('affiche le salaire de base', () => {
+    it('affiche le salaire effectif', () => {
       const { content } = generateCesuSummary(baseData)
-      expect(content).toContain('Salaire de base')
+      expect(content).toContain('Salaire effectif')
     })
 
     it('affiche les majorations dimanche', () => {
       const { content } = generateCesuSummary(baseData)
-      expect(content).toContain('Dimanche')
+      expect(content).toContain('Majoration dimanche')
     })
 
     it('affiche "TOTAL GÉNÉRAL"', () => {
