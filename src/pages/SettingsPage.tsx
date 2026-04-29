@@ -39,6 +39,7 @@ import { logger } from '@/lib/logger'
 import { useHealthConsent } from '@/hooks/useHealthConsent'
 import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
+import { ShoppingListTemplatesSection } from '@/components/profile/ShoppingListTemplatesSection'
 import { useConventionSettings } from '@/hooks/useConventionSettings'
 import { useMfa } from '@/hooks/useMfa'
 import { MfaEnrollment } from '@/components/auth/MfaEnrollment'
@@ -1333,15 +1334,11 @@ function NotificationsPanel({ userId }: { userId: string }) {
 
 function InterventionsPanel() {
   const {
-    defaultTasks, customTasks, shoppingList,
+    defaultTasks, customTasks,
     saveDefaultTasks, addCustomTask, removeCustomTask,
-    addShoppingItem, removeShoppingItem, updateShoppingItem,
   } = useInterventionSettings()
 
   const [newTask, setNewTask] = useState('')
-  const [newItemName, setNewItemName] = useState('')
-  const [newItemBrand, setNewItemBrand] = useState('')
-  const [newItemNote, setNewItemNote] = useState('')
   const [feedback, setFeedback] = useState<string | null>(null)
 
   const showFeedback = (msg: string) => {
@@ -1362,17 +1359,6 @@ function InterventionsPanel() {
     addCustomTask(trimmed)
     setNewTask('')
     showFeedback(`"${trimmed}" ajoutée`)
-  }
-
-  const handleAddShoppingItem = () => {
-    const name = newItemName.trim()
-    if (!name) return
-    const brand = newItemBrand.trim()
-    const note = newItemNote.trim()
-    addShoppingItem({ name, brand, quantity: 1, note })
-    setNewItemName('')
-    setNewItemBrand('')
-    setNewItemNote('')
   }
 
   return (
@@ -1477,104 +1463,8 @@ function InterventionsPanel() {
         </Card.Body>
       </Card.Root>
 
-      {/* Liste de courses */}
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
-        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Liste de courses type</Card.Title>
-          <Text fontSize="sm" color="text.muted" mt={1}>
-            Créez votre liste d'articles habituels. Elle sera pré-remplie quand "Courses" est sélectionné dans une intervention.
-          </Text>
-        </Card.Header>
-        <Card.Body p={4}>
-          {shoppingList.length > 0 && (
-            <VStack gap={2} align="stretch" mb={4}>
-              {shoppingList.map(item => (
-                <HStack
-                  key={`${item.name}-${item.brand}`}
-                  gap={3}
-                  px={3} py={2}
-                  bg="bg.muted"
-                  borderWidth="1px"
-                  borderColor="border.default"
-                  borderRadius="md"
-                  fontSize="sm"
-                  _hover={{ borderColor: 'brand.300', bg: 'brand.subtle' }}
-                  transition="all 0.12s"
-                >
-                  <VStack gap={0} align="start" flex={1}>
-                    <HStack gap={2}>
-                      <Text fontWeight="600">{item.name}</Text>
-                      {item.brand && (
-                        <Text fontSize="xs" color="text.muted" fontStyle="italic">{item.brand}</Text>
-                      )}
-                    </HStack>
-                    {item.note && (
-                      <Text fontSize="xs" color="text.muted">{item.note}</Text>
-                    )}
-                  </VStack>
-                  <HStack gap={1}>
-                    <Box
-                      as="button" type="button"
-                      w="22px" h="22px" borderRadius="full"
-                      bg="border.default" color="text.default" fontSize="xs" fontWeight="bold"
-                      display="flex" alignItems="center" justifyContent="center"
-                      _hover={{ bg: 'brand.subtle', borderColor: 'brand.solid' }}
-                      onClick={() => updateShoppingItem(item.name, item.brand, { quantity: Math.max(1, (item.quantity || 1) - 1) })}
-                      aria-label={`Diminuer la quantité de ${item.name}`}
-                    >-</Box>
-                    <Text fontSize="xs" fontWeight="600" minW="22px" textAlign="center">
-                      x{item.quantity || 1}
-                    </Text>
-                    <Box
-                      as="button" type="button"
-                      w="22px" h="22px" borderRadius="full"
-                      bg="border.default" color="text.default" fontSize="xs" fontWeight="bold"
-                      display="flex" alignItems="center" justifyContent="center"
-                      _hover={{ bg: 'brand.subtle', borderColor: 'brand.solid' }}
-                      onClick={() => updateShoppingItem(item.name, item.brand, { quantity: (item.quantity || 1) + 1 })}
-                      aria-label={`Augmenter la quantité de ${item.name}`}
-                    >+</Box>
-                  </HStack>
-                  <Box
-                    as="button" type="button"
-                    fontSize="xs" color="text.muted"
-                    opacity={0.5} _hover={{ opacity: 1, color: 'red.500' }}
-                    onClick={() => removeShoppingItem(item)}
-                    aria-label={`Retirer l'article ${item.name}`}
-                  >&#10005;</Box>
-                </HStack>
-              ))}
-            </VStack>
-          )}
-          <HStack gap={2}>
-            <Input
-              size="sm"
-              placeholder="Article (ex : Lait, Bananes…)"
-              value={newItemName}
-              onChange={e => setNewItemName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('settings-brand-input')?.focus() } }}
-              borderRadius="md"
-              flex={2}
-              aria-label="Nom de l'article"
-            />
-            <Input
-              id="settings-brand-input"
-              size="sm"
-              placeholder="Marque (optionnel)"
-              value={newItemBrand}
-              onChange={e => setNewItemBrand(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddShoppingItem() } }}
-              borderRadius="md"
-              flex={1}
-              aria-label="Marque de l'article"
-            />
-            <PrimaryButton size="sm" onClick={handleAddShoppingItem}>+ Ajouter</PrimaryButton>
-          </HStack>
-          <Text fontSize="xs" color="text.muted" mt={2}>
-            Les articles ajoutés dans le formulaire d'intervention seront aussi mémorisés ici.
-          </Text>
-        </Card.Body>
-      </Card.Root>
+      {/* Listes de courses (templates multiples) */}
+      <ShoppingListTemplatesSection />
     </VStack>
   )
 }

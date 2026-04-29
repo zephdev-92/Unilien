@@ -13,7 +13,8 @@ import {
   parseShoppingItemString,
 } from '@/lib/constants/taskDefaults'
 import type { ShoppingItem } from '@/lib/constants/taskDefaults'
-import { loadDefaultTasks, loadCustomTasks, loadShoppingList, useInterventionSettings } from '@/hooks/useInterventionSettings'
+import { loadDefaultTasks, loadCustomTasks, useInterventionSettings } from '@/hooks/useInterventionSettings'
+import { useShoppingListTemplates } from '@/hooks/useShoppingListTemplates'
 
 const MAX_CUSTOM_TASKS = 20
 
@@ -125,18 +126,28 @@ interface TaskSelectorProps {
 }
 
 export function TaskSelector({ value, onChange, prefillFromSettings = false }: TaskSelectorProps) {
-  const { articleSuggestions, searchArticles, trackArticle, shoppingList: savedShoppingList } = useInterventionSettings()
+  const { articleSuggestions, searchArticles, trackArticle } = useInterventionSettings()
+  const { templates, defaultTemplate } = useShoppingListTemplates()
 
-  // Prefill au mount
+  // Template sélectionné pour l'intervention en cours
+  // (par défaut = template "par défaut" de l'employeur, mais peut être changé via le dropdown)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+  const selectedTemplate = useMemo(
+    () => templates.find(t => t.id === selectedTemplateId) ?? defaultTemplate,
+    [templates, selectedTemplateId, defaultTemplate],
+  )
+  const savedShoppingList = useMemo(
+    () => selectedTemplate?.items ?? [],
+    [selectedTemplate],
+  )
+
+  // Prefill au mount (sans la liste de courses, qui est ajoutée plus tard quand
+  // les templates sont chargés)
   const initialValue = useMemo(() => {
     if (prefillFromSettings && value.length === 0) {
       const tasks = loadDefaultTasks()
       const custom = loadCustomTasks()
-      const hasCourses = tasks.includes('Courses')
-      const shopping = hasCourses
-        ? loadShoppingList().map(formatShoppingItem)
-        : []
-      return encodeTasksArray(tasks, shopping, custom)
+      return encodeTasksArray(tasks, [], custom)
     }
     return value
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,6 +161,23 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Une fois que les templates sont chargés, si "Courses" est pré-sélectionnée
+  // et qu'aucun item n'a encore été ajouté, on pré-remplit avec les items du
+  // template par défaut.
+  const coursesPrefillDone = useRef(false)
+  useEffect(() => {
+    if (coursesPrefillDone.current) return
+    if (!prefillFromSettings) return
+    if (!defaultTemplate) return
+    const { selectedTasks: sel, shoppingItems: ship } = parseTasksArray(value)
+    if (sel.includes('Courses') && ship.length === 0 && defaultTemplate.items.length > 0) {
+      coursesPrefillDone.current = true
+      const items = defaultTemplate.items.map(formatShoppingItem)
+      onChange(encodeTasksArray(sel, items, parseTasksArray(value).customTasks))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultTemplate])
 
   const currentValue = value.length > 0 ? value : initialValue
 
@@ -421,10 +449,49 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                   borderRadius="0 8px 8px 0"
                   py={2}
                 >
+                  {/* Sélecteur de liste (visible uniquement si plusieurs templates) */}
+                  {templates.length > 1 && (
+                    <Flex justify="space-between" align="center" px={2} mb={2} gap={2}>
+                      <Text fontSize="xs" fontWeight="600" color="text.muted" whiteSpace="nowrap">
+                        Liste à utiliser
+                      </Text>
+                      <Box
+                        as="select"
+                        value={selectedTemplate?.id ?? ''}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                          const id = e.target.value
+                          setSelectedTemplateId(id)
+                          // Remplacer les items courants par ceux du nouveau template
+                          const tpl = templates.find(t => t.id === id)
+                          if (tpl) {
+                            emitChange({ shopping: tpl.items.map(formatShoppingItem) })
+                          }
+                        }}
+                        flex={1}
+                        px={2} py={1}
+                        borderRadius="8px"
+                        borderWidth="1.5px"
+                        borderColor="border.default"
+                        bg="bg.surface"
+                        fontSize="xs"
+                        fontWeight="500"
+                        cursor="pointer"
+                        _hover={{ borderColor: 'brand.solid' }}
+                        aria-label="Choisir la liste de courses"
+                      >
+                        {templates.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}{t.isDefault ? ' (défaut)' : ''}
+                          </option>
+                        ))}
+                      </Box>
+                    </Flex>
+                  )}
+
                   {/* Header shopping avec toggle all */}
                   <Flex justify="space-between" align="center" px={2} mb={1}>
                     <Text fontSize="xs" fontWeight="600" color="text.muted">
-                      Liste de courses
+                      {templates.length > 1 ? selectedTemplate?.name ?? 'Liste de courses' : 'Liste de courses'}
                     </Text>
                     {allShoppingItems.length > 0 && (
                       <Box
