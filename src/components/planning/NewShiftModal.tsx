@@ -277,14 +277,8 @@ export function NewShiftModal({
                       if (newType !== 'effective') {
                         setHasNightAction(false)
                       }
-                      if (newType === 'guard_24h') {
-                        // géré par useEffect du hook
-                      } else if (selected === 'presence') {
-                        // on garde les horaires courants (l'auto-détection s'en occupe)
-                      } else {
-                        setValue('startTime', '09:00')
-                        setValue('endTime', '12:00')
-                      }
+                      // Horaires conservés quel que soit le type choisi
+                      // (garde_24h : end_time auto à +24h via useEffect du hook)
                     }}
                   />
 
