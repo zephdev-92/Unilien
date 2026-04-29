@@ -12,15 +12,20 @@ export interface EmployeeDeclarationData {
   lastName: string
   contractId: string
   contractType: 'CDI' | 'CDD'
+  contractStartDate?: Date
+  contractEndDate?: Date
   hourlyRate: number
-  // Heures du mois
+  // Heures du mois (décomposition pour le récap CESU)
   totalHours: number
   normalHours: number
+  effectiveWorkHours: number   // Heures de travail effectif (shifts type "effective" + part effective garde 24h)
+  presenceDayHours: number     // Heures brutes de présence responsable de jour
+  presenceNightHours: number   // Heures brutes de présence responsable de nuit
   sundayHours: number
   holidayHours: number
   nightHours: number
   overtimeHours: number
-  // Rémunération
+  // Rémunération brute
   basePay: number
   sundayMajoration: number
   holidayMajoration: number
@@ -29,6 +34,9 @@ export interface EmployeeDeclarationData {
   presenceResponsiblePay: number  // Art. 137.1 — présence de jour (1h = 2/3h)
   nightPresenceAllowance: number  // Art. 148 — présence de nuit (forfait >= 1/4)
   totalGrossPay: number
+  // Net estimé (montant à reporter sur CESU)
+  netPay: number
+  totalEmployeeDeductions: number
   // Détails des interventions
   shiftsCount: number
   shiftsDetails: ShiftDeclarationDetail[]
@@ -53,6 +61,8 @@ export interface MonthlyDeclarationData {
   year: number
   month: number // 1-12
   periodLabel: string // "Janvier 2024"
+  periodStartDate: Date  // 1er du mois
+  periodEndDate: Date    // dernier du mois
   // Employeur
   employerId: string
   employerFirstName: string
@@ -64,6 +74,7 @@ export interface MonthlyDeclarationData {
   // Totaux
   totalHours: number
   totalGrossPay: number
+  totalNetPay: number
   totalEmployees: number
   // Métadonnées
   generatedAt: Date

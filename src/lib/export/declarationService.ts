@@ -7,8 +7,9 @@ import { supabase } from '@/lib/supabase/client'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance/utils'
 import { isPublicHoliday, isSunday } from '@/lib/compliance/types'
-import { MAJORATION_RATES, calculateOvertimeHours } from '@/lib/compliance/calculatePay'
-import type { ShiftForValidation } from '@/lib/compliance/types'
+import { calculateShiftPay, calculateOvertimeHours, MAJORATION_RATES } from '@/lib/compliance/calculatePay'
+import type { ShiftForValidation, ContractForCalculation, GuardSegment } from '@/lib/compliance/types'
+import { calculateCotisations } from './cotisationsCalculator'
 import type {
   MonthlyDeclarationData,
   EmployeeDeclarationData,
@@ -35,8 +36,11 @@ interface ContractForDeclarationDb {
   id: string
   employee_id: string
   contract_type: 'CDI' | 'CDD'
+  start_date: string
+  end_date: string | null
   hourly_rate: number
   weekly_hours: number
+  pas_rate?: number
   employee_profile?: {
     profile?: {
       id?: string
@@ -87,11 +91,14 @@ export async function getMonthlyDeclarationData(
   // Calculer les totaux
   const totalHours = employees.reduce((sum, e) => sum + e.totalHours, 0)
   const totalGrossPay = employees.reduce((sum, e) => sum + e.totalGrossPay, 0)
+  const totalNetPay = employees.reduce((sum, e) => sum + e.netPay, 0)
 
   return {
     year,
     month,
     periodLabel: getMonthLabel(year, month),
+    periodStartDate: startDate,
+    periodEndDate: endDate,
     employerId,
     employerFirstName: employerData.firstName,
     employerLastName: employerData.lastName,
@@ -100,6 +107,7 @@ export async function getMonthlyDeclarationData(
     employees,
     totalHours: Math.round(totalHours * 100) / 100,
     totalGrossPay: Math.round(totalGrossPay * 100) / 100,
+    totalNetPay: Math.round(totalNetPay * 100) / 100,
     totalEmployees: employees.length,
     generatedAt: new Date(),
   }
@@ -152,8 +160,11 @@ async function getActiveContracts(
       id,
       employee_id,
       contract_type,
+      start_date,
+      end_date,
       hourly_rate,
       weekly_hours,
+      pas_rate,
       employee_profile:employees!employee_id(
         profile:profiles!profile_id(
           id,
@@ -205,9 +216,9 @@ async function getShiftsForPeriod(
 }
 
 /**
- * Convertit un ShiftDbRow en ShiftForValidation pour les fonctions de calcul centralisées
+ * Convertit un ShiftDbRow en ShiftForValidation enrichi pour calculateShiftPay.
  */
-function toShiftForValidation(shift: ShiftDbRow, employeeId: string, contractId: string): ShiftForValidation {
+function toShiftForCalc(shift: ShiftDbRow, employeeId: string, contractId: string): ShiftForValidation {
   return {
     id: shift.id,
     contractId,
@@ -216,13 +227,21 @@ function toShiftForValidation(shift: ShiftDbRow, employeeId: string, contractId:
     startTime: shift.start_time,
     endTime: shift.end_time,
     breakDuration: shift.break_duration || 0,
+    shiftType: shift.shift_type ?? 'effective',
+    hasNightAction: shift.has_night_action !== false,
+    nightInterventionsCount: shift.night_interventions_count ?? 0,
+    guardSegments: (shift.guard_segments as GuardSegment[] | null) ?? undefined,
   }
 }
 
 /**
- * Calcule les données de déclaration pour un employé
- * Utilise les taux de MAJORATION_RATES (Convention Collective IDCC 3239)
- * et le calcul réel des heures supplémentaires via calculateOvertimeHours
+ * Calcule les données de déclaration pour un employé.
+ *
+ * Utilise `calculateShiftPay` pour chaque shift (source unique de vérité du calcul de paie
+ * IDCC 3239 — y compris le split jour/nuit pour les présences mixtes), puis agrège
+ * les composants pour obtenir les totaux mensuels.
+ *
+ * Le NET estimé est calculé via `calculateCotisations` à partir du brut total.
  */
 function calculateEmployeeDeclaration(
   contract: ContractForDeclarationDb,
@@ -230,10 +249,17 @@ function calculateEmployeeDeclaration(
 ): EmployeeDeclarationData {
   const hourlyRate = contract.hourly_rate
   const contractualWeeklyHours = contract.weekly_hours || 35
+  const contractForCalc: ContractForCalculation = {
+    id: contract.id,
+    weeklyHours: contractualWeeklyHours,
+    hourlyRate,
+  }
   const shiftsDetails: ShiftDeclarationDetail[] = []
 
   let totalHours = 0
-  let normalHours = 0
+  let effectiveWorkHours = 0
+  let presenceDayHours = 0
+  let presenceNightHours = 0
   let sundayHours = 0
   let holidayHours = 0
   let nightHours = 0
@@ -247,138 +273,96 @@ function calculateEmployeeDeclaration(
   let presenceResponsiblePay = 0
   let nightPresenceAllowance = 0
 
-  // Préparer tous les shifts au format ShiftForValidation pour le calcul des heures sup
-  const allShiftsForValidation = shifts.map((s) =>
-    toShiftForValidation(s, contract.employee_id, contract.id)
+  // Tous les shifts au format calcul (utile pour les heures sup contextualisées)
+  const allShiftsForCalc = shifts.map((s) =>
+    toShiftForCalc(s, contract.employee_id, contract.id)
   )
 
   for (let i = 0; i < shifts.length; i++) {
     const shift = shifts[i]
     const shiftDate = new Date(shift.date)
     const shiftType = shift.shift_type || 'effective'
-    const fullDurationMinutes = calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0)
-    const fullDurationHours = fullDurationMinutes / 60
-    const effectiveMinutes = (shiftType === 'guard_24h' && shift.effective_hours != null)
-      ? shift.effective_hours * 60
-      : fullDurationMinutes
-    const effectiveHours = effectiveMinutes / 60
+    const fullDurationHours =
+      calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
     const shiftNightHours = calculateNightHours(shiftDate, shift.start_time, shift.end_time)
     const isSundayShift = isSunday(shiftDate)
     const isHolidayShift = isPublicHoliday(shiftDate)
 
-    let shiftBasePay = 0
-    let shiftPresenceResponsible = 0
-    let shiftNightPresence = 0
-    let shiftTotal = 0
-    let shiftSundayMaj = 0
-    let shiftHolidayMaj = 0
-    let shiftNightMaj = 0
-    let shiftOvertimeMaj = 0
+    // Calcul de paie centralisé (split jour/nuit, requalification, garde 24h, majorations).
+    // Hypothèse : travail habituel sur jours fériés → +60% (comportement historique du récap CESU).
+    const shiftForCalc = allShiftsForCalc[i]
+    const previousShifts = allShiftsForCalc.slice(0, i)
+    const pay = calculateShiftPay(shiftForCalc, contractForCalc, previousShifts, true)
 
+    // Agrégation des composants de paie (overtime recalculé en cumulatif plus bas)
+    basePay += pay.basePay
+    sundayMajoration += pay.sundayMajoration
+    holidayMajoration += pay.holidayMajoration
+    nightMajoration += pay.nightMajoration
+    presenceResponsiblePay += pay.presenceResponsiblePay
+    nightPresenceAllowance += pay.nightPresenceAllowance
+
+    // Compteurs d'heures (par catégorie pour le récap)
     if (shiftType === 'presence_day') {
-      // Art. 137.1 IDCC 3239 — présence responsable de jour : 1h = 2/3h de travail effectif
-      // effective_hours en DB = déjà réduit à 2/3 si renseigné, sinon on calcule
-      const presenceHours = shift.effective_hours ?? fullDurationHours * (2 / 3)
-      shiftPresenceResponsible = presenceHours * hourlyRate
-      if (isSundayShift) {
-        shiftSundayMaj = shiftPresenceResponsible * MAJORATION_RATES.SUNDAY
-        sundayHours += presenceHours
-      }
-      if (isHolidayShift) {
-        shiftHolidayMaj = shiftPresenceResponsible * MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED
-        holidayHours += presenceHours
-      }
-      shiftTotal = shiftPresenceResponsible + shiftSundayMaj + shiftHolidayMaj
-      totalHours += presenceHours
-      presenceResponsiblePay += shiftPresenceResponsible
-
+      presenceDayHours += fullDurationHours
     } else if (shiftType === 'presence_night') {
-      // Art. 148 IDCC 3239 — présence de nuit : forfait >= 1/4 du taux horaire, ou 100% si requalifié
-      shiftNightPresence = shift.is_requalified
-        ? fullDurationHours * hourlyRate
-        : fullDurationHours * hourlyRate * 0.25
-      shiftTotal = shiftNightPresence
-      totalHours += fullDurationHours
-      nightPresenceAllowance += shiftNightPresence
-
+      presenceNightHours += fullDurationHours
+    } else if (shiftType === 'guard_24h') {
+      effectiveWorkHours += shift.effective_hours ?? 0
     } else {
-      // effective + guard_24h
-      shiftBasePay = effectiveHours * hourlyRate
-      shiftTotal = shiftBasePay
+      effectiveWorkHours += fullDurationHours
+    }
+    totalHours += fullDurationHours
 
-      if (isSundayShift) {
-        shiftSundayMaj = shiftBasePay * MAJORATION_RATES.SUNDAY
-        shiftTotal += shiftSundayMaj
-        sundayHours += effectiveHours
-      }
-
-      if (isHolidayShift) {
-        shiftHolidayMaj = shiftBasePay * MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED
-        shiftTotal += shiftHolidayMaj
-        holidayHours += effectiveHours
-      }
-
-      // Majoration nuit : uniquement si un acte est effectué (has_night_action)
-      // Pour les anciens shifts sans le champ (null), on applique la majoration par rétrocompatibilité
-      const shiftHasNightAction = shift.has_night_action !== false
-      if (shiftNightHours > 0 && shiftHasNightAction) {
-        shiftNightMaj = shiftNightHours * hourlyRate * MAJORATION_RATES.NIGHT
-        shiftTotal += shiftNightMaj
-        nightHours += shiftNightHours
-      }
-
-      // Calcul réel des heures supplémentaires pour cette intervention
-      const shiftForValidation = allShiftsForValidation[i]
-      const previousShifts = allShiftsForValidation.slice(0, i)
-      const shiftOvertime = calculateOvertimeHours(
-        shiftForValidation,
-        previousShifts,
-        contractualWeeklyHours
-      )
-
-      if (shiftOvertime > 0) {
-        const cumulativeOvertimeBefore = overtimeHours
-        const cumulativeOvertimeAfter = overtimeHours + shiftOvertime
-        const first8hBefore = Math.min(8, cumulativeOvertimeBefore)
-        const first8hAfter = Math.min(8, cumulativeOvertimeAfter)
-        const beyond8hBefore = Math.max(0, cumulativeOvertimeBefore - 8)
-        const beyond8hAfter = Math.max(0, cumulativeOvertimeAfter - 8)
-        shiftOvertimeMaj =
-          (first8hAfter - first8hBefore) * hourlyRate * MAJORATION_RATES.OVERTIME_FIRST_8H +
-          (beyond8hAfter - beyond8hBefore) * hourlyRate * MAJORATION_RATES.OVERTIME_BEYOND_8H
-        shiftTotal += shiftOvertimeMaj
-        overtimeHours += shiftOvertime
-        overtimeMajoration += shiftOvertimeMaj
-      }
-
-      totalHours += effectiveHours
-      basePay += shiftBasePay
+    if (isSundayShift) sundayHours += fullDurationHours
+    if (isHolidayShift) holidayHours += fullDurationHours
+    // nightHours = heures de nuit majorées (uniquement si action de nuit)
+    const shiftHasNightAction = shift.has_night_action !== false
+    if (shiftNightHours > 0 && shiftHasNightAction && shiftType !== 'presence_day' && shiftType !== 'presence_night') {
+      nightHours += shiftNightHours
     }
 
-    sundayMajoration += shiftSundayMaj
-    holidayMajoration += shiftHolidayMaj
-    nightMajoration += shiftNightMaj
+    // Heures sup : calcul cumulatif sur la semaine pour répartir +25% / +50%
+    const shiftOvertime = calculateOvertimeHours(shiftForCalc, previousShifts, contractualWeeklyHours)
+    if (shiftOvertime > 0) {
+      const before = overtimeHours
+      const after = overtimeHours + shiftOvertime
+      const first8hAdded = Math.min(8, after) - Math.min(8, before)
+      const beyond8hAdded = Math.max(0, after - 8) - Math.max(0, before - 8)
+      overtimeMajoration += first8hAdded * hourlyRate * MAJORATION_RATES.OVERTIME_FIRST_8H
+      overtimeMajoration += beyond8hAdded * hourlyRate * MAJORATION_RATES.OVERTIME_BEYOND_8H
+      overtimeHours += shiftOvertime
+    }
 
-    // Ajouter le détail
     shiftsDetails.push({
       date: shiftDate,
       startTime: shift.start_time,
       endTime: shift.end_time,
       breakDuration: shift.break_duration || 0,
-      effectiveHours: shiftType === 'presence_day'
-        ? (shift.effective_hours ?? fullDurationHours * (2 / 3))
-        : effectiveHours,
+      effectiveHours:
+        shiftType === 'presence_day'
+          ? (shift.effective_hours ?? fullDurationHours * (2 / 3))
+          : shiftType === 'guard_24h'
+            ? (shift.effective_hours ?? 0)
+            : fullDurationHours,
       isSunday: isSundayShift,
       isHoliday: isHolidayShift,
       nightHours: shiftNightHours,
-      pay: Math.round(shiftTotal * 100) / 100,
+      pay: pay.totalPay,
     })
   }
 
-  // Heures normales = total - spéciales - supplémentaires (éviter double comptage)
-  normalHours = totalHours - sundayHours - holidayHours - overtimeHours
+  // Heures normales = total - spéciales - supplémentaires (sans double comptage)
+  const normalHours = Math.max(0, totalHours - sundayHours - holidayHours - overtimeHours)
 
-  const totalGrossPay = basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration + presenceResponsiblePay + nightPresenceAllowance
+  const totalGrossPay =
+    basePay + sundayMajoration + holidayMajoration + nightMajoration +
+    overtimeMajoration + presenceResponsiblePay + nightPresenceAllowance
+
+  // Net estimé via le calculateur de cotisations IDCC 3239
+  const cotisations = calculateCotisations(totalGrossPay, {
+    pasRate: contract.pas_rate ?? 0,
+  })
 
   return {
     employeeId: contract.employee_id,
@@ -386,9 +370,14 @@ function calculateEmployeeDeclaration(
     lastName: contract.employee_profile?.profile?.last_name || '',
     contractId: contract.id,
     contractType: contract.contract_type,
+    contractStartDate: contract.start_date ? new Date(contract.start_date) : undefined,
+    contractEndDate: contract.end_date ? new Date(contract.end_date) : undefined,
     hourlyRate,
     totalHours: Math.round(totalHours * 100) / 100,
     normalHours: Math.round(normalHours * 100) / 100,
+    effectiveWorkHours: Math.round(effectiveWorkHours * 100) / 100,
+    presenceDayHours: Math.round(presenceDayHours * 100) / 100,
+    presenceNightHours: Math.round(presenceNightHours * 100) / 100,
     sundayHours: Math.round(sundayHours * 100) / 100,
     holidayHours: Math.round(holidayHours * 100) / 100,
     nightHours: Math.round(nightHours * 100) / 100,
@@ -401,6 +390,8 @@ function calculateEmployeeDeclaration(
     presenceResponsiblePay: Math.round(presenceResponsiblePay * 100) / 100,
     nightPresenceAllowance: Math.round(nightPresenceAllowance * 100) / 100,
     totalGrossPay: Math.round(totalGrossPay * 100) / 100,
+    netPay: cotisations.netAPayer,
+    totalEmployeeDeductions: cotisations.totalEmployeeDeductions,
     shiftsCount: shifts.length,
     shiftsDetails,
   }
