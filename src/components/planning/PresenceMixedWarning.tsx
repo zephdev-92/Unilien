@@ -8,43 +8,36 @@ interface PresenceMixedWarningProps {
 }
 
 /**
- * Avertissement affiché quand une intervention "Présence responsable" chevauche
- * le jour et la nuit. Les régimes de paie sont radicalement différents
- * (jour : équivalent ×2/3 — nuit : indemnité ×1/4, Art. 137 & 148 IDCC 3239),
- * donc un seul type ne peut refléter fidèlement la rémunération.
+ * Information affichée quand une "Présence responsable" chevauche jour et nuit.
+ * Le calcul de paie est splitté automatiquement (jour ×2/3 + nuit ×1/4 forfait,
+ * Art. 137 & 148 IDCC 3239), donc le montant à déclarer à la CESU est juste.
  *
- * - `edit` (défaut) : conseil de créer deux interventions ou une garde 24h.
- * - `view` : conseil de modifier l'intervention existante pour la diviser.
+ * - `edit` : info pédagogique pendant la saisie.
+ * - `view` : info contextualisée à la lecture du shift.
  */
 export function PresenceMixedWarning({ dayHours, nightHours, mode = 'edit' }: PresenceMixedWarningProps) {
   return (
     <Box
       p={3}
-      bg="warm.50"
+      bg="brand.subtle"
       borderRadius="10px"
       borderWidth="1px"
-      borderColor="warm.300"
+      borderColor="brand.200"
     >
-      <Text fontSize="sm" fontWeight="bold" color="warm.800" mb={1}>
-        Présence à cheval entre jour et nuit
+      <Text fontSize="sm" fontWeight="bold" color="brand.700" mb={1}>
+        Présence à cheval jour / nuit — calcul ajusté
       </Text>
-      <Text fontSize="sm" color="warm.800">
+      <Text fontSize="sm" color="brand.700">
         {formatHoursCompact(dayHours)} de jour + {formatHoursCompact(nightHours)} de nuit.
-        Les régimes de paie diffèrent (×2/3 jour vs ×1/4 nuit, Art. 137 & 148 IDCC 3239).
+        La paie est calculée sur les deux régimes :{' '}
+        <Text as="strong">jour ×2/3</Text> + <Text as="strong">nuit ×1/4</Text>{' '}
+        (Art. 137 & 148 IDCC 3239).
       </Text>
-      <Text fontSize="xs" color="warm.700" mt={2}>
+      <Text fontSize="xs" color="brand.600" mt={2}>
         {mode === 'view' ? (
-          <>
-            <Text as="strong">Modifiez</Text> cette intervention pour la diviser
-            en deux régimes (jour + nuit), ou convertissez-la en{' '}
-            <Text as="strong">garde 24h</Text>.
-          </>
+          <>Le détail de la décomposition est visible dans la rubrique « Paie estimée ».</>
         ) : (
-          <>
-            Pour un calcul juste, créez plutôt <Text as="strong">deux interventions</Text>{' '}
-            (une jour, une nuit) ou utilisez une <Text as="strong">garde 24h</Text> qui
-            gère les segments jour/nuit automatiquement.
-          </>
+          <>Pas besoin de splitter en deux interventions — le montant à déclarer à la CESU est ajusté automatiquement.</>
         )}
       </Text>
     </Box>

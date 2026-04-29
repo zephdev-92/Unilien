@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { calculateShiftDuration } from '@/lib/compliance'
+import { getPresenceMix } from '@/lib/presence/detectPresenceType'
 import type { ShiftType, GuardSegment } from '@/types'
 
 interface UseShiftEffectiveHoursParams {
@@ -38,6 +39,22 @@ export function useShiftEffectiveHours({
     try {
       const durationMinutes = calculateShiftDuration(startTime, endTime, breakDuration)
       const durationHours = durationMinutes / 60
+
+      // Présence responsable mixte (chevauche jour 21h–6h) : on splitte
+      // pour appliquer les bons coefficients à chaque part (Art. 137 & 148 IDCC 3239).
+      // La pause est répartie au prorata du total brut.
+      if (shiftType === 'presence_day' || shiftType === 'presence_night') {
+        const mix = getPresenceMix(startTime, endTime)
+        if (mix.isMixed && mix.totalHours > 0) {
+          const breakRatio = durationHours / mix.totalHours
+          const dayH = mix.dayHours * breakRatio
+          const nightH = mix.nightHours * breakRatio
+          const effectiveDay = dayH * (2 / 3)
+          // Part nuit : 100% si requalifiée, sinon forfait (pas une heure effective)
+          const effectiveNight = isRequalified ? nightH : 0
+          return Math.round((effectiveDay + effectiveNight) * 100) / 100
+        }
+      }
 
       if (shiftType === 'presence_day') {
         return Math.round(durationHours * (2 / 3) * 100) / 100

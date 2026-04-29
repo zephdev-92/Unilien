@@ -7,6 +7,7 @@ import type { ComputedPay } from '@/types'
 import type { ShiftForValidation, ContractForCalculation } from './types'
 import { isPublicHoliday, isSunday } from './types'
 import { calculateShiftDuration, calculateNightHours, getWeekStart, calculateTotalHours } from './utils'
+import { getPresenceMix } from '@/lib/presence/detectPresenceType'
 
 // Taux de majoration (Convention Collective IDCC 3239)
 export const MAJORATION_RATES = {
@@ -86,29 +87,34 @@ export function calculateShiftPay(
   let nightPresenceAllowance = 0
   const shiftType = shift.shiftType || 'effective'
 
-  if (shiftType === 'presence_day') {
-    // Présence responsable de jour : 1h = 2/3h de travail effectif (Art. 137.1 IDCC 3239)
-    const effectiveHours = durationHours * (2 / 3)
-    presenceResponsiblePay = effectiveHours * hourlyRate
-    // Les majorations s'appliquent sur presenceResponsiblePay (base réelle payée),
-    // et non sur basePay (heures brutes non réduites)
+  if (shiftType === 'presence_day' || shiftType === 'presence_night') {
+    // Décomposition jour/nuit pour appliquer les bons régimes IDCC 3239 :
+    // - jour : 1h = 2/3h effective (Art. 137.1)
+    // - nuit non requalifiée : indemnité forfaitaire ×1/4 (Art. 148)
+    // - nuit requalifiée (≥4 interventions sur presence_night) : 100% effectif
+    // La pause est répartie au prorata du total brut.
+    const mix = getPresenceMix(shift.startTime, shift.endTime)
+    const breakRatio = mix.totalHours > 0 ? durationHours / mix.totalHours : 1
+    const dayH = mix.dayHours * breakRatio
+    const nightH = mix.nightHours * breakRatio
+    const isRequalified =
+      shiftType === 'presence_night' && (shift.nightInterventionsCount ?? 0) >= 4
+
+    presenceResponsiblePay = dayH * (2 / 3) * hourlyRate
+    nightPresenceAllowance = isRequalified
+      ? nightH * hourlyRate
+      : nightH * hourlyRate * 0.25
+
+    // Majorations dimanche/férié sur la base réellement payée
+    const totalPaid = presenceResponsiblePay + nightPresenceAllowance
     if (isSunday(shift.date)) {
-      sundayMajoration = presenceResponsiblePay * MAJORATION_RATES.SUNDAY
+      sundayMajoration = totalPaid * MAJORATION_RATES.SUNDAY
     }
     if (isPublicHoliday(shift.date)) {
       const rate = isHabitualWorkOnHolidays
         ? MAJORATION_RATES.PUBLIC_HOLIDAY_WORKED
         : MAJORATION_RATES.PUBLIC_HOLIDAY_EXCEPTIONAL
-      holidayMajoration = presenceResponsiblePay * rate
-    }
-  } else if (shiftType === 'presence_night') {
-    const isRequalified = (shift.nightInterventionsCount ?? 0) >= 4
-    if (isRequalified) {
-      // Requalification : toute la plage est rémunérée en travail effectif (Art. 148 IDCC 3239)
-      nightPresenceAllowance = durationHours * hourlyRate
-    } else {
-      // Indemnité forfaitaire >= 1/4 du salaire contractuel horaire
-      nightPresenceAllowance = durationHours * hourlyRate * 0.25
+      holidayMajoration = totalPaid * rate
     }
   } else if (shiftType === 'guard_24h' && shift.guardSegments?.length) {
     // ── Garde 24h N segments libres ───────────────────────────────
@@ -164,11 +170,11 @@ export function calculateShiftPay(
   // Total
   const totalPay = shiftType === 'effective'
     ? basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
-    : shiftType === 'presence_day'
-      ? presenceResponsiblePay + sundayMajoration + holidayMajoration
+    : (shiftType === 'presence_day' || shiftType === 'presence_night')
+      ? presenceResponsiblePay + nightPresenceAllowance + sundayMajoration + holidayMajoration
       : shiftType === 'guard_24h'
         ? basePay + presenceResponsiblePay + nightPresenceAllowance + sundayMajoration + holidayMajoration + nightMajoration
-        : nightPresenceAllowance + nightMajoration
+        : 0
 
   return {
     basePay: Math.round(basePay * 100) / 100,
