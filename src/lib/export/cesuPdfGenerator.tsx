@@ -196,7 +196,6 @@ const s = StyleSheet.create({
     fontSize: 8.5,
     color: colors.textMuted,
     marginTop: 2,
-    fontStyle: 'italic',
   },
   // Grand total
   grandTotal: {
