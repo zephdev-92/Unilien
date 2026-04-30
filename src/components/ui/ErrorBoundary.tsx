@@ -2,6 +2,7 @@ import { Component } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Box, Button, Center, Heading, Text, VStack } from '@chakra-ui/react'
 import { logger } from '@/lib/logger'
+import { tryReloadOnChunkError } from '@/lib/chunkErrorHandler'
 
 interface Props {
   children: ReactNode
@@ -28,6 +29,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // Si c'est un chunk obsolète post-deploy, reload silencieux
+    if (tryReloadOnChunkError(error)) return
     logger.error('ErrorBoundary a intercepté une erreur:', error)
     logger.error('Component stack:', errorInfo.componentStack)
   }
