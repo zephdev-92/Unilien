@@ -69,7 +69,7 @@ const CATEGORIES: { key: AbsenceCategory; label: string }[] = [
 
 const ABSENCE_OPTIONS: Record<AbsenceCategory, AbsenceTypeOption[]> = {
   conges: [
-    { value: 'conge_paye', backendType: 'vacation', label: 'Congé payé (CP)', sub: '{days} dispo · Rémunéré · Art. L3141-1', dot: 'brand.500' },
+    { value: 'conge_paye', backendType: 'vacation', label: 'Congés payés (CP)', sub: '{days} dispo · Rémunéré · Art. L3141-1', dot: 'brand.500' },
     { value: 'sans_solde', backendType: 'vacation', label: 'Congé sans solde', sub: 'Durée libre · Accord employeur · Non rémunéré', dot: 'brand.500' },
     { value: 'formation', backendType: 'training', label: 'Congé formation (CPF)', sub: 'Variable · Financement CPF · Art. L6323-1', dot: 'brand.500' },
   ],
@@ -103,10 +103,10 @@ function getInfoText(
 ) {
   if (!selected) return null
   if (selected.value === 'conge_paye') {
-    if (!leaveBalance) return 'Congé payé · Rémunéré · Chargement du solde…'
+    if (!leaveBalance) return 'Congés payés · Rémunéré · Chargement du solde…'
     const days = leaveBalance.remainingDays
-    if (days <= 0) return 'Congé payé · Rémunéré · Aucun jour de CP disponible. Votre solde sera recalculé selon votre ancienneté.'
-    return `Congé payé · Rémunéré · Il vous reste ${days.toFixed(0)} jour${days >= 2 ? 's' : ''} de CP disponibles.`
+    if (days <= 0) return 'Congés payés · Rémunéré · Aucun jour de CP disponible. Votre solde sera recalculé selon votre ancienneté.'
+    return `Congés payés · Rémunéré · Il vous reste ${days.toFixed(0)} jour${days >= 2 ? 's' : ''} de CP disponibles.`
   }
   if (selected.value === 'sans_solde') return 'Congé sans solde · Non rémunéré · Nécessite l\'accord de votre employeur.'
   if (selected.value === 'formation') return 'Congé formation · CPF · Financé via votre Compte Personnel de Formation.'

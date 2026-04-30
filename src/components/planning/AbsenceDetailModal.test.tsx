@@ -73,15 +73,15 @@ describe('AbsenceDetailModal', () => {
   })
 
   describe('Affichage des données', () => {
-    it('affiche le type d\'absence "Congé payé" pour vacation', async () => {
+    it('affiche le type d\'absence "Congés payés" pour vacation', async () => {
       renderWithProviders(<AbsenceDetailModal {...defaultProps} />)
 
       await waitFor(() => {
-        expect(screen.getByText('Congé payé')).toBeInTheDocument()
+        expect(screen.getByText('Congés payés')).toBeInTheDocument()
       })
     })
 
-    it('affiche le type d\'absence "Maladie" pour sick', async () => {
+    it('affiche le type d\'absence "Arrêt maladie" pour sick', async () => {
       renderWithProviders(
         <AbsenceDetailModal
           {...defaultProps}
@@ -90,7 +90,7 @@ describe('AbsenceDetailModal', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Maladie')).toBeInTheDocument()
+        expect(screen.getByText('Arrêt maladie')).toBeInTheDocument()
       })
     })
 

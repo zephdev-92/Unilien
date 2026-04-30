@@ -8,6 +8,7 @@ import type { AuxiliarySummary } from '@/services/auxiliaryService'
 import type { LogEntryWithAuthor } from '@/services/logbookService'
 import type { DocumentWithEmployee } from '@/services/documentService'
 import { FEATURES } from '@/lib/featureFlags'
+import { ABSENCE_TYPE_LABELS } from '@/lib/constants/statusMaps'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -243,15 +244,6 @@ export function searchMessages(
 }
 
 // ── Documents (absences) ─────────────────────────────────────────────────────
-
-const ABSENCE_TYPE_LABELS: Record<string, string> = {
-  sick: 'Maladie',
-  vacation: 'Congé',
-  family_event: 'Événement familial',
-  training: 'Formation',
-  unavailable: 'Indisponibilité',
-  emergency: 'Urgence',
-}
 
 export function searchDocuments(
   query: string,

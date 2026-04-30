@@ -51,10 +51,10 @@ export const ABSENCE_STATUS_LABELS: Record<Absence['status'], string> = {
 }
 
 export const ABSENCE_TYPE_LABELS: Record<Absence['absenceType'], string> = {
-  sick: 'Maladie',
-  vacation: 'Congé payé',
+  sick: 'Arrêt maladie',
+  vacation: 'Congés payés',
   family_event: 'Événement familial',
-  training: 'Formation',
+  training: 'Congé formation',
   unavailable: 'Indisponibilité',
   emergency: 'Urgence personnelle',
 }

@@ -111,7 +111,7 @@ describe('AbsenceRequestModal', () => {
       renderWithProviders(<AbsenceRequestModal {...defaultProps} />)
 
       await waitFor(() => {
-        expect(screen.getByText('Congé payé (CP)')).toBeInTheDocument()
+        expect(screen.getByText('Congés payés (CP)')).toBeInTheDocument()
         expect(screen.getByText('Congé sans solde')).toBeInTheDocument()
         expect(screen.getByText('Congé formation (CPF)')).toBeInTheDocument()
       })
@@ -173,7 +173,7 @@ describe('AbsenceRequestModal', () => {
       renderWithProviders(<AbsenceRequestModal {...defaultProps} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Congé payé · Rémunéré/i)).toBeInTheDocument()
+        expect(screen.getByText(/Congés payés · Rémunéré/i)).toBeInTheDocument()
       })
     })
   })
@@ -223,7 +223,7 @@ describe('AbsenceRequestModal', () => {
     it('n\'affiche pas la section d\'upload pour un type congé', async () => {
       renderWithProviders(<AbsenceRequestModal {...defaultProps} />)
 
-      // Par défaut, onglet "Congés" avec "Congé payé" sélectionné
+      // Par défaut, onglet "Congés" avec "Congés payés" sélectionné
       expect(screen.queryByLabelText(/Sélectionner un arrêt de travail/i)).not.toBeInTheDocument()
     })
   })
@@ -238,7 +238,7 @@ describe('AbsenceRequestModal', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText('Congé payé (CP)')).toBeInTheDocument()
+        expect(screen.getByText('Congés payés (CP)')).toBeInTheDocument()
       })
 
       await user.click(screen.getByRole('button', { name: /Envoyer la demande/i }))
