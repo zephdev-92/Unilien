@@ -25,6 +25,7 @@ import type { Payslip } from '@/types'
 
 interface Props {
   employeeId: string
+  searchTerm?: string
 }
 
 function formatUploadDate(date: Date): string {
@@ -35,7 +36,7 @@ function periodLabelFor(year: number, month: number): string {
   return `${MONTHS_FR[month - 1]} ${year}`
 }
 
-export function EmployeePayslipSection({ employeeId }: Props) {
+export function EmployeePayslipSection({ employeeId, searchTerm = '' }: Props) {
   const [payslips, setPayslips] = useState<Payslip[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filterYear, setFilterYear] = useState<string>('')
@@ -61,10 +62,17 @@ export function EmployeePayslipSection({ employeeId }: Props) {
   }, [payslips])
 
   const filteredPayslips = useMemo(() => {
-    if (!filterYear) return payslips
-    const y = Number(filterYear)
-    return payslips.filter((p) => p.year === y)
-  }, [payslips, filterYear])
+    let result = payslips
+    if (filterYear) {
+      const y = Number(filterYear)
+      result = result.filter((p) => p.year === y)
+    }
+    const q = searchTerm.trim().toLowerCase()
+    if (q) {
+      result = result.filter((p) => periodLabelFor(p.year, p.month).toLowerCase().includes(q))
+    }
+    return result
+  }, [payslips, filterYear, searchTerm])
 
   const handleDownload = async (payslip: Payslip) => {
     if (!payslip.storagePath) return

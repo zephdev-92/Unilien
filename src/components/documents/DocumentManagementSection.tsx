@@ -42,9 +42,10 @@ const MONTHS_FR = [
 
 interface DocumentManagementSectionProps {
   employerId: string
+  searchTerm?: string
 }
 
-export function DocumentManagementSection({ employerId }: DocumentManagementSectionProps) {
+export function DocumentManagementSection({ employerId, searchTerm = '' }: DocumentManagementSectionProps) {
   const [documents, setDocuments] = useState<DocumentWithEmployee[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -104,6 +105,7 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
 
   // Filtrage combiné
   const filteredDocuments = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
     return documents.filter((doc) => {
       if (filterEmployeeId && doc.employee.id !== filterEmployeeId) return false
 
@@ -119,9 +121,16 @@ export function DocumentManagementSection({ employerId }: DocumentManagementSect
       if (filterJustification === 'with' && !doc.absence.justificationUrl) return false
       if (filterJustification === 'without' && doc.absence.justificationUrl) return false
 
+      if (q) {
+        const name = `${doc.employee.firstName} ${doc.employee.lastName}`.toLowerCase()
+        const reason = (doc.absence.reason ?? '').toLowerCase()
+        const typeLabel = (ABSENCE_TYPE_LABELS[doc.absence.absenceType] ?? '').toLowerCase()
+        if (!name.includes(q) && !reason.includes(q) && !typeLabel.includes(q)) return false
+      }
+
       return true
     })
-  }, [documents, filterEmployeeId, filterMonth, filterType, filterStatus, filterJustification])
+  }, [documents, filterEmployeeId, filterMonth, filterType, filterStatus, filterJustification, searchTerm])
 
   const activeFilterCount = [filterEmployeeId, filterMonth, filterType, filterStatus, filterJustification]
     .filter(Boolean).length

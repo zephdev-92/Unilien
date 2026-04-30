@@ -44,6 +44,7 @@ import type { Payslip } from '@/types'
 
 interface Props {
   employerId: string
+  searchTerm?: string
 }
 
 function formatUploadDate(date: Date): string {
@@ -54,7 +55,7 @@ function periodLabelFor(year: number, month: number): string {
   return `${MONTHS_FR[month - 1]} ${year}`
 }
 
-export function PayslipSection({ employerId }: Props) {
+export function PayslipSection({ employerId, searchTerm = '' }: Props) {
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
@@ -145,8 +146,17 @@ export function PayslipSection({ employerId }: Props) {
     if (filterPeriod) {
       result = result.filter((p) => periodLabelFor(p.year, p.month) === filterPeriod)
     }
+    const q = searchTerm.trim().toLowerCase()
+    if (q) {
+      result = result.filter((p) => {
+        const name = getEmployeeName(p.employeeId).toLowerCase()
+        const period = periodLabelFor(p.year, p.month).toLowerCase()
+        return name.includes(q) || period.includes(q)
+      })
+    }
     return result
-  }, [allPayslips, filterEmployeeId, filterPeriod])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPayslips, filterEmployeeId, filterPeriod, searchTerm, contracts])
 
   const selectedContract = contracts.find((c) => c.id === selectedContractId)
 

@@ -4,7 +4,7 @@
  * Les declarations sont persistees en base (table cesu_declarations).
  */
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import {
   Box,
   VStack,
@@ -42,9 +42,10 @@ import { formatHoursCompact } from '@/lib/formatHours'
 
 interface Props {
   employerId: string
+  searchTerm?: string
 }
 
-export function CesuDeclarationSection({ employerId }: Props) {
+export function CesuDeclarationSection({ employerId, searchTerm = '' }: Props) {
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
@@ -70,6 +71,12 @@ export function CesuDeclarationSection({ employerId }: Props) {
   // ── Historique des declarations (persistees en base)
   const [declarations, setDeclarations] = useState<CesuDeclarationRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
+
+  const filteredDeclarations = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return declarations
+    return declarations.filter((r) => r.periodLabel.toLowerCase().includes(q))
+  }, [declarations, searchTerm])
 
   // ── Chargement initial depuis la base
   useEffect(() => {
@@ -254,6 +261,15 @@ export function CesuDeclarationSection({ employerId }: Props) {
             </EmptyState.Description>
           </EmptyState.Content>
         </EmptyState.Root>
+      ) : filteredDeclarations.length === 0 ? (
+        <EmptyState.Root>
+          <EmptyState.Content>
+            <EmptyState.Title>Aucun résultat</EmptyState.Title>
+            <EmptyState.Description>
+              Aucune déclaration ne correspond à « {searchTerm} ».
+            </EmptyState.Description>
+          </EmptyState.Content>
+        </EmptyState.Root>
       ) : (
         <Box overflowX="auto">
           <Table.Root size="sm">
@@ -267,7 +283,7 @@ export function CesuDeclarationSection({ employerId }: Props) {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {declarations.map((r) => (
+              {filteredDeclarations.map((r) => (
                 <Table.Row key={r.id}>
                   <Table.Cell>
                     <Text fontWeight="medium" fontSize="sm">{r.periodLabel}</Text>

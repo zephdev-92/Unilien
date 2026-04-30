@@ -3,7 +3,7 @@
  * Pattern doc-list : icône SVG + doc-info (nom + meta) + actions (télécharger + statut pill).
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   VStack,
   HStack,
@@ -24,6 +24,7 @@ import { logger } from '@/lib/logger'
 
 interface Props {
   employerId: string
+  searchTerm?: string
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -61,10 +62,21 @@ function DownloadIcon() {
   )
 }
 
-export function ContractsSection({ employerId }: Props) {
+export function ContractsSection({ employerId, searchTerm = '' }: Props) {
   const [contracts, setContracts] = useState<ContractWithEmployee[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const filteredContracts = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return contracts
+    return contracts.filter((c) => {
+      const name = c.employee
+        ? `${c.employee.firstName} ${c.employee.lastName}`.toLowerCase()
+        : ''
+      return name.includes(q) || c.contractType.toLowerCase().includes(q)
+    })
+  }, [contracts, searchTerm])
 
   const loadContracts = useCallback(async () => {
     try {
@@ -112,9 +124,22 @@ export function ContractsSection({ employerId }: Props) {
     )
   }
 
+  if (filteredContracts.length === 0) {
+    return (
+      <EmptyState.Root>
+        <EmptyState.Content>
+          <EmptyState.Title>Aucun résultat</EmptyState.Title>
+          <EmptyState.Description>
+            Aucun contrat ne correspond à « {searchTerm} ».
+          </EmptyState.Description>
+        </EmptyState.Content>
+      </EmptyState.Root>
+    )
+  }
+
   return (
     <VStack gap={0} align="stretch">
-      {contracts.map((contract) => (
+      {filteredContracts.map((contract) => (
         <Box
           key={contract.id}
           py={4}
