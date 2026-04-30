@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 23 avril 2026 (2266 tests / 130 fichiers — chantier upload bulletin URSSAF + pause L3121-16 enforced)
-**Version**: 1.16.0
+**Dernière mise à jour**: 30 avril 2026 (2286 tests / 133 fichiers — listes courses multi-templates + auto-reload chunk error)
+**Version**: 1.17.0
 **Statut projet**: 🟡 En développement actif
 
 ---
@@ -14,21 +14,21 @@
 |-----------|------------|--------|
 | **Authentification** | 99% | ✅ Excellent (login, signup, reset, rôles, OAuth Google/Microsoft, 2FA TOTP, recovery codes V2) |
 | **Dashboards** | 97% | ✅ Excellent (3 dashboards rôle-spécifiques + mobile aidant, dark mode, onboarding widget, CTAs dynamiques, empty state aucun employé ✅ — demo banner manquant) |
-| **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + courses, pause L3121-16 auto-enforced) |
+| **Planning** | 98% | ✅ Excellent (semaine/mois, shifts 24h, absences IDCC 3239, conflits, répétition, TaskSelector + listes courses multi-templates, pause L3121-16 auto-enforced) |
 | **Cahier de liaison** | 85% | 🟡 Bon (realtime, typing indicators, pièces jointes — réactions emoji/search/archive manquants) |
 | **Équipe/Contrats** | 90% | ✅ Bon (contrats, aidants, permissions — recherche avancée, disponibilités, évaluations V2) |
 | **Conformité** | 95% | ✅ Excellent |
 | **Documents/Export** | 92% | 🟡 Bon (upload bulletin URSSAF employeur + lecture employé, CESU, planning exports — search + table unifiée manquants, génération PDF bulletin retirée) |
 | **Notifications** | 85% | 🟡 Bon (in-app + push + email Resend OK — SMS + vérification tél manquants) |
-| **Tests** | 54% stmts | 🟡 Bon (2266 tests / 130 fichiers, E2E Playwright 8 tests — Phase 3 UI terminée, plus de scénarios E2E à faire) |
+| **Tests** | 54% stmts | 🟡 Bon (2286 tests / 133 fichiers, E2E Playwright 8 tests — Phase 3 UI terminée, plus de scénarios E2E à faire) |
 | **Sécurité** | 98% | ✅ Excellent (RLS renforcé 041-049, RGPD art. 9, audit trail, droit effacement, CSP enforced — pgsodium V3) |
 | **Qualité code** | 98% | ✅ Excellent (0 `select('*')`, 0 Supabase direct dans composants, Provider snippet v3, 0 `as any`, 0 `eslint-disable` type) |
 
 ### Métriques Clés
 
-- **Fichiers source**: ~265 fichiers TS/TSX (hors tests — génération bulletin retirée)
-- **Tests**: 2266 tests / 130 fichiers (54% stmts — 54/40/40/50 seuils) + 8 tests E2E Playwright
-- **Migrations DB**: 52 migrations (052 : payslips computed columns nullable)
+- **Fichiers source**: ~270 fichiers TS/TSX (hors tests)
+- **Tests**: 2286 tests / 133 fichiers (54% stmts — 54/40/40/50 seuils) + 8 tests E2E Playwright
+- **Migrations DB**: 56 migrations (056 : shopping list templates max 5)
 - **Composants UI**: ~145 composants
 - **Services**: 30 services
 - **Hooks**: 24 hooks custom
@@ -37,7 +37,80 @@
 
 ---
 
-## ✅ Réalisations Récentes (Semaines 6-21 - Février/Avril 2026)
+## ✅ Réalisations Récentes (Semaines 6-22 - Février/Avril 2026)
+
+### Semaine 22 — 24-30 avril 2026 (PRs #305–#330)
+
+#### Listes de courses multi-templates (PRs #326, #328, #329)
+
+Refonte complète : auparavant, une seule liste par employeur. Désormais jusqu'à **5 templates** nommables, sélectionnables au moment de la création d'un shift.
+
+- **#326** — Backend : table `shopping_list_templates` (max 5 par employeur via trigger), service CRUD + RLS, hook `useShoppingListTemplates`. Migration 056.
+- **#327** — Hotfix migration 056 (contenu manquant après squash)
+- **#328** — UI Paramètres > Interventions : panneau de gestion des templates (création, renommage, suppression, default toggle)
+- **#329** — UI `TaskSelector` : sélecteur de liste toujours visible quand au moins un template existe (vs > 1 avant), select pleine largeur, phrase d'aide remontée au-dessus avec lien vers Paramètres > Interventions
+
+#### Auto-reload sur chunk error post-deploy (PR #330 ✅)
+
+Erreur observée en prod : `TypeError: error loading dynamically imported module: /assets/Dashboard-D1aXmBmj.js` quand un onglet ouvert depuis longtemps tentait de naviguer vers une page lazy-loaded après un redeploy.
+
+- Nouveau `lib/chunkErrorHandler.ts` : 4 patterns Vite détectés (`Failed to fetch dynamically imported module`, etc.)
+- Listeners sur `vite:preloadError` + `unhandledrejection`
+- Anti-boucle via flag `sessionStorage`, effacé au prochain idle
+- `ErrorBoundary.componentDidCatch` tente d'abord un reload silencieux avant d'afficher le fallback UI
+- 10 tests unitaires
+
+#### CESU récap mensuel détaillé (PR #325 ✅)
+
+Détail des cotisations + estimation du net mensuel basée sur l'historique des shifts.
+
+#### Présence responsable jour/nuit (PRs #320, #323, #324 ✅)
+
+Suite des refontes IDCC 3239 :
+- **#320** — Avertissement `PresenceMixedWarning` aussi affiché en mode lecture (pas seulement édition)
+- **#323** — Fusion des deux options `presence_day` / `presence_night` en une seule "Présence responsable" avec auto-détection
+- **#324** — Calcul de paie split jour/nuit pour les shifts à cheval (3h jour ×2/3 + 2h nuit ×1/4 plutôt qu'un régime unique sur la durée totale)
+
+#### Pages légales + sweep `unilien.fr` (PR #318 ✅)
+
+CGU + Politique de confidentialité statiques, et balayage de toutes les références résiduelles à `unilien.fr` / nom personnel dans le code et les templates email.
+
+#### Avatars storage paths (PR #306 ✅)
+
+Plus aucune URL signée stockée en DB — uniquement le path. La résolution se fait runtime via le store auth, qui se rafraîchit sur changement. Permet de durcir la CSP (suppression de `*.supabase.co` côté `img-src`, cf. PR #307).
+
+#### Pointage désactivé v1 + spec QR pointage (PRs #311, #312 ✅)
+
+Décision produit : pointage déclaratif désactivé en v1 via feature flag `FEATURES.clockIn = false`, remplacé à terme par un pointage QR code. Spec d'implémentation rédigée (`docs/QR_CLOCKIN_IMPLEMENTATION.md`, ~390 lignes — RGPD CNIL, modèle de données, UX flow, 4 décisions à valider Marie).
+
+#### Dashboard auxi : prochaine intervention (PR #309 ✅)
+
+Remplacement de la card "Taux de présence" (calcul buggé) par "Prochaine intervention" avec format relatif (`Aujourd'hui · 14h00` / `Demain · 9h00`).
+
+#### Récap garde 24h en lecture (PR #313 ✅)
+
+Composant `Guard24hRecap` affiché en mode lecture du shift : timeline visuelle + travail effectif / présence jour/nuit / total astreinte / heures nuit majorées.
+
+#### Fixes auth + DB (PRs #314, #315, #316 ✅)
+
+- **#314** — Magic link invitation : flow réparé après refonte auth
+- **#315** — RPC `delete_own_account` corrigée (référence orpheline)
+- **#316** — Widget messages récents + cascade suppression conversations dans `delete_own_account`
+
+#### Quick wins (PRs #317, #319, #321, #322 ✅)
+
+- **#317** — Sweep i18n des chaînes françaises restantes
+- **#319** — "Différer la liste à plus tard" sur création de shift avec pastille de rappel sur calendrier
+- **#321** — Garder les heures du shift quand on change de type dans la modale création
+- **#322** — Préserver le type stocké à l'ouverture de la modale d'édition
+
+#### Métriques session (30/04/2026)
+
+- PRs : #305–#330 (26 PRs)
+- Tests : 2286 / 133 fichiers (+20 vs S21)
+- Migrations : 56 (+4 : avatar_url_to_path, fix delete account x2, shopping list templates)
+
+---
 
 ### Semaine 21 — 22-23 avril 2026 (PRs #281–#302)
 
