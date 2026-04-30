@@ -3,8 +3,17 @@ import ReactDOM, { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { Provider } from '@/components/ui/provider'
 import { ErrorBoundary } from '@/components/ui'
+import { registerChunkErrorHandlers, clearChunkReloadFlag } from '@/lib/chunkErrorHandler'
 import App from './App'
 import './index.css'
+
+registerChunkErrorHandlers()
+// Si le rendu démarre sans erreur, on peut effacer le flag de reload
+if (typeof window.requestIdleCallback === 'function') {
+  window.requestIdleCallback(clearChunkReloadFlag)
+} else {
+  setTimeout(clearChunkReloadFlag, 2000)
+}
 
 if (import.meta.env.DEV) {
   import('@axe-core/react').then((axe) => {
