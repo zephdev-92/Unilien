@@ -145,19 +145,14 @@ describe('TaskSelector — filtre', () => {
 describe('TaskSelector — liste de courses', () => {
   it('n\'affiche pas la liste de courses si Courses n\'est pas coché', () => {
     renderTaskSelector({ value: ['Aide au lever'] })
-    expect(screen.queryByText('Liste de courses')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Pas obligatoire maintenant/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Aucune liste configurée/)).not.toBeInTheDocument()
   })
 
   it('affiche la liste de courses quand Courses est coché', () => {
     renderTaskSelector({ value: ['Courses'] })
-    expect(screen.getByText('Liste de courses')).toBeInTheDocument()
-  })
-
-  it('affiche les champs d\'ajout d\'article quand Courses est coché', () => {
-    renderTaskSelector({ value: ['Courses'] })
-    expect(screen.getByPlaceholderText('Article…')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Marque')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Note (optionnel)…')).toBeInTheDocument()
+    // Sans template configuré, on doit voir le message d'invite
+    expect(screen.getByText(/Aucune liste configurée/)).toBeInTheDocument()
   })
 
   it('supprime les articles quand on décoche Courses', () => {
@@ -292,12 +287,3 @@ describe('TaskSelector — suppression article inline', () => {
   })
 })
 
-// ── Accessibilité autocomplete ──
-
-describe('TaskSelector — accessibilité autocomplete', () => {
-  it('le champ article a role=combobox', () => {
-    renderTaskSelector({ value: ['Courses'] })
-    const input = screen.getByPlaceholderText('Article…')
-    expect(input).toHaveAttribute('role', 'combobox')
-  })
-})

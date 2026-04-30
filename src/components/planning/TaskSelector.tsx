@@ -13,7 +13,7 @@ import {
   parseShoppingItemString,
 } from '@/lib/constants/taskDefaults'
 import type { ShoppingItem } from '@/lib/constants/taskDefaults'
-import { loadDefaultTasks, loadCustomTasks, useInterventionSettings } from '@/hooks/useInterventionSettings'
+import { loadDefaultTasks, loadCustomTasks } from '@/hooks/useInterventionSettings'
 import { useShoppingListTemplates } from '@/hooks/useShoppingListTemplates'
 
 const MAX_CUSTOM_TASKS = 20
@@ -126,7 +126,6 @@ interface TaskSelectorProps {
 }
 
 export function TaskSelector({ value, onChange, prefillFromSettings = false }: TaskSelectorProps) {
-  const { articleSuggestions, searchArticles, trackArticle } = useInterventionSettings()
   const { templates, defaultTemplate } = useShoppingListTemplates()
 
   // Template sélectionné pour l'intervention en cours
@@ -187,16 +186,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
   )
 
   const [newCustomTask, setNewCustomTask] = useState('')
-  const [newShoppingName, setNewShoppingName] = useState('')
-  const [newShoppingBrand, setNewShoppingBrand] = useState('')
-  const [newShoppingNote, setNewShoppingNote] = useState('')
   const [taskFilter, setTaskFilter] = useState('')
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [suggestionIndex, setSuggestionIndex] = useState(-1)
-  const [lastAddedItem, setLastAddedItem] = useState<string | null>(null)
-  const suggestionsRef = useRef<HTMLDivElement>(null)
-  const brandInputRef = useRef<HTMLInputElement>(null)
-  const noteInputRef = useRef<HTMLInputElement>(null)
 
   const coursesSelected = selectedTasks.includes('Courses')
 
@@ -279,97 +269,6 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
     emitChange({ custom: customTasks.filter(t => t !== task) })
   }
 
-  const addShoppingItem = () => {
-    const name = newShoppingName.trim()
-    if (!name) return
-    const brand = newShoppingBrand.trim()
-    const note = newShoppingNote.trim()
-    const item: ShoppingItem = { name, brand, quantity: 1, note }
-    const formatted = formatShoppingItem(item)
-    if (shoppingItems.includes(formatted)) return
-    emitChange({ shopping: [...shoppingItems, formatted] })
-    setNewShoppingName('')
-    setNewShoppingBrand('')
-    setNewShoppingNote('')
-    setShowSuggestions(false)
-    // Feedback visuel
-    setLastAddedItem(formatted)
-    setTimeout(() => setLastAddedItem(null), 1500)
-    // Track dans l'historique
-    trackArticle(name, brand)
-  }
-
-  // Autocomplete : recherche debounced quand on tape le nom
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
-    if (newShoppingName.trim().length >= 2) {
-      searchTimerRef.current = setTimeout(() => {
-        searchArticles(newShoppingName.trim())
-        setShowSuggestions(true)
-        setSuggestionIndex(-1)
-      }, 300)
-    } else {
-      setShowSuggestions(false)
-      setSuggestionIndex(-1)
-    }
-    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [newShoppingName])
-
-  // Fermer suggestions au clic extérieur
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
-  const selectSuggestion = (suggestion: { name: string; brand: string }) => {
-    setNewShoppingName(suggestion.name)
-    setNewShoppingBrand(suggestion.brand)
-    setShowSuggestions(false)
-    setSuggestionIndex(-1)
-    // Focus le champ note après sélection
-    setTimeout(() => noteInputRef.current?.focus(), 0)
-  }
-
-  // Navigation clavier dans l'autocomplete
-  const handleArticleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showSuggestions || articleSuggestions.length === 0) {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        brandInputRef.current?.focus()
-      }
-      return
-    }
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSuggestionIndex(prev =>
-        prev < articleSuggestions.length - 1 ? prev + 1 : 0,
-      )
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSuggestionIndex(prev =>
-        prev > 0 ? prev - 1 : articleSuggestions.length - 1,
-      )
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      if (suggestionIndex >= 0 && suggestionIndex < articleSuggestions.length) {
-        selectSuggestion(articleSuggestions[suggestionIndex])
-      } else {
-        brandInputRef.current?.focus()
-      }
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false)
-      setSuggestionIndex(-1)
-    }
-  }
-
   // Tous les articles disponibles depuis les paramètres (réactif via le store)
   const allShoppingItems: { item: ShoppingItem; formatted: string; checked: boolean }[] = useMemo(() => {
     const savedItems = savedShoppingList
@@ -449,10 +348,13 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                   borderRadius="0 8px 8px 0"
                   py={2}
                 >
-                  {/* Sélecteur de liste (visible uniquement si plusieurs templates) */}
-                  {templates.length > 1 && (
-                    <Flex justify="space-between" align="center" px={2} mb={2} gap={2}>
-                      <Text fontSize="xs" fontWeight="600" color="text.muted" whiteSpace="nowrap">
+                  {/* Sélecteur de liste (toujours visible s'il existe au moins un template) */}
+                  {templates.length > 0 ? (
+                    <Box px={2} mb={2}>
+                      <Text fontSize="xs" color="text.muted" fontStyle="italic" mb={2}>
+                        💡 Vous pourrez choisir votre liste plus tard depuis l&apos;intervention. Créez vos listes dans <Text as="strong">Paramètres &gt; Interventions</Text>.
+                      </Text>
+                      <Text fontSize="xs" fontWeight="600" color="text.muted" mb={1}>
                         Liste à utiliser
                       </Text>
                       <Box
@@ -467,17 +369,18 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                             emitChange({ shopping: tpl.items.map(formatShoppingItem) })
                           }
                         }}
-                        flex={1}
-                        px={2} py={1}
+                        width="100%"
+                        px={3} py={2}
                         borderRadius="8px"
                         borderWidth="1.5px"
                         borderColor="border.default"
                         bg="bg.surface"
-                        fontSize="xs"
+                        fontSize="sm"
                         fontWeight="500"
                         cursor="pointer"
                         _hover={{ borderColor: 'brand.solid' }}
                         aria-label="Choisir la liste de courses"
+                        disabled={templates.length === 1}
                       >
                         {templates.map(t => (
                           <option key={t.id} value={t.id}>
@@ -485,15 +388,16 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                           </option>
                         ))}
                       </Box>
-                    </Flex>
+                    </Box>
+                  ) : (
+                    <Text fontSize="xs" color="text.muted" px={2} mb={2} fontStyle="normal">
+                      💡 Aucune liste configurée — créez-en une depuis <Text as="strong">Paramètres &gt; Interventions</Text>.
+                    </Text>
                   )}
 
-                  {/* Header shopping avec toggle all */}
-                  <Flex justify="space-between" align="center" px={2} mb={1}>
-                    <Text fontSize="xs" fontWeight="600" color="text.muted">
-                      {templates.length > 1 ? selectedTemplate?.name ?? 'Liste de courses' : 'Liste de courses'}
-                    </Text>
-                    {allShoppingItems.length > 0 && (
+                  {/* Toggle all */}
+                  {allShoppingItems.length > 0 && (
+                    <Flex justify="flex-end" px={2} mb={1}>
                       <Box
                         as="button" type="button"
                         fontSize="xs" color="brand.500"
@@ -503,13 +407,7 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                       >
                         {allShoppingChecked ? 'Tout décocher' : 'Tout cocher'}
                       </Box>
-                    )}
-                  </Flex>
-
-                  {shoppingCount === 0 && (
-                    <Text fontSize="xs" color="text.muted" fontStyle="italic" px={2} mb={2}>
-                      💡 Pas obligatoire maintenant — vous pourrez compléter la liste plus tard depuis le détail de l&apos;intervention.
-                    </Text>
+                    </Flex>
                   )}
 
                   <Stack gap={0}>
@@ -522,13 +420,6 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                       <Flex
                         key={formatted}
                         align="center"
-                        css={{
-                          animation: lastAddedItem === formatted ? 'fadeInGreen 0.4s ease' : undefined,
-                          '@keyframes fadeInGreen': {
-                            '0%': { background: 'var(--chakra-colors-green-50)' },
-                            '100%': { background: 'transparent' },
-                          },
-                        }}
                       >
                         <Box flex={1}>
                           <TaskCheckbox
@@ -559,107 +450,6 @@ export function TaskSelector({ value, onChange, prefillFromSettings = false }: T
                     ))}
                   </Stack>
 
-                  {/* Ajout article avec autocomplete */}
-                  <Box mt={2} px={2} position="relative" ref={suggestionsRef}>
-                    <Flex gap={2}>
-                      <Box flex={2} position="relative">
-                        <Input
-                          size="sm"
-                          placeholder="Article…"
-                          value={newShoppingName}
-                          onChange={e => setNewShoppingName(e.target.value)}
-                          onKeyDown={handleArticleKeyDown}
-                          onFocus={() => {
-                            if (newShoppingName.trim().length >= 2) setShowSuggestions(true)
-                          }}
-                          borderRadius="8px"
-                          fontSize="xs"
-                          role="combobox"
-                          aria-label="Nom de l'article"
-                          aria-expanded={showSuggestions && articleSuggestions.length > 0}
-                          aria-activedescendant={suggestionIndex >= 0 ? `suggestion-${suggestionIndex}` : undefined}
-                        />
-                        {/* Dropdown autocomplete */}
-                        {showSuggestions && articleSuggestions.length > 0 && (
-                          <Box
-                            position="absolute"
-                            top="100%" left={0} right={0}
-                            bg="bg.page"
-                            borderWidth="1px"
-                            borderColor="border.default"
-                            borderRadius="8px"
-                            boxShadow="md"
-                            zIndex={10}
-                            maxH="120px"
-                            overflowY="auto"
-                            mt={1}
-                            role="listbox"
-                          >
-                            {articleSuggestions.map((s, idx) => (
-                              <Box
-                                key={`${s.name}::${s.brand}`}
-                                id={`suggestion-${idx}`}
-                                px={3} py={1.5}
-                                fontSize="xs"
-                                cursor="pointer"
-                                bg={idx === suggestionIndex ? 'bg.muted' : undefined}
-                                _hover={{ bg: 'bg.muted' }}
-                                onClick={() => selectSuggestion(s)}
-                                role="option"
-                                aria-selected={idx === suggestionIndex}
-                              >
-                                <Text fontWeight="500">{s.name}</Text>
-                                {s.brand && (
-                                  <Text as="span" color="text.muted" ml={1}>({s.brand})</Text>
-                                )}
-                              </Box>
-                            ))}
-                          </Box>
-                        )}
-                      </Box>
-                      <Input
-                        ref={brandInputRef}
-                        size="sm"
-                        placeholder="Marque"
-                        value={newShoppingBrand}
-                        onChange={e => setNewShoppingBrand(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            noteInputRef.current?.focus()
-                          }
-                        }}
-                        borderRadius="8px"
-                        fontSize="xs"
-                        flex={1}
-                        aria-label="Marque de l'article"
-                      />
-                    </Flex>
-                    <Flex gap={2} mt={1}>
-                      <Input
-                        ref={noteInputRef}
-                        size="sm"
-                        placeholder="Note (optionnel)…"
-                        value={newShoppingNote}
-                        onChange={e => setNewShoppingNote(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addShoppingItem() } }}
-                        borderRadius="8px"
-                        fontSize="xs"
-                        flex={1}
-                        aria-label="Note pour l'article"
-                      />
-                      <Box
-                        as="button" type="button"
-                        px={3} py={1}
-                        bg="brand.500" color="white"
-                        borderRadius="8px" fontSize="xs" fontWeight="600"
-                        onClick={addShoppingItem}
-                        _hover={{ bg: 'brand.600' }}
-                        flexShrink={0}
-                        aria-label="Ajouter l'article"
-                      >+</Box>
-                    </Flex>
-                  </Box>
                 </Box>
               )}
             </Box>
