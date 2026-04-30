@@ -2320,11 +2320,10 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
    - ❌ Export PDF graphiques
    - ❌ Heures travaillées vs contractuelles (auxiliaire)
 
-5. **Profile completion widget** (prototype `profile.html`) — distinct de l'`OnboardingWidget` du dashboard (qui couvre profil/équipe/intervention macro, PR #237). Ici : widget **sidebar dédié dans ProfilePage** avec checklist détaillée des champs.
-   - ❌ Layout sidebar sur `ProfilePage` (content-sidebar-layout)
-   - ❌ Barre progression + checklist par rôle (employer 83% / employee 71% / caregiver 72%) avec liens "Compléter →" / "Activer →"
-   - ❌ Widgets sidebar contextuels : Sécurité (mdp + 2FA), Mon employeur (employee), Mon enveloppe PCH (caregiver)
-   - Voir `memory/profile-completion-widget.md`
+5. ✅ **Profile completion widget** — implémenté dans `src/components/profile/ProfileSidebar.tsx` (190 l.) + `ProfileCompletionWidget.tsx` (160 l.), branché sur `ProfilePage:260`.
+   - ✅ Layout sidebar 300px (responsive base/lg) sur `ProfilePage`
+   - ✅ Barre progression + checklist par rôle : employer (7 items), employee (7 items), caregiver (4 items) avec liens "Renseigner →" / "Configurer →" / "Activer →"
+   - ✅ SecurityWidget (mdp + 2FA via `useMfa` dynamique), EmployerWidget (employee → messagerie), PchWidget (caregiver → documents), bouton Déconnexion
 
 6. ✅ **Présence responsable & présence nuit dans les bulletins de paie** — `presenceResponsiblePay` (Art. 137.1, 2/3) et `nightPresenceAllowance` (Art. 148, forfait 1/4 ou 100% si requalifié) calculés dans `declarationService.ts` et transmis au bulletin. `sundayMajoration` pour `presence_day` basée sur `presenceResponsiblePay`.
 
