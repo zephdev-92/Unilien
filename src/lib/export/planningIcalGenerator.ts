@@ -6,21 +6,13 @@
 import { format, addDays } from 'date-fns'
 import type { PlanningExportData, PlanningShiftEntry, PlanningAbsenceEntry } from './types'
 import type { ExportResult } from './types'
+import { ABSENCE_TYPE_LABELS } from '@/lib/constants/statusMaps'
 
 const SHIFT_TYPE_LABELS: Record<string, string> = {
   effective: 'Intervention',
   presence_day: 'Présence jour',
   presence_night: 'Présence nuit',
   guard_24h: 'Garde 24h',
-}
-
-const ABSENCE_TYPE_LABELS: Record<string, string> = {
-  sick: 'Arrêt maladie',
-  vacation: 'Congé payé',
-  family_event: 'Événement familial',
-  training: 'Formation',
-  unavailable: 'Indisponibilité',
-  emergency: 'Urgence personnelle',
 }
 
 /** Repli à 74 caractères selon RFC 5545 §3.1 */

@@ -131,7 +131,7 @@ describe('MonthView', () => {
       const date = new Date('2026-02-12T12:00:00')
       const absence = makeAbsence(date, date, { absenceType: 'vacation' })
       renderWithProviders(<MonthView {...defaultProps} absences={[absence]} />)
-      expect(screen.getByText('Congé payé')).toBeInTheDocument()
+      expect(screen.getByText('Congés payés')).toBeInTheDocument()
     })
 
     it('affiche une absence multi-jours sur chaque jour concerné', () => {
@@ -139,15 +139,15 @@ describe('MonthView', () => {
       const end = new Date('2026-02-11T12:00:00')
       const absence = makeAbsence(start, end, { absenceType: 'training' })
       renderWithProviders(<MonthView {...defaultProps} absences={[absence]} />)
-      const labels = screen.getAllByText('Formation')
+      const labels = screen.getAllByText('Congé formation')
       expect(labels).toHaveLength(3) // 9, 10, 11 fév
     })
 
-    it('affiche les types : Maladie, Formation, Indispo., Urgence', () => {
+    it('affiche les types : Arrêt maladie, Congé formation, Indispo., Urgence', () => {
       const date = new Date('2026-02-20T12:00:00')
       for (const [type, label] of [
-        ['sick', 'Maladie'],
-        ['training', 'Formation'],
+        ['sick', 'Arrêt maladie'],
+        ['training', 'Congé formation'],
         ['unavailable', 'Indisponibilité'],
         ['emergency', 'Urgence personnelle'],
       ] as const) {
@@ -216,7 +216,7 @@ describe('MonthView', () => {
       renderWithProviders(
         <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      const card = screen.getByText('Arrêt maladie').closest('[role="button"]')!
       fireEvent.click(card)
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -228,7 +228,7 @@ describe('MonthView', () => {
       renderWithProviders(
         <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      const card = screen.getByText('Arrêt maladie').closest('[role="button"]')!
       fireEvent.keyDown(card, { key: 'Enter' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -240,7 +240,7 @@ describe('MonthView', () => {
       renderWithProviders(
         <MonthView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText('Maladie').closest('[role="button"]')!
+      const card = screen.getByText('Arrêt maladie').closest('[role="button"]')!
       fireEvent.keyDown(card, { key: ' ' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })

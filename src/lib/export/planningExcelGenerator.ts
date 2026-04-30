@@ -8,6 +8,7 @@ import { fr } from 'date-fns/locale'
 import type { PlanningExportData, EmployeePlanningData } from './types'
 import type { ExportResult } from './types'
 import type * as XLSXType from 'xlsx'
+import { ABSENCE_TYPE_LABELS } from '@/lib/constants/statusMaps'
 
 const DAYS_FR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
 
@@ -16,15 +17,6 @@ const SHIFT_TYPE_LABELS: Record<string, string> = {
   presence_day: 'Présence jour',
   presence_night: 'Présence nuit',
   guard_24h: 'Garde 24h',
-}
-
-const ABSENCE_TYPE_LABELS: Record<string, string> = {
-  sick: 'Arrêt maladie',
-  vacation: 'Congé payé',
-  family_event: 'Événement familial',
-  training: 'Formation',
-  unavailable: 'Indisponibilité',
-  emergency: 'Urgence personnelle',
 }
 
 const STATUS_LABELS: Record<string, string> = {

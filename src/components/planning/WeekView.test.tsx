@@ -127,8 +127,8 @@ describe('WeekView', () => {
     it('affiche le type d\'absence suivi de "Congé"', () => {
       const absence = makeAbsence(1, { absenceType: 'sick' })
       renderWithProviders(<WeekView {...defaultProps} absences={[absence]} />)
-      // Le composant affiche "Maladie — Congé"
-      expect(screen.getByText(/Maladie/)).toBeInTheDocument()
+      // Le composant affiche "Arrêt maladie — Congé"
+      expect(screen.getByText(/Arrêt maladie/)).toBeInTheDocument()
     })
 
     it('affiche la raison si présente', () => {
@@ -143,8 +143,8 @@ describe('WeekView', () => {
         endDate: addDays(weekStart(), 3),   // Jeudi
       })
       renderWithProviders(<WeekView {...defaultProps} absences={[absence]} />)
-      // "Maladie" apparaît 3 fois (mardi, mercredi, jeudi)
-      const labels = screen.getAllByText(/Maladie/)
+      // "Arrêt maladie" apparaît 3 fois (mardi, mercredi, jeudi)
+      const labels = screen.getAllByText(/Arrêt maladie/)
       expect(labels).toHaveLength(3)
     })
   })
@@ -200,7 +200,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText(/Maladie/).closest('[role="button"]')!
+      const card = screen.getByText(/Arrêt maladie/).closest('[role="button"]')!
       fireEvent.click(card)
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -211,7 +211,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText(/Maladie/).closest('[role="button"]')!
+      const card = screen.getByText(/Arrêt maladie/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: 'Enter' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
@@ -222,7 +222,7 @@ describe('WeekView', () => {
       renderWithProviders(
         <WeekView {...defaultProps} absences={[absence]} onAbsenceClick={onAbsenceClick} />
       )
-      const card = screen.getByText(/Maladie/).closest('[role="button"]')!
+      const card = screen.getByText(/Arrêt maladie/).closest('[role="button"]')!
       fireEvent.keyDown(card, { key: ' ' })
       expect(onAbsenceClick).toHaveBeenCalledWith(absence)
     })
