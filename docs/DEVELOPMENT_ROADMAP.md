@@ -2311,8 +2311,8 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
    - ❌ Bandeau "Mode démo" dismissible (localStorage)
    - ✅ Variante dashboard quand aucun employé (icône + CTA "Ajouter un auxiliaire")
 
-3. **Document search + table unifiée** — recherche déjà couverte côté global via `SpotlightSearch` (Ctrl+K, `searchDocuments` dans `searchService.ts`).
-   - 🔧 Champ recherche dédié sur la page Documents (nom, type, période) — manquant dans la page elle-même, l'utilisateur passe par Ctrl+K
+3. **Document search + table unifiée**
+   - ✅ Champ recherche dédié sur la page Documents — `<Input>` au-dessus des Tabs avec placeholder dynamique. Filtre côté client sur 4 onglets : Bulletins (employé + période), Contrats (employé + type), Absences (employé + motif + libellé type), Déclarations CESU (période). Reset auto au changement de tab. Export planning = formulaire d'export, pas de liste donc pas de recherche.
    - 🔧 Optionnel : table `documents` centralisée avec `category` + métadonnées — structure actuelle = tables séparées par type (`payslips`, `cesu_declarations`, `absences`), refonte non bloquante
 
 4. **Analytics exports**
