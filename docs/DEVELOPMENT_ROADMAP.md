@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 30 avril 2026 (2286 tests / 133 fichiers — listes courses multi-templates + auto-reload chunk error)
+**Dernière mise à jour**: 30 avril 2026 (2286 tests / 133 fichiers — listes courses multi-templates + auto-reload chunk error + harmonisation libellés absence)
 **Version**: 1.17.0
 **Statut projet**: 🟡 En développement actif
 
@@ -104,9 +104,16 @@ Composant `Guard24hRecap` affiché en mode lecture du shift : timeline visuelle 
 - **#321** — Garder les heures du shift quand on change de type dans la modale création
 - **#322** — Préserver le type stocké à l'ouverture de la modale d'édition
 
+#### Harmonisation libellés motifs d'absence (PR #332 ✅)
+
+Feedback Marie : les labels affichés en lecture (`Maladie`, `Congé payé`, `Formation`) divergeaient du wording du modal de demande (`Arrêt maladie`, `Congé formation`). Refonte :
+- `statusMaps.ts` (canonique) : `Maladie` → **`Arrêt maladie`**, `Congé payé` → **`Congés payés`**, `Formation` → **`Congé formation`**
+- `AbsenceRequestModal` : option par défaut `Congés payés (CP)` + 3 textes contextuels alignés
+- Déduplication : `planningExcelGenerator`, `planningIcalGenerator`, `searchService` importent désormais `ABSENCE_TYPE_LABELS` depuis statusMaps (3 copies divergentes supprimées, dont une qui avait `Maladie`/`Congé`/`Urgence` tronqués)
+
 #### Métriques session (30/04/2026)
 
-- PRs : #305–#330 (26 PRs)
+- PRs : #305–#332 (28 PRs)
 - Tests : 2286 / 133 fichiers (+20 vs S21)
 - Migrations : 56 (+4 : avatar_url_to_path, fix delete account x2, shopping list templates)
 
@@ -1380,8 +1387,7 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 - ✅ Fix requête read_by PostgREST (PGRST100)
 ```
 
-**Limitation** : `onboarding@resend.dev` → envoi uniquement vers l'email du compte Resend.
-**Prochaine étape** : vérifier un domaine dans Resend pour la prod.
+**Domaine vérifié** : `notifications@unilien.app` (PR #281) — envoi prod actif vers tous les destinataires.
 
 #### 4.3 SMS Notifications (Nouveau)
 
@@ -1562,7 +1568,7 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 - 🔧 Table documents (metadata) — tables séparées par type (payslips, cesu_declarations, absences) mais pas de table unifiée ⏳
 - ✅ Upload documents administratifs — bulletins ✅, CESU ✅, justificatifs absences ✅ (Storage Supabase)
 - 🔧 Catégorisation (contrat, bulletin, justificatif) — implicite par section, pas de champ category centralisé ⏳
-- ❌ Recherche documents
+- 🔧 Recherche documents — couverte via SpotlightSearch global (Ctrl+K), pas de champ dédié dans la page Documents ⏳
 - ✅ Prévisualisation — signed URLs bulletins + CESU + justificatifs ✅
 ```
 
@@ -1845,9 +1851,9 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 #### 13.2 Rate Limiting
 
 ```
-- ❌ Configuration Supabase (API limits)
+- 🔧 Configuration Supabase — Kong gateway en self-host applique du rate limit par défaut, pas de config custom côté projet ⏳
 - ✅ Rate limiting custom (Edge Functions) — send-email 10/min + send-push 30/min, réponse 429 ✅
-- ❌ Alerts dépassement limites
+- ❌ Alerts dépassement limites — pas de logging 429 ni dashboard
 ```
 
 **Effort**: 2 jours
@@ -2027,8 +2033,8 @@ Fichiers identifiés le 24/02/2026 comme candidats prioritaires au découpage (s
 - ✅ manualChunks Rollup : vendor 1.9MB → 7 chunks logiques (10/04/2026)
 - ✅ Import dynamique xlsx : ne charge que sur clic "Exporter Excel" (10/04/2026)
 - ✅ Mesurer le gain : -47% initial load (907KB → 478KB gzip)
-- ❌ Compression assets (vite-plugin-compression — Netlify gzip déjà actif)
-- ❌ CDN pour assets statiques
+- ✅ Compression assets — Caddy applique gzip + brotli auto sur le VPS depuis migration self-host (PR #284), plus de Netlify
+- ❌ CDN pour assets statiques — VPS sert direct via Caddy, OK pour le volume actuel
 ```
 
 **Résultats (10/04/2026)** :
@@ -2051,9 +2057,8 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 ```
 - ✅ Optimiser calculateNightHours() — calcul O(1) par intersections d'intervalles (utils.ts:126) ✅
 - 🔧 refetchOnWindowFocus — non applicable : pas de TanStack Query en prod (useEffect + services)
-- ❌ React.memo sur composants lourds — non audité, à faire si perf concrète mesurée
-- ❌ useMemo/useCallback optimisations — non audité
-- ❌ Virtualisation listes longues — pas de grandes listes pour l'instant
+- 🔧 React.memo / useMemo / useCallback — non audités, à faire si profiling fait remonter un goulot (pas de plainte UX actuelle)
+- 🔧 Virtualisation listes longues — non pertinent au volume actuel (planning ≤ 200 shifts/mois, équipe ≤ 15 auxi)
 - 🔧 Image lazy loading — non pertinent (pas d'images app, avatars via signed URLs Supabase)
 - ✅ Service Worker caching — workbox actif (assets + Storage Supabase cachés, /rest/v1/ exclu volontairement) ✅
 ```
@@ -2061,10 +2066,10 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 #### 16.3 Monitoring
 
 ```
-- ❌ Web Vitals tracking
-- ❌ Sentry error tracking
-- ❌ LogRocket session replay
-- ❌ Uptime monitoring (UptimeRobot)
+- ❌ Web Vitals tracking — librairie `web-vitals` non installée, à brancher sur un endpoint d'ingestion
+- ❌ Sentry error tracking — `@sentry/react` non installé, candidat principal pour la prod
+- ⛔ LogRocket / session replay — écarté pour RGPD (capture potentielle de données santé sensibles)
+- ❌ Uptime monitoring — pas configuré côté VPS self-host (UptimeRobot ou healthcheck Caddy à brancher)
 ```
 
 **Timeline**: Q2 2026
@@ -2300,26 +2305,25 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 
 ### 🔴 P1 — À faire prochainement
 
-1. **Domaine Resend** — vérifier un domaine pour débloquer l'envoi email à tous les utilisateurs (actuellement limité à `vzepharren@yahoo.fr`)
-   - ❌ Ajouter un domaine vérifié dans Resend
-   - ❌ Mettre à jour `from:` dans Edge Function `send-email`
+1. ✅ **Domaine Resend** — `notifications@unilien.app` configuré et déployé (PR #281, 22/04/2026), envoi prod actif
 
 2. **Demo banner + Empty state dashboard**
    - ❌ Bandeau "Mode démo" dismissible (localStorage)
    - ✅ Variante dashboard quand aucun employé (icône + CTA "Ajouter un auxiliaire")
 
-3. **Document search + table unifiée**
-   - ❌ Champ recherche sur la page Documents (nom, type, période)
-   - ❌ Optionnel : table `documents` centralisée avec `category` + métadonnées
+3. **Document search + table unifiée** — recherche déjà couverte côté global via `SpotlightSearch` (Ctrl+K, `searchDocuments` dans `searchService.ts`).
+   - 🔧 Champ recherche dédié sur la page Documents (nom, type, période) — manquant dans la page elle-même, l'utilisateur passe par Ctrl+K
+   - 🔧 Optionnel : table `documents` centralisée avec `category` + métadonnées — structure actuelle = tables séparées par type (`payslips`, `cesu_declarations`, `absences`), refonte non bloquante
 
 4. **Analytics exports**
    - ❌ Export Excel (données brutes interventions)
    - ❌ Export PDF graphiques
    - ❌ Heures travaillées vs contractuelles (auxiliaire)
 
-5. **Profile completion widget** (prototype `profile.html`)
-   - ❌ Widget progression par rôle (employer/employee/caregiver)
-   - ❌ Champs manquants listés avec liens
+5. **Profile completion widget** (prototype `profile.html`) — distinct de l'`OnboardingWidget` du dashboard (qui couvre profil/équipe/intervention macro, PR #237). Ici : widget **sidebar dédié dans ProfilePage** avec checklist détaillée des champs.
+   - ❌ Layout sidebar sur `ProfilePage` (content-sidebar-layout)
+   - ❌ Barre progression + checklist par rôle (employer 83% / employee 71% / caregiver 72%) avec liens "Compléter →" / "Activer →"
+   - ❌ Widgets sidebar contextuels : Sécurité (mdp + 2FA), Mon employeur (employee), Mon enveloppe PCH (caregiver)
    - Voir `memory/profile-completion-widget.md`
 
 6. ✅ **Présence responsable & présence nuit dans les bulletins de paie** — `presenceResponsiblePay` (Art. 137.1, 2/3) et `nightPresenceAllowance` (Art. 148, forfait 1/4 ou 100% si requalifié) calculés dans `declarationService.ts` et transmis au bulletin. `sundayMajoration` pour `presence_day` basée sur `presenceResponsiblePay`.
@@ -2346,7 +2350,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
     - ✅ SettingsPage (66 tests)
     - ✅ LiaisonPage (13 tests — PR #253)
     - ✅ LogbookPage (24 tests — PR #253)
-    - ❌ Nouveaux tests E2E (création shift, export CESU, notifications)
+    - 🔧 E2E Playwright : 8 tests auth + dashboard (PR #244) — manquent shift/CESU/notifications
 
 ### 🟢 V2 — Long terme
 
