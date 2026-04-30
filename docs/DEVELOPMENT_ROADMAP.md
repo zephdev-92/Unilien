@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 30 avril 2026 (2286 tests / 133 fichiers — listes courses multi-templates + auto-reload chunk error)
+**Dernière mise à jour**: 30 avril 2026 (2286 tests / 133 fichiers — listes courses multi-templates + auto-reload chunk error + harmonisation libellés absence)
 **Version**: 1.17.0
 **Statut projet**: 🟡 En développement actif
 
@@ -104,9 +104,16 @@ Composant `Guard24hRecap` affiché en mode lecture du shift : timeline visuelle 
 - **#321** — Garder les heures du shift quand on change de type dans la modale création
 - **#322** — Préserver le type stocké à l'ouverture de la modale d'édition
 
+#### Harmonisation libellés motifs d'absence (PR #332 ✅)
+
+Feedback Marie : les labels affichés en lecture (`Maladie`, `Congé payé`, `Formation`) divergeaient du wording du modal de demande (`Arrêt maladie`, `Congé formation`). Refonte :
+- `statusMaps.ts` (canonique) : `Maladie` → **`Arrêt maladie`**, `Congé payé` → **`Congés payés`**, `Formation` → **`Congé formation`**
+- `AbsenceRequestModal` : option par défaut `Congés payés (CP)` + 3 textes contextuels alignés
+- Déduplication : `planningExcelGenerator`, `planningIcalGenerator`, `searchService` importent désormais `ABSENCE_TYPE_LABELS` depuis statusMaps (3 copies divergentes supprimées, dont une qui avait `Maladie`/`Congé`/`Urgence` tronqués)
+
 #### Métriques session (30/04/2026)
 
-- PRs : #305–#330 (26 PRs)
+- PRs : #305–#332 (28 PRs)
 - Tests : 2286 / 133 fichiers (+20 vs S21)
 - Migrations : 56 (+4 : avatar_url_to_path, fix delete account x2, shopping list templates)
 
@@ -1380,8 +1387,7 @@ Le focus n'est pas géré après les changements de route. L'utilisateur au clav
 - ✅ Fix requête read_by PostgREST (PGRST100)
 ```
 
-**Limitation** : `onboarding@resend.dev` → envoi uniquement vers l'email du compte Resend.
-**Prochaine étape** : vérifier un domaine dans Resend pour la prod.
+**Domaine vérifié** : `notifications@unilien.app` (PR #281) — envoi prod actif vers tous les destinataires.
 
 #### 4.3 SMS Notifications (Nouveau)
 
@@ -1562,7 +1568,7 @@ Reste à charge = max(0, coût total - enveloppe PCH)
 - 🔧 Table documents (metadata) — tables séparées par type (payslips, cesu_declarations, absences) mais pas de table unifiée ⏳
 - ✅ Upload documents administratifs — bulletins ✅, CESU ✅, justificatifs absences ✅ (Storage Supabase)
 - 🔧 Catégorisation (contrat, bulletin, justificatif) — implicite par section, pas de champ category centralisé ⏳
-- ❌ Recherche documents
+- 🔧 Recherche documents — couverte via SpotlightSearch global (Ctrl+K), pas de champ dédié dans la page Documents ⏳
 - ✅ Prévisualisation — signed URLs bulletins + CESU + justificatifs ✅
 ```
 
@@ -2300,9 +2306,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 
 ### 🔴 P1 — À faire prochainement
 
-1. **Domaine Resend** — vérifier un domaine pour débloquer l'envoi email à tous les utilisateurs (actuellement limité à `vzepharren@yahoo.fr`)
-   - ❌ Ajouter un domaine vérifié dans Resend
-   - ❌ Mettre à jour `from:` dans Edge Function `send-email`
+1. ✅ **Domaine Resend** — `notifications@unilien.app` configuré et déployé (PR #281, 22/04/2026), envoi prod actif
 
 2. **Demo banner + Empty state dashboard**
    - ❌ Bandeau "Mode démo" dismissible (localStorage)
@@ -2346,7 +2350,7 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
     - ✅ SettingsPage (66 tests)
     - ✅ LiaisonPage (13 tests — PR #253)
     - ✅ LogbookPage (24 tests — PR #253)
-    - ❌ Nouveaux tests E2E (création shift, export CESU, notifications)
+    - 🔧 E2E Playwright : 8 tests auth + dashboard (PR #244) — manquent shift/CESU/notifications
 
 ### 🟢 V2 — Long terme
 
