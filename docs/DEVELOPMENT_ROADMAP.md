@@ -1851,9 +1851,9 @@ Le dashboard garde ses widgets actuels comme aperçu, avec liens "voir plus" ver
 #### 13.2 Rate Limiting
 
 ```
-- ❌ Configuration Supabase (API limits)
+- 🔧 Configuration Supabase — Kong gateway en self-host applique du rate limit par défaut, pas de config custom côté projet ⏳
 - ✅ Rate limiting custom (Edge Functions) — send-email 10/min + send-push 30/min, réponse 429 ✅
-- ❌ Alerts dépassement limites
+- ❌ Alerts dépassement limites — pas de logging 429 ni dashboard
 ```
 
 **Effort**: 2 jours
@@ -2033,8 +2033,8 @@ Fichiers identifiés le 24/02/2026 comme candidats prioritaires au découpage (s
 - ✅ manualChunks Rollup : vendor 1.9MB → 7 chunks logiques (10/04/2026)
 - ✅ Import dynamique xlsx : ne charge que sur clic "Exporter Excel" (10/04/2026)
 - ✅ Mesurer le gain : -47% initial load (907KB → 478KB gzip)
-- ❌ Compression assets (vite-plugin-compression — Netlify gzip déjà actif)
-- ❌ CDN pour assets statiques
+- ✅ Compression assets — Caddy applique gzip + brotli auto sur le VPS depuis migration self-host (PR #284), plus de Netlify
+- ❌ CDN pour assets statiques — VPS sert direct via Caddy, OK pour le volume actuel
 ```
 
 **Résultats (10/04/2026)** :
@@ -2057,9 +2057,8 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 ```
 - ✅ Optimiser calculateNightHours() — calcul O(1) par intersections d'intervalles (utils.ts:126) ✅
 - 🔧 refetchOnWindowFocus — non applicable : pas de TanStack Query en prod (useEffect + services)
-- ❌ React.memo sur composants lourds — non audité, à faire si perf concrète mesurée
-- ❌ useMemo/useCallback optimisations — non audité
-- ❌ Virtualisation listes longues — pas de grandes listes pour l'instant
+- 🔧 React.memo / useMemo / useCallback — non audités, à faire si profiling fait remonter un goulot (pas de plainte UX actuelle)
+- 🔧 Virtualisation listes longues — non pertinent au volume actuel (planning ≤ 200 shifts/mois, équipe ≤ 15 auxi)
 - 🔧 Image lazy loading — non pertinent (pas d'images app, avatars via signed URLs Supabase)
 - ✅ Service Worker caching — workbox actif (assets + Storage Supabase cachés, /rest/v1/ exclu volontairement) ✅
 ```
@@ -2067,10 +2066,10 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
 #### 16.3 Monitoring
 
 ```
-- ❌ Web Vitals tracking
-- ❌ Sentry error tracking
-- ❌ LogRocket session replay
-- ❌ Uptime monitoring (UptimeRobot)
+- ❌ Web Vitals tracking — librairie `web-vitals` non installée, à brancher sur un endpoint d'ingestion
+- ❌ Sentry error tracking — `@sentry/react` non installé, candidat principal pour la prod
+- ⛔ LogRocket / session replay — écarté pour RGPD (capture potentielle de données santé sensibles)
+- ❌ Uptime monitoring — pas configuré côté VPS self-host (UptimeRobot ou healthcheck Caddy à brancher)
 ```
 
 **Timeline**: Q2 2026
@@ -2312,18 +2311,19 @@ La cible < 200 KB n'est pas atteignable avec React 19 + Chakra UI v3 + Supabase.
    - ❌ Bandeau "Mode démo" dismissible (localStorage)
    - ✅ Variante dashboard quand aucun employé (icône + CTA "Ajouter un auxiliaire")
 
-3. **Document search + table unifiée**
-   - ❌ Champ recherche sur la page Documents (nom, type, période)
-   - ❌ Optionnel : table `documents` centralisée avec `category` + métadonnées
+3. **Document search + table unifiée** — recherche déjà couverte côté global via `SpotlightSearch` (Ctrl+K, `searchDocuments` dans `searchService.ts`).
+   - 🔧 Champ recherche dédié sur la page Documents (nom, type, période) — manquant dans la page elle-même, l'utilisateur passe par Ctrl+K
+   - 🔧 Optionnel : table `documents` centralisée avec `category` + métadonnées — structure actuelle = tables séparées par type (`payslips`, `cesu_declarations`, `absences`), refonte non bloquante
 
 4. **Analytics exports**
    - ❌ Export Excel (données brutes interventions)
    - ❌ Export PDF graphiques
    - ❌ Heures travaillées vs contractuelles (auxiliaire)
 
-5. **Profile completion widget** (prototype `profile.html`)
-   - ❌ Widget progression par rôle (employer/employee/caregiver)
-   - ❌ Champs manquants listés avec liens
+5. **Profile completion widget** (prototype `profile.html`) — distinct de l'`OnboardingWidget` du dashboard (qui couvre profil/équipe/intervention macro, PR #237). Ici : widget **sidebar dédié dans ProfilePage** avec checklist détaillée des champs.
+   - ❌ Layout sidebar sur `ProfilePage` (content-sidebar-layout)
+   - ❌ Barre progression + checklist par rôle (employer 83% / employee 71% / caregiver 72%) avec liens "Compléter →" / "Activer →"
+   - ❌ Widgets sidebar contextuels : Sécurité (mdp + 2FA), Mon employeur (employee), Mon enveloppe PCH (caregiver)
    - Voir `memory/profile-completion-widget.md`
 
 6. ✅ **Présence responsable & présence nuit dans les bulletins de paie** — `presenceResponsiblePay` (Art. 137.1, 2/3) et `nightPresenceAllowance` (Art. 148, forfait 1/4 ou 100% si requalifié) calculés dans `declarationService.ts` et transmis au bulletin. `sundayMajoration` pour `presence_day` basée sur `presenceResponsiblePay`.
