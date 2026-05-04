@@ -142,8 +142,8 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 ## 10. Contact — Elements manquants
 
-- [ ] **Subject optgroups** — categoriser les sujets (Utilisation / Compte / Autre)
-- [ ] **Piece jointe** — input file (PDF, PNG, JPG, max 5 Mo)
+- [x] **Subject optgroups** — categoriser les sujets (Utilisation / Compte / Autre) ✅ _(ContactPage.tsx — `subjectGroups` + `AccessibleSelect groups` prop)_
+- [x] **Piece jointe** — input file (PDF, PNG, JPG, max 5 Mo) ✅ _(ContactPage.tsx — validation type/taille + UI avec retrait)_
 - [x] **Etat succes** — animation checkmark + message de confirmation + bouton "Envoyer un autre" ✅ _(ContactPage.tsx l.155-167)_
 - [x] **FAQ integree** — questions en bas de page ✅ _(ContactPage.tsx l.262-281, affichage statique)_
 
@@ -187,9 +187,9 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Logbook | 8 | 8 | ✅ Termine |
 | Team | 7 | 7 | ✅ Termine |
 | Clock-in | 6 | 6 | ✅ Termine |
-| Contact | 4 | 2 | Basse |
+| Contact | 4 | 4 | ✅ Termine |
 | Messaging | 4 | 4 | ✅ Termine |
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
 | Patterns UI | 4 | 3 | Basse |
-| **Total** | **102** | **97** | — |
+| **Total** | **102** | **99** | — |

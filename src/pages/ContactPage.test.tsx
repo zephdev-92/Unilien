@@ -63,6 +63,13 @@ describe('ContactPage', () => {
       expect(sujetSelect).toContainHTML('Partenariat')
     })
 
+    it('regroupe les sujets par catégorie (Utilisation / Compte / Autre)', () => {
+      const { container } = renderWithProviders(<ContactPage />)
+      const optgroups = container.querySelectorAll('optgroup')
+      const labels = Array.from(optgroups).map((g) => g.getAttribute('label'))
+      expect(labels).toEqual(['Utilisation', 'Compte', 'Autre'])
+    })
+
     it('les champs de saisie acceptent du texte', async () => {
       const user = userEvent.setup()
       renderWithProviders(<ContactPage />)
@@ -79,6 +86,70 @@ describe('ContactPage', () => {
       const emailInput = screen.getByLabelText(/votre email/i)
       await user.type(emailInput, 'jean@example.com')
       expect(emailInput).toHaveValue('jean@example.com')
+    })
+  })
+
+  describe('Pièce jointe', () => {
+    it('affiche le bouton "Ajouter un fichier" et la contrainte de format', () => {
+      renderWithProviders(<ContactPage />)
+      expect(screen.getByRole('button', { name: /ajouter un fichier/i })).toBeInTheDocument()
+      expect(screen.getByText(/PDF, PNG ou JPG · 5 Mo max/i)).toBeInTheDocument()
+    })
+
+    it('accepte un PDF valide et affiche son nom', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<ContactPage />)
+
+      const fileInput = screen.getByLabelText(/pièce jointe/i) as HTMLInputElement
+      const validFile = new File(['hello'], 'document.pdf', { type: 'application/pdf' })
+      await user.upload(fileInput, validFile)
+
+      expect(screen.getByText('document.pdf')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /retirer la pièce jointe/i })
+      ).toBeInTheDocument()
+    })
+
+    it('rejette un format non supporté', async () => {
+      const user = userEvent.setup({ applyAccept: false })
+      renderWithProviders(<ContactPage />)
+
+      const fileInput = screen.getByLabelText(/pièce jointe/i) as HTMLInputElement
+      const invalidFile = new File(['data'], 'archive.zip', { type: 'application/zip' })
+      await user.upload(fileInput, invalidFile)
+
+      expect(screen.getByText(/format non supporté/i)).toBeInTheDocument()
+      expect(screen.queryByText('archive.zip')).not.toBeInTheDocument()
+    })
+
+    it('rejette un fichier trop volumineux (> 5 Mo)', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<ContactPage />)
+
+      const fileInput = screen.getByLabelText(/pièce jointe/i) as HTMLInputElement
+      // 6 Mo de données pour dépasser la limite
+      const bigFile = new File([new Uint8Array(6 * 1024 * 1024)], 'gros.pdf', {
+        type: 'application/pdf',
+      })
+      await user.upload(fileInput, bigFile)
+
+      expect(screen.getByText(/dépasse 5 Mo/i)).toBeInTheDocument()
+      expect(screen.queryByText('gros.pdf')).not.toBeInTheDocument()
+    })
+
+    it('permet de retirer la pièce jointe ajoutée', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<ContactPage />)
+
+      const fileInput = screen.getByLabelText(/pièce jointe/i) as HTMLInputElement
+      const validFile = new File(['hello'], 'photo.png', { type: 'image/png' })
+      await user.upload(fileInput, validFile)
+
+      expect(screen.getByText('photo.png')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /retirer la pièce jointe/i }))
+      expect(screen.queryByText('photo.png')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /ajouter un fichier/i })).toBeInTheDocument()
     })
   })
 
