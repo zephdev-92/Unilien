@@ -181,11 +181,19 @@ La certification HDS (articles L.1111-8 et R.1111-8-8 du Code de la sante publiq
 - **Ecriture** : via RPC `upsert_employer_health_data(p_handicap_type, p_handicap_name, p_specific_needs)` qui chiffre cote serveur
 - ⚠️ Ne JAMAIS faire `.from('employer_health_data').select/insert/upsert` directement — les colonnes sont en bytea
 
-**Activation prod** :
+**Activation prod** : la migration doit etre lancee en tant que `supabase_admin` (superuser). Les fonctions `pgsodium.crypto_aead_det_*` sont restreintes au superuser, donc les helpers SECURITY DEFINER doivent etre owned par `supabase_admin` pour fonctionner. Le rôle `postgres` ne peut pas faire `ALTER FUNCTION ... OWNER TO supabase_admin` s'il n'est pas membre du groupe.
+
 ```bash
 ssh unilien-test
+curl -fsSL -o /tmp/058.sql https://raw.githubusercontent.com/zephdev-92/Unilien/main/supabase/migrations/058_pgsodium_health_data.sql
 sudo docker compose -f /opt/supabase/docker/docker-compose.yml exec -T db \
-  psql -U postgres -d postgres < <(curl -s https://raw.githubusercontent.com/zephdev-92/Unilien/main/supabase/migrations/058_pgsodium_health_data.sql)
+  psql -U supabase_admin -d postgres < /tmp/058.sql
+```
+
+Verification post-migration :
+```bash
+sudo docker compose -f /opt/supabase/docker/docker-compose.yml exec -T db \
+  psql -U postgres -d postgres -c "SELECT profile_id, handicap_type, handicap_name FROM employer_health_data_v;"
 ```
 
 > **Filet de securite** : faire un `pg_dump` complet AVANT (cf. `infra/...` ou backup manuel dans `/opt/supabase/backups/`).

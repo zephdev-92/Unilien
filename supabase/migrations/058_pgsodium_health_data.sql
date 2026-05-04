@@ -201,7 +201,22 @@ $$;
 REVOKE ALL ON FUNCTION upsert_employer_health_data(text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION upsert_employer_health_data(text, text, text) TO authenticated;
 
--- ── 7. Commentaires ─────────────────────────────────────────────────────────
+-- ── 7. Owner = supabase_admin (superuser) ──────────────────────────────────
+-- Les helpers SECURITY DEFINER doivent tourner avec un rôle qui a accès à pgsodium.
+-- Dans Supabase self-hosted, seul `supabase_admin` (superuser) a ce privilège ;
+-- `postgres` ne l'a pas par défaut. Sans ces ALTER OWNER, la vue plante avec
+-- "permission denied for function crypto_aead_det_decrypt".
+-- Idempotent : si déjà owned par supabase_admin, le ALTER est un no-op.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN
+    EXECUTE 'ALTER FUNCTION public.decrypt_health_field(bytea, uuid) OWNER TO supabase_admin';
+    EXECUTE 'ALTER FUNCTION public.encrypt_health_field(text, uuid) OWNER TO supabase_admin';
+    EXECUTE 'ALTER FUNCTION public.upsert_employer_health_data(text, text, text) OWNER TO supabase_admin';
+  END IF;
+END $$;
+
+-- ── 8. Commentaires ─────────────────────────────────────────────────────────
 COMMENT ON COLUMN employer_health_data.handicap_type
   IS 'CHIFFRÉ pgsodium AEAD-det (clé medical_data_key, AAD = profile_id). Lire via la vue employer_health_data_v.';
 COMMENT ON COLUMN employer_health_data.handicap_name
