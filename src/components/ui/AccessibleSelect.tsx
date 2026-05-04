@@ -10,11 +10,18 @@ export interface SelectOption {
   disabled?: boolean
 }
 
+export interface SelectOptionGroup {
+  label: string
+  options: SelectOption[]
+}
+
 export interface AccessibleSelectProps {
   /** Label du champ (obligatoire pour accessibilité) */
   label: string
-  /** Options du select */
-  options: SelectOption[]
+  /** Options à plat (ignoré si `groups` est fourni) */
+  options?: SelectOption[]
+  /** Options groupées (rendues en `<optgroup>`) */
+  groups?: SelectOptionGroup[]
   /** Masquer le label visuellement */
   hideLabel?: boolean
   /** Message d'erreur */
@@ -46,6 +53,7 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
     {
       label,
       options,
+      groups,
       hideLabel = false,
       error,
       helperText,
@@ -111,15 +119,29 @@ export const AccessibleSelect = forwardRef<HTMLSelectElement, AccessibleSelectPr
                 {placeholder}
               </option>
             )}
-            {options.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                disabled={option.disabled}
-              >
-                {option.label}
-              </option>
-            ))}
+            {groups
+              ? groups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        disabled={option.disabled}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              : options?.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    disabled={option.disabled}
+                  >
+                    {option.label}
+                  </option>
+                ))}
           </NativeSelect.Field>
           <NativeSelect.Indicator />
         </NativeSelect.Root>
