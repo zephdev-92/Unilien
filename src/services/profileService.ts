@@ -250,8 +250,9 @@ export async function getEmployer(profileId: string): Promise<Employer | null> {
   if (!data) return null
 
   // Données de santé (RLS strict : propriétaire uniquement)
+  // Lecture via vue déchiffrée (pgsodium, migration 058)
   const { data: healthData } = await supabase
-    .from('employer_health_data')
+    .from('employer_health_data_v')
     .select('handicap_type, handicap_name, specific_needs')
     .eq('profile_id', profileId)
     .maybeSingle()
@@ -311,20 +312,19 @@ export async function upsertEmployer(profileId: string, data: Partial<Employer>)
     throw new Error(error.message)
   }
 
-  // Données de santé (table séparée, RLS strict)
+  // Données de santé (table séparée, RLS strict, chiffrées pgsodium)
+  // Écriture via RPC qui chiffre côté serveur (migration 058)
   const hasHealthData = data.handicapType || data.handicapName || data.specificNeeds
   if (hasHealthData !== undefined) {
-    const healthPayload = {
-      profile_id: profileId,
-      handicap_type: data.handicapType && VALID_HANDICAP_TYPES.includes(data.handicapType) ? data.handicapType : null,
-      handicap_name: data.handicapName ? sanitizeText(data.handicapName) : null,
-      specific_needs: data.specificNeeds ? sanitizeText(data.specificNeeds) : null,
-      updated_at: new Date().toISOString(),
-    }
+    const healthType = data.handicapType && VALID_HANDICAP_TYPES.includes(data.handicapType) ? data.handicapType : null
+    const healthName = data.handicapName ? sanitizeText(data.handicapName) : null
+    const healthNeeds = data.specificNeeds ? sanitizeText(data.specificNeeds) : null
 
-    const { error: healthError } = await supabase
-      .from('employer_health_data')
-      .upsert(healthPayload, { onConflict: 'profile_id' })
+    const { error: healthError } = await supabase.rpc('upsert_employer_health_data', {
+      p_handicap_type: healthType,
+      p_handicap_name: healthName,
+      p_specific_needs: healthNeeds,
+    })
 
     if (healthError) {
       logger.error('Erreur mise à jour données santé employeur:', healthError)

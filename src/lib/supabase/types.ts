@@ -66,26 +66,18 @@ export interface Database {
           emergency_contacts?: Record<string, unknown>[]
         }
       }
+      // ⚠️ Table chiffrée côté DB (pgsodium, migration 058)
+      // Lire via la vue `employer_health_data_v` (Views) pour déchiffrer.
+      // Écrire via la RPC `upsert_employer_health_data` (Functions) qui chiffre côté serveur.
+      // Ne JAMAIS faire .from('employer_health_data').select/insert/upsert : les colonnes sont en bytea.
       employer_health_data: {
         Row: {
           profile_id: string
-          handicap_type: string | null
-          handicap_name: string | null
-          specific_needs: string | null
+          handicap_type: Uint8Array | null
+          handicap_name: Uint8Array | null
+          specific_needs: Uint8Array | null
           created_at: string
           updated_at: string
-        }
-        Insert: {
-          profile_id: string
-          handicap_type?: string | null
-          handicap_name?: string | null
-          specific_needs?: string | null
-        }
-        Update: {
-          handicap_type?: string | null
-          handicap_name?: string | null
-          specific_needs?: string | null
-          updated_at?: string
         }
       }
       employees: {
@@ -447,8 +439,30 @@ export interface Database {
         }
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
+    Views: {
+      // Vue déchiffrée d'employer_health_data (chiffrement pgsodium, migration 058)
+      employer_health_data_v: {
+        Row: {
+          profile_id: string
+          handicap_type: string | null
+          handicap_name: string | null
+          specific_needs: string | null
+          created_at: string
+          updated_at: string
+        }
+      }
+    }
+    Functions: {
+      // Upsert chiffré côté serveur (pgsodium, migration 058)
+      upsert_employer_health_data: {
+        Args: {
+          p_handicap_type?: string | null
+          p_handicap_name?: string | null
+          p_specific_needs?: string | null
+        }
+        Returns: undefined
+      }
+    }
     Enums: {
       user_role: 'employer' | 'employee' | 'caregiver'
       contract_type: 'CDI' | 'CDD'
