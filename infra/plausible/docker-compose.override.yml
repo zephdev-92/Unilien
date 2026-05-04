@@ -1,0 +1,20 @@
+# Override pour Plausible CE — déployé sur /opt/plausible-ce/docker-compose.override.yml
+#
+# Pourquoi cet override :
+# - Le port 8000 est déjà pris par Kong (Supabase)
+# - On expose Plausible sur 127.0.0.1:8001 (loopback uniquement, accessible via Caddy)
+
+services:
+  plausible:
+    ports:
+      - "127.0.0.1:8001:8000"
+    restart: unless-stopped
+
+  plausible_db:
+    restart: unless-stopped
+
+  plausible_events_db:
+    restart: unless-stopped
+
+  mail:
+    restart: unless-stopped
