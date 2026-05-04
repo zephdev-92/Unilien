@@ -1,6 +1,6 @@
 # Analytics & Cookies de performance — Plan d'implémentation
 
-> Statut : **En attente** — les toggles sont présents dans Paramètres > Données (badge "Bientôt")
+> Statut : **Code app prêt** ✅ — il reste uniquement à déployer Plausible et configurer les env vars (cf. section *Activation prod* en bas).
 
 ---
 
@@ -123,13 +123,13 @@ Le toggle "Cookies de performance" n'a de sens que si un outil futur en pose (ex
 
 ## Estimation
 
-| Tâche | Effort |
-|-------|--------|
-| Setup Plausible self-hosted (Docker) | ~1h |
-| Composant `<Analytics />` + hook | ~30min |
-| Migration DB + service + store | ~30min (code déjà préparé) |
-| Activation toggles Settings | ~15min |
-| **Total** | **~2h** |
+| Tâche | Effort | Statut |
+|-------|--------|--------|
+| Setup Plausible self-hosted (Docker) | ~1h | À faire (infra) |
+| Composant `<Analytics />` + hook | ~30min | ✅ |
+| Migration DB + service + store | ~30min | ✅ |
+| Activation toggles Settings | ~15min | ✅ |
+| **Total** | **~2h** | **~1h restant (infra)** |
 
 ---
 
@@ -137,3 +137,20 @@ Le toggle "Cookies de performance" n'a de sens que si un outil futur en pose (ex
 
 - Un serveur/VPS pour héberger Plausible (ou utiliser le cloud à 9€/mois)
 - Un domaine/sous-domaine pour le dashboard (ex: `plausible.unilien.app`)
+
+---
+
+## Activation prod
+
+Une fois Plausible déployé :
+
+1. Configurer 2 variables d'environnement Vite (env de build) :
+   ```
+   VITE_PLAUSIBLE_DOMAIN=unilien.app
+   VITE_PLAUSIBLE_SRC=https://plausible.unilien.app/js/script.js
+   ```
+2. Rebuild + redeploy le front
+3. Appliquer la migration `057_privacy_settings.sql` côté Supabase prod
+4. C'est tout : le composant `<Analytics />` lit les env vars + la préférence user et injecte/retire le script automatiquement
+
+> Si les env vars sont absentes, `<Analytics />` est silencieux (no-op) — pas de risque en dev/staging.
