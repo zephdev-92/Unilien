@@ -138,7 +138,7 @@ La certification HDS (articles L.1111-8 et R.1111-8-8 du Code de la sante publiq
 
 | Mesure | Priorite | Description |
 |--------|----------|-------------|
-| **Chiffrement colonnes** | Haute | Chiffrer `handicap_type`, `handicap_name`, `specific_needs` avec `pgsodium` — en attente migration Supabase self-hosted |
+| ~~**Chiffrement colonnes**~~ | ~~Haute~~ | ✅ pgsodium AEAD-det sur `handicap_type`, `handicap_name`, `specific_needs` (migration 058, PR à venir). Vue `employer_health_data_v` pour lecture, RPC `upsert_employer_health_data` pour écriture |
 | ~~**Duree de conservation**~~ | ~~Moyenne~~ | ✅ Table `data_retention_policy` + RPC `purge_expired_data()` (migration 050) |
 | **Registre des traitements** | Basse | Document formel pour la CNIL |
 
@@ -167,20 +167,28 @@ La certification HDS (articles L.1111-8 et R.1111-8-8 du Code de la sante publiq
 - **Double confirmation UI** : saisie manuelle "SUPPRIMER" / "SUPPRIMER MON COMPTE"
 - Accessible dans Parametres > Zone de danger
 
-### Phase 4 — Chiffrement colonnes (a venir)
+### Phase 4 — Chiffrement colonnes ✅ (migration 058, 04/05/2026)
 
-**Colonnes a chiffrer** (table `employer_health_data`) :
-- `handicap_type`
-- `handicap_name`
-- `specific_needs`
+**Colonnes chiffrees** (table `employer_health_data`) :
+- `handicap_type` — bytea (AEAD-det, AAD = profile_id)
+- `handicap_name` — bytea (AEAD-det, AAD = profile_id)
+- `specific_needs` — bytea (AEAD-det, AAD = profile_id)
 
-```sql
--- Activer pgsodium (disponible apres migration Supabase self-hosted)
-CREATE EXTENSION IF NOT EXISTS pgsodium;
-SELECT pgsodium.create_key(name := 'medical_data_key');
+**Mecanisme** : pgsodium AEAD-det (`crypto_aead_det_encrypt` / `crypto_aead_det_decrypt`) avec cle dediee `medical_data_key` dans le keyring pgsodium. L'AAD = `profile_id` rend les ciphertexts uniques par utilisateur (deux users avec "moteur" → ciphertexts differents).
+
+**Acces cote app** :
+- **Lecture** : via vue `employer_health_data_v` (security_invoker = true, RLS heritee)
+- **Ecriture** : via RPC `upsert_employer_health_data(p_handicap_type, p_handicap_name, p_specific_needs)` qui chiffre cote serveur
+- ⚠️ Ne JAMAIS faire `.from('employer_health_data').select/insert/upsert` directement — les colonnes sont en bytea
+
+**Activation prod** :
+```bash
+ssh unilien-test
+sudo docker compose -f /opt/supabase/docker/docker-compose.yml exec -T db \
+  psql -U postgres -d postgres < <(curl -s https://raw.githubusercontent.com/zephdev-92/Unilien/main/supabase/migrations/058_pgsodium_health_data.sql)
 ```
 
-> **Statut** : en attente de la migration vers Supabase self-hosted. Les donnees sont protegees par RLS owner-only en attendant.
+> **Filet de securite** : faire un `pg_dump` complet AVANT (cf. `infra/...` ou backup manuel dans `/opt/supabase/backups/`).
 
 ---
 
@@ -225,7 +233,7 @@ SELECT pgsodium.create_key(name := 'medical_data_key');
 - [x] Journal d'acces aux donnees sensibles (table `audit_logs` + `auditService.ts`) — migration 044
 - [x] Droit a l'effacement donnees (RPC `delete_own_data`) — migration 047
 - [x] Suppression de compte (RPC `delete_own_account` + double confirmation UI) — migration 047
-- [ ] Chiffrer les colonnes sensibles (pgsodium) — en attente migration self-hosted
+- [x] Chiffrer les colonnes sensibles (pgsodium) — migration 058, 04/05/2026
 - [x] Definir la duree de conservation et la politique de purge — migration 050 (`data_retention_policy` + `purge_expired_data()`)
 - [ ] Creer le registre des traitements (document CNIL)
 - [ ] Activer l'execution automatique de `purge_expired_data()` via pg_cron (Supabase Pro) ou Edge Function schedulee

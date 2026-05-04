@@ -23,6 +23,7 @@ const mockUpsert = vi.fn()
 const mockInsert = vi.fn()
 const mockEq = vi.fn()
 const mockMaybeSingle = vi.fn()
+const mockRpc = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
@@ -32,6 +33,7 @@ vi.mock('@/lib/supabase/client', () => ({
       upsert: mockUpsert,
       insert: mockInsert,
     })),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     storage: {
       from: vi.fn(() => ({
         upload: mockUpload,
@@ -76,6 +78,7 @@ describe('profileService', () => {
     mockEq.mockResolvedValue({ error: null })
     mockSelect.mockReturnValue({ eq: vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle }) })
     mockUpsert.mockResolvedValue({ error: null })
+    mockRpc.mockResolvedValue({ data: null, error: null })
   })
 
   describe('updateProfile', () => {
