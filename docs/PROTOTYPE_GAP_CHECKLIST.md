@@ -31,7 +31,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 - [x] **Panneau Accessibilite** — toggle optimisation lecteur ecran ✅
 - [x] **Panneau Accessibilite** — toggle police dyslexie ✅
 - [x] **Panneau Donnees** — export JSON (7 tables) + CSV (planning) ✅
-- [ ] **Panneau Donnees** — toggles confidentialite (analytics, cookies) _(badge "Bientot", disabled)_
+- [x] **Panneau Donnees** — toggle confidentialite analytics fonctionnel ✅ _(SettingsPage.tsx — `PrivacySettingsCard`, persistance Zustand + Supabase, hook `usePrivacySettings`, toggle cookies retire car Plausible cookieless)_
 
 ---
 
@@ -179,7 +179,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 
 | Bloc | Items | Done | Priorite |
 |------|-------|------|----------|
-| Settings | 22 | 22 | ✅ Termine (confidentialite : badge "Bientot" intentionnel) |
+| Settings | 22 | 22 | ✅ Termine |
 | Dashboard | 11 | 9 | Basse (demo banner, empty state) |
 | Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |

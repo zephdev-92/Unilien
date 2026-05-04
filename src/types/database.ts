@@ -446,3 +446,14 @@ export interface ConventionSettingsDbRow {
   created_at: string
   updated_at: string
 }
+
+// ============================================================
+// PRIVACY SETTINGS
+// ============================================================
+
+export interface PrivacySettingsDbRow {
+  profile_id: string
+  analytics_enabled: boolean
+  created_at: string
+  updated_at: string
+}

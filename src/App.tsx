@@ -5,6 +5,7 @@ import { LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm } from '@/
 import { ErrorBoundary } from '@/components/ui'
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner'
 import { RouteAnnouncer } from '@/components/accessibility/RouteAnnouncer'
+import { Analytics } from '@/components/Analytics'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase/client'
@@ -124,6 +125,7 @@ function App() {
     <>
       <AccessibilityApplier />
       <RouteAnnouncer />
+      <Analytics />
       <Suspense fallback={<LoadingPage />}>
         <Routes>
           {/* Page d'accueil publique */}

@@ -24,6 +24,10 @@ vi.mock('@/stores/authStore', () => ({
   }),
 }))
 
+vi.mock('@/components/Analytics', () => ({
+  Analytics: () => null,
+}))
+
 // Formulaires auth (imports statiques)
 vi.mock('@/components/auth', () => ({
   LoginForm: () => <div data-testid="login-form">Login</div>,

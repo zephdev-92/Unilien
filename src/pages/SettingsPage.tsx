@@ -41,6 +41,7 @@ import { GhostButton, PrimaryButton } from '@/components/ui'
 import { useInterventionSettings } from '@/hooks/useInterventionSettings'
 import { ShoppingListTemplatesSection } from '@/components/profile/ShoppingListTemplatesSection'
 import { useConventionSettings } from '@/hooks/useConventionSettings'
+import { usePrivacySettings } from '@/hooks/usePrivacySettings'
 import { useMfa } from '@/hooks/useMfa'
 import { MfaEnrollment } from '@/components/auth/MfaEnrollment'
 import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
@@ -2153,33 +2154,32 @@ function DonneesPanel({ userId }: { userId: string }) {
 
       <HealthConsentCard />
 
-      <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm" opacity={0.6}>
-        <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
-          <HStack gap={2}>
-            <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">Confidentialité</Card.Title>
-            <Badge size="sm" colorPalette="gray">Bientôt</Badge>
-          </HStack>
-        </Card.Header>
-        <Card.Body p={4}>
-          <VStack gap={0} align="stretch">
-            <ToggleRow
-              label="Analyses anonymisées"
-              description="Contribuez à améliorer Unilien en partageant des données d'usage anonymisées."
-              checked={true}
-              onChange={() => {}}
-              disabled
-            />
-            <ToggleRow
-              label="Cookies de performance"
-              description="Cookies pour optimiser les temps de chargement."
-              checked={true}
-              onChange={() => {}}
-              disabled
-            />
-          </VStack>
-        </Card.Body>
-      </Card.Root>
+      <PrivacySettingsCard />
     </VStack>
+  )
+}
+
+function PrivacySettingsCard() {
+  const { analyticsEnabled, updateSettings } = usePrivacySettings()
+
+  return (
+    <Card.Root borderRadius="md" borderWidth="1px" borderColor="border.default" boxShadow="sm">
+      <Card.Header px={4} py={3} borderBottomWidth="1px" borderColor="border.default">
+        <Card.Title fontFamily="heading" fontSize="lg" fontWeight="700">
+          Confidentialité
+        </Card.Title>
+      </Card.Header>
+      <Card.Body p={4}>
+        <VStack gap={0} align="stretch">
+          <ToggleRow
+            label="Analyses anonymisées"
+            description="Contribuez à améliorer Unilien en partageant des données d'usage anonymisées (Plausible, sans cookies ni données personnelles)."
+            checked={analyticsEnabled}
+            onChange={(checked) => updateSettings({ analyticsEnabled: checked })}
+          />
+        </VStack>
+      </Card.Body>
+    </Card.Root>
   )
 }
 
