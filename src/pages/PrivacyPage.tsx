@@ -183,13 +183,41 @@ export default function PrivacyPage() {
           <Section title="9. Cookies et stockage local">
             <Text>
               Unilien utilise uniquement des <strong>cookies strictement nécessaires</strong> au
-              fonctionnement (session, préférences). Aucun cookie publicitaire ou analytique n&apos;est
+              fonctionnement (session, préférences). Aucun cookie publicitaire n&apos;est
               déposé. Le détail des cookies est disponible dans les{' '}
               <Link as={RouterLink} to="/mentions-legales" color="brand.solid">mentions légales</Link>.
             </Text>
           </Section>
 
-          <Section title="10. Modifications">
+          <Section title="10. Mesure d'audience">
+            <Text>
+              Unilien utilise <strong>Plausible Analytics</strong> pour mesurer l&apos;audience du
+              site et améliorer l&apos;expérience utilisateur. Cet outil de mesure d&apos;audience
+              est <strong>auto-hébergé</strong> sur nos serveurs (Union européenne) et fonctionne{' '}
+              <strong>sans cookie</strong> ni identifiant persistant.
+            </Text>
+            <Text>
+              Les données collectées sont anonymisées et ne permettent pas de vous identifier :
+            </Text>
+            <Box as="ul" pl={5} listStyleType="disc">
+              <Box as="li">Pages visitées et durée approximative</Box>
+              <Box as="li">Source de la visite (site référent)</Box>
+              <Box as="li">Pays (déduit de l&apos;adresse IP, qui n&apos;est jamais stockée)</Box>
+              <Box as="li">Type d&apos;appareil et navigateur (catégories génériques)</Box>
+            </Box>
+            <Text>
+              Conformément aux{' '}
+              <Link href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience" color="brand.solid" target="_blank" rel="noopener noreferrer">
+                recommandations de la CNIL
+              </Link>
+              , les outils de mesure d&apos;audience sans cookie et limités à l&apos;analyse
+              statistique du site sont exemptés de consentement préalable. Vous pouvez néanmoins{' '}
+              <strong>désactiver cette mesure d&apos;audience à tout moment</strong> depuis
+              Paramètres &gt; Données &gt; Confidentialité.
+            </Text>
+          </Section>
+
+          <Section title="11. Modifications">
             <Text>
               La présente politique peut être modifiée pour refléter les évolutions du Service ou
               de la réglementation. Les utilisateurs seront informés des modifications substantielles
@@ -197,7 +225,7 @@ export default function PrivacyPage() {
             </Text>
           </Section>
 
-          <Section title="11. Contact">
+          <Section title="12. Contact">
             <Text>
               Pour toute question relative à cette politique ou à vos données personnelles :{' '}
               <Link href="mailto:contact@unilien.app" color="brand.solid">contact@unilien.app</Link>

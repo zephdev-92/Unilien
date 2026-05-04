@@ -121,8 +121,17 @@ export default function LegalPage() {
           <Section title="6. Cookies et stockage local">
             <Text>
               Unilien utilise exclusivement des <strong>cookies strictement nécessaires</strong> au
-              fonctionnement de l&apos;application. Aucun cookie publicitaire, analytique ou de suivi
+              fonctionnement de l&apos;application. Aucun cookie publicitaire ou de suivi
               n&apos;est déposé.
+            </Text>
+            <Text>
+              La mesure d&apos;audience est assurée par{' '}
+              <strong>Plausible Analytics auto-hébergé</strong>, sans cookie ni identifiant
+              persistant — voir la{' '}
+              <Link as={RouterLink} to="/politique-confidentialite" color="brand.solid">
+                politique de confidentialité, section&nbsp;10
+              </Link>
+              .
             </Text>
             <Box bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="10px" overflow="hidden">
               <Flex bg="bg.muted" px={4} py={2} fontWeight="700" fontSize="xs" color="text.default" gap={4}>

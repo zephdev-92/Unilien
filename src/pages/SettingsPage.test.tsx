@@ -325,7 +325,7 @@ describe('SettingsPage', () => {
       expect(screen.getByText(/Exporter toutes les données/)).toBeInTheDocument()
       expect(screen.getByText(/Exporter le planning/)).toBeInTheDocument()
       expect(screen.getByText('Confidentialité')).toBeInTheDocument()
-      expect(screen.getByText('Analyses anonymisées')).toBeInTheDocument()
+      expect(screen.getByText("Mesure d'audience")).toBeInTheDocument()
     })
   })
 })

@@ -25,7 +25,9 @@ import {
   Table,
   Spinner,
   Center,
+  Link as ChakraLink,
 } from '@chakra-ui/react'
+import { Link as RouterLink } from 'react-router-dom'
 import { DashboardLayout } from '@/components/dashboard'
 import { useAuth } from '@/hooks/useAuth'
 import { useAccessibilityStore, useAuthStore } from '@/stores/authStore'
@@ -2170,13 +2172,20 @@ function PrivacySettingsCard() {
         </Card.Title>
       </Card.Header>
       <Card.Body p={4}>
-        <VStack gap={0} align="stretch">
+        <VStack gap={3} align="stretch">
           <ToggleRow
-            label="Analyses anonymisées"
-            description="Contribuez à améliorer Unilien en partageant des données d'usage anonymisées (Plausible, sans cookies ni données personnelles)."
+            label="Mesure d'audience"
+            description="Pages visitées, source de visite, pays — sans cookie ni identifiant personnel. Données auto-hébergées (UE), traitées par Plausible Analytics."
             checked={analyticsEnabled}
             onChange={(checked) => updateSettings({ analyticsEnabled: checked })}
           />
+          <Text fontSize="xs" color="text.muted">
+            En savoir plus dans la{' '}
+            <ChakraLink as={RouterLink} to="/politique-confidentialite#10" color="brand.solid" textDecoration="underline">
+              politique de confidentialité
+            </ChakraLink>
+            .
+          </Text>
         </VStack>
       </Card.Body>
     </Card.Root>
