@@ -26,13 +26,13 @@ export async function getPrivacySettings(profileId: string): Promise<PrivacySett
     .from('privacy_settings')
     .select('profile_id, analytics_enabled, created_at, updated_at')
     .eq('profile_id', profileId)
-    .single()
+    .maybeSingle()
 
   if (error) {
-    if (error.code === 'PGRST116') return { ...PRIVACY_DEFAULTS }
     logger.error('Erreur chargement privacy settings:', error)
     return { ...PRIVACY_DEFAULTS }
   }
+  if (!data) return { ...PRIVACY_DEFAULTS }
   return mapFromDb(data as PrivacySettingsDbRow)
 }
 
