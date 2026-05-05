@@ -107,7 +107,7 @@ export function CaregiverDashboard({ profile }: CaregiverDashboardProps) {
             Profil aidant non configuré
           </Text>
           <Text color="warm.500">
-            Votre profil aidant n'est pas encore associé à un employeur.
+            Votre profil aidant n'est pas encore lié à un proche.
             Donnez votre adresse e-mail à la personne que vous accompagnez pour
             qu'elle vous ajoute comme aidant depuis son espace Unilien.
           </Text>
