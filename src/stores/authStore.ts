@@ -26,6 +26,7 @@ interface AuthState {
   // Computed
   isAuthenticated: () => boolean
   getUserRole: () => UserRole | null
+  isProfileComplete: () => boolean
 }
 
 const initialState = {
@@ -67,6 +68,17 @@ export const useAuthStore = create<AuthState>()(
       getUserRole: () => {
         const state = get()
         return state.profile?.role ?? null
+      },
+
+      // Onboarding considéré non complet si :
+      // - pas de profil
+      // - first_name vide
+      // - first_name = 'Utilisateur' (valeur par défaut posée par le trigger DB
+      //   handle_new_user pour les inscriptions OAuth, voir migration 024)
+      isProfileComplete: () => {
+        const state = get()
+        const firstName = state.profile?.firstName
+        return Boolean(firstName) && firstName !== 'Utilisateur'
       },
     }),
     {

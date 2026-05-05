@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import {
   Box,
   Flex,
@@ -15,6 +16,7 @@ import { AccessibleButton, AccessibleInput } from '@/components/ui'
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
+import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types'
 
 const roleOptions: { value: UserRole; label: string; description: string; icon: React.ReactNode }[] = [
@@ -55,6 +57,7 @@ const roleOptions: { value: UserRole; label: string; description: string; icon: 
 ]
 
 export default function OnboardingRolePage() {
+  const { isInitialized, isAuthenticated, isProfileComplete } = useAuth()
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -111,6 +114,14 @@ export default function OnboardingRolePage() {
       setError('Une erreur est survenue. Veuillez réessayer.')
       setIsLoading(false)
     }
+  }
+
+  // Garde-fous : pas d'accès direct sans session, pas de re-onboarding si déjà complet
+  if (isInitialized && !isAuthenticated) {
+    return <Navigate to="/connexion" replace />
+  }
+  if (isInitialized && isAuthenticated && isProfileComplete) {
+    return <Navigate to="/tableau-de-bord" replace />
   }
 
   if (!userId) {
