@@ -368,7 +368,7 @@ export function SignupForm() {
 
         {/* Social login */}
         <Box mt={4}>
-          <SocialLoginButtons />
+          <SocialLoginButtons pendingRole={watchedRole ? (watchedRole as UserRole) : undefined} />
         </Box>
 
         {/* Lien connexion */}
