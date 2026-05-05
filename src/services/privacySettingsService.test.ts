@@ -24,6 +24,7 @@ function mockSupabaseQuery(result: { data?: unknown; error?: unknown }) {
   chain.upsert = vi.fn().mockReturnValue(chain)
   chain.eq = vi.fn().mockReturnValue(chain)
   chain.single = vi.fn().mockResolvedValue(result)
+  chain.maybeSingle = vi.fn().mockResolvedValue(result)
   chain.then = vi.fn().mockImplementation((resolve: (v: unknown) => unknown) =>
     Promise.resolve(resolve(result))
   )
@@ -64,14 +65,11 @@ describe('getPrivacySettings', () => {
 
     expect(mockFrom).toHaveBeenCalledWith('privacy_settings')
     expect(chain.eq).toHaveBeenCalledWith('profile_id', PROFILE_ID)
-    expect(chain.single).toHaveBeenCalled()
+    expect(chain.maybeSingle).toHaveBeenCalled()
   })
 
-  it('retourne les defaults si aucune ligne (PGRST116)', async () => {
-    mockSupabaseQuery({
-      data: null,
-      error: { code: 'PGRST116', message: 'No rows found' },
-    })
+  it('retourne les defaults si aucune ligne (data null, sans erreur)', async () => {
+    mockSupabaseQuery({ data: null, error: null })
 
     const result = await getPrivacySettings(PROFILE_ID)
 
@@ -79,25 +77,23 @@ describe('getPrivacySettings', () => {
     expect(result.analyticsEnabled).toBe(true)
   })
 
-  it('log l erreur si code != PGRST116', async () => {
+  it('log l erreur Supabase et retourne les defaults', async () => {
     const { logger } = await import('@/lib/logger')
     const supabaseError = { code: '42P01', message: 'Table not found' }
     mockSupabaseQuery({ data: null, error: supabaseError })
 
-    await getPrivacySettings(PROFILE_ID)
+    const result = await getPrivacySettings(PROFILE_ID)
 
     expect(logger.error).toHaveBeenCalledWith(
       'Erreur chargement privacy settings:',
       supabaseError
     )
+    expect(result).toEqual(PRIVACY_DEFAULTS)
   })
 
-  it('ne log pas pour PGRST116 (cas normal premier usage)', async () => {
+  it('ne log pas quand data est null sans erreur (cas premier usage)', async () => {
     const { logger } = await import('@/lib/logger')
-    mockSupabaseQuery({
-      data: null,
-      error: { code: 'PGRST116', message: 'No rows found' },
-    })
+    mockSupabaseQuery({ data: null, error: null })
 
     await getPrivacySettings(PROFILE_ID)
 
