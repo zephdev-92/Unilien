@@ -178,7 +178,7 @@ export function ShiftDetailView({
       {/* Auxiliaire */}
       {!isLoadingContract && contract && (
         <DetailRow label="Auxiliaire">
-          <Text>Contrat #{contract.id.slice(0, 8)}</Text>
+          <Text>{shift.employeeName || `Contrat #${contract.id.slice(0, 8)}`}</Text>
           <Text fontSize="12px" color="text.muted" mt="2px">
             {contract.contractType} · {contract.hourlyRate.toFixed(2)} €/h
           </Text>
