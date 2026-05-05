@@ -64,13 +64,11 @@ export default function OnboardingRolePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       setUserId(user.id)
-      setUserEmail(user.email ?? null)
 
       // Pré-remplir depuis les métadonnées OAuth
       const fullName: string = user.user_metadata?.full_name || user.user_metadata?.name || ''
@@ -96,16 +94,13 @@ export default function OnboardingRolePage() {
     setIsLoading(true)
 
     try {
-      const { error: upsertError } = await supabase.from('profiles').upsert({
-        id: userId,
-        role: selectedRole,
-        first_name: cleanFirst,
-        last_name: cleanLast,
-        email: userEmail,
-        updated_at: new Date().toISOString(),
+      const { error: rpcError } = await supabase.rpc('complete_onboarding', {
+        p_role: selectedRole,
+        p_first_name: cleanFirst,
+        p_last_name: cleanLast,
       })
 
-      if (upsertError) throw upsertError
+      if (rpcError) throw rpcError
 
       // Recharger pour que useAuth récupère le profil à jour
       window.location.href = '/tableau-de-bord'
