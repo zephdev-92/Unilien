@@ -64,14 +64,14 @@ function LoadingPage() {
 
 // Composant de route publique (redirige si connecté)
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isInitialized } = useAuth()
+  const { isAuthenticated, isInitialized, isProfileComplete } = useAuth()
 
   if (!isInitialized) {
     return <LoadingPage />
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/tableau-de-bord" replace />
+    return <Navigate to={isProfileComplete ? '/tableau-de-bord' : '/onboarding/role'} replace />
   }
 
   return <>{children}</>
@@ -79,7 +79,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 // Composant de route protégée (redirige si non connecté)
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) {
-  const { isAuthenticated, isLoading, isInitialized, userRole } = useAuth()
+  const { isAuthenticated, isLoading, isInitialized, userRole, isProfileComplete } = useAuth()
 
   if (!isInitialized || isLoading) {
     return <LoadingPage />
@@ -87,6 +87,10 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 
   if (!isAuthenticated) {
     return <Navigate to="/connexion" replace />
+  }
+
+  if (!isProfileComplete) {
+    return <Navigate to="/onboarding/role" replace />
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {

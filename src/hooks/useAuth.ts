@@ -137,6 +137,7 @@ export function useAuth() {
     reset,
     isAuthenticated,
     getUserRole,
+    isProfileComplete,
     setMfaPending,
   } = useAuthStore()
 
@@ -360,6 +361,7 @@ export function useAuth() {
     error,
     isAuthenticated: isAuthenticated(),
     userRole: getUserRole(),
+    isProfileComplete: isProfileComplete(),
 
     // Actions
     signUp,

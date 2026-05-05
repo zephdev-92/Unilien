@@ -109,6 +109,7 @@ describe('App', () => {
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
+        isProfileComplete: true,
       })
       renderApp('/connexion')
       await waitFor(() => {
@@ -139,6 +140,7 @@ describe('App', () => {
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
+        isProfileComplete: true,
       })
       renderApp('/tableau-de-bord')
       await waitFor(() => {
@@ -152,6 +154,7 @@ describe('App', () => {
         isLoading: false,
         isInitialized: true,
         userRole: 'employee',
+        isProfileComplete: true,
       })
       renderApp('/equipe')
       await waitFor(() => {
@@ -167,6 +170,7 @@ describe('App', () => {
         isLoading: false,
         isInitialized: true,
         userRole: 'employee',
+        isProfileComplete: true,
       })
       renderApp('/suivi-des-heures')
       await waitFor(() => {
@@ -180,10 +184,25 @@ describe('App', () => {
         isLoading: false,
         isInitialized: true,
         userRole: 'employer',
+        isProfileComplete: true,
       })
       renderApp('/equipe')
       await waitFor(() => {
         expect(screen.getByTestId('team-page')).toBeInTheDocument()
+      })
+    })
+
+    it('redirige vers /onboarding/role si profil incomplet', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true,
+        isLoading: false,
+        isInitialized: true,
+        userRole: 'employer',
+        isProfileComplete: false,
+      })
+      renderApp('/tableau-de-bord')
+      await waitFor(() => {
+        expect(screen.queryByTestId('dashboard')).not.toBeInTheDocument()
       })
     })
   })
