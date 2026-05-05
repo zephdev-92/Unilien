@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Button, Flex, Separator, Text } from '@chakra-ui/react'
 import { signInWithGoogle, signInWithMicrosoft } from '@/lib/supabase/auth'
+import { setPendingRole } from '@/lib/auth/pendingRole'
+import type { UserRole } from '@/types'
 
 function GoogleIcon() {
   return (
@@ -24,7 +26,16 @@ function MicrosoftIcon() {
   )
 }
 
-export function SocialLoginButtons() {
+interface SocialLoginButtonsProps {
+  /**
+   * Rôle pré-sélectionné dans le formulaire de signup. Stocké en sessionStorage
+   * avant le redirect OAuth et récupéré par OnboardingRolePage au retour.
+   * Ignoré si non fourni (cas LoginForm).
+   */
+  pendingRole?: UserRole
+}
+
+export function SocialLoginButtons({ pendingRole }: SocialLoginButtonsProps = {}) {
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [loadingMicrosoft, setLoadingMicrosoft] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +43,7 @@ export function SocialLoginButtons() {
   async function handleGoogle() {
     setError(null)
     setLoadingGoogle(true)
+    if (pendingRole) setPendingRole(pendingRole)
     try {
       await signInWithGoogle()
     } catch {
@@ -43,6 +55,7 @@ export function SocialLoginButtons() {
   async function handleMicrosoft() {
     setError(null)
     setLoadingMicrosoft(true)
+    if (pendingRole) setPendingRole(pendingRole)
     try {
       await signInWithMicrosoft()
     } catch {

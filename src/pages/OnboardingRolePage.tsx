@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
 import { useAuth } from '@/hooks/useAuth'
+import { consumePendingRole } from '@/lib/auth/pendingRole'
 import type { UserRole } from '@/types'
 
 const roleOptions: { value: UserRole; label: string; description: string; icon: React.ReactNode }[] = [
@@ -66,6 +67,10 @@ export default function OnboardingRolePage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
+    // Récupérer le rôle pending posé par le SignupForm avant le redirect OAuth
+    const pending = consumePendingRole()
+    if (pending) setSelectedRole(pending)
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       setUserId(user.id)
