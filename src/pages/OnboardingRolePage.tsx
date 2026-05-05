@@ -57,6 +57,25 @@ const roleOptions: { value: UserRole; label: string; description: string; icon: 
   },
 ]
 
+type RpcError = { code?: string; message?: string; status?: number }
+
+function isAuthError(err: RpcError): boolean {
+  // Codes liés à une session non valide / expirée :
+  // - PostgREST renvoie status 401 quand le JWT est invalide
+  // - Notre RPC complete_onboarding lève '28000' quand auth.uid() est null
+  return err.status === 401 || err.code === '28000' || err.code === 'PGRST301'
+}
+
+function describeError(err: RpcError): string {
+  if (isAuthError(err)) {
+    return 'Votre session a expiré. Reconnectez-vous pour terminer la création du profil.'
+  }
+  if (err.code) {
+    return `Une erreur est survenue (code ${err.code}). Réessayez ou contactez le support.`
+  }
+  return 'Une erreur est survenue. Veuillez réessayer.'
+}
+
 export default function OnboardingRolePage() {
   const { isInitialized, isAuthenticated, isProfileComplete } = useAuth()
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null)
@@ -64,6 +83,7 @@ export default function OnboardingRolePage() {
   const [lastName, setLastName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSignOut, setShowSignOut] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -96,24 +116,42 @@ export default function OnboardingRolePage() {
     }
 
     setError(null)
+    setShowSignOut(false)
     setIsLoading(true)
 
+    const payload = {
+      p_role: selectedRole,
+      p_first_name: cleanFirst,
+      p_last_name: cleanLast,
+    }
+
     try {
-      const { error: rpcError } = await supabase.rpc('complete_onboarding', {
-        p_role: selectedRole,
-        p_first_name: cleanFirst,
-        p_last_name: cleanLast,
-      })
+      let { error: rpcError } = await supabase.rpc('complete_onboarding', payload)
+
+      // Retry après refresh de session sur erreur d'auth (token expiré / désynchro)
+      if (rpcError && isAuthError(rpcError as RpcError)) {
+        const { error: refreshError } = await supabase.auth.refreshSession()
+        if (!refreshError) {
+          ;({ error: rpcError } = await supabase.rpc('complete_onboarding', payload))
+        }
+      }
 
       if (rpcError) throw rpcError
 
       // Recharger pour que useAuth récupère le profil à jour
       window.location.href = '/tableau-de-bord'
     } catch (err) {
-      logger.error('Erreur onboarding role:', err)
-      setError('Une erreur est survenue. Veuillez réessayer.')
+      const rpcErr = err as RpcError
+      logger.error('Erreur onboarding role:', rpcErr)
+      setError(describeError(rpcErr))
+      setShowSignOut(isAuthError(rpcErr))
       setIsLoading(false)
     }
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    window.location.href = '/connexion'
   }
 
   // Garde-fous : pas d'accès direct sans session, pas de re-onboarding si déjà complet
@@ -216,10 +254,25 @@ export default function OnboardingRolePage() {
               </Box>
 
               {error && (
-                <Alert.Root status="error" borderRadius="md">
-                  <Alert.Indicator />
-                  <Alert.Description>{error}</Alert.Description>
-                </Alert.Root>
+                <Stack gap={2}>
+                  <Alert.Root status="error" borderRadius="md">
+                    <Alert.Indicator />
+                    <Alert.Description>{error}</Alert.Description>
+                  </Alert.Root>
+                  {showSignOut && (
+                    <AccessibleButton
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSignOut}
+                      borderColor="border.default"
+                      color="text.secondary"
+                      _hover={{ bg: 'bg.subtle' }}
+                    >
+                      Se déconnecter et réessayer
+                    </AccessibleButton>
+                  )}
+                </Stack>
               )}
 
               <AccessibleButton
