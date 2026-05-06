@@ -56,6 +56,64 @@ describe('voiceCommands.matchCommand', () => {
   })
 })
 
+describe('voiceCommands.matchCommand — phonetic Whisper splits', () => {
+  it('matches "Et quitte!" → /equipe (Whisper liaison split)', () => {
+    const cmd = matchCommand('Et quitte!', 'employer')
+    expect(cmd?.path).toBe('/equipe')
+  })
+
+  it('matches "tableau bord" → /tableau-de-bord (missing "de")', () => {
+    const cmd = matchCommand('tableau bord', 'employer')
+    expect(cmd?.path).toBe('/tableau-de-bord')
+  })
+
+  it('matches via compact form when transcript has spurious spaces', () => {
+    // "para mètre" → compact "parametre" → match "parametres"/"parametre"
+    const cmd = matchCommand('para mètre', 'employer')
+    expect(cmd?.path).toBe('/parametres')
+  })
+})
+
+describe('voiceCommands.matchCommand — fuzzy matching (Whisper typos)', () => {
+  it('matches "planeing" → /planning (1 typo on 8 chars)', () => {
+    const cmd = matchCommand('ouvre planeing', 'employer')
+    expect(cmd?.path).toBe('/planning')
+  })
+
+  it('matches "équipée" → /equipe (1 char added by Whisper)', () => {
+    const cmd = matchCommand('mon équipée', 'employer')
+    expect(cmd?.path).toBe('/equipe')
+  })
+
+  it('matches "messagerit" → /messagerie (1 typo)', () => {
+    const cmd = matchCommand('messagerit', 'employer')
+    expect(cmd?.path).toBe('/messagerie')
+  })
+
+  it('matches "documans" → /documents (2 typos)', () => {
+    const cmd = matchCommand('documans', 'employer')
+    expect(cmd?.path).toBe('/documents')
+  })
+
+  it('does not fuzzy-match very short words (e.g. "aide" vs "aile")', () => {
+    // "aide" = 4 chars → threshold 0 → pas de fuzzy
+    const cmd = matchCommand('aile', 'employer')
+    expect(cmd).toBeNull()
+  })
+
+  it('exact match beats fuzzy match (score boost)', () => {
+    // "planning" exact doit gagner même si "messagerie" pourrait fuzzy-matcher
+    const cmd = matchCommand('ouvre le planning', 'employer')
+    expect(cmd?.path).toBe('/planning')
+  })
+
+  it('respects role gating in fuzzy mode too', () => {
+    // "équipe" fuzzy mais caregiver n'a pas accès
+    const cmd = matchCommand('épique', 'caregiver')
+    expect(cmd).toBeNull()
+  })
+})
+
 describe('voiceCommands.listAvailableCommands', () => {
   it('returns all commands for employer', () => {
     const list = listAvailableCommands('employer')

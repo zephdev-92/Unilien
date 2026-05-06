@@ -8,7 +8,10 @@ type Transcriber = (
 let transcriberPromise: Promise<Transcriber> | null = null
 let downloadProgress = 0
 
-export const WHISPER_MODEL = 'onnx-community/whisper-tiny'
+// whisper-base offre une nettement meilleure qualité FR que tiny (~140 Mo total
+// avec notre dtype mix vs ~80 Mo). Le saut tiny→base est le plus rentable du
+// benchmark Whisper sur le français.
+export const WHISPER_MODEL = 'onnx-community/whisper-base'
 // fp32 sur le decoder évite le bug MatMulNBits d'onnxruntime-web sur les
 // variantes quantisées (q4/q8). Encoder en q8 reste sûr.
 export const WHISPER_DTYPE = { encoder_model: 'q8', decoder_model_merged: 'fp32' } as const
