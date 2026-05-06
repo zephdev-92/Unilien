@@ -33,6 +33,47 @@ export function normalize(text: string): string {
     .trim()
 }
 
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0
+  if (a.length === 0) return b.length
+  if (b.length === 0) return a.length
+
+  let prev = new Array(b.length + 1)
+  let curr = new Array(b.length + 1)
+  for (let j = 0; j <= b.length; j++) prev[j] = j
+
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost)
+    }
+    ;[prev, curr] = [curr, prev]
+  }
+  return prev[b.length]
+}
+
+// Tolérance de typos proportionnelle à la longueur (mots courts = 0 erreur autorisée).
+function fuzzyThreshold(len: number): number {
+  if (len <= 4) return 0
+  if (len <= 8) return 1
+  return 2
+}
+
+function fuzzyContains(transcript: string, phrase: string): boolean {
+  const threshold = fuzzyThreshold(phrase.length)
+  if (threshold === 0) return false
+  const min = Math.max(1, phrase.length - threshold)
+  const max = phrase.length + threshold
+  for (let i = 0; i + min <= transcript.length; i++) {
+    for (let len = min; len <= max && i + len <= transcript.length; len++) {
+      const window = transcript.slice(i, i + len)
+      if (levenshtein(window, phrase) <= threshold) return true
+    }
+  }
+  return false
+}
+
 export function matchCommand(
   transcript: string,
   role?: UserRole | null,
@@ -47,8 +88,17 @@ export function matchCommand(
   for (const cmd of eligible) {
     for (const phrase of cmd.phrases) {
       const p = normalize(phrase)
-      if (heard === p || heard.includes(` ${p} `) || heard.startsWith(`${p} `) || heard.endsWith(` ${p}`) || heard.includes(p)) {
-        const score = p.length
+
+      // 1. Match exact (substring) — score boosté
+      if (heard === p || heard.includes(p)) {
+        const score = p.length * 10
+        if (!best || score > best.score) best = { cmd, score }
+        continue
+      }
+
+      // 2. Fuzzy (typos Whisper) — score moindre, ne batte pas un exact
+      if (fuzzyContains(heard, p)) {
+        const score = p.length * 5
         if (!best || score > best.score) best = { cmd, score }
       }
     }
