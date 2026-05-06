@@ -123,9 +123,13 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    // onnxruntime-web et ses utilisateurs (@huggingface/transformers, @ricky0123/vad-web)
-    // chargent leurs runtimes WASM via import() ES dynamique. L'optimisation Vite
-    // (esbuild bundling sous .vite/deps/) casse ces chargements — on les exclut.
-    exclude: ['@huggingface/transformers', 'onnxruntime-web', '@ricky0123/vad-web'],
+    // onnxruntime-web et @huggingface/transformers chargent leurs runtimes WASM
+    // via import() ES dynamique. L'optimisation Vite (esbuild bundling sous
+    // .vite/deps/) casse ces chargements — on les exclut.
+    //
+    // @ricky0123/vad-web reste optimisé : c'est un module CJS pur (pas de field
+    // "module" dans son package.json), donc on a besoin d'esbuild pour le
+    // transpiler en ESM (sinon "exports is not defined" en runtime).
+    exclude: ['@huggingface/transformers', 'onnxruntime-web'],
   }
 })
