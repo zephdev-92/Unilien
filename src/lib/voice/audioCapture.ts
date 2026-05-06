@@ -46,11 +46,11 @@ export async function captureAudio(options: CaptureOptions = {}): Promise<Captur
     }, { once: true })
 
     MicVAD.new({
-      // Worklet + modèle Silero self-hostés (copiés dans public/ par
-      // scripts/copy-voice-assets.mjs). Les runtimes WASM onnxruntime sont
-      // laissés sur leur CDN par défaut (jsdelivr) car les modules ES sous
-      // /public ne peuvent pas être import()-és dynamiquement par Vite en dev.
-      baseAssetPath: '/',
+      // Tous les assets self-hostés sous /vad/ (vite-plugin-static-copy).
+      // baseAssetPath  : worklet + modèle Silero (.onnx)
+      // onnxWASMBasePath : runtimes WASM/MJS d'onnxruntime
+      baseAssetPath: '/vad/',
+      onnxWASMBasePath: '/vad/',
       model: 'v5',
 
       // Sensibilité et timing : valeurs par défaut adaptées à la nav courte

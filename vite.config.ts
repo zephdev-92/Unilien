@@ -1,11 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    // Self-host des assets de la nav vocale (Silero VAD + onnxruntime-web).
+    // Servi via middleware Vite en dev, copié dans dist/vad/ au build. On utilise
+    // un sous-dossier (pas public/) pour bypasser le guard Vite qui refuse les
+    // import() ES dynamiques sur public/. Réf: ricky0123/vad#128.
+    viteStaticCopy({
+      targets: [
+        { src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js', dest: 'vad' },
+        { src: 'node_modules/@ricky0123/vad-web/dist/*.onnx', dest: 'vad' },
+        { src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded*.{wasm,mjs}', dest: 'vad' },
+      ],
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png', 'sw-push.js'],

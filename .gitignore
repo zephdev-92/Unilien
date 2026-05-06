@@ -36,7 +36,3 @@ e2e/.auth/user.json
 playwright-report/
 test-results/
 
-# Voice navigation assets — copiés depuis node_modules par scripts/copy-voice-assets.mjs
-# (lancé via predev/prebuild). Ne pas versionner.
-public/silero_vad_v5.onnx
-public/vad.worklet.bundle.min.js
