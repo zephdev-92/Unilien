@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 /**
- * Copie les assets statiques nécessaires à la nav vocale dans `public/`
- * (Silero VAD via @ricky0123/vad-web, runtime onnxruntime-web partagé avec
- * @huggingface/transformers).
+ * Copie les assets de Silero VAD (@ricky0123/vad-web) dans `public/` :
+ *   - vad.worklet.bundle.min.js : chargé via audioWorklet.addModule(url)
+ *   - silero_vad_v5.onnx        : chargé via fetch()
  *
- * `public/` est servi à la racine par Vite (en dev et au build), donc :
- *   - en dev : http://localhost:5173/silero_vad_v5.onnx
- *   - en prod : https://unilien.app/silero_vad_v5.onnx
+ * `public/` est servi à la racine par Vite (dev et build), donc :
+ *   - dev  : http://localhost:5173/silero_vad_v5.onnx
+ *   - prod : https://unilien.app/silero_vad_v5.onnx
  *
- * Les fichiers sont gitignored (cf. .gitignore) — ils proviennent de
- * node_modules, on ne veut pas les versionner.
+ * Les fichiers sont gitignored (cf. .gitignore) — copiés depuis node_modules
+ * à chaque dev/build, toujours synchronisés avec la version installée.
  *
- * Lancé automatiquement par `npm run dev` et `npm run build` via les hooks
- * `predev` et `prebuild` dans package.json.
+ * NOTE : on ne self-host PAS les runtimes WASM d'onnxruntime-web. Ces fichiers
+ * .mjs sont importés dynamiquement (ES module import()) et Vite refuse les
+ * import() sur public/ ("file is in /public ... should not be imported from
+ * source code"). Ils restent donc servis par cdn.jsdelivr.net (déjà autorisé
+ * dans la CSP). Le worklet VAD ne pose pas ce problème car il est chargé
+ * via l'API AudioWorkletNode, pas via import().
  */
-import { mkdirSync, copyFileSync, readdirSync, existsSync } from 'node:fs'
+import { mkdirSync, copyFileSync, existsSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -33,27 +37,8 @@ function copySingle(src, destName = basename(src)) {
   copyFileSync(fullSrc, join(publicDir, destName))
 }
 
-function copyGlob(dir, predicate) {
-  const fullDir = join(root, dir)
-  if (!existsSync(fullDir)) {
-    console.warn(`⚠️  Dossier manquant: ${dir} (skipped)`)
-    return
-  }
-  for (const name of readdirSync(fullDir)) {
-    if (predicate(name)) {
-      copyFileSync(join(fullDir, name), join(publicDir, name))
-    }
-  }
-}
-
 // Silero VAD — modèle + worklet bundle
 copySingle('node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js')
 copySingle('node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx')
-
-// onnxruntime-web — runtimes WASM/MJS partagés (utilisés par VAD ET par
-// @huggingface/transformers via env.backends.onnx.wasm.wasmPaths = '/')
-copyGlob('node_modules/onnxruntime-web/dist', (name) => {
-  return /^ort-wasm-.*\.(wasm|mjs)$/.test(name)
-})
 
 console.log('✅ Voice assets copied to public/')
