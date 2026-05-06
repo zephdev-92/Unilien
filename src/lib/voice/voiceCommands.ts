@@ -6,19 +6,22 @@ export interface VoiceCommand {
   roles?: UserRole[]
 }
 
+// Les variantes "phonétiques" listent les transcriptions courantes mal segmentées
+// par Whisper (liaisons cassées, homophones) — elles permettent un match exact
+// sans dépendre du fuzzy.
 export const VOICE_COMMANDS: VoiceCommand[] = [
-  { phrases: ['tableau de bord', 'accueil', 'dashboard'], path: '/tableau-de-bord' },
-  { phrases: ['planning', 'agenda', 'calendrier', 'planing'], path: '/planning' },
-  { phrases: ['équipe', 'equipe', 'auxiliaires', 'auxiliaire'], path: '/equipe', roles: ['employer'] },
-  { phrases: ['messagerie', 'messages', 'chat'], path: '/messagerie' },
-  { phrases: ['cahier de liaison', 'liaison', 'cahier'], path: '/cahier-de-liaison' },
-  { phrases: ['conformité', 'conformite'], path: '/conformite', roles: ['employer'] },
-  { phrases: ['documents', 'document', 'bulletins', 'bulletin'], path: '/documents', roles: ['employer', 'employee'] },
-  { phrases: ['analytique', 'analytics', 'statistiques', 'stats'], path: '/analytique' },
-  { phrases: ['profil', 'mon profil', 'compte'], path: '/profil' },
-  { phrases: ['paramètres', 'parametres', 'réglages', 'reglages', 'settings'], path: '/parametres' },
+  { phrases: ['tableau de bord', 'accueil', 'dashboard', 'tableau bord'], path: '/tableau-de-bord' },
+  { phrases: ['planning', 'agenda', 'calendrier', 'planing', 'plannings'], path: '/planning' },
+  { phrases: ['équipe', 'equipe', 'auxiliaires', 'auxiliaire', 'et quitte', 'et quipe', 'équipée', 'équipes'], path: '/equipe', roles: ['employer'] },
+  { phrases: ['messagerie', 'messages', 'chat', 'messagère', 'messagerit'], path: '/messagerie' },
+  { phrases: ['cahier de liaison', 'liaison', 'cahier', 'cayer'], path: '/cahier-de-liaison' },
+  { phrases: ['conformité', 'conformite', 'conformités'], path: '/conformite', roles: ['employer'] },
+  { phrases: ['documents', 'document', 'bulletins', 'bulletin', 'documan'], path: '/documents', roles: ['employer', 'employee'] },
+  { phrases: ['analytique', 'analytics', 'statistiques', 'stats', 'analyse'], path: '/analytique' },
+  { phrases: ['profil', 'mon profil', 'compte', 'profile'], path: '/profil' },
+  { phrases: ['paramètres', 'parametres', 'réglages', 'reglages', 'settings', 'paramètre'], path: '/parametres' },
   { phrases: ['aide', 'help', 'faq'], path: '/aide' },
-  { phrases: ['contact', 'contacter'], path: '/contact' },
+  { phrases: ['contact', 'contacter', 'contacts'], path: '/contact' },
 ]
 
 const DIACRITICS = /[̀-ͯ]/g
@@ -81,6 +84,9 @@ export function matchCommand(
 ): VoiceCommand | null {
   const heard = normalize(transcript)
   if (!heard) return null
+  // Whisper segmente parfois mal les liaisons (ex: "équipe" → "et quitte").
+  // On compare aussi sans espaces pour rattraper ces cas.
+  const heardCompact = heard.replace(/\s+/g, '')
 
   const eligible = commands.filter((c) => !c.roles || (role && c.roles.includes(role)))
 
@@ -88,16 +94,18 @@ export function matchCommand(
   for (const cmd of eligible) {
     for (const phrase of cmd.phrases) {
       const p = normalize(phrase)
+      const pCompact = p.replace(/\s+/g, '')
 
       // 1. Match exact (substring) — score boosté
-      if (heard === p || heard.includes(p)) {
+      if (heard === p || heard.includes(p) || heardCompact.includes(pCompact)) {
         const score = p.length * 10
         if (!best || score > best.score) best = { cmd, score }
         continue
       }
 
-      // 2. Fuzzy (typos Whisper) — score moindre, ne batte pas un exact
-      if (fuzzyContains(heard, p)) {
+      // 2. Fuzzy (typos Whisper) — score moindre, ne batte pas un exact.
+      //    Tente d'abord la version segmentée puis la version compacte.
+      if (fuzzyContains(heard, p) || fuzzyContains(heardCompact, pCompact)) {
         const score = p.length * 5
         if (!best || score > best.score) best = { cmd, score }
       }

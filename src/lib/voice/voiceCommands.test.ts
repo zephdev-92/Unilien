@@ -56,6 +56,24 @@ describe('voiceCommands.matchCommand', () => {
   })
 })
 
+describe('voiceCommands.matchCommand — phonetic Whisper splits', () => {
+  it('matches "Et quitte!" → /equipe (Whisper liaison split)', () => {
+    const cmd = matchCommand('Et quitte!', 'employer')
+    expect(cmd?.path).toBe('/equipe')
+  })
+
+  it('matches "tableau bord" → /tableau-de-bord (missing "de")', () => {
+    const cmd = matchCommand('tableau bord', 'employer')
+    expect(cmd?.path).toBe('/tableau-de-bord')
+  })
+
+  it('matches via compact form when transcript has spurious spaces', () => {
+    // "para mètre" → compact "parametre" → match "parametres"/"parametre"
+    const cmd = matchCommand('para mètre', 'employer')
+    expect(cmd?.path).toBe('/parametres')
+  })
+})
+
 describe('voiceCommands.matchCommand — fuzzy matching (Whisper typos)', () => {
   it('matches "planeing" → /planning (1 typo on 8 chars)', () => {
     const cmd = matchCommand('ouvre planeing', 'employer')
