@@ -42,6 +42,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
 
   const nativeRef = useRef<SpeechRecognition | null>(null)
   const abortRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const startWhisperRef = useRef<() => Promise<void>>(async () => {})
 
   const handleResult = useCallback(
@@ -144,7 +145,16 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       }
 
       setStatus('listening')
-      const { audio } = await captureAudio()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+      const { audio } = await captureAudio({
+        signal: controller.signal,
+        // Quand l'utilisateur commence vraiment à parler, on garde "listening"
+        // mais on aurait pu basculer vers un sous-état "speaking" si on voulait
+        // un feedback visuel plus fin.
+        onSpeechStart: () => {},
+      })
+      abortControllerRef.current = null
       if (abortRef.current) {
         setStatus('idle')
         return
@@ -176,6 +186,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
 
   const stop = useCallback(() => {
     abortRef.current = true
+    abortControllerRef.current?.abort()
     if (engine === 'native' && nativeRef.current) {
       try {
         nativeRef.current.stop()

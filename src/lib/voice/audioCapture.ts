@@ -1,74 +1,90 @@
 import { logger } from '@/lib/logger'
 
-const SAMPLE_RATE = 16000
-const MAX_DURATION_MS = 5000
-
 export interface CaptureResult {
   audio: Float32Array
   durationMs: number
 }
 
-export async function captureAudio(maxDurationMs = MAX_DURATION_MS): Promise<CaptureResult> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-  })
+export interface CaptureOptions {
+  /** Délai max sans parole détectée avant abandon (default 12s). */
+  maxDurationMs?: number
+  /** Appelé quand l'utilisateur commence vraiment à parler (parole détectée). */
+  onSpeechStart?: () => void
+  /** Permet d'annuler la capture en cours. */
+  signal?: AbortSignal
+}
+
+/**
+ * Capture audio de l'utilisateur via Silero VAD (@ricky0123/vad-web).
+ * Le VAD détecte automatiquement le début et la fin de la parole — on n'a
+ * pas besoin d'un timeout fixe : ça coupe dès que l'utilisateur se tait.
+ *
+ * Retourne un Float32Array à 16 kHz mono prêt à passer à Whisper.
+ */
+export async function captureAudio(options: CaptureOptions = {}): Promise<CaptureResult> {
+  const { maxDurationMs = 12000, onSpeechStart, signal } = options
+  const { MicVAD } = await import('@ricky0123/vad-web')
 
   return new Promise<CaptureResult>((resolve, reject) => {
-    const recorder = new MediaRecorder(stream)
-    const chunks: Blob[] = []
+    let vad: Awaited<ReturnType<typeof MicVAD.new>> | null = null
     const startedAt = performance.now()
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data)
+    const cleanup = () => {
+      vad?.destroy()
+      vad = null
     }
 
-    recorder.onerror = (e) => {
-      stream.getTracks().forEach((t) => t.stop())
-      reject(e)
-    }
+    const timeoutId = setTimeout(() => {
+      cleanup()
+      reject(new Error('Aucune parole détectée. Cliquez à nouveau et parlez.'))
+    }, maxDurationMs)
 
-    recorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop())
-      try {
-        const blob = new Blob(chunks, { type: chunks[0]?.type ?? 'audio/webm' })
-        const buffer = await blob.arrayBuffer()
-        const audio = await decodeToMono16k(buffer)
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timeoutId)
+      cleanup()
+      reject(new DOMException('Capture aborted', 'AbortError'))
+    }, { once: true })
+
+    MicVAD.new({
+      // Assets self-hosted depuis /public via vite-plugin-static-copy
+      baseAssetPath: '/',
+      onnxWASMBasePath: '/',
+      model: 'v5',
+
+      // Sensibilité et timing : valeurs par défaut adaptées à la nav courte
+      positiveSpeechThreshold: 0.5,
+      negativeSpeechThreshold: 0.35,
+      redemptionFrames: 8,
+      minSpeechFrames: 3,
+
+      onSpeechStart: () => {
+        onSpeechStart?.()
+      },
+      onSpeechEnd: (audio: Float32Array) => {
+        clearTimeout(timeoutId)
+        cleanup()
         resolve({ audio, durationMs: performance.now() - startedAt })
-      } catch (err) {
+      },
+      onVADMisfire: () => {
+        // Brève détection sans parole confirmée — on ignore et on continue d'écouter
+      },
+    })
+      .then((instance) => {
+        if (signal?.aborted) {
+          instance.destroy()
+          clearTimeout(timeoutId)
+          reject(new DOMException('Capture aborted', 'AbortError'))
+          return
+        }
+        vad = instance
+        vad.start()
+      })
+      .catch((err) => {
+        clearTimeout(timeoutId)
+        logger.error('MicVAD init failed', err)
         reject(err)
-      }
-    }
-
-    recorder.start()
-    setTimeout(() => recorder.state === 'recording' && recorder.stop(), maxDurationMs)
+      })
   })
-}
-
-async function decodeToMono16k(buffer: ArrayBuffer): Promise<Float32Array> {
-  const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-  const ctx = new AudioCtx()
-  try {
-    const decoded = await ctx.decodeAudioData(buffer.slice(0))
-    if (decoded.sampleRate === SAMPLE_RATE && decoded.numberOfChannels === 1) {
-      return decoded.getChannelData(0).slice()
-    }
-    return resample(decoded, SAMPLE_RATE)
-  } catch (err) {
-    logger.warn('decodeAudioData failed', err)
-    throw err
-  } finally {
-    await ctx.close().catch(() => {})
-  }
-}
-
-async function resample(buffer: AudioBuffer, target: number): Promise<Float32Array> {
-  const offline = new OfflineAudioContext(1, Math.ceil((buffer.duration * target)), target)
-  const src = offline.createBufferSource()
-  src.buffer = buffer
-  src.connect(offline.destination)
-  src.start()
-  const rendered = await offline.startRendering()
-  return rendered.getChannelData(0).slice()
 }
 
 export async function ensureMicPermission(): Promise<boolean> {

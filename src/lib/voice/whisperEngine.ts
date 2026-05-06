@@ -39,7 +39,11 @@ export async function getTranscriber(): Promise<Transcriber> {
 
   transcriberPromise = (async () => {
     emit({ status: 'init' })
-    const { pipeline } = await import('@huggingface/transformers')
+    const { pipeline, env } = await import('@huggingface/transformers')
+
+    // Self-host : pointer les WASM onnxruntime sur notre origin (copiés par
+    // vite-plugin-static-copy). Évite la dépendance à cdn.jsdelivr.net.
+    env.backends.onnx.wasm.wasmPaths = '/'
 
     const transcriber = await pipeline('automatic-speech-recognition', WHISPER_MODEL, {
       // Cast volontaire : la signature dtype permet string | record selon le modèle,

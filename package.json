@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-voice-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-voice-assets.mjs",
     "build": "vite build",
     "build:typecheck": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
@@ -24,6 +26,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@huggingface/transformers": "^4.2.0",
     "@react-pdf/renderer": "^4.4.1",
+    "@ricky0123/vad-web": "^0.0.30",
     "@supabase/supabase-js": "^2.103.3",
     "date-fns": "^4.1.0",
     "dompurify": "^3.4.0",
