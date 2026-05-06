@@ -1957,12 +1957,10 @@ function AccessibilitePanel() {
               onChange={() => handleToggle('screenReaderOptimized')}
             />
             <ToggleRow
-              label="Contrôle vocal"
-              description="Naviguez dans l'application par commandes vocales."
+              label="Navigation vocale"
+              description="Affiche un micro flottant en bas à droite. Dites « planning », « messagerie », « paramètres »… pour naviguer. Sur Chrome/Edge/Safari : reconnaissance native (audio traité par votre navigateur). Sur Firefox : moteur Whisper local (~40 Mo téléchargés une fois, 100 % hors ligne ensuite). Raccourci : Ctrl+Maj+V."
               checked={settings.voiceControlEnabled}
               onChange={() => handleToggle('voiceControlEnabled')}
-              disabled
-              badge="Bientôt disponible"
             />
           </VStack>
         </Card.Body>
