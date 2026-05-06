@@ -16,6 +16,7 @@ import { DevelopmentBanner, NavIcon } from '@/components/ui'
 import { NotificationBell, NotificationsPanel } from '@/components/notifications'
 import { SpotlightSearch } from '@/components/dashboard/SpotlightSearch'
 import { useSpotlightSearch } from '@/hooks/useSpotlightSearch'
+import { VoiceNavButton } from '@/components/voice/VoiceNavButton'
 import { getCaregiver } from '@/services/caregiverService'
 import { logger } from '@/lib/logger'
 import { FEATURES } from '@/lib/featureFlags'
@@ -654,6 +655,9 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
 
       {/* ── SpotlightSearch (Ctrl+K) ── */}
       <SpotlightSearch spotlight={spotlight} />
+
+      {/* ── Navigation vocale (FAB) ── */}
+      <VoiceNavButton />
     </Box>
   )
 }

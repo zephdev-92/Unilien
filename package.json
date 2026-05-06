@@ -22,6 +22,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
+    "@huggingface/transformers": "^4.2.0",
     "@react-pdf/renderer": "^4.4.1",
     "@supabase/supabase-js": "^2.103.3",
     "date-fns": "^4.1.0",

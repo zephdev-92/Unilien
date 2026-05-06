@@ -102,6 +102,9 @@ export default defineConfig({
           // Supabase
           if (id.includes('@supabase')) return 'vendor-supabase'
 
+          // @huggingface/transformers + onnxruntime-web (lazy-loaded pour navigation vocale Whisper)
+          if (id.includes('@huggingface/transformers') || id.includes('onnxruntime-web')) return 'vendor-whisper'
+
           // date-fns
           if (id.includes('date-fns')) return 'vendor-dates'
 
@@ -118,5 +121,8 @@ export default defineConfig({
     alias: {
       '@': '/src'
     }
+  },
+  optimizeDeps: {
+    exclude: ['@huggingface/transformers']
   }
 })
