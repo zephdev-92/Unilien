@@ -33,7 +33,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
   const { profile } = useAuth()
   const enabled = useAccessibilityStore((s) => s.settings.voiceControlEnabled)
 
-  const [engine] = useState<VoiceEngine>(() => detectEngine())
+  const [engine, setEngine] = useState<VoiceEngine>(() => detectEngine())
   const [status, setStatus] = useState<VoiceStatus>('idle')
   const [transcript, setTranscript] = useState('')
   const [matched, setMatched] = useState<VoiceCommand | null>(null)
@@ -42,6 +42,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
 
   const nativeRef = useRef<SpeechRecognition | null>(null)
   const abortRef = useRef(false)
+  const startWhisperRef = useRef<() => Promise<void>>(async () => {})
 
   const handleResult = useCallback(
     (heard: string) => {
@@ -73,11 +74,21 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       const heard = e.results[0]?.[0]?.transcript ?? ''
       handleResult(heard)
     }
-    recognition.onend = () => setStatus('idle')
+    recognition.onend = () => setStatus((s) => (s === 'listening' ? 'idle' : s))
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       if (e.error === 'aborted' || e.error === 'no-speech') {
         setStatus('idle')
         return
+      }
+      // Chromium open-source n'a pas les clés Google Speech → "network" systématique.
+      // On bascule définitivement sur Whisper local pour cette session.
+      if (e.error === 'network' || e.error === 'service-not-allowed') {
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+          logger.info('Native voice engine unavailable, falling back to Whisper')
+          setEngine('whisper')
+          startWhisperRef.current()
+          return
+        }
       }
       setError(`Erreur reconnaissance : ${e.error}`)
       setStatus('error')
@@ -151,6 +162,11 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       setStatus('error')
     }
   }, [handleResult])
+
+  // Garde la dernière référence à startWhisper pour la bascule depuis onerror native.
+  useEffect(() => {
+    startWhisperRef.current = startWhisper
+  }, [startWhisper])
 
   const start = useCallback(async () => {
     if (!enabled) return
