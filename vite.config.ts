@@ -123,6 +123,9 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    exclude: ['@huggingface/transformers']
+    // onnxruntime-web et ses utilisateurs (@huggingface/transformers, @ricky0123/vad-web)
+    // chargent leurs runtimes WASM via import() ES dynamique. L'optimisation Vite
+    // (esbuild bundling sous .vite/deps/) casse ces chargements — on les exclut.
+    exclude: ['@huggingface/transformers', 'onnxruntime-web', '@ricky0123/vad-web'],
   }
 })
