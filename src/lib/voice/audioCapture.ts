@@ -1,74 +1,111 @@
 import { logger } from '@/lib/logger'
 
-const SAMPLE_RATE = 16000
-const MAX_DURATION_MS = 5000
-
 export interface CaptureResult {
   audio: Float32Array
   durationMs: number
 }
 
-export async function captureAudio(maxDurationMs = MAX_DURATION_MS): Promise<CaptureResult> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
-  })
+export interface CaptureOptions {
+  /** Délai max sans parole détectée avant abandon (default 20s). */
+  maxDurationMs?: number
+  /** Appelé quand le VAD est réellement prêt à écouter (modèle ONNX chargé). */
+  onReady?: () => void
+  /** Appelé quand l'utilisateur commence vraiment à parler. */
+  onSpeechStart?: () => void
+  /** Permet d'annuler la capture en cours. */
+  signal?: AbortSignal
+}
+
+/**
+ * Capture audio via Silero VAD (@ricky0123/vad-web). Le VAD coupe
+ * automatiquement à la fin de la parole — pas de timeout fixe.
+ * Retourne un Float32Array à 16 kHz mono prêt pour Whisper.
+ *
+ * Config conforme à la doc officielle docs.vad.ricky0123.com :
+ * assets servis à la racine via vite-plugin-static-copy.
+ */
+export async function captureAudio(options: CaptureOptions = {}): Promise<CaptureResult> {
+  const { maxDurationMs = 20000, onReady, onSpeechStart, signal } = options
+  const { MicVAD } = await import('@ricky0123/vad-web')
 
   return new Promise<CaptureResult>((resolve, reject) => {
-    const recorder = new MediaRecorder(stream)
-    const chunks: Blob[] = []
+    let vad: Awaited<ReturnType<typeof MicVAD.new>> | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     const startedAt = performance.now()
 
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data)
+    const cleanup = () => {
+      vad?.destroy()
+      vad = null
     }
 
-    recorder.onerror = (e) => {
-      stream.getTracks().forEach((t) => t.stop())
-      reject(e)
-    }
+    signal?.addEventListener(
+      'abort',
+      () => {
+        if (timeoutId) clearTimeout(timeoutId)
+        cleanup()
+        reject(new DOMException('Capture aborted', 'AbortError'))
+      },
+      { once: true },
+    )
 
-    recorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop())
-      try {
-        const blob = new Blob(chunks, { type: chunks[0]?.type ?? 'audio/webm' })
-        const buffer = await blob.arrayBuffer()
-        const audio = await decodeToMono16k(buffer)
+    MicVAD.new({
+      baseAssetPath: '/',
+      onnxWASMBasePath: '/',
+      model: 'v5',
+      // Stream personnalisé : on coupe noiseSuppression / echoCancellation /
+      // autoGainControl. Activés par défaut par Firefox/Chrome, ils tuent
+      // le signal vocal continu et ne laissent que des transitoires →
+      // VAD voit "click click" au lieu de "voix" → misfire systématique.
+      getStream: async () => {
+        return navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
+        })
+      },
+      positiveSpeechThreshold: 0.30,
+      negativeSpeechThreshold: 0.20,
+      redemptionFrames: 24,
+      minSpeechFrames: 2,
+      // 10 frames (~320ms) d'audio AVANT le speech-start envoyés à Whisper.
+      // Whisper hallucine sur 1s brut sans contexte → ce padding réduit
+      // drastiquement les transcriptions inventées sur commandes courtes.
+      preSpeechPadFrames: 10,
+      onSpeechStart: () => {
+        onSpeechStart?.()
+      },
+      onSpeechEnd: (audio: Float32Array) => {
+        if (timeoutId) clearTimeout(timeoutId)
+        cleanup()
         resolve({ audio, durationMs: performance.now() - startedAt })
-      } catch (err) {
+      },
+      onVADMisfire: () => {
+        logger.warn('VAD misfire (speech too short, ignored)')
+      },
+    })
+      .then((instance) => {
+        if (signal?.aborted) {
+          instance.destroy()
+          reject(new DOMException('Capture aborted', 'AbortError'))
+          return
+        }
+        vad = instance
+        vad.start()
+        onReady?.()
+        // Démarre le timeout APRÈS que le VAD soit prêt — sinon on consomme
+        // une partie du délai pendant le chargement du modèle ONNX.
+        timeoutId = setTimeout(() => {
+          cleanup()
+          reject(new Error('Aucune parole détectée. Cliquez à nouveau et parlez.'))
+        }, maxDurationMs)
+      })
+      .catch((err) => {
+        logger.error('MicVAD init failed', err)
         reject(err)
-      }
-    }
-
-    recorder.start()
-    setTimeout(() => recorder.state === 'recording' && recorder.stop(), maxDurationMs)
+      })
   })
-}
-
-async function decodeToMono16k(buffer: ArrayBuffer): Promise<Float32Array> {
-  const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-  const ctx = new AudioCtx()
-  try {
-    const decoded = await ctx.decodeAudioData(buffer.slice(0))
-    if (decoded.sampleRate === SAMPLE_RATE && decoded.numberOfChannels === 1) {
-      return decoded.getChannelData(0).slice()
-    }
-    return resample(decoded, SAMPLE_RATE)
-  } catch (err) {
-    logger.warn('decodeAudioData failed', err)
-    throw err
-  } finally {
-    await ctx.close().catch(() => {})
-  }
-}
-
-async function resample(buffer: AudioBuffer, target: number): Promise<Float32Array> {
-  const offline = new OfflineAudioContext(1, Math.ceil((buffer.duration * target)), target)
-  const src = offline.createBufferSource()
-  src.buffer = buffer
-  src.connect(offline.destination)
-  src.start()
-  const rendered = await offline.startRendering()
-  return rendered.getChannelData(0).slice()
 }
 
 export async function ensureMicPermission(): Promise<boolean> {

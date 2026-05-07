@@ -39,7 +39,11 @@ export async function getTranscriber(): Promise<Transcriber> {
 
   transcriberPromise = (async () => {
     emit({ status: 'init' })
-    const { pipeline } = await import('@huggingface/transformers')
+    const { pipeline, env } = await import('@huggingface/transformers')
+
+    // Réutilise les WASM onnxruntime self-hostés (copiés à la racine par
+    // vite-plugin-static-copy). Évite la dépendance à cdn.jsdelivr.net.
+    env.backends.onnx.wasm.wasmPaths = '/'
 
     const transcriber = await pipeline('automatic-speech-recognition', WHISPER_MODEL, {
       // Cast volontaire : la signature dtype permet string | record selon le modèle,
@@ -68,7 +72,17 @@ export async function getTranscriber(): Promise<Transcriber> {
 
 export async function transcribe(audio: Float32Array): Promise<string> {
   const transcriber = await getTranscriber()
-  const result = await transcriber(audio, { language: 'french', task: 'transcribe' })
+  // Anti-hallucination Whisper sur commandes courtes :
+  // - no_repeat_ngram_size : empêche "X. X. X." en boucle
+  // - temperature 0 : déterministe, pas de fallback aléatoire
+  // - compression_ratio_threshold : rejette segments trop répétitifs
+  const result = await transcriber(audio, {
+    language: 'french',
+    task: 'transcribe',
+    no_repeat_ngram_size: 3,
+    temperature: 0,
+    compression_ratio_threshold: 2.4,
+  } as { language: string; task: string })
   return (result?.text ?? '').trim()
 }
 

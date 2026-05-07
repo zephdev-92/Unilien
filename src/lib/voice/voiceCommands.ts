@@ -17,7 +17,7 @@ export const VOICE_COMMANDS: VoiceCommand[] = [
   { phrases: ['cahier de liaison', 'liaison', 'cahier', 'cayer'], path: '/cahier-de-liaison' },
   { phrases: ['conformité', 'conformite', 'conformités'], path: '/conformite', roles: ['employer'] },
   { phrases: ['documents', 'document', 'bulletins', 'bulletin', 'documan'], path: '/documents', roles: ['employer', 'employee'] },
-  { phrases: ['analytique', 'analytics', 'statistiques', 'stats', 'analyse'], path: '/analytique' },
+  { phrases: ['analytique', 'analytics', 'statistiques', 'stats', 'analyse', 'annelitique', 'analitique'], path: '/analytique' },
   { phrases: ['profil', 'mon profil', 'compte', 'profile'], path: '/profil' },
   { phrases: ['paramètres', 'parametres', 'réglages', 'reglages', 'settings', 'paramètre'], path: '/parametres' },
   { phrases: ['aide', 'help', 'faq'], path: '/aide' },

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Box, Flex, IconButton, Text, VStack, HStack, Badge } from '@chakra-ui/react'
 import { NavIcon } from '@/components/ui'
+import { VoiceWave } from '@/components/voice/VoiceWave'
 import { useVoiceNavigation } from '@/hooks/useVoiceNavigation'
 import { listAvailableCommands } from '@/lib/voice/voiceCommands'
 import { useAuth } from '@/hooks/useAuth'
 
 export function VoiceNavButton() {
   const { profile } = useAuth()
-  const { enabled, status, engine, transcript, matched, error, modelProgress, toggle } = useVoiceNavigation()
+  const { enabled, status, engine, transcript, matched, error, modelProgress, speechDetected, toggle } = useVoiceNavigation()
   const [showHelp, setShowHelp] = useState(false)
 
   // Raccourci clavier : Ctrl/Cmd + Shift + V
@@ -32,7 +33,7 @@ export function VoiceNavButton() {
   const statusLabel = (() => {
     switch (status) {
       case 'loading-engine': return modelProgress > 0 ? `Chargement du moteur… ${modelProgress}%` : 'Chargement du moteur…'
-      case 'listening': return 'Parlez maintenant…'
+      case 'listening': return speechDetected ? 'Je vous écoute…' : 'Parlez maintenant…'
       case 'transcribing': return 'Transcription en cours…'
       case 'error': return error ?? 'Erreur'
       default: return 'Cliquez pour parler'
@@ -132,7 +133,11 @@ export function VoiceNavButton() {
             '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
           }}
         >
-          <NavIcon name={isListening ? 'mic-off' : 'mic'} size={22} />
+          {isListening ? (
+            <VoiceWave size={22} active={speechDetected} />
+          ) : (
+            <NavIcon name="mic" size={22} />
+          )}
         </IconButton>
 
         {isListening && (
