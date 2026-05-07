@@ -47,14 +47,23 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
   const startWhisperRef = useRef<() => Promise<void>>(async () => {})
 
   const handleResult = useCallback(
-    (heard: string) => {
-      setTranscript(heard)
-      const cmd = matchCommand(heard, profile?.role ?? null)
+    (heard: string | string[]) => {
+      const candidates = Array.isArray(heard) ? heard : [heard]
+      const primary = candidates[0] ?? ''
+      // 1ère alternative affichée comme "transcript", peu importe ce qui matche
+      setTranscript(primary)
+
+      // Tente toutes les alternatives ; la 1ère qui matche gagne.
+      let cmd = null
+      for (const alt of candidates) {
+        cmd = matchCommand(alt, profile?.role ?? null)
+        if (cmd) break
+      }
       setMatched(cmd)
       if (cmd) {
         navigate(cmd.path)
-      } else if (heard) {
-        setError(`Commande non reconnue : "${heard}"`)
+      } else if (primary) {
+        setError(`Commande non reconnue : "${primary}"`)
       }
     },
     [navigate, profile?.role],
@@ -70,11 +79,17 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
     recognition.lang = 'fr-FR'
     recognition.continuous = false
     recognition.interimResults = false
-    recognition.maxAlternatives = 1
+    // Edge/Chrome renvoient souvent la bonne transcription en 2e/3e alternative
+    // (Edge en particulier déraille beaucoup sur le FR). On lit jusqu'à 5
+    // alternatives et on prend la 1ère qui matche une commande.
+    recognition.maxAlternatives = 5
 
     recognition.onresult = (e: SpeechRecognitionEvent) => {
-      const heard = e.results[0]?.[0]?.transcript ?? ''
-      handleResult(heard)
+      const result = e.results[0]
+      if (!result) return
+      const alternatives = Array.from({ length: result.length }, (_, i) => result[i]?.transcript ?? '')
+        .filter(Boolean)
+      handleResult(alternatives)
     }
     recognition.onspeechstart = () => setSpeechDetected(true)
     recognition.onspeechend = () => setSpeechDetected(false)

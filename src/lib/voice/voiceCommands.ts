@@ -10,7 +10,7 @@ export interface VoiceCommand {
 // par Whisper (liaisons cassées, homophones) — elles permettent un match exact
 // sans dépendre du fuzzy.
 export const VOICE_COMMANDS: VoiceCommand[] = [
-  { phrases: ['tableau de bord', 'accueil', 'dashboard', 'tableau bord'], path: '/tableau-de-bord' },
+  { phrases: ['tableau de bord', 'accueil', 'dashboard', 'tableau bord', "t'as pris le debout", "t'a pris le debout", 'tableau du bord', 'tablo de bord'], path: '/tableau-de-bord' },
   { phrases: ['planning', 'agenda', 'calendrier', 'planing', 'plannings'], path: '/planning' },
   { phrases: ['équipe', 'equipe', 'auxiliaires', 'auxiliaire', 'et quitte', 'et quipe', 'équipée', 'équipes'], path: '/equipe', roles: ['employer'] },
   { phrases: ['messagerie', 'messages', 'chat', 'messagère', 'messagerit'], path: '/messagerie' },
