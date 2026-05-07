@@ -16,6 +16,7 @@ export interface UseVoiceNavigationReturn {
   matched: VoiceCommand | null
   error: string | null
   modelProgress: number
+  speechDetected: boolean
   start: () => Promise<void>
   stop: () => void
   toggle: () => Promise<void>
@@ -39,6 +40,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
   const [matched, setMatched] = useState<VoiceCommand | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [modelProgress, setModelProgress] = useState(0)
+  const [speechDetected, setSpeechDetected] = useState(false)
 
   const nativeRef = useRef<SpeechRecognition | null>(null)
   const abortRef = useRef(false)
@@ -74,7 +76,12 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       const heard = e.results[0]?.[0]?.transcript ?? ''
       handleResult(heard)
     }
-    recognition.onend = () => setStatus((s) => (s === 'listening' ? 'idle' : s))
+    recognition.onspeechstart = () => setSpeechDetected(true)
+    recognition.onspeechend = () => setSpeechDetected(false)
+    recognition.onend = () => {
+      setSpeechDetected(false)
+      setStatus((s) => (s === 'listening' ? 'idle' : s))
+    }
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       if (e.error === 'aborted' || e.error === 'no-speech') {
         setStatus('idle')
@@ -109,6 +116,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
     setError(null)
     setTranscript('')
     setMatched(null)
+    setSpeechDetected(false)
     setStatus('listening')
     try {
       nativeRef.current.start()
@@ -122,6 +130,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
     setError(null)
     setTranscript('')
     setMatched(null)
+    setSpeechDetected(false)
     abortRef.current = false
 
     try {
@@ -143,8 +152,15 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
         return
       }
 
-      setStatus('listening')
-      const { audio } = await captureAudio()
+      // Reste en 'loading-engine' tant que le VAD n'est pas prêt (modèle ONNX
+      // se charge ~1-3s la première fois). Passe à 'listening' uniquement
+      // quand MicVAD est réellement à l'écoute → évite que l'utilisateur
+      // parle avant que le VAD soit branché sur le micro.
+      const { audio } = await captureAudio({
+        onReady: () => setStatus('listening'),
+        onSpeechStart: () => setSpeechDetected(true),
+      })
+      setSpeechDetected(false)
       if (abortRef.current) {
         setStatus('idle')
         return
@@ -183,6 +199,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
         /* noop */
       }
     }
+    setSpeechDetected(false)
     setStatus('idle')
   }, [engine])
 
@@ -202,6 +219,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
     matched,
     error,
     modelProgress,
+    speechDetected,
     start,
     stop,
     toggle,

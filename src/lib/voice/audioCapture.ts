@@ -6,8 +6,10 @@ export interface CaptureResult {
 }
 
 export interface CaptureOptions {
-  /** Délai max sans parole détectée avant abandon (default 12s). */
+  /** Délai max sans parole détectée avant abandon (default 20s). */
   maxDurationMs?: number
+  /** Appelé quand le VAD est réellement prêt à écouter (modèle ONNX chargé). */
+  onReady?: () => void
   /** Appelé quand l'utilisateur commence vraiment à parler. */
   onSpeechStart?: () => void
   /** Permet d'annuler la capture en cours. */
@@ -23,11 +25,12 @@ export interface CaptureOptions {
  * assets servis à la racine via vite-plugin-static-copy.
  */
 export async function captureAudio(options: CaptureOptions = {}): Promise<CaptureResult> {
-  const { maxDurationMs = 20000, onSpeechStart, signal } = options
+  const { maxDurationMs = 20000, onReady, onSpeechStart, signal } = options
   const { MicVAD } = await import('@ricky0123/vad-web')
 
   return new Promise<CaptureResult>((resolve, reject) => {
     let vad: Awaited<ReturnType<typeof MicVAD.new>> | null = null
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     const startedAt = performance.now()
 
     const cleanup = () => {
@@ -35,15 +38,10 @@ export async function captureAudio(options: CaptureOptions = {}): Promise<Captur
       vad = null
     }
 
-    const timeoutId = setTimeout(() => {
-      cleanup()
-      reject(new Error('Aucune parole détectée. Cliquez à nouveau et parlez.'))
-    }, maxDurationMs)
-
     signal?.addEventListener(
       'abort',
       () => {
-        clearTimeout(timeoutId)
+        if (timeoutId) clearTimeout(timeoutId)
         cleanup()
         reject(new DOMException('Capture aborted', 'AbortError'))
       },
@@ -54,36 +52,56 @@ export async function captureAudio(options: CaptureOptions = {}): Promise<Captur
       baseAssetPath: '/',
       onnxWASMBasePath: '/',
       model: 'v5',
-      // Seuils permissifs pour les commandes courtes ("aide", "planning") :
-      // - threshold bas (0.35) → détecte voix faible / bruyante
-      // - minSpeechFrames=1 → autorise mots monosyllabiques
-      // - redemptionFrames=12 → laisse 12 frames (~384ms) de marge avant de
-      //   couper, évite de couper en plein mot.
-      positiveSpeechThreshold: 0.35,
-      negativeSpeechThreshold: 0.25,
-      redemptionFrames: 12,
-      minSpeechFrames: 1,
+      // Stream personnalisé : on coupe noiseSuppression / echoCancellation /
+      // autoGainControl. Activés par défaut par Firefox/Chrome, ils tuent
+      // le signal vocal continu et ne laissent que des transitoires →
+      // VAD voit "click click" au lieu de "voix" → misfire systématique.
+      getStream: async () => {
+        return navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
+        })
+      },
+      positiveSpeechThreshold: 0.30,
+      negativeSpeechThreshold: 0.20,
+      redemptionFrames: 24,
+      minSpeechFrames: 2,
+      // 10 frames (~320ms) d'audio AVANT le speech-start envoyés à Whisper.
+      // Whisper hallucine sur 1s brut sans contexte → ce padding réduit
+      // drastiquement les transcriptions inventées sur commandes courtes.
+      preSpeechPadFrames: 10,
       onSpeechStart: () => {
         onSpeechStart?.()
       },
       onSpeechEnd: (audio: Float32Array) => {
-        clearTimeout(timeoutId)
+        if (timeoutId) clearTimeout(timeoutId)
         cleanup()
         resolve({ audio, durationMs: performance.now() - startedAt })
+      },
+      onVADMisfire: () => {
+        logger.warn('VAD misfire (speech too short, ignored)')
       },
     })
       .then((instance) => {
         if (signal?.aborted) {
           instance.destroy()
-          clearTimeout(timeoutId)
           reject(new DOMException('Capture aborted', 'AbortError'))
           return
         }
         vad = instance
         vad.start()
+        onReady?.()
+        // Démarre le timeout APRÈS que le VAD soit prêt — sinon on consomme
+        // une partie du délai pendant le chargement du modèle ONNX.
+        timeoutId = setTimeout(() => {
+          cleanup()
+          reject(new Error('Aucune parole détectée. Cliquez à nouveau et parlez.'))
+        }, maxDurationMs)
       })
       .catch((err) => {
-        clearTimeout(timeoutId)
         logger.error('MicVAD init failed', err)
         reject(err)
       })

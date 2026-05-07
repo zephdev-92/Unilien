@@ -1,11 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    // Config officielle docs.vad.ricky0123.com — assets à la racine de outDir.
+    viteStaticCopy({
+      targets: [
+        { src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js', dest: './' },
+        { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx', dest: './' },
+        { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx', dest: './' },
+        { src: 'node_modules/onnxruntime-web/dist/*.wasm', dest: './' },
+        { src: 'node_modules/onnxruntime-web/dist/*.mjs', dest: './' },
+      ],
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png', 'sw-push.js'],
@@ -122,7 +133,6 @@ export default defineConfig({
       '@': '/src'
     }
   },
-  optimizeDeps: {
-    exclude: ['@huggingface/transformers']
-  }
+  // Pas d'optimizeDeps.exclude — la doc officielle de @ricky0123/vad-web
+  // ne recommande rien de particulier. Laisser esbuild gérer.
 })
