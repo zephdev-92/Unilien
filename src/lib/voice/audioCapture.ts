@@ -52,26 +52,30 @@ export async function captureAudio(options: CaptureOptions = {}): Promise<Captur
       baseAssetPath: '/',
       onnxWASMBasePath: '/',
       model: 'v5',
-      // Stream personnalisé : on coupe noiseSuppression / echoCancellation /
-      // autoGainControl. Activés par défaut par Firefox/Chrome, ils tuent
-      // le signal vocal continu et ne laissent que des transitoires →
-      // VAD voit "click click" au lieu de "voix" → misfire systématique.
+      // noiseSuppression et echoCancellation OFF : ils tuent le signal vocal
+      // continu et ne laissent que des transitoires (cf. testing 06/05).
+      // autoGainControl ON : compense un niveau micro faible — sans ça les
+      // utilisateurs avec un mic peu sensible plafonnent à isSpeech ~0.5
+      // et le VAD misfire en boucle.
       getStream: async () => {
         return navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: false,
             noiseSuppression: false,
-            autoGainControl: false,
+            autoGainControl: true,
           },
         })
       },
-      positiveSpeechThreshold: 0.30,
-      negativeSpeechThreshold: 0.20,
-      redemptionFrames: 24,
-      minSpeechFrames: 2,
-      // 10 frames (~320ms) d'audio AVANT le speech-start envoyés à Whisper.
-      // Whisper hallucine sur 1s brut sans contexte → ce padding réduit
-      // drastiquement les transcriptions inventées sur commandes courtes.
+      // Seuils très permissifs : on préfère envoyer du bruit à Whisper plutôt
+      // que rater une commande. Whisper sait dire "no speech" via le compression
+      // ratio threshold côté décodage si vraiment c'est du silence.
+      positiveSpeechThreshold: 0.25,
+      negativeSpeechThreshold: 0.15,
+      // 48 frames ≈ 1.5s : tolère les pauses entre syllabes ("tableau ... de bord")
+      redemptionFrames: 48,
+      // 1 frame suffit : tout pic positif déclenche un vrai speech, pas de misfire
+      minSpeechFrames: 1,
+      // Padding pré-speech : Whisper hallucine sur audio brut sans contexte
       preSpeechPadFrames: 10,
       onSpeechStart: () => {
         onSpeechStart?.()
