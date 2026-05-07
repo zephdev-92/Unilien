@@ -8,13 +8,15 @@ export default defineConfig({
   plugins: [
     react(),
     // Config officielle docs.vad.ricky0123.com — assets à la racine de outDir.
+    // v4 du plugin préserve l'arborescence source par défaut, d'où le
+    // `rename: { stripBase: true }` pour aplatir la copie dans dist/.
     viteStaticCopy({
       targets: [
-        { src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js', dest: './' },
-        { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx', dest: './' },
-        { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx', dest: './' },
-        { src: 'node_modules/onnxruntime-web/dist/*.wasm', dest: './' },
-        { src: 'node_modules/onnxruntime-web/dist/*.mjs', dest: './' },
+        { src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/onnxruntime-web/dist/*.wasm', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/onnxruntime-web/dist/*.mjs', dest: './', rename: { stripBase: true } },
       ],
     }),
     VitePWA({

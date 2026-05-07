@@ -34,7 +34,6 @@
     "react-dom": "^19.2.5",
     "react-hook-form": "^7.72.1",
     "react-router-dom": "^7.14.0",
-    "vite-plugin-static-copy": "^2.3.2",
     "xlsx": "npm:@e965/xlsx@^0.20.3",
     "zod": "^4.3.5",
     "zustand": "^5.0.12"
@@ -64,6 +63,7 @@
     "typescript-eslint": "^8.58.1",
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0",
+    "vite-plugin-static-copy": "^4.1.0",
     "vitest": "^4.0.17"
   },
   "optionalDependencies": {
