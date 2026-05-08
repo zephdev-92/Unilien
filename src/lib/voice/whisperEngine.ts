@@ -204,10 +204,14 @@ export async function transcribe(audio: Float32Array): Promise<string> {
   try {
     const decoder_input_ids = buildDecoderInputIds(transcriber)
     // Décodage déterministe (temperature 0) — base commune.
+    // num_beams=3 : beam search au lieu du greedy decoding. Compatible avec
+    // decoder_input_ids (pas de conflit comme no_repeat_ngram_size). Latence
+    // +50% environ, mais qualité notablement meilleure sur audio court / commandes.
     const options: Record<string, unknown> = {
       language: 'french',
       task: 'transcribe',
       temperature: 0,
+      num_beams: 3,
     }
     if (decoder_input_ids) {
       // Avec prompt : on biaise déjà vers notre vocabulaire, donc l'anti-
