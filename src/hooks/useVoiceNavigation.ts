@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAccessibilityStore } from '@/stores/authStore'
 import { useAuth } from '@/hooks/useAuth'
 import { matchCommand, type VoiceCommand } from '@/lib/voice/voiceCommands'
+import { formatVoiceError } from '@/lib/voice/errors'
 import { logger } from '@/lib/logger'
 
 export type VoiceEngine = 'native' | 'whisper' | 'unsupported'
@@ -188,8 +189,7 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       setStatus('idle')
     } catch (err) {
       logger.error('Whisper voice flow error', err)
-      const message = err instanceof Error ? err.message : 'Erreur inconnue'
-      setError(`Erreur micro/transcription : ${message}`)
+      setError(formatVoiceError(err))
       setStatus('error')
     }
   }, [handleResult])
