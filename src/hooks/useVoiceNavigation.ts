@@ -199,6 +199,33 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
     startWhisperRef.current = startWhisper
   }, [startWhisper])
 
+  // Pre-warm Whisper en background dès qu'on sait que la nav vocale est
+  // activée et que l'engine cible est Whisper. Évite ~12s de cold start au
+  // 1er clic FAB. Délai de 2s pour laisser le boot principal de l'app finir
+  // (le téléchargement modèle est ~400 Mo, on ne veut pas bouffer la bande
+  // passante pendant le 1er render).
+  useEffect(() => {
+    if (!enabled) return
+    if (engine !== 'whisper') return
+    let cancelled = false
+    const t = setTimeout(async () => {
+      if (cancelled) return
+      try {
+        const { getTranscriber, isWhisperLoaded } = await import('@/lib/voice/whisperEngine')
+        if (isWhisperLoaded()) return
+        logger.info('Whisper pre-warm starting')
+        await getTranscriber()
+        if (!cancelled) logger.info('Whisper pre-warm done')
+      } catch (err) {
+        logger.warn('Whisper pre-warm failed (non-fatal)', err)
+      }
+    }, 2000)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [enabled, engine])
+
   const start = useCallback(async () => {
     if (!enabled) return
     if (engine === 'native') startNative()
