@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger'
+import { preprocessAudio } from './audioPreprocessing'
 
 // Le vocabulaire à biaiser dans Whisper. Whisper interprète ces mots comme du
 // "contexte" précédent (via le token <|startofprev|>) et augmente sensiblement
@@ -199,7 +200,12 @@ export async function getTranscriber(): Promise<Transcriber> {
 
 export async function transcribe(audio: Float32Array): Promise<string> {
   const transcriber = await getTranscriber()
-  logger.info(`[Whisper] transcribe start, audio.length=${audio.length} (${(audio.length / 16000).toFixed(2)}s)`)
+  // Trim silences (head/tail) + peak-normalize. Évite les hallucinations sur le
+  // padding VAD et compense un mic faible avant que Whisper voie le signal.
+  const processed = preprocessAudio(audio)
+  logger.info(
+    `[Whisper] transcribe start, audio.length=${processed.length} (${(processed.length / 16000).toFixed(2)}s, raw=${audio.length})`,
+  )
   const t0 = performance.now()
   try {
     const decoder_input_ids = buildDecoderInputIds(transcriber)
@@ -225,7 +231,7 @@ export async function transcribe(audio: Float32Array): Promise<string> {
       options.compression_ratio_threshold = 2.4
     }
 
-    const result = await transcriber(audio, options)
+    const result = await transcriber(processed, options)
     const rawText = (result?.text ?? '').trim()
     const text = decoder_input_ids ? stripVocabularyPrefix(rawText) : rawText
     logger.info(
