@@ -64,48 +64,76 @@ describe('normalizeAmplitude', () => {
 })
 
 describe('trimSilence', () => {
-  it('removes leading and trailing silence', () => {
-    const audio = concat(makeSilence(200), makeSine(500, 440, 0.5), makeSilence(200))
+  it('removes leading and trailing silence on long audio (>= 2s)', () => {
+    // 800 + 1500 + 800 = 3100ms, dépasse le seuil TRIM_MIN_DURATION_S
+    const audio = concat(makeSilence(800), makeSine(1500, 440, 0.5), makeSilence(800))
     const out = trimSilence(audio)
     expect(out.length).toBeLessThan(audio.length)
-    expect(out.length).toBeGreaterThan(0.4 * SAMPLE_RATE) // au moins la majorité du sinus
+    // Doit garder au moins la majorité du sinus + marges
+    expect(out.length).toBeGreaterThan(1.5 * SAMPLE_RATE)
   })
 
-  it('keeps the original buffer when there is no silence to trim', () => {
-    const audio = makeSine(500, 440, 0.5)
+  it('skips trim on short audio (< 2s) — voice commands are usually brief', () => {
+    // Cas réel observé : "tableau de bord" parlé en ~1.5s → on ne touche pas
+    const audio = concat(makeSilence(300), makeSine(1200, 440, 0.5), makeSilence(300))
+    expect(audio.length).toBeLessThan(2 * SAMPLE_RATE)
     const out = trimSilence(audio)
     expect(out.length).toBe(audio.length)
   })
 
-  it('preserves attack and release by leaving one window margin', () => {
-    const audio = concat(makeSilence(100), makeSine(300, 440, 0.5), makeSilence(100))
+  it('keeps the original buffer when there is no silence to trim', () => {
+    const audio = makeSine(2500, 440, 0.5)
     const out = trimSilence(audio)
-    // Doit garder au moins 1 fenêtre de marge de chaque côté = 40ms ~ 640 samples
-    expect(out.length).toBeGreaterThanOrEqual(0.3 * SAMPLE_RATE + WINDOW_SIZE)
+    expect(out.length).toBe(audio.length)
+  })
+
+  it('preserves attack and release with a 5-window margin (~100ms)', () => {
+    // Audio assez long pour passer le seuil TRIM_MIN_DURATION_S
+    const audio = concat(makeSilence(400), makeSine(2200, 440, 0.5), makeSilence(400))
+    const out = trimSilence(audio)
+    // Marges : 5 fenêtres = 1600 samples mini de chaque côté en plus du contenu
+    expect(out.length).toBeGreaterThanOrEqual(2.2 * SAMPLE_RATE + WINDOW_SIZE * 5)
+  })
+
+  it('aborts trim when more than 50% of the buffer would be cut (likely misfire)', () => {
+    // Tout petit transient de 50ms au milieu d'un long silence : si on trim,
+    // on perd >50% de l'audio → on suspecte un misfire et on garde tout.
+    const audio = concat(makeSilence(1500), makeSine(50, 440, 0.5), makeSilence(1500))
+    const out = trimSilence(audio)
+    expect(out.length).toBe(audio.length)
   })
 
   it('returns original on pure silence', () => {
-    const silent = makeSilence(500)
+    const silent = makeSilence(2500)
     const out = trimSilence(silent)
     expect(out.length).toBe(silent.length)
   })
 
   it('handles very short audio (no trim)', () => {
-    const tiny = makeSine(10, 440, 0.5) // 160 samples < 2 fenêtres
+    const tiny = makeSine(10, 440, 0.5)
     expect(trimSilence(tiny).length).toBe(tiny.length)
   })
 })
 
 describe('preprocessAudio', () => {
-  it('trims silence and normalizes amplitude in one shot', () => {
-    const audio = concat(makeSilence(200), makeSine(500, 440, 0.08), makeSilence(200))
+  it('trims silence and normalizes amplitude on long audio', () => {
+    // Long audio (≥ 2s) avec silence aux bords → trim ET normalize
+    const audio = concat(makeSilence(800), makeSine(1500, 440, 0.08), makeSilence(800))
     const out = preprocessAudio(audio)
 
-    // Trimmed
     expect(out.length).toBeLessThan(audio.length)
-    // Normalized vers ~0.95
     expect(peak(out)).toBeGreaterThan(0.9)
     expect(peak(out)).toBeLessThanOrEqual(0.95 + 1e-6)
+  })
+
+  it('normalizes only (skips trim) on short audio — preserves command phonemes', () => {
+    // 1.2s = commande type "tableau de bord", trim désactivé pour ne pas
+    // mutiler les attaques consonantiques
+    const audio = concat(makeSilence(200), makeSine(1000, 440, 0.08), makeSilence(200))
+    const out = preprocessAudio(audio)
+
+    expect(out.length).toBe(audio.length)
+    expect(peak(out)).toBeGreaterThan(0.9)
   })
 
   it('does not break on pure silence (no normalize boost of nothing)', () => {

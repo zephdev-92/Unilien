@@ -1,12 +1,23 @@
 // Preprocessing audio avant Whisper. But : compenser un micro faible et virer
 // le silence ajouté par le padding VAD (preSpeechPadFrames + redemptionFrames)
 // qui fait halluciner Whisper sur du quasi-rien.
+//
+// HISTORIQUE — la v1 était trop agressive (cf. logs prod 11/05/2026) :
+// marge 1 fenêtre + seuil maxRMS/10 → coupait 75% d'un audio "tableau de bord"
+// → transcription = "et" + latence Whisper qui montait à 12s sur audio mutilé.
+// Trois garde-fous depuis :
+//  1. Marge 5 fenêtres (100ms) au lieu d'1 pour préserver attaque/queue
+//  2. Seuil plus conservateur (maxRMS/20) — moins de chances de misfire sur transient
+//  3. Skip total si audio court (< 2s) — les commandes brèves ne profitent pas du trim
 
 const SAMPLE_RATE = 16000
 const WINDOW_MS = 20
 const WINDOW_SIZE = (SAMPLE_RATE * WINDOW_MS) / 1000 // 320 samples
 const PEAK_TARGET = 0.95
-const SILENCE_RATIO = 10 // seuil dynamique = maxRMS / SILENCE_RATIO
+const SILENCE_RATIO = 20 // seuil dynamique = maxRMS / SILENCE_RATIO
+const TRIM_MARGIN_WINDOWS = 5 // 5 × 20ms = 100ms de marge de chaque côté
+const TRIM_MIN_DURATION_S = 2 // ne pas trim sous 2s — les commandes courtes y perdent
+const TRIM_MAX_RATIO_CUT = 0.5 // si on coupe plus de 50% → suspect, on garde l'original
 
 /**
  * Normalise l'amplitude vers `PEAK_TARGET` (anti-clip headroom). No-op si
@@ -37,11 +48,15 @@ function rms(audio: Float32Array, start: number, end: number): number {
 /**
  * Trim le silence en tête et queue du buffer (laisse l'intérieur intact).
  * Approche énergétique par fenêtre de 20ms, seuil dynamique relatif au pic.
- * Garde une marge de 1 fenêtre de chaque côté pour ne pas couper l'attaque
- * d'un phonème ou la fin d'une syllabe.
+ *
+ * Trois garde-fous pour ne pas dégrader la transcription :
+ *  - Marge `TRIM_MARGIN_WINDOWS` × 20ms de chaque côté (préserve attaque/queue)
+ *  - Skip si audio < `TRIM_MIN_DURATION_S` (commandes courtes : pas de gain réel)
+ *  - Garde l'original si on coupe plus de `TRIM_MAX_RATIO_CUT` (seuil misfire)
  */
 export function trimSilence(audio: Float32Array): Float32Array {
   if (audio.length <= WINDOW_SIZE * 2) return audio
+  if (audio.length < SAMPLE_RATE * TRIM_MIN_DURATION_S) return audio
 
   const windowCount = Math.floor(audio.length / WINDOW_SIZE)
   const rmsValues = new Float32Array(windowCount)
@@ -61,15 +76,20 @@ export function trimSilence(audio: Float32Array): Float32Array {
   let lastActive = windowCount - 1
   while (lastActive > firstActive && rmsValues[lastActive] < threshold) lastActive--
 
-  // Marge d'une fenêtre de chaque côté pour préserver l'attaque/queue
-  const startWindow = Math.max(0, firstActive - 1)
-  const endWindow = Math.min(windowCount - 1, lastActive + 1)
+  const startWindow = Math.max(0, firstActive - TRIM_MARGIN_WINDOWS)
+  const endWindow = Math.min(windowCount - 1, lastActive + TRIM_MARGIN_WINDOWS)
 
   const startSample = startWindow * WINDOW_SIZE
   const endSample = (endWindow + 1) * WINDOW_SIZE
 
-  // Si le trim ne gagne rien (< 1 fenêtre de chaque côté), retourne l'original
+  // Si le trim ne gagne rien, retourne l'original
   if (startSample === 0 && endSample >= audio.length) return audio
+
+  // Garde-fou anti-misfire : si on supprime plus de la moitié du buffer, le
+  // seuil énergétique a probablement calé sur un transient (claquement, pop)
+  // et on est en train de tuer de la vraie parole. On garde l'original.
+  const trimmedLength = endSample - startSample
+  if (trimmedLength / audio.length < 1 - TRIM_MAX_RATIO_CUT) return audio
 
   return audio.slice(startSample, endSample)
 }
