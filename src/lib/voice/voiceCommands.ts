@@ -22,6 +22,19 @@ export const VOICE_COMMANDS: VoiceCommand[] = [
   { phrases: ['paramètres', 'parametres', 'réglages', 'reglages', 'settings', 'paramètre'], path: '/parametres' },
   { phrases: ['aide', 'help', 'faq'], path: '/aide' },
   { phrases: ['contact', 'contacter', 'contacts'], path: '/contact' },
+
+  // Sous-menus paramètres — le matcher choisit la phrase la plus longue, donc
+  // "paramètres apparence" l'emporte sur "paramètres" seul.
+  { phrases: ['paramètres profil', 'parametres profil', 'paramètres informations', 'parametres informations'], path: '/parametres#profil' },
+  { phrases: ['paramètres sécurité', 'parametres securite', 'paramètres securite'], path: '/parametres#securite' },
+  { phrases: ['paramètres notifications', 'parametres notifications', 'paramètres notification', 'parametres notification'], path: '/parametres#notifications' },
+  { phrases: ['paramètres apparence', 'parametres apparence', 'apparence paramètres', 'paramètres thème', 'parametres theme'], path: '/parametres#apparence' },
+  { phrases: ['paramètres accessibilité', 'parametres accessibilite', 'paramètres accessibilite', 'accessibilité paramètres'], path: '/parametres#accessibilite' },
+
+  // Actions — pattern URL intent (?action=...). La page cible lit le query au
+  // mount, ouvre la modale, puis efface le param. Marche cross-page (nav + open).
+  { phrases: ['ajouter intervention', 'nouvelle intervention', 'créer intervention', 'creer intervention', 'ajouter une intervention', 'ajouter shift'], path: '/planning?action=new-shift', roles: ['employer'] },
+  { phrases: ['demander congé', 'demander conge', 'demander absence', 'demande absence', 'demande congé', 'demande conge', 'nouvelle absence'], path: '/planning?action=absence', roles: ['employee'] },
 ]
 
 const DIACRITICS = /[̀-ͯ]/g

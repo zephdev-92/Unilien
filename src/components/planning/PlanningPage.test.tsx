@@ -23,11 +23,13 @@ vi.mock('@/components/planning/ShiftDetailModal', () => ({
 }))
 
 vi.mock('@/components/planning/NewShiftModal', () => ({
-  NewShiftModal: () => null,
+  NewShiftModal: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div data-testid="new-shift-modal" /> : null,
 }))
 
 vi.mock('@/components/planning/AbsenceRequestModal', () => ({
-  AbsenceRequestModal: () => null,
+  AbsenceRequestModal: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div data-testid="absence-request-modal" /> : null,
 }))
 
 vi.mock('@/components/planning/AbsenceDetailModal', () => ({
@@ -360,6 +362,51 @@ describe('PlanningPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/absence/i)).toBeInTheDocument()
+    })
+  })
+
+  // 13. URL intent ?action=new-shift ouvre la modale nouvelle intervention (employer)
+  describe('URL intent (voice nav actions)', () => {
+    beforeEach(() => {
+      // Reset l'URL entre chaque test pour ne pas polluer
+      window.history.replaceState({}, '', '/')
+    })
+
+    it('ouvre NewShiftModal pour un employer avec ?action=new-shift', async () => {
+      setupEmployerProfile()
+      window.history.replaceState({}, '', '/planning?action=new-shift')
+
+      renderWithProviders(<PlanningPage />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('new-shift-modal')).toBeInTheDocument()
+      })
+      // L'action a été nettoyée de l'URL
+      expect(window.location.search).not.toContain('action=new-shift')
+    })
+
+    it("n'ouvre pas NewShiftModal pour un employee même avec ?action=new-shift", async () => {
+      setupEmployeeProfile()
+      window.history.replaceState({}, '', '/planning?action=new-shift')
+
+      renderWithProviders(<PlanningPage />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('layout')).toBeInTheDocument()
+      })
+      expect(screen.queryByTestId('new-shift-modal')).not.toBeInTheDocument()
+    })
+
+    it('ouvre AbsenceRequestModal pour un employee avec ?action=absence', async () => {
+      setupEmployeeProfile()
+      window.history.replaceState({}, '', '/planning?action=absence')
+
+      renderWithProviders(<PlanningPage />)
+
+      await waitFor(() => {
+        expect(screen.getByTestId('absence-request-modal')).toBeInTheDocument()
+      })
+      expect(window.location.search).not.toContain('action=absence')
     })
   })
 })

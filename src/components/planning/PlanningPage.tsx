@@ -115,6 +115,14 @@ export function PlanningPage() {
       newParams.delete('action')
       setSearchParams(newParams, { replace: true })
     }
+
+    // Ouvrir le modal nouvelle intervention si ?action=new-shift (employer uniquement)
+    if (searchParams.get('action') === 'new-shift' && profile?.role === 'employer') {
+      setIsNewShiftModalOpen(true)
+      const newParams = new URLSearchParams(searchParams)
+      newParams.delete('action')
+      setSearchParams(newParams, { replace: true })
+    }
   }, [searchParams, profile?.role, setSearchParams])
 
   // Calcul des dates selon le mode de vue
