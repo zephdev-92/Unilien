@@ -46,9 +46,21 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
   const nativeRef = useRef<SpeechRecognition | null>(null)
   const abortRef = useRef(false)
   const startWhisperRef = useRef<() => Promise<void>>(async () => {})
+  // Timestamp de fin de parole (côté user) pour mesurer la latence perçue
+  // jusqu'à l'affichage du résultat. Whisper logge sa propre latence pipeline,
+  // ce ref capte la latence end-to-end ressentie par l'utilisateur.
+  const speechEndAtRef = useRef<number | null>(null)
 
   const handleResult = useCallback(
     (heard: string | string[]) => {
+      // Latence perçue : depuis la fin de parole jusqu'à l'affichage du
+      // résultat. Utile pour comparer engine natif vs Whisper en prod.
+      if (speechEndAtRef.current !== null) {
+        const latencyMs = Math.round(performance.now() - speechEndAtRef.current)
+        logger.info(`[Voice] end-to-end latency: ${latencyMs}ms`)
+        speechEndAtRef.current = null
+      }
+
       const candidates = Array.isArray(heard) ? heard : [heard]
       const primary = candidates[0] ?? ''
       // 1ère alternative affichée comme "transcript", peu importe ce qui matche
@@ -93,7 +105,10 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       handleResult(alternatives)
     }
     recognition.onspeechstart = () => setSpeechDetected(true)
-    recognition.onspeechend = () => setSpeechDetected(false)
+    recognition.onspeechend = () => {
+      setSpeechDetected(false)
+      speechEndAtRef.current = performance.now()
+    }
     recognition.onend = () => {
       setSpeechDetected(false)
       setStatus((s) => (s === 'listening' ? 'idle' : s))
@@ -176,6 +191,9 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
         onReady: () => setStatus('listening'),
         onSpeechStart: () => setSpeechDetected(true),
       })
+      // captureAudio resolve sur le speech end côté VAD → marque le moment T0
+      // pour mesurer la latence perçue jusqu'à handleResult.
+      speechEndAtRef.current = performance.now()
       setSpeechDetected(false)
       if (abortRef.current) {
         setStatus('idle')
