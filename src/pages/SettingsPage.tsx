@@ -111,14 +111,28 @@ const NAV_SECTIONS: NavSection[] = [
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+const VALID_PANELS: PanelId[] = ['profil', 'securite', 'abonnement', 'notifications', 'convention', 'pch', 'apparence', 'accessibilite', 'donnees']
+
+function panelFromHash(): PanelId | null {
+  const hash = window.location.hash.replace('#', '') as PanelId
+  return VALID_PANELS.includes(hash) ? hash : null
+}
+
 export function SettingsPage() {
   const { profile, userRole } = useAuth()
-  const initialPanel = (() => {
-    const hash = window.location.hash.replace('#', '') as PanelId
-    const validPanels: PanelId[] = ['profil', 'securite', 'abonnement', 'notifications', 'convention', 'pch', 'apparence', 'accessibilite', 'donnees']
-    return validPanels.includes(hash) ? hash : 'profil'
-  })()
-  const [activePanel, setActivePanel] = useState<PanelId>(initialPanel)
+  const [activePanel, setActivePanel] = useState<PanelId>(() => panelFromHash() ?? 'profil')
+
+  // Permet à la nav vocale de switcher de panel via /parametres#apparence même
+  // quand on est déjà sur la page (sans cet effect, navigate() change le hash
+  // mais le state interne reste sur l'ancien panel).
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = panelFromHash()
+      if (next) setActivePanel(next)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
   const navRef = useRef<HTMLDivElement>(null)
   const [showPrev, setShowPrev] = useState(false)
   const [showNext, setShowNext] = useState(false)

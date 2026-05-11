@@ -114,10 +114,62 @@ describe('voiceCommands.matchCommand — fuzzy matching (Whisper typos)', () => 
   })
 })
 
+describe('voiceCommands.matchCommand — submenu navigation (settings)', () => {
+  it('matches "paramètres apparence" → /parametres#apparence (longer phrase wins)', () => {
+    const cmd = matchCommand('paramètres apparence', 'employer')
+    expect(cmd?.path).toBe('/parametres#apparence')
+  })
+
+  it('matches "paramètres notifications" → /parametres#notifications', () => {
+    const cmd = matchCommand('paramètres notifications', 'employee')
+    expect(cmd?.path).toBe('/parametres#notifications')
+  })
+
+  it('matches "paramètres sécurité" → /parametres#securite', () => {
+    const cmd = matchCommand('paramètres sécurité', 'caregiver')
+    expect(cmd?.path).toBe('/parametres#securite')
+  })
+
+  it('matches "paramètres accessibilité" → /parametres#accessibilite', () => {
+    const cmd = matchCommand('paramètres accessibilité', 'employer')
+    expect(cmd?.path).toBe('/parametres#accessibilite')
+  })
+
+  it('falls back to /parametres when only the prefix is heard', () => {
+    const cmd = matchCommand('paramètres', 'employer')
+    expect(cmd?.path).toBe('/parametres')
+  })
+})
+
+describe('voiceCommands.matchCommand — modal action intents', () => {
+  it('opens new shift modal for employer: "ajouter intervention"', () => {
+    const cmd = matchCommand('ajouter intervention', 'employer')
+    expect(cmd?.path).toBe('/planning?action=new-shift')
+  })
+
+  it('does not open new shift modal for employee (role gating)', () => {
+    const cmd = matchCommand('ajouter intervention', 'employee')
+    expect(cmd).toBeNull()
+  })
+
+  it('opens absence request modal for employee: "demander congé"', () => {
+    const cmd = matchCommand('demander congé', 'employee')
+    expect(cmd?.path).toBe('/planning?action=absence')
+  })
+
+  it('does not open absence modal for employer (role gating)', () => {
+    const cmd = matchCommand('demander absence', 'employer')
+    expect(cmd).toBeNull()
+  })
+})
+
 describe('voiceCommands.listAvailableCommands', () => {
-  it('returns all commands for employer', () => {
+  it('returns every command accessible to employer (including employer-only, excluding employee-only)', () => {
     const list = listAvailableCommands('employer')
-    expect(list.length).toBe(VOICE_COMMANDS.length)
+    const expected = VOICE_COMMANDS.filter((c) => !c.roles || c.roles.includes('employer'))
+    expect(list).toHaveLength(expected.length)
+    expect(list.find((c) => c.path === '/equipe')).toBeDefined()
+    expect(list.find((c) => c.path === '/planning?action=absence')).toBeUndefined()
   })
 
   it('filters out employer-only commands for caregiver', () => {

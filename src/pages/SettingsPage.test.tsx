@@ -122,6 +122,22 @@ describe('SettingsPage', () => {
       fireEvent.click(screen.getByText('Sécurité'))
       expect(screen.getByText('Changer le mot de passe')).toBeInTheDocument()
     })
+
+    it('réagit à un changement de hash pour la nav vocale (#apparence)', () => {
+      renderWithProviders(<SettingsPage />)
+      // Par défaut on est sur Profil
+      expect(screen.getByText('Informations personnelles')).toBeInTheDocument()
+
+      // Simule navigate('/parametres#apparence')
+      window.location.hash = '#apparence'
+      fireEvent(window, new HashChangeEvent('hashchange'))
+
+      // Le panel Apparence est maintenant actif (titre unique de la section)
+      expect(screen.getByText('Mode sombre')).toBeInTheDocument()
+
+      // Cleanup pour ne pas polluer le test suivant
+      window.location.hash = ''
+    })
   })
 
   // ── Panneau Profil ──
