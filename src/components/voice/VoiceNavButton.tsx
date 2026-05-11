@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Box, Flex, IconButton, Text, VStack, HStack, Badge } from '@chakra-ui/react'
+import { Box, Flex, IconButton, Spinner, Text, VStack, HStack, Badge } from '@chakra-ui/react'
 import { NavIcon } from '@/components/ui'
 import { VoiceWave } from '@/components/voice/VoiceWave'
 import { useVoiceNavigation } from '@/hooks/useVoiceNavigation'
@@ -17,6 +17,9 @@ export function VoiceNavButton() {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'v') {
         e.preventDefault()
+        // Affiche le popover même au raccourci clavier, sinon l'utilisateur n'a
+        // aucun feedback visuel pendant les 2-4s de transcription Whisper.
+        setShowHelp(true)
         toggle()
       }
     }
@@ -27,7 +30,8 @@ export function VoiceNavButton() {
   if (!enabled || engine === 'unsupported') return null
 
   const isListening = status === 'listening'
-  const isLoading = status === 'loading-engine' || status === 'transcribing'
+  const isTranscribing = status === 'transcribing'
+  const isLoading = status === 'loading-engine' || isTranscribing
   const commands = listAvailableCommands(profile?.role ?? null)
 
   const statusLabel = (() => {
@@ -68,9 +72,14 @@ export function VoiceNavButton() {
             </IconButton>
           </Flex>
 
-          <Text fontSize="xs" color="text.muted" mb={3} role="status" aria-live="polite">
-            {statusLabel}
-          </Text>
+          <HStack gap={2} mb={3} align="center" role="status" aria-live="polite">
+            {(isLoading || isTranscribing) && (
+              <Spinner size="xs" color="brand.500" borderWidth="2px" />
+            )}
+            <Text fontSize="xs" color="text.muted">
+              {statusLabel}
+            </Text>
+          </HStack>
 
           {transcript && (
             <Box mb={3} p={2} bg="bg.surface.hover" borderRadius="sm">
@@ -130,6 +139,16 @@ export function VoiceNavButton() {
                 '100%': { boxShadow: '0 0 0 0 rgba(229, 62, 62, 0)' },
               },
             }),
+            // Pulse plus douce en couleur brand pendant la transcription :
+            // signale visuellement que ça mouline (vs FAB neutre + spinner discret).
+            ...(isTranscribing && {
+              animation: 'voice-pulse-brand 1.2s ease-in-out infinite',
+              '@keyframes voice-pulse-brand': {
+                '0%': { boxShadow: '0 0 0 0 rgba(99, 102, 241, 0.45)' },
+                '70%': { boxShadow: '0 0 0 12px rgba(99, 102, 241, 0)' },
+                '100%': { boxShadow: '0 0 0 0 rgba(99, 102, 241, 0)' },
+              },
+            }),
             '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
           }}
         >
@@ -152,6 +171,21 @@ export function VoiceNavButton() {
             zIndex={1}
           >
             REC
+          </Badge>
+        )}
+
+        {isTranscribing && (
+          <Badge
+            colorPalette="brand"
+            position="absolute"
+            top="-4px"
+            right="-4px"
+            borderRadius="full"
+            fontSize="2xs"
+            px={2}
+            zIndex={1}
+          >
+            ANALYSE
           </Badge>
         )}
       </Box>
