@@ -11,6 +11,7 @@ import {
   Link,
 } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
+import { useLiaisonUnreadCount } from '@/hooks/useLiaisonUnreadCount'
 import { useNotifications } from '@/hooks/useNotifications'
 import { DevelopmentBanner, NavIcon } from '@/components/ui'
 import { NotificationBell, NotificationsPanel } from '@/components/notifications'
@@ -94,6 +95,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
   const { profile, userRole, signOut } = useAuth()
   const location = useLocation()
   const spotlight = useSpotlightSearch()
+  const liaisonUnreadCount = useLiaisonUnreadCount(profile?.id)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false)
   const [caregiverPermissions, setCaregiverPermissions] = useState<CaregiverPermissions | null>(null)
@@ -543,11 +545,16 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                 <Stack gap={0}>
                   {visibleItems.map((item) => {
                     const isActive = location.pathname === item.href
+                    const showUnreadDot = item.href === '/messagerie' && liaisonUnreadCount > 0
                     return (
                       <Link
                         key={item.href}
                         asChild
-                        aria-label={item.ariaLabel}
+                        aria-label={
+                          showUnreadDot
+                            ? `${item.ariaLabel} (${liaisonUnreadCount} non lu${liaisonUnreadCount > 1 ? 's' : ''})`
+                            : item.ariaLabel
+                        }
                         aria-current={isActive ? 'page' : undefined}
                         css={{ marginInline: '5px', width: 'calc(100% - 10px)', display: 'block' }}
                       >
@@ -575,7 +582,23 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
                             }}
                             minH="40px"
                           >
-                            <NavIcon name={item.icon} />
+                            <Box position="relative" display="inline-flex">
+                              <NavIcon name={item.icon} />
+                              {showUnreadDot && (
+                                <Box
+                                  position="absolute"
+                                  top="-2px"
+                                  right="-3px"
+                                  w="8px"
+                                  h="8px"
+                                  borderRadius="full"
+                                  bg="red.500"
+                                  borderWidth="1.5px"
+                                  borderColor="bg.surface"
+                                  aria-hidden="true"
+                                />
+                              )}
+                            </Box>
                             <Text>{getNavLabel(item)}</Text>
                           </Flex>
                         </RouterLink>

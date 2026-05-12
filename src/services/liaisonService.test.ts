@@ -21,12 +21,14 @@ import { sanitizeText } from '@/lib/sanitize'
 const mockFrom = vi.fn()
 const mockChannel = vi.fn()
 const mockRemoveChannel = vi.fn()
+const mockRpc = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
     channel: (...args: unknown[]) => mockChannel(...args),
     removeChannel: (...args: unknown[]) => mockRemoveChannel(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }))
 
@@ -519,30 +521,20 @@ describe('markMessageAsRead', () => {
 // ============================================
 
 describe('markAllMessagesAsRead', () => {
-  it('met a jour chaque message non lu dans la conversation', async () => {
-    const unreadMessages = [
-      { id: 'msg-001', read_by: ['other-user'] },
-      { id: 'msg-002', read_by: [] },
-    ]
-    mockSupabaseQuerySequence([
-      { data: unreadMessages, error: null },
-      { data: null, error: null },
-      { data: null, error: null },
-    ])
+  it('appelle la RPC mark_liaison_messages_read avec le conversationId', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 2, error: null })
 
-    await markAllMessagesAsRead(CONV_ID, USER_ID)
+    await markAllMessagesAsRead(CONV_ID)
 
-    // 1 fetch + 2 updates = 3 appels a from()
-    expect(mockFrom).toHaveBeenCalledTimes(3)
+    expect(mockRpc).toHaveBeenCalledWith('mark_liaison_messages_read', {
+      p_conversation_id: CONV_ID,
+    })
   })
 
-  it('retourne sans erreur si le fetch echoue', async () => {
-    mockSupabaseQuery({
-      data: null,
-      error: { message: 'Fetch error' },
-    })
+  it('retourne sans erreur si la RPC échoue', async () => {
+    mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'RPC error' } })
 
-    await expect(markAllMessagesAsRead(CONV_ID, USER_ID)).resolves.toBeUndefined()
+    await expect(markAllMessagesAsRead(CONV_ID)).resolves.toBeUndefined()
   })
 })
 
