@@ -482,28 +482,16 @@ export async function markMessageAsRead(
 
 export async function markAllMessagesAsRead(
   conversationId: string,
-  userId: string
 ): Promise<void> {
-  // Get all unread messages in this conversation (inclut read_by NULL)
-  const { data: unreadMessages, error: fetchError } = await supabase
-    .from('liaison_messages')
-    .select('id, read_by')
-    .eq('conversation_id', conversationId)
-    .neq('sender_id', userId)
-    .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
+  // RPC SECURITY DEFINER — contourne le RLS UPDATE qui restreint à sender_id.
+  // Cf. migration 061. Vérifie côté serveur que l'auth.uid() est bien
+  // participant de la conversation.
+  const { error } = await supabase.rpc('mark_liaison_messages_read', {
+    p_conversation_id: conversationId,
+  })
 
-  if (fetchError) {
-    logger.error('Erreur récupération messages non lus:', fetchError)
-    return
-  }
-
-  // Update each unread message
-  for (const msg of unreadMessages || []) {
-    const readBy = msg.read_by || []
-    await supabase
-      .from('liaison_messages')
-      .update({ read_by: [...readBy, userId] })
-      .eq('id', msg.id)
+  if (error) {
+    logger.error('Erreur marquage messages lus:', error)
   }
 }
 
@@ -546,6 +534,26 @@ export async function getTotalUnreadCount(
 
   if (error) {
     logger.error('Erreur comptage messages non lus total:', error)
+    return 0
+  }
+
+  return count || 0
+}
+
+/**
+ * Compte les messages non lus toutes conversations confondues pour l'utilisateur
+ * courant. La RLS SELECT sur liaison_messages filtre déjà aux messages des
+ * conversations dont l'utilisateur est membre.
+ */
+export async function getUnreadCountForUser(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('liaison_messages')
+    .select('*', { count: 'exact', head: true })
+    .neq('sender_id', userId)
+    .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
+
+  if (error) {
+    logger.error('Erreur comptage messages non lus user:', error)
     return 0
   }
 

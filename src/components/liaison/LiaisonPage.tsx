@@ -257,7 +257,7 @@ export function LiaisonPage() {
         const result = await getLiaisonMessages(selectedConv.id)
         setMessages(result.messages)
         setHasMore(result.hasMore)
-        await markAllMessagesAsRead(selectedConv.id, profile.id)
+        await markAllMessagesAsRead(selectedConv.id)
         // Mettre à jour le compteur non lu localement
         setConversations(prev =>
           prev.map(c => c.id === selectedConv.id ? { ...c, unreadCount: 0 } : c)
