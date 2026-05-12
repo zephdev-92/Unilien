@@ -55,6 +55,16 @@ vi.mock('@/services/shiftService', () => ({
   getShifts: (...args: unknown[]) => mockGetShifts(...args),
 }))
 
+// Mock Supabase — requête contracts pour hasContracts
+const mockSupabaseChain = {
+  from: vi.fn(),
+}
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockSupabaseChain.from(...args),
+  },
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const profile = createMockProfile({ id: 'employee-1', role: 'employee', firstName: 'Marc' })
@@ -62,9 +72,20 @@ const profile = createMockProfile({ id: 'employee-1', role: 'employee', firstNam
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('EmployeeDashboard', () => {
+  function mockHasContracts(count: number) {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      then: vi.fn((cb: (v: { count: number }) => void) => Promise.resolve(cb({ count }))),
+    }
+    mockSupabaseChain.from.mockReturnValue(chain)
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetShifts.mockResolvedValue([])
+    // Par défaut : 1 contrat actif → affiche les widgets principaux
+    mockHasContracts(1)
   })
 
   describe('Composition des widgets', () => {
@@ -149,6 +170,49 @@ describe('EmployeeDashboard', () => {
       await waitFor(() => {
         expect(screen.getByTestId('welcome-card')).toBeInTheDocument()
       })
+    })
+  })
+
+  describe('Empty state — aucun contrat actif', () => {
+    it('affiche le message vide et masque les widgets principaux quand aucun contrat actif', async () => {
+      mockHasContracts(0)
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByText('Aucun contrat actif pour le moment')).toBeInTheDocument()
+      })
+      expect(screen.queryByTestId('stats-widget')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('employee-shift-timeline')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('employee-hours-progress')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('employee-leave-widget')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('employee-documents-widget')).not.toBeInTheDocument()
+    })
+
+    it('affiche les CTAs "Compléter mon profil" et "Centre d\'aide" dans le empty state', async () => {
+      mockHasContracts(0)
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByText('Compléter mon profil')).toBeInTheDocument()
+        expect(screen.getByText("Centre d'aide")).toBeInTheDocument()
+      })
+    })
+
+    it('affiche toujours WelcomeCard et OnboardingWidget même en empty state', async () => {
+      mockHasContracts(0)
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('welcome-card')).toBeInTheDocument()
+        expect(screen.getByTestId('onboarding-widget')).toBeInTheDocument()
+      })
+    })
+
+    it('affiche les widgets principaux quand il y a des contrats actifs', async () => {
+      mockHasContracts(2)
+      renderWithProviders(<EmployeeDashboard profile={profile} />)
+      await waitFor(() => {
+        expect(screen.getByTestId('employee-shift-timeline')).toBeInTheDocument()
+        expect(screen.getByTestId('stats-widget')).toBeInTheDocument()
+      })
+      expect(screen.queryByText('Aucun contrat actif pour le moment')).not.toBeInTheDocument()
     })
   })
 })

@@ -47,7 +47,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 - [x] **Tendances stats** — indicateurs tendance sur les stats cards (fleche haut/bas, +1, +8%) ✅
 - [x] **Quick actions** — grille 2x2/4 de boutons par role (existait deja : QuickActionsWidget) ✅
 - [x] **Alertes conformite sidebar** — liste detaillee des alertes (icone, titre, description, niveau) ✅
-- [ ] **Empty state dashboard** — variante onboarding quand aucun employe/intervention
+- [x] **Empty state dashboard** — variante onboarding quand aucun employe/intervention ✅ _(EmployerDashboard.tsx:30 + EmployeeDashboard.tsx:24 — "Aucun contrat actif" pour auxi)_
 
 ---
 
@@ -180,7 +180,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Bloc | Items | Done | Priorite |
 |------|-------|------|----------|
 | Settings | 22 | 22 | ✅ Termine |
-| Dashboard | 11 | 9 | Basse (demo banner, empty state) |
+| Dashboard | 11 | 10 | Basse (demo banner) |
 | Landing | 11 | 11 | ✅ Termine |
 | Compliance | 9 | 9 | ✅ Termine |
 | Profile | 9 | 9 | ✅ Termine |
@@ -192,4 +192,4 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
 | Patterns UI | 4 | 3 | Basse |
-| **Total** | **102** | **99** | — |
+| **Total** | **102** | **100** | — |
