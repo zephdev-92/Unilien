@@ -196,7 +196,7 @@ describe('LogbookPage', () => {
     it('affiche le message vide quand aucune entrée', async () => {
       renderWithProviders(<LogbookPage />)
       await waitFor(() => {
-        expect(screen.getByText('Aucune entree dans le cahier de liaison')).toBeInTheDocument()
+        expect(screen.getByText('Aucune entrée dans le cahier de liaison')).toBeInTheDocument()
       })
     })
 
@@ -388,7 +388,7 @@ describe('LogbookPage', () => {
       fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'xyz-introuvable' } })
 
       await waitFor(() => {
-        expect(screen.getByText(/Aucun resultat pour "xyz-introuvable"/)).toBeInTheDocument()
+        expect(screen.getByText(/Aucun résultat pour « xyz-introuvable »/)).toBeInTheDocument()
       })
     })
   })

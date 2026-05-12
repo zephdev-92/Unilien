@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Box, Stack, Flex, Text, Center, Spinner } from '@chakra-ui/react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardLayout } from '@/components/dashboard'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, OnboardingEmptyState } from '@/components/ui'
 import { LogEntryCard } from './LogEntryCard'
 import { LogbookFilters } from './LogbookFilters'
 import { NewLogEntryModal } from './NewLogEntryModal'
@@ -289,29 +289,42 @@ export function LogbookPage() {
             <Spinner size="lg" color="brand.500" />
           </Center>
         ) : displayedEntries.length === 0 ? (
-          <Box
-            bg="bg.surface"
-            borderRadius="12px"
-            borderWidth="1px"
-            borderColor="border.default"
-            p={8}
-            textAlign="center"
-          >
-            <Text fontSize="lg" color="text.muted" mb={4}>
-              {searchQuery
-                ? `Aucun resultat pour "${searchQuery}"`
-                : 'Aucune entree dans le cahier de liaison'}
-            </Text>
-            {canWrite && !searchQuery && (
-              <AccessibleButton
-                colorPalette="brand"
-                variant="outline"
-                onClick={() => setIsNewEntryModalOpen(true)}
-              >
-                Créer la première entrée
-              </AccessibleButton>
-            )}
-          </Box>
+          searchQuery ? (
+            <Box
+              bg="bg.surface"
+              borderRadius="12px"
+              borderWidth="1px"
+              borderColor="border.default"
+              p={8}
+              textAlign="center"
+            >
+              <Text fontSize="lg" color="text.muted">
+                Aucun résultat pour « {searchQuery} »
+              </Text>
+            </Box>
+          ) : (
+            <OnboardingEmptyState
+              icon={
+                <>
+                  <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+                </>
+              }
+              title="Aucune entrée dans le cahier de liaison"
+              description="Le cahier de liaison permet de partager des notes et observations entre les intervenants. Les entrées apparaîtront ici."
+              actions={
+                canWrite ? (
+                  <AccessibleButton
+                    colorPalette="brand"
+                    onClick={() => setIsNewEntryModalOpen(true)}
+                    accessibleLabel="Créer la première entrée"
+                  >
+                    Créer la première entrée
+                  </AccessibleButton>
+                ) : undefined
+              }
+            />
+          )
         ) : (
           <Stack gap={0}>
             {entriesWithSeparators.map((item) => {

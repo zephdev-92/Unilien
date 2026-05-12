@@ -10,7 +10,6 @@ import {
   VStack,
   HStack,
   Text,
-  Alert,
   Spinner,
   Center,
   Table,
@@ -21,6 +20,7 @@ import {
 import { toaster } from '@/lib/toaster'
 import { getPayslipsForEmployee, getPayslipSignedUrl } from '@/services/payslipStorageService'
 import { MONTHS_FR } from '@/lib/export/types'
+import { OnboardingEmptyState } from '@/components/ui'
 import type { Payslip } from '@/types'
 
 interface Props {
@@ -101,13 +101,18 @@ export function EmployeePayslipSection({ employeeId, searchTerm = '' }: Props) {
 
   if (payslips.length === 0) {
     return (
-      <Alert.Root status="info">
-        <Alert.Indicator />
-        <Alert.Title>
-          Aucun bulletin disponible pour l'instant. Votre employeur vous les transmet depuis le
-          portail CESU.
-        </Alert.Title>
-      </Alert.Root>
+      <OnboardingEmptyState
+        icon={
+          <>
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="9" y1="13" x2="15" y2="13" />
+            <line x1="9" y1="17" x2="13" y2="17" />
+          </>
+        }
+        title="Aucun bulletin pour l'instant"
+        description="Vos bulletins de salaire apparaîtront ici dès que votre employeur les aura déposés depuis le portail CESU."
+      />
     )
   }
 

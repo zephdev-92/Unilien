@@ -58,7 +58,7 @@ describe('EmployeePayslipSection', () => {
     renderWithProviders(<EmployeePayslipSection employeeId="me" />)
 
     await waitFor(() => {
-      expect(screen.getByText(/aucun bulletin disponible/i)).toBeInTheDocument()
+      expect(screen.getByText(/aucun bulletin pour l'instant/i)).toBeInTheDocument()
     })
   })
 

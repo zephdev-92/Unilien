@@ -39,6 +39,7 @@ import type { CesuDeclarationRecord } from '@/types'
 import { toaster } from '@/lib/toaster'
 import { logger } from '@/lib/logger'
 import { formatHoursCompact } from '@/lib/formatHours'
+import { OnboardingEmptyState } from '@/components/ui'
 
 interface Props {
   employerId: string
@@ -253,14 +254,17 @@ export function CesuDeclarationSection({ employerId, searchTerm = '' }: Props) {
           <Text fontSize="sm" color="text.muted">Chargement des déclarations…</Text>
         </HStack>
       ) : declarations.length === 0 ? (
-        <EmptyState.Root>
-          <EmptyState.Content>
-            <EmptyState.Title>Aucune déclaration</EmptyState.Title>
-            <EmptyState.Description>
-              Générez votre première déclaration CESU avec le bouton ci-dessus.
-            </EmptyState.Description>
-          </EmptyState.Content>
-        </EmptyState.Root>
+        <OnboardingEmptyState
+          icon={
+            <>
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </>
+          }
+          title="Aucune déclaration"
+          description="Générez votre première déclaration CESU avec le bouton « Nouvelle déclaration » ci-dessus pour récapituler les heures et salaires du mois."
+        />
       ) : filteredDeclarations.length === 0 ? (
         <EmptyState.Root>
           <EmptyState.Content>
