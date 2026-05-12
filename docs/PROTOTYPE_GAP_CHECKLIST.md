@@ -169,7 +169,7 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 ## 13. Patterns UI globaux
 
 - [x] **Skeleton loading dashboard** — skeletons sur greeting et action nudges ✅ _(partiel — widgets individuels)_
-- [ ] **Empty states onboarding** — variantes specifiques quand le compte est vide
+- [x] **Empty states onboarding** — variantes specifiques quand le compte est vide ✅ _(composant partagé `OnboardingEmptyState` appliqué sur dashboards + Documents/Contracts/Bulletins/Absences/CESU + Logbook)_
 - [x] **Toasts globaux** — coherence Chakra UI v3 sur clock-in, planning et equipe ✅ _(PR #191)_
 - [x] **Modales** — focus management, Escape ferme, clic backdrop ferme, aria-modal ✅ _(Chakra Dialog natif + aria-modal sur modales custom)_
 
@@ -191,5 +191,5 @@ Page `/parametres` implementee avec navigation par panneaux (SettingsPage.tsx).
 | Messaging | 4 | 4 | ✅ Termine |
 | Planning | 4 | 4 | ✅ Termine |
 | Documents | 3 | 3 | ✅ Termine |
-| Patterns UI | 4 | 3 | Basse |
-| **Total** | **102** | **100** | — |
+| Patterns UI | 4 | 4 | ✅ Termine |
+| **Total** | **102** | **101** | — |

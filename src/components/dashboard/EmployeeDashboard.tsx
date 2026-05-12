@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
-import { Box, Flex, Grid, GridItem, Text } from '@chakra-ui/react'
+import { Grid, GridItem } from '@chakra-ui/react'
 import type { Profile, Shift } from '@/types'
 import {
   WelcomeCard,
@@ -13,7 +13,7 @@ import {
   ClockInWidget,
   OnboardingWidget,
 } from './widgets'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, OnboardingEmptyState } from '@/components/ui'
 import { getShifts } from '@/services/shiftService'
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
@@ -23,50 +23,26 @@ import { FEATURES } from '@/lib/featureFlags'
 
 function EmptyEmployeeDashboardState() {
   return (
-    <Box
-      bg="bg.surface"
-      borderWidth="1.5px"
-      borderColor="border.default"
-      borderRadius="14px"
-      boxShadow="sm"
-      textAlign="center"
-      py={14}
-      px={8}
-    >
-      <Flex
-        align="center"
-        justify="center"
-        w="64px"
-        h="64px"
-        mx="auto"
-        mb={5}
-        bg="bg.muted"
-        borderRadius="16px"
-        color="text.muted"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="32" height="32" aria-hidden="true">
+    <OnboardingEmptyState
+      icon={
+        <>
           <rect x="3" y="4" width="18" height="18" rx="2" />
           <path d="M16 2v4M8 2v4M3 10h18" />
-        </svg>
-      </Flex>
-
-      <Text fontWeight="700" fontSize="lg" color="text.default" mb={2}>
-        Aucun contrat actif pour le moment
-      </Text>
-      <Text fontSize="sm" color="text.muted" maxW="420px" mx="auto" mb={7} lineHeight="1.6">
-        Votre profil est prêt. Un employeur particulier pourra vous proposer des interventions
-        en vous ajoutant à son équipe. Pensez à compléter votre profil pour faciliter la mise en relation.
-      </Text>
-
-      <Flex gap={3} justify="center" flexWrap="wrap">
-        <AccessibleButton colorPalette="brand" asChild accessibleLabel="Compléter mon profil">
-          <RouterLink to="/profil">Compléter mon profil</RouterLink>
-        </AccessibleButton>
-        <AccessibleButton variant="outline" asChild accessibleLabel="Consulter l'aide">
-          <RouterLink to="/aide">Centre d'aide</RouterLink>
-        </AccessibleButton>
-      </Flex>
-    </Box>
+        </>
+      }
+      title="Aucun contrat actif pour le moment"
+      description="Votre profil est prêt. Un employeur particulier pourra vous proposer des interventions en vous ajoutant à son équipe. Pensez à compléter votre profil pour faciliter la mise en relation."
+      actions={
+        <>
+          <AccessibleButton colorPalette="brand" asChild accessibleLabel="Compléter mon profil">
+            <RouterLink to="/profil">Compléter mon profil</RouterLink>
+          </AccessibleButton>
+          <AccessibleButton variant="outline" asChild accessibleLabel="Consulter l'aide">
+            <RouterLink to="/aide">Centre d'aide</RouterLink>
+          </AccessibleButton>
+        </>
+      }
+    />
   )
 }
 

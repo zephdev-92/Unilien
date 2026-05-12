@@ -27,6 +27,7 @@ import { updateAbsenceStatus } from '@/services/absenceService'
 import { getJustificationSignedUrl } from '@/services/absenceJustificationService'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
+import { OnboardingEmptyState } from '@/components/ui'
 import {
   ABSENCE_TYPE_LABELS,
   ABSENCE_TYPE_COLORS,
@@ -297,16 +298,29 @@ export function DocumentManagementSection({ employerId, searchTerm = '' }: Docum
 
       {/* Tableau */}
       {filteredDocuments.length === 0 ? (
-        <EmptyState.Root>
-          <EmptyState.Content>
-            <EmptyState.Title>Aucune absence</EmptyState.Title>
-            <EmptyState.Description>
-              {activeFilterCount > 0
-                ? 'Aucune absence ne correspond aux filtres sélectionnés.'
-                : 'Les absences (congés, arrêts maladie) apparaîtront ici.'}
-            </EmptyState.Description>
-          </EmptyState.Content>
-        </EmptyState.Root>
+        activeFilterCount > 0 ? (
+          <EmptyState.Root>
+            <EmptyState.Content>
+              <EmptyState.Title>Aucun résultat</EmptyState.Title>
+              <EmptyState.Description>
+                Aucune absence ne correspond aux filtres sélectionnés.
+              </EmptyState.Description>
+            </EmptyState.Content>
+          </EmptyState.Root>
+        ) : (
+          <OnboardingEmptyState
+            icon={
+              <>
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </>
+            }
+            title="Aucune absence"
+            description="Les absences (congés, arrêts maladie, etc.) demandées par vos employés apparaîtront ici dès qu'elles seront déclarées."
+          />
+        )
       ) : (
         <Box overflowX="auto">
           <Table.Root size="sm">

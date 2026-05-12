@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
-import { Stack, Grid, GridItem, Box, Flex, Text } from '@chakra-ui/react'
+import { Stack, Grid, GridItem } from '@chakra-ui/react'
 import type { Profile, Shift, Employer } from '@/types'
 import {
   WelcomeCard,
@@ -13,7 +13,7 @@ import {
   BudgetForecastWidget,
   OnboardingWidget,
 } from './widgets'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, OnboardingEmptyState } from '@/components/ui'
 import { getShifts } from '@/services/shiftService'
 import { getEmployer } from '@/services/profileService'
 import { getWeeklyComplianceOverview } from '@/services/complianceService'
@@ -29,54 +29,28 @@ interface EmployerDashboardProps {
 
 function EmptyDashboardState() {
   return (
-    <Box
-      bg="bg.surface"
-      borderWidth="1.5px"
-      borderColor="border.default"
-      borderRadius="14px"
-      boxShadow="sm"
-      textAlign="center"
-      py={14}
-      px={8}
-    >
-      {/* Icône */}
-      <Flex
-        align="center"
-        justify="center"
-        w="64px"
-        h="64px"
-        mx="auto"
-        mb={5}
-        bg="bg.muted"
-        borderRadius="16px"
-        color="text.muted"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="32" height="32" aria-hidden="true">
+    <OnboardingEmptyState
+      icon={
+        <>
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
           <circle cx="9" cy="7" r="4" />
           <path d="M23 21v-2a4 4 0 00-3-3.87" />
           <path d="M16 3.13a4 4 0 010 7.75" />
-        </svg>
-      </Flex>
-
-      {/* Texte */}
-      <Text fontWeight="700" fontSize="lg" color="text.default" mb={2}>
-        Ajoutez votre premier auxiliaire
-      </Text>
-      <Text fontSize="sm" color="text.muted" maxW="360px" mx="auto" mb={7} lineHeight="1.6">
-        Pour commencer à planifier des interventions, ajoutez un auxiliaire de vie et créez son contrat.
-      </Text>
-
-      {/* CTAs */}
-      <Flex gap={3} justify="center" flexWrap="wrap">
-        <AccessibleButton colorPalette="brand" asChild accessibleLabel="Ajouter un auxiliaire">
-          <RouterLink to="/equipe">Ajouter un auxiliaire</RouterLink>
-        </AccessibleButton>
-        <AccessibleButton variant="outline" asChild accessibleLabel="Voir le planning">
-          <RouterLink to="/planning">Voir le planning</RouterLink>
-        </AccessibleButton>
-      </Flex>
-    </Box>
+        </>
+      }
+      title="Ajoutez votre premier auxiliaire"
+      description="Pour commencer à planifier des interventions, ajoutez un auxiliaire de vie et créez son contrat."
+      actions={
+        <>
+          <AccessibleButton colorPalette="brand" asChild accessibleLabel="Ajouter un auxiliaire">
+            <RouterLink to="/equipe">Ajouter un auxiliaire</RouterLink>
+          </AccessibleButton>
+          <AccessibleButton variant="outline" asChild accessibleLabel="Voir le planning">
+            <RouterLink to="/planning">Voir le planning</RouterLink>
+          </AccessibleButton>
+        </>
+      }
+    />
   )
 }
 

@@ -24,11 +24,10 @@ import {
   IconButton,
   NativeSelect,
   Field,
-  EmptyState,
   Dialog,
   CloseButton,
 } from '@chakra-ui/react'
-import { AccessibleButton } from '@/components/ui'
+import { AccessibleButton, OnboardingEmptyState } from '@/components/ui'
 import { toaster } from '@/lib/toaster'
 import { getContractsForEmployer, type ContractWithEmployee } from '@/services/contractService'
 import {
@@ -321,14 +320,18 @@ export function PayslipSection({ employerId, searchTerm = '' }: Props) {
           <Spinner />
         </Center>
       ) : filteredPayslips.length === 0 ? (
-        <EmptyState.Root>
-          <EmptyState.Content>
-            <EmptyState.Title>Aucun bulletin archivé</EmptyState.Title>
-            <EmptyState.Description>
-              Les bulletins uploadés apparaîtront ici.
-            </EmptyState.Description>
-          </EmptyState.Content>
-        </EmptyState.Root>
+        <OnboardingEmptyState
+          icon={
+            <>
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="9" y1="13" x2="15" y2="13" />
+              <line x1="9" y1="17" x2="13" y2="17" />
+            </>
+          }
+          title="Aucun bulletin archivé"
+          description="Les bulletins de paie uploadés depuis le portail CESU apparaîtront ici, organisés par employé et par période."
+        />
       ) : (
         <Box overflowX="auto">
           <Table.Root size="sm">
