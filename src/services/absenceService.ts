@@ -160,13 +160,7 @@ export async function createAbsence(
       let balance = await getLeaveBalance(contract.id, leaveYear)
 
       if (!balance) {
-        balance = await initializeLeaveBalance(
-          contract.id,
-          employeeId,
-          contract.employer_id,
-          leaveYear,
-          { startDate: new Date(contract.start_date), weeklyHours: contract.weekly_hours }
-        )
+        balance = await initializeLeaveBalance(contract.id, leaveYear)
       }
 
       if (balance) {

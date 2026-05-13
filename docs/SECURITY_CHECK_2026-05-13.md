@@ -68,7 +68,7 @@ Marquer comme lu un message envoyé par un autre user nécessite un UPDATE sur u
 3. Effectue l'UPDATE
 4. `REVOKE ALL FROM public` + `GRANT EXECUTE TO authenticated`
 
-À répliquer pour toute colonne type "seen_by / read_by" sur les autres tables. Audit cross-tables effectué le 2026-05-13 → seul `log_entries.read_by` présentait le même bug (cf. MEDIUM-3 + migration 062). `notifications` n'est pas concerné (chaque user ne touche que ses propres lignes).
+À répliquer pour toute colonne type "seen_by / read_by" sur les autres tables. Audit cross-tables effectué le 2026-05-13 → `log_entries.read_by` présentait le même bug (cf. MEDIUM-3 + migration 062). Variante remontée la même journée : `leave_balances` INSERT bloqué pour l'employé essayant d'initialiser son solde (policy `employer_manage_balances`) → erreur "Le solde de congés n'a pas encore été initialisé" côté UI → fix migration 063 `initialize_leave_balance` (RPC SECURITY DEFINER avec port serveur de `calculateAcquiredDays`). `notifications` n'est pas concerné (chaque user ne touche que ses propres lignes).
 
 ### 2.6 Migrations sécurité post-pentest
 
@@ -78,6 +78,7 @@ Marquer comme lu un message envoyé par un autre user nécessite un UPDATE sur u
 - **060** — trigger `auth.users` force `role='authenticated'` (fix bug GoTrue OAuth)
 - **061** — RPC `mark_liaison_messages_read`
 - **062** — RPC `mark_log_entry_read` (cf. MEDIUM-3, même pattern que 061)
+- **063** — RPC `initialize_leave_balance` + helper `count_working_days` (variante INSERT-bloqué du pattern RLS 061/062, fix bug "solde de congés pas initialisé" pour l'employé)
 
 ### 2.7 Edge Functions
 
