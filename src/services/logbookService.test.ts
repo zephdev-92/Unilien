@@ -5,10 +5,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // ============================================
 
 const mockFrom = vi.fn()
+const mockRpc = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }))
 
@@ -416,35 +418,27 @@ describe('logbookService', () => {
   // markAsRead
   // ------------------------------------------
   describe('markAsRead', () => {
-    it('ajoute le userId a read_by s il n est pas deja present', async () => {
-      // Premier appel: fetch l'entree, deuxieme: update
-      mockSupabaseQuerySequence([
-        { data: { read_by: ['other-user'] }, error: null },
-        { data: null, error: null },
-      ])
+    it('appelle la RPC mark_log_entry_read avec p_entry_id', async () => {
+      mockRpc.mockResolvedValueOnce({ data: true, error: null })
 
-      await markAsRead('entry-001', 'user-456')
+      await markAsRead('entry-001')
 
-      // Verifie 2 appels a from('log_entries')
-      expect(mockFrom).toHaveBeenCalledTimes(2)
+      expect(mockRpc).toHaveBeenCalledWith('mark_log_entry_read', {
+        p_entry_id: 'entry-001',
+      })
+      expect(mockFrom).not.toHaveBeenCalled()
     })
 
-    it('ne fait pas d update si l utilisateur a deja lu', async () => {
-      mockSupabaseQuery({ data: { read_by: ['user-456'] }, error: null })
+    it('retourne silencieusement quand la RPC indique deja lu (data=false)', async () => {
+      mockRpc.mockResolvedValueOnce({ data: false, error: null })
 
-      await markAsRead('entry-001', 'user-456')
-
-      // Un seul appel a from (le fetch), pas de deuxieme appel (update)
-      expect(mockFrom).toHaveBeenCalledTimes(1)
+      await expect(markAsRead('entry-001')).resolves.toBeUndefined()
     })
 
-    it('retourne silencieusement en cas d erreur de fetch', async () => {
-      mockSupabaseQuery({ data: null, error: { message: 'fetch error' } })
+    it('retourne silencieusement quand la RPC echoue', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'access denied' } })
 
-      // Ne doit pas throw
-      await markAsRead('entry-001', 'user-456')
-
-      expect(mockFrom).toHaveBeenCalledTimes(1)
+      await expect(markAsRead('entry-001')).resolves.toBeUndefined()
     })
   })
 
