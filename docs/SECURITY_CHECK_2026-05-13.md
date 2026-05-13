@@ -3,7 +3,7 @@
 > Snapshot de la posture sécurité après migrations 041 → 061, navigation vocale, pgsodium santé, OAuth onboarding, suivi RLS UPDATE.
 > Successeur de [SECURITY_CHECK_2026-03-26.md](./SECURITY_CHECK_2026-03-26.md).
 
-**TL;DR** : posture solide (0 vulnérabilités npm, RLS étendue, chiffrement applicatif des données santé, logger centralisé avec redaction). HIGH-1 `send-email` (relais d'emails ouvert) **corrigé** (refonte kind-based + lookup serveur), MEDIUM-3 `log_entries` **corrigé** (migration 062). Reste : 2 findings MEDIUM, 3 LOW.
+**TL;DR** : posture solide (0 vulnérabilités npm, RLS étendue, chiffrement applicatif des données santé, logger centralisé avec redaction). HIGH-1 `send-email` (relais d'emails ouvert) **corrigé** (refonte kind-based + lookup serveur), HIGH-2 fuite conversations privées **corrigé** (migration 064), MEDIUM-3 `log_entries` **corrigé** (migration 062). Reste : 2 findings MEDIUM, 3 LOW.
 
 ---
 
@@ -130,6 +130,28 @@ form-action 'self'
 - Templates HTML déplacés Deno-side (`supabase/functions/_shared/emailTemplates.ts`), toute donnée externe passe par `escapeHtml()` avant interpolation.
 - Surface "to/html arbitraires" → fermée. L'expéditeur `notifications@unilien.app` ne peut plus servir qu'à 2 cas d'usage métier.
 
+### ✅ HIGH-2 — Fuite des conversations privées via RLS (CORRIGÉ)
+
+**Fichiers** :
+- [supabase/migrations/035_add_conversations.sql](../supabase/migrations/035_add_conversations.sql) — policy `"Users can read their conversations"` initiale
+- [supabase/migrations/001_add_liaison_and_notifications.sql](../supabase/migrations/001_add_liaison_and_notifications.sql) — policy `"Users can read liaison messages"` initiale
+
+**État** : ✅ corrigé par migration **064** (`fix/conversations-private-leak`).
+
+**Bug initial** : les policies SELECT sur `conversations` et `liaison_messages` accordaient un accès à **toute conversation d'un employeur** dès que l'utilisateur :
+- avait un contrat actif chez cet employeur, OU
+- était caregiver avec `permissions->>'canViewLiaison' = 'true'`.
+
+La règle est appropriée pour `type = 'team'` (équipe), mais elle laissait fuiter les conversations `type = 'private'` (1-to-1 entre l'employeur et un participant donné) vers tous les autres membres de l'équipe.
+
+**Reproduction (2026-05-13)** : nouvel auxiliaire ajouté à l'équipe d'un employeur → connexion → la sidebar "Messagerie" affichait la conversation privée historique entre l'employeur et un autre auxiliaire, avec le contenu complet des messages. Impact RGPD art. 9 si les messages contiennent des données de santé.
+
+**Fix appliqué — migration 064** :
+- Policy SELECT sur `conversations` refondue : le bloc "employés/caregivers actifs" n'est appliqué que pour `type = 'team'`. Les `type = 'private'` restent accessibles uniquement à `employer_id` et `participant_ids` (clauses déjà présentes).
+- Policy SELECT sur `liaison_messages` refondue : accès cascadé via `EXISTS` sur la conversation parente — single source of truth, plus de drift possible entre les deux tables. Le `sender_id` garde toujours accès à ses propres messages.
+
+**Bonus** : si une conversation privée a fui visuellement à un user qui ne devrait pas y avoir accès, le rechargement de la page Messagerie après le déploiement de la migration ne montrera plus la conversation (RLS l'élimine côté serveur).
+
 ### 🟡 MEDIUM-1 — `file_upload_audit` INSERT policy laxiste
 
 **Fichier** : [supabase/migrations/013_add_backend_validation.sql:71-73](../supabase/migrations/013_add_backend_validation.sql#L71-L73)
@@ -210,9 +232,10 @@ Si absent, ajouter explicitement dans le bloc `header` du Caddyfile.
 
 | # | Branche | Priorité | Effort |
 |---|---|---|---|
-| 1 | ~~`fix/edge-send-email-recipient-validation`~~ ✅ refonte kind-based | HIGH | fait |
+| 1 | ~~`fix/edge-send-email-recipient-validation`~~ ✅ refonte kind-based (PR #381) | HIGH | fait |
+| 1b | ~~`fix/conversations-private-leak`~~ ✅ migration 064 | **HIGH** | fait |
 | 2 | `fix/file-upload-audit-rls` | MEDIUM | ~30 min |
-| 3 | ~~`fix/logbook-mark-read-rpc`~~ ✅ migration 062 | MEDIUM | fait |
+| 3 | ~~`fix/logbook-mark-read-rpc`~~ ✅ migration 062 (PR #379) | MEDIUM | fait |
 | 4 | `chore/csp-remove-unsafe-eval` | LOW (test preview) | ~1h |
 | 5 | `feat/sentry-self-hosted` | LOW | backlog |
 | 6 | Vérif HSTS prod | LOW | 1 commande curl |
