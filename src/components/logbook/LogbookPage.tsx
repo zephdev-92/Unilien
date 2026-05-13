@@ -156,7 +156,7 @@ export function LogbookPage() {
 
   const handleMarkAsRead = async (entryId: string) => {
     if (!profile) return
-    await markAsRead(entryId, profile.id)
+    await markAsRead(entryId)
     setEntries((prev) =>
       prev.map((entry) =>
         entry.id === entryId

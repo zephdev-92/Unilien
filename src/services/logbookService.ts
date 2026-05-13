@@ -280,37 +280,17 @@ export async function deleteLogEntry(entryId: string): Promise<void> {
 // MARK AS READ
 // ============================================
 
-export async function markAsRead(
-  entryId: string,
-  userId: string
-): Promise<void> {
-  // Récupérer l'entrée actuelle
-  const { data: entry, error: fetchError } = await supabase
-    .from('log_entries')
-    .select('read_by')
-    .eq('id', entryId)
-    .single()
-
-  if (fetchError) {
-    logger.error('Erreur récupération entrée pour marquer comme lue:', fetchError)
-    return
-  }
-
-  // Ajouter l'utilisateur s'il n'est pas déjà dans la liste
-  const readBy = entry.read_by || []
-  if (readBy.includes(userId)) {
-    return // Déjà lu
-  }
-
-  const updatedReadBy = [...readBy, userId]
-
-  const { error } = await supabase
-    .from('log_entries')
-    .update({ read_by: updatedReadBy })
-    .eq('id', entryId)
+export async function markAsRead(entryId: string): Promise<void> {
+  // Passe par la RPC SECURITY DEFINER (migration 062) — les policies RLS
+  // UPDATE de log_entries sont restreintes à author/employer/tutor, donc un
+  // simple lecteur (employé, caregiver view_logbook) se faisait bloquer en
+  // silence sans la RPC.
+  const { error } = await supabase.rpc('mark_log_entry_read', {
+    p_entry_id: entryId,
+  })
 
   if (error) {
-    logger.error('Erreur marquage comme lu:', error)
+    logger.error('Erreur marquage entrée comme lue:', error)
   }
 }
 
