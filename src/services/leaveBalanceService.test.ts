@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 const mockFrom = vi.fn()
+const mockRpc = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
   },
 }))
 
@@ -268,64 +270,43 @@ describe('leaveBalanceService', () => {
   // ============================================
 
   describe('initializeLeaveBalance', () => {
-    const contract = { startDate: new Date('2025-01-15'), weeklyHours: 35 }
-
-    it('appelle calculateAcquiredDays et upsert puis retourne le solde', async () => {
+    it('appelle la RPC initialize_leave_balance et retourne le solde mappé', async () => {
       const dbRow = makeLeaveBalanceDbRow({ acquired_days: 25, taken_days: 0, adjustment_days: 0 })
-      const chain = mockSupabaseQuery({ data: dbRow, error: null })
+      mockRpc.mockResolvedValueOnce({ data: dbRow, error: null })
 
       const { initializeLeaveBalance } = await import('@/services/leaveBalanceService')
-      const { calculateAcquiredDays, getLeaveYearStartDate } = await import('@/lib/absence')
-      const result = await initializeLeaveBalance('c-001', 'emp-001', 'er-001', '2025', contract)
+      const result = await initializeLeaveBalance('c-001', '2025')
 
-      expect(getLeaveYearStartDate).toHaveBeenCalledWith('2025')
-      expect(calculateAcquiredDays).toHaveBeenCalledWith(
-        contract,
-        new Date('2025-06-01'),
-        expect.any(Date)
-      )
-      expect(chain.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          contract_id: 'c-001',
-          employee_id: 'emp-001',
-          employer_id: 'er-001',
-          leave_year: '2025',
-          acquired_days: 25,
-          taken_days: 0,
-          adjustment_days: 0,
-        }),
-        { onConflict: 'contract_id,leave_year' }
-      )
+      expect(mockRpc).toHaveBeenCalledWith('initialize_leave_balance', {
+        p_contract_id: 'c-001',
+        p_leave_year: '2025',
+      })
       expect(result).not.toBeNull()
       expect(result!.acquiredDays).toBe(25)
       expect(result!.takenDays).toBe(0)
     })
 
-    it('retourne null et log erreur si erreur upsert', async () => {
-      mockSupabaseQuery({ data: null, error: { message: 'Upsert failed' } })
+    it('retourne null et log erreur si la RPC échoue', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'access denied' } })
 
       const { initializeLeaveBalance } = await import('@/services/leaveBalanceService')
       const { logger } = await import('@/lib/logger')
-      const result = await initializeLeaveBalance('c-001', 'emp-001', 'er-001', '2025', contract)
+      const result = await initializeLeaveBalance('c-001', '2025')
 
       expect(result).toBeNull()
       expect(logger.error).toHaveBeenCalledWith(
         'Erreur initialisation solde congés:',
-        expect.objectContaining({ message: 'Upsert failed' })
+        expect.objectContaining({ message: 'access denied' })
       )
     })
 
-    it('appelle single() apres upsert + select', async () => {
-      const chain = mockSupabaseQuery({
-        data: makeLeaveBalanceDbRow(),
-        error: null,
-      })
+    it('retourne null si la RPC répond data=null sans erreur', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: null })
 
       const { initializeLeaveBalance } = await import('@/services/leaveBalanceService')
-      await initializeLeaveBalance('c-001', 'emp-001', 'er-001', '2025', contract)
+      const result = await initializeLeaveBalance('c-001', '2025')
 
-      expect(chain.select).toHaveBeenCalled()
-      expect(chain.single).toHaveBeenCalled()
+      expect(result).toBeNull()
     })
   })
 

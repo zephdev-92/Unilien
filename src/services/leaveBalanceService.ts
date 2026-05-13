@@ -2,11 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import type { LeaveBalance } from '@/types'
 import type { LeaveBalanceDbRow } from '@/types/database'
-import {
-  calculateAcquiredDays,
-  calculateRemainingDays,
-  getLeaveYearStartDate,
-} from '@/lib/absence'
+import { calculateRemainingDays } from '@/lib/absence'
 
 // ============================================
 // GET LEAVE BALANCE
@@ -79,36 +75,28 @@ export async function getLeaveBalancesForEmployer(
 // INITIALIZE LEAVE BALANCE
 // ============================================
 
+/**
+ * Initialise le solde de congés via la RPC SECURITY DEFINER
+ * (migration 063). La RPC autorise l'employer OU l'employee du contrat
+ * à créer le solde, sans ouvrir la policy RLS INSERT réservée à
+ * l'employer. acquired_days est calculé côté serveur depuis
+ * `p_contract_id`.
+ */
 export async function initializeLeaveBalance(
   contractId: string,
-  employeeId: string,
-  employerId: string,
-  leaveYear: string,
-  contract: { startDate: Date; weeklyHours: number }
+  leaveYear: string
 ): Promise<LeaveBalance | null> {
-  const leaveYearStart = getLeaveYearStartDate(leaveYear)
-  const acquired = calculateAcquiredDays(contract, leaveYearStart, new Date())
+  const { data, error } = await supabase.rpc('initialize_leave_balance', {
+    p_contract_id: contractId,
+    p_leave_year: leaveYear,
+  })
 
-  const { data, error } = await supabase
-    .from('leave_balances')
-    .upsert({
-      contract_id: contractId,
-      employee_id: employeeId,
-      employer_id: employerId,
-      leave_year: leaveYear,
-      acquired_days: acquired,
-      taken_days: 0,
-      adjustment_days: 0,
-    }, { onConflict: 'contract_id,leave_year' })
-    .select()
-    .single()
-
-  if (error) {
+  if (error || !data) {
     logger.error('Erreur initialisation solde congés:', error)
     return null
   }
 
-  return mapLeaveBalanceFromDb(data)
+  return mapLeaveBalanceFromDb(data as LeaveBalanceDbRow)
 }
 
 // ============================================
