@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAccessibilityStore } from '@/stores/authStore'
+import { useVoiceDiagnosticsStore } from '@/stores/voiceDiagnosticsStore'
 import { useAuth } from '@/hooks/useAuth'
 import { matchCommand, type VoiceCommand } from '@/lib/voice/voiceCommands'
 import { formatVoiceError } from '@/lib/voice/errors'
@@ -77,6 +78,13 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
         navigate(cmd.path)
       } else if (primary) {
         setError(`Commande non reconnue : "${primary}"`)
+        // Log dans le panneau diagnostic (Paramètres > Assistance) pour permettre
+        // à l'utilisateur d'identifier ce que Whisper a réellement entendu et
+        // d'ajuster les variantes phonétiques si besoin.
+        useVoiceDiagnosticsStore.getState().pushEntry({
+          primary,
+          alternatives: candidates,
+        })
       }
     },
     [navigate, profile?.role],

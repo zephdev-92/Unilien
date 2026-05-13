@@ -44,6 +44,7 @@ import { useInterventionSettings } from '@/hooks/useInterventionSettings'
 import { ShoppingListTemplatesSection } from '@/components/profile/ShoppingListTemplatesSection'
 import { useConventionSettings } from '@/hooks/useConventionSettings'
 import { usePrivacySettings } from '@/hooks/usePrivacySettings'
+import { VoiceDiagnosticsCard } from '@/components/voice/VoiceDiagnosticsCard'
 import { useMfa } from '@/hooks/useMfa'
 import { MfaEnrollment } from '@/components/auth/MfaEnrollment'
 import { DEFAULT_TASKS } from '@/lib/constants/taskDefaults'
@@ -1979,6 +1980,8 @@ function AccessibilitePanel() {
           </VStack>
         </Card.Body>
       </Card.Root>
+
+      <VoiceDiagnosticsCard />
 
       <HStack gap={2} align="center">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} width={14} height={14} aria-hidden="true" style={{ flexShrink: 0 }}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>

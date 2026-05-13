@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 
 export function VoiceNavButton() {
   const { profile } = useAuth()
-  const { enabled, status, engine, transcript, matched, error, modelProgress, speechDetected, toggle } = useVoiceNavigation()
+  const { enabled, status, engine, transcript, matched, error, modelProgress, speechDetected, toggle, stop } = useVoiceNavigation()
   const [showHelp, setShowHelp] = useState(false)
 
   // Raccourci clavier : Ctrl/Cmd + Shift + V
@@ -46,7 +46,7 @@ export function VoiceNavButton() {
 
   return (
     <Box position="fixed" bottom={{ base: '20px', md: '24px' }} right={{ base: '20px', md: '24px' }} zIndex={400}>
-      {(showHelp || transcript || error || isListening || isLoading) && (
+      {(showHelp || isListening || isLoading) && (
         <Box
           position="absolute"
           bottom="72px"
@@ -66,7 +66,13 @@ export function VoiceNavButton() {
               aria-label="Fermer l'aide vocale"
               size="2xs"
               variant="ghost"
-              onClick={() => setShowHelp(false)}
+              onClick={() => {
+                // Si l'utilisateur ferme pendant l'écoute, on arrête aussi
+                // le micro — sinon la modale disparaît mais le moteur
+                // continue de tourner sans feedback visuel.
+                if (isListening || isLoading) stop()
+                setShowHelp(false)
+              }}
             >
               <NavIcon name="close" size={14} />
             </IconButton>
