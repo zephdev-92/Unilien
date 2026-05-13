@@ -855,7 +855,7 @@ describe('createMessageNotification', () => {
   })
 
   it('crée une notification de message avec actionUrl /messagerie', async () => {
-    await createMessageNotification(USER_ID, 'Jean Martin', 'Bonjour, comment allez-vous ?')
+    await createMessageNotification(USER_ID, 'Jean Martin', 'Bonjour, comment allez-vous ?', 'msg-001')
 
     expect(mockRpc).toHaveBeenCalledWith('create_notification', expect.objectContaining({
       p_type: 'message_received',
@@ -866,7 +866,7 @@ describe('createMessageNotification', () => {
 
   it('tronque le message preview à 100 caractères', async () => {
     const longMessage = 'A'.repeat(150)
-    await createMessageNotification(USER_ID, 'Jean', longMessage)
+    await createMessageNotification(USER_ID, 'Jean', longMessage, 'msg-001')
 
     const call = mockRpc.mock.calls[0]
     const message = call[1].p_message as string
