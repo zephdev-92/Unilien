@@ -3,7 +3,7 @@
 > Snapshot de la posture sécurité après migrations 041 → 061, navigation vocale, pgsodium santé, OAuth onboarding, suivi RLS UPDATE.
 > Successeur de [SECURITY_CHECK_2026-03-26.md](./SECURITY_CHECK_2026-03-26.md).
 
-**TL;DR** : posture solide (0 vulnérabilités npm, RLS étendue, chiffrement applicatif des données santé, logger centralisé avec redaction). HIGH-1 `send-email` (relais d'emails ouvert) **corrigé** (refonte kind-based + lookup serveur), HIGH-2 fuite conversations privées **corrigé** (migration 064), MEDIUM-3 `log_entries` **corrigé** (migration 062). Reste : 2 findings MEDIUM, 3 LOW.
+**TL;DR** : posture solide (0 vulnérabilités npm, RLS étendue, chiffrement applicatif des données santé, logger centralisé avec redaction). HIGH-1 `send-email` (relais d'emails ouvert) **corrigé** (refonte kind-based + lookup serveur), HIGH-2 fuite conversations privées **corrigé** (migration 064), MEDIUM-1 `file_upload_audit` **corrigé** (migration 065), MEDIUM-3 `log_entries` **corrigé** (migration 062), LOW-3 HSTS **corrigé** (Caddyfile explicite). Reste : MEDIUM-2 rate limiter, LOW-1 CSP unsafe-eval, LOW-2 Sentry.
 
 ---
 
@@ -152,28 +152,23 @@ La règle est appropriée pour `type = 'team'` (équipe), mais elle laissait fui
 
 **Bonus** : si une conversation privée a fui visuellement à un user qui ne devrait pas y avoir accès, le rechargement de la page Messagerie après le déploiement de la migration ne montrera plus la conversation (RLS l'élimine côté serveur).
 
-### 🟡 MEDIUM-1 — `file_upload_audit` INSERT policy laxiste
+### ✅ MEDIUM-1 — `file_upload_audit` INSERT policy laxiste (CORRIGÉ)
 
 **Fichier** : [supabase/migrations/013_add_backend_validation.sql:71-73](../supabase/migrations/013_add_backend_validation.sql#L71-L73)
 
-```sql
-CREATE POLICY "Service role can insert audit entries"
-  ON file_upload_audit FOR INSERT
-  WITH CHECK (true);
-```
+**État** : ✅ corrigé par migration **065**.
 
-Le commentaire dit "Only system can insert" mais la policy autorise **n'importe quel `authenticated`** à insérer des lignes. Pas d'exfiltration possible (RLS SELECT reste `auth.uid() = user_id`), mais permet d'empoisonner l'audit log avec des entrées fausses → compromet la traçabilité RGPD.
+**Bug initial** : la policy s'appelait "Service role can insert audit entries" et son commentaire disait "Only system can insert", mais le `WITH CHECK (true)` autorisait n'importe quel `authenticated` à insérer des lignes arbitraires dans la table d'audit. Pas d'exfiltration possible (SELECT reste `user_id = auth.uid()`), mais permettait d'empoisonner l'audit log → compromettait la traçabilité RGPD.
 
-**Fix** :
+**Fix appliqué — migration 065** :
 ```sql
-DROP POLICY "Service role can insert audit entries" ON file_upload_audit;
--- soit aucun policy (le trigger SECURITY DEFINER log_storage_upload bypass RLS),
--- soit restriction au service_role explicite :
-CREATE POLICY "service_role inserts only"
-  ON file_upload_audit FOR INSERT
+DROP POLICY "Service role can insert audit entries" ON public.file_upload_audit;
+CREATE POLICY "service_role inserts audit entries"
+  ON public.file_upload_audit FOR INSERT
   TO service_role
   WITH CHECK (true);
 ```
+Le trigger `log_storage_upload` (SECURITY DEFINER) continue de fonctionner car il bypass RLS.
 
 ### 🟡 MEDIUM-3 — `log_entries.read_by` : même bug silencieux que `liaison_messages` (corrigé)
 
@@ -213,18 +208,16 @@ La `Map` JS est par instance d'Edge Function → reset à chaque cold start, et 
 
 TODO `Sentry.captureException` présent mais pas branché. Les erreurs critiques côté front en prod sont invisibles. Vu la criticité (données santé), recommander **Sentry self-hosted** ou **GlitchTip** pour rester souverain RGPD.
 
-### 🟢 LOW-3 — HSTS pas explicite
+### ✅ LOW-3 — HSTS pas explicite (CORRIGÉ)
 
 **Fichier** : [infra/caddy/Caddyfile](../infra/caddy/Caddyfile)
 
-Caddy active HSTS par défaut en TLS auto, mais pas explicité dans le bloc `header`. Vérifier en prod :
-
-```bash
-curl -sI https://unilien.app | grep -i strict-transport
-# attendu : Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+**État** : ✅ ajouté explicitement dans le bloc `header` :
+```
+Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 ```
 
-Si absent, ajouter explicitement dans le bloc `header` du Caddyfile.
+Caddy auto-active HSTS par défaut en TLS auto, mais l'explicitation rend la config lisible en revue + garantit le `includeSubDomains` + `preload`. À déployer manuellement sur le VPS (workflow `scp` + `validate` + `reload`).
 
 ---
 
@@ -233,12 +226,12 @@ Si absent, ajouter explicitement dans le bloc `header` du Caddyfile.
 | # | Branche | Priorité | Effort |
 |---|---|---|---|
 | 1 | ~~`fix/edge-send-email-recipient-validation`~~ ✅ refonte kind-based (PR #381) | HIGH | fait |
-| 1b | ~~`fix/conversations-private-leak`~~ ✅ migration 064 | **HIGH** | fait |
-| 2 | `fix/file-upload-audit-rls` | MEDIUM | ~30 min |
+| 1b | ~~`fix/conversations-private-leak`~~ ✅ migration 064 (PR #382) | **HIGH** | fait |
+| 2 | ~~`fix/file-upload-audit-rls`~~ ✅ migration 065 | MEDIUM | fait |
 | 3 | ~~`fix/logbook-mark-read-rpc`~~ ✅ migration 062 (PR #379) | MEDIUM | fait |
 | 4 | `chore/csp-remove-unsafe-eval` | LOW (test preview) | ~1h |
 | 5 | `feat/sentry-self-hosted` | LOW | backlog |
-| 6 | Vérif HSTS prod | LOW | 1 commande curl |
+| 6 | ~~Vérif HSTS prod~~ ✅ Caddyfile explicite | LOW | fait |
 
 ---
 
