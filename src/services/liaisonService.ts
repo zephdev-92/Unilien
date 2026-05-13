@@ -394,7 +394,7 @@ export async function createLiaisonMessage(
       const senderName = await getProfileName(senderId)
       await Promise.all(
         recipients.map((recipientId: string) =>
-          createMessageNotification(recipientId, senderName, content.trim())
+          createMessageNotification(recipientId, senderName, content.trim(), data.id)
         )
       )
     }

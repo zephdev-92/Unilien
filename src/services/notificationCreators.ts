@@ -1,4 +1,3 @@
-import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
 import { formatHoursCompact } from '@/lib/formatHours'
 import type { Notification, NotificationType, NotificationPriority } from '@/types'
@@ -10,19 +9,6 @@ import {
   getPlanningUrlWithDate,
 } from './notificationService.core'
 import { sendShiftReminder, sendNewMessageNotification } from './emailService'
-
-// ============================================
-// EMAIL HELPER
-// ============================================
-
-async function getUserEmail(userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('email')
-    .eq('id', userId)
-    .single()
-  return data?.email ?? null
-}
 
 // ============================================
 // COMPLIANCE NOTIFICATION HELPERS
@@ -154,20 +140,11 @@ export async function createShiftReminderNotification(
     },
   })
 
-  // Email si activé dans les préférences
+  // Email si activé dans les préférences (résolution destinataire côté Edge)
   try {
-    const [prefs, email, recipientName] = await Promise.all([
-      getNotificationPreferences(userId),
-      getUserEmail(userId),
-      getProfileName(userId),
-    ])
-    if (prefs.emailEnabled && prefs.shiftReminders && email) {
-      await sendShiftReminder(email, {
-        recipientName,
-        employerName,
-        date: formattedDate,
-        startTime,
-      })
+    const prefs = await getNotificationPreferences(userId)
+    if (prefs.emailEnabled && prefs.shiftReminders) {
+      await sendShiftReminder(shiftId, userId)
     }
   } catch (err) {
     logger.error('[Email] Erreur rappel shift:', err)
@@ -179,7 +156,8 @@ export async function createShiftReminderNotification(
 export async function createMessageNotification(
   userId: string,
   senderName: string,
-  messagePreview: string
+  messagePreview: string,
+  messageId: string
 ): Promise<Notification | null> {
   const notification = await createNotification({
     userId,
@@ -191,20 +169,11 @@ export async function createMessageNotification(
     data: { senderName, messagePreview },
   })
 
-  // Email si activé dans les préférences
+  // Email si activé dans les préférences (résolution destinataire côté Edge)
   try {
-    const [prefs, email, recipientName] = await Promise.all([
-      getNotificationPreferences(userId),
-      getUserEmail(userId),
-      getProfileName(userId),
-    ])
-    if (prefs.emailEnabled && prefs.messageNotifications && email) {
-      await sendNewMessageNotification(email, {
-        recipientName,
-        senderName,
-        preview: messagePreview.substring(0, 120),
-        conversationUrl: 'https://unilien.app/messagerie',
-      })
+    const prefs = await getNotificationPreferences(userId)
+    if (prefs.emailEnabled && prefs.messageNotifications) {
+      await sendNewMessageNotification(messageId, userId)
     }
   } catch (err) {
     logger.error('[Email] Erreur notif message:', err)

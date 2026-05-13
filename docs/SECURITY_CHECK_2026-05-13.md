@@ -3,7 +3,7 @@
 > Snapshot de la posture sécurité après migrations 041 → 061, navigation vocale, pgsodium santé, OAuth onboarding, suivi RLS UPDATE.
 > Successeur de [SECURITY_CHECK_2026-03-26.md](./SECURITY_CHECK_2026-03-26.md).
 
-**TL;DR** : posture solide (0 vulnérabilités npm, RLS étendue, chiffrement applicatif des données santé, logger centralisé avec redaction). **1 finding HIGH** sur l'Edge Function `send-email` (relais d'emails ouvert aux authenticated users), 3 findings MEDIUM (dont MEDIUM-3 `log_entries` couvert par migration 062), 3 LOW.
+**TL;DR** : posture solide (0 vulnérabilités npm, RLS étendue, chiffrement applicatif des données santé, logger centralisé avec redaction). HIGH-1 `send-email` (relais d'emails ouvert) **corrigé** (refonte kind-based + lookup serveur), MEDIUM-3 `log_entries` **corrigé** (migration 062). Reste : 2 findings MEDIUM, 3 LOW.
 
 ---
 
@@ -112,27 +112,23 @@ form-action 'self'
 
 ## 3. Findings
 
-### 🔴 HIGH-1 — `send-email` = relais d'emails ouvert
+### ✅ HIGH-1 — `send-email` = relais d'emails ouvert (CORRIGÉ)
 
 **Fichier** : [supabase/functions/send-email/index.ts](../supabase/functions/send-email/index.ts)
 
-L'Edge Function vérifie le JWT et applique un rate limit (10 emails/min/user) mais **n'impose aucune contrainte sur `payload.to` ni sur `payload.html`**. Un utilisateur authentifié peut envoyer jusqu'à **600 emails/heure** vers n'importe quelle adresse, avec n'importe quel HTML, depuis l'expéditeur officiel `notifications@unilien.app`.
+**État** : ✅ corrigé par PR `fix/edge-send-email-recipient-validation` (option 1 stricte du plan d'origine).
 
-**Impact** :
-- Phishing depuis un domaine vérifié Resend (réputation domaine brûlée + listes anti-spam)
-- Risque RGPD (envois non sollicités)
-- Risque facture Resend (abus)
+**Bug initial** : l'Edge Function vérifiait le JWT et appliquait un rate limit (10 emails/min/user) mais **n'imposait aucune contrainte sur `payload.to` ni sur `payload.html`**. Un utilisateur authentifié pouvait envoyer jusqu'à **600 emails/heure** vers n'importe quelle adresse, avec n'importe quel HTML, depuis l'expéditeur officiel `notifications@unilien.app` (phishing, RGPD, facture Resend).
 
-**Vecteur** : signup gratuit → automatisation du POST `/functions/v1/send-email` avec un payload custom.
-
-**Fix recommandé** :
-
-Valider côté serveur que `payload.to` correspond à un destinataire légitime du caller. Options :
-
-1. **Stricte** : exposer des RPC métier (`send_shift_reminder(p_shift_id)`, `send_new_message_notification(p_message_id)`) qui résolvent l'email destinataire côté DB en vérifiant les relations. L'Edge Function `send-email` devient privée (callable uniquement par service_role).
-2. **Souple** : dans `send-email`, lookup côté serveur que `payload.to` existe dans `profiles` et est lié au caller via `contracts` / `caregivers` / `conversations`. Reject sinon.
-
-Recommandation : option 1 (stricte). Surface d'attaque réduite à 0, et les payloads HTML sont contrôlés par le code de l'app.
+**Fix appliqué** :
+- Le client ne passe plus `{ to, subject, html }` libres. Le payload accepté est `{ kind, ...ids }` :
+  - `{ kind: 'shift_reminder', shiftId, recipientId }`
+  - `{ kind: 'new_message_notification', messageId, recipientId }`
+- L'Edge résout côté `service_role` :
+  - `shift_reminder` : SELECT shift + contrat, vérifie que `recipientId == auth.uid()` ET que `recipientId == contract.employee_id`. Sinon 403.
+  - `new_message_notification` : SELECT message + conversation, vérifie que `auth.uid() == message.sender_id` ET que `recipientId ∈ participant_ids` ET `recipientId != sender_id`. Sinon 403.
+- Templates HTML déplacés Deno-side (`supabase/functions/_shared/emailTemplates.ts`), toute donnée externe passe par `escapeHtml()` avant interpolation.
+- Surface "to/html arbitraires" → fermée. L'expéditeur `notifications@unilien.app` ne peut plus servir qu'à 2 cas d'usage métier.
 
 ### 🟡 MEDIUM-1 — `file_upload_audit` INSERT policy laxiste
 
@@ -214,7 +210,7 @@ Si absent, ajouter explicitement dans le bloc `header` du Caddyfile.
 
 | # | Branche | Priorité | Effort |
 |---|---|---|---|
-| 1 | `fix/edge-send-email-recipient-validation` | HIGH | ~1 jour |
+| 1 | ~~`fix/edge-send-email-recipient-validation`~~ ✅ refonte kind-based | HIGH | fait |
 | 2 | `fix/file-upload-audit-rls` | MEDIUM | ~30 min |
 | 3 | ~~`fix/logbook-mark-read-rpc`~~ ✅ migration 062 | MEDIUM | fait |
 | 4 | `chore/csp-remove-unsafe-eval` | LOW (test preview) | ~1h |
