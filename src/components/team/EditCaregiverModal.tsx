@@ -16,24 +16,12 @@ import { AccessibleButton, AccessibleInput, AccessibleSelect, GhostButton } from
 import { updateCaregiver, type CaregiverWithProfile } from '@/services/caregiverService'
 import { getActiveCaregiverContract, terminateContract, updateContract } from '@/services/contractService'
 import { PCH_RATES } from '@/types'
-import type { Contract, CaregiverPermissions, CaregiverLegalStatus, CaregiverContractStatus } from '@/types'
+import type { Contract, CaregiverPermissions, CaregiverContractStatus } from '@/types'
 import { toaster } from '@/lib/toaster'
-
-// Labels pour les statuts juridiques
-const legalStatusLabels: Record<CaregiverLegalStatus, string> = {
-  none: 'Aucun statut particulier',
-  tutor: 'Tuteur',
-  curator: 'Curateur',
-  safeguard_justice: 'Sauvegarde de justice',
-  family_caregiver: 'Aidant familial reconnu',
-}
-
-// Labels statut contrat aidant
-const caregiverStatusLabels: Record<string, string> = {
-  active: 'PCH — Maintient une activité pro',
-  full_time: 'PCH — A cessé son activité pro',
-  voluntary: 'Bénévole',
-}
+import {
+  CAREGIVER_LEGAL_STATUS_LABELS,
+  CAREGIVER_CONTRACT_STATUS_LABELS,
+} from '@/lib/constants/statusMaps'
 
 // ============================================
 // PROPS
@@ -266,7 +254,7 @@ export function EditCaregiverModal({
                       </Tag.Root>
                       {legalStatus && legalStatus !== 'none' && (
                         <Tag.Root colorPalette="blue" size="sm">
-                          <Tag.Label>{legalStatusLabels[legalStatus]}</Tag.Label>
+                          <Tag.Label>{CAREGIVER_LEGAL_STATUS_LABELS[legalStatus]}</Tag.Label>
                         </Tag.Root>
                       )}
                     </Flex>
@@ -414,7 +402,7 @@ export function EditCaregiverModal({
                             <>
                               <InfoRow
                                 label="Statut"
-                                value={caregiverStatusLabels[caregiverContract.caregiverStatus || ''] || 'Aidant'}
+                                value={CAREGIVER_CONTRACT_STATUS_LABELS[caregiverContract.caregiverStatus || ''] || 'Aidant'}
                               />
                               <InfoRow
                                 label="Heures hebdomadaires"

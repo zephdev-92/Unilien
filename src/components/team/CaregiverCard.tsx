@@ -8,12 +8,7 @@ import {
 import { AccessibleButton } from '@/components/ui'
 import type { CaregiverWithProfile } from '@/services/caregiverService'
 import type { Contract } from '@/types'
-
-const caregiverStatusLabels: Record<string, string> = {
-  active: 'PCH actif',
-  full_time: 'PCH temps plein',
-  voluntary: 'Bénévole',
-}
+import { CAREGIVER_CONTRACT_STATUS_LABELS } from '@/lib/constants/statusMaps'
 
 interface CaregiverCardProps {
   caregiver: CaregiverWithProfile
@@ -47,7 +42,7 @@ export function CaregiverCard({ caregiver, contract, onEdit, onRemove }: Caregiv
   ].filter(Boolean).length
 
   const statusLabel = contract
-    ? caregiverStatusLabels[contract.caregiverStatus || ''] || 'Contrat actif'
+    ? CAREGIVER_CONTRACT_STATUS_LABELS[contract.caregiverStatus || ''] || 'Contrat actif'
     : undefined
 
   return (
