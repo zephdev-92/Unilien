@@ -304,7 +304,7 @@ export async function getUnreadCount(
 ): Promise<number> {
   const { count, error } = await supabase
     .from('log_entries')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('employer_id', employerId)
     .not('read_by', 'cs', `{${userId}}`)
 
