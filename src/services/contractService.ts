@@ -168,7 +168,7 @@ export async function getContractsForEmployee(
 export async function getActiveContractsCount(employerId: string): Promise<number> {
   const { count, error } = await supabase
     .from('contracts')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('employer_id', employerId)
     .eq('status', 'active')
 
@@ -518,19 +518,23 @@ export async function hasActiveContract(
   employerId: string,
   employeeId: string
 ): Promise<boolean> {
-  const { count, error } = await supabase
+  // Boolean check : on s'arrête à la première ligne trouvée plutôt que de
+  // faire un COUNT(*) qui scanne toute la table.
+  const { data, error } = await supabase
     .from('contracts')
-    .select('*', { count: 'exact', head: true })
+    .select('id')
     .eq('employer_id', employerId)
     .eq('employee_id', employeeId)
     .eq('status', 'active')
+    .limit(1)
+    .maybeSingle()
 
   if (error) {
     logger.error('Erreur vérification contrat:', error)
     return false
   }
 
-  return (count || 0) > 0
+  return data !== null
 }
 
 export async function getActiveCaregiverContract(

@@ -85,7 +85,7 @@ export async function getConversations(
     // Nombre de messages non lus (inclut read_by NULL = jamais lu)
     const { count: unreadCount } = await supabase
       .from('liaison_messages')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('conversation_id', conv.id)
       .neq('sender_id', userId)
       .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
@@ -505,7 +505,7 @@ export async function getLiaisonUnreadCount(
 ): Promise<number> {
   const { count, error } = await supabase
     .from('liaison_messages')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('conversation_id', conversationId)
     .neq('sender_id', userId)
     .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
@@ -527,7 +527,7 @@ export async function getTotalUnreadCount(
 ): Promise<number> {
   const { count, error } = await supabase
     .from('liaison_messages')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .eq('employer_id', employerId)
     .neq('sender_id', userId)
     .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
@@ -548,7 +548,7 @@ export async function getTotalUnreadCount(
 export async function getUnreadCountForUser(userId: string): Promise<number> {
   const { count, error } = await supabase
     .from('liaison_messages')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .neq('sender_id', userId)
     .or(`read_by.is.null,read_by.not.cs.{${userId}}`)
 

@@ -277,7 +277,7 @@ describe('contractService', () => {
   })
 
   describe('getActiveContractsCount', () => {
-    // Chaine: .select('*', { count, head }).eq('employer_id').eq('status')
+    // Chaine: .select('id', { count, head }).eq('employer_id').eq('status')
     // 2 appels .eq() : le 1er doit retourner le chainage, le 2e doit resoudre
 
     it('devrait retourner le nombre de contrats actifs', async () => {
@@ -763,18 +763,19 @@ describe('contractService', () => {
   })
 
   describe('hasActiveContract', () => {
-    // Chaine: .select('*', { count, head }).eq('employer_id').eq('employee_id').eq('status')
-    // 3 appels .eq() : les 2 premiers retournent le chainage, le 3e resolve
+    // Chaine: .select('id').eq('employer_id').eq('employee_id').eq('status').limit(1).maybeSingle()
+    // 3 appels .eq() puis .limit() qui retourne { maybeSingle }.
 
     function setupHasActiveContractMock(resolvedValue: Record<string, unknown>) {
+      const mockLimit = vi.fn().mockReturnValue({ maybeSingle: vi.fn().mockResolvedValue(resolvedValue) })
       mockEq
         .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
         .mockReturnValueOnce({ eq: mockEq, single: mockSingle, maybeSingle: mockMaybeSingle, order: mockOrder })
-        .mockResolvedValueOnce(resolvedValue)
+        .mockReturnValueOnce({ limit: mockLimit })
     }
 
     it('devrait retourner true quand un contrat actif existe', async () => {
-      setupHasActiveContractMock({ count: 1, error: null })
+      setupHasActiveContractMock({ data: { id: 'contract-1' }, error: null })
 
       const result = await hasActiveContract('employer-456', 'employee-789')
 
@@ -782,15 +783,7 @@ describe('contractService', () => {
     })
 
     it('devrait retourner false quand aucun contrat actif', async () => {
-      setupHasActiveContractMock({ count: 0, error: null })
-
-      const result = await hasActiveContract('employer-456', 'employee-789')
-
-      expect(result).toBe(false)
-    })
-
-    it('devrait retourner false quand count est null', async () => {
-      setupHasActiveContractMock({ count: null, error: null })
+      setupHasActiveContractMock({ data: null, error: null })
 
       const result = await hasActiveContract('employer-456', 'employee-789')
 
@@ -798,7 +791,7 @@ describe('contractService', () => {
     })
 
     it('devrait retourner false en cas d\'erreur', async () => {
-      setupHasActiveContractMock({ count: null, error: { message: 'Database error' } })
+      setupHasActiveContractMock({ data: null, error: { message: 'Database error' } })
 
       const result = await hasActiveContract('employer-456', 'employee-789')
 
