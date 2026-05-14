@@ -10,6 +10,12 @@ unilien.app, www.unilien.app {
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+        # CSP — 'unsafe-eval' est requis par onnxruntime-web (nav vocale Whisper) :
+        # le code Emscripten génère ses wrappers de méthodes natives via `new Function()`,
+        # qui n'est PAS couvert par 'wasm-unsafe-eval' (lui ne couvre que la compilation
+        # WebAssembly, pas la création dynamique de fonctions JS). Vérifié sur build prod
+        # 14/05/2026 (vendor-whisper-*.js : 1× `new Function()`). Tant que la nav vocale
+        # est shippée, on doit garder 'unsafe-eval'. Cf. PR #288 (ajout initial).
         Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' blob: https://plausible.unilien.app; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.unilien.app wss://api.unilien.app https://plausible.unilien.app https://huggingface.co https://*.huggingface.co https://*.hf.co; img-src 'self' data: blob: https://api.unilien.app; font-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     }
 
