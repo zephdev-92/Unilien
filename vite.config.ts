@@ -15,8 +15,15 @@ export default defineConfig({
         { src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js', dest: './', rename: { stripBase: true } },
         { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_v5.onnx', dest: './', rename: { stripBase: true } },
         { src: 'node_modules/@ricky0123/vad-web/dist/silero_vad_legacy.onnx', dest: './', rename: { stripBase: true } },
-        { src: 'node_modules/onnxruntime-web/dist/*.wasm', dest: './', rename: { stripBase: true } },
-        { src: 'node_modules/onnxruntime-web/dist/*.mjs', dest: './', rename: { stripBase: true } },
+        // onnxruntime-web — variants WASM utilisés par Whisper en runtime.
+        // On garde uniquement asyncify (universel CPU SIMD threaded) et la variante base.
+        // jsep (WebGPU) et jspi (Chrome 123+) sont des optimisations dont on se passe
+        // pour réduire le bundle de ~39 Mo. Le runtime fallback sur asyncify si absent.
+        { src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs', dest: './', rename: { stripBase: true } },
+        { src: 'node_modules/onnxruntime-web/dist/ort.*.mjs', dest: './', rename: { stripBase: true } },
       ],
     }),
     VitePWA({
