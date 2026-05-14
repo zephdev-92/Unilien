@@ -1,4 +1,4 @@
-import type { Shift, Absence } from '@/types'
+import type { Shift, Absence, CaregiverLegalStatus, CaregiverContractStatus } from '@/types'
 
 // ─── Shift ───────────────────────────────────────────────────────────────────
 
@@ -66,4 +66,25 @@ export const ABSENCE_TYPE_COLORS: Record<Absence['absenceType'], string> = {
   training: 'purple',
   unavailable: 'gray',
   emergency: 'orange',
+}
+
+// ─── Caregiver ───────────────────────────────────────────────────────────────
+
+export const CAREGIVER_LEGAL_STATUS_LABELS: Record<CaregiverLegalStatus, string> = {
+  none: 'Aucun statut particulier',
+  tutor: 'Tuteur',
+  curator: 'Curateur',
+  safeguard_justice: 'Sauvegarde de justice',
+  family_caregiver: 'Aidant familial reconnu',
+}
+
+export const CAREGIVER_LEGAL_STATUS_OPTIONS: { value: CaregiverLegalStatus; label: string }[] =
+  (Object.entries(CAREGIVER_LEGAL_STATUS_LABELS) as [CaregiverLegalStatus, string][])
+    .map(([value, label]) => ({ value, label }))
+
+// Libellés conformes au vocabulaire IDCC 3239 (cf. Article 2 — situations PCH)
+export const CAREGIVER_CONTRACT_STATUS_LABELS: Record<CaregiverContractStatus, string> = {
+  active: 'PCH — Maintient une activité pro',
+  full_time: 'PCH — A cessé son activité pro',
+  voluntary: 'Bénévole',
 }

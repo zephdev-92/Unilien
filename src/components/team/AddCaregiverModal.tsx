@@ -19,6 +19,7 @@ import {
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
 import type { CaregiverPermissions, CaregiverLegalStatus } from '@/types'
+import { CAREGIVER_LEGAL_STATUS_OPTIONS } from '@/lib/constants/statusMaps'
 
 // ============================================
 // PROPS
@@ -54,14 +55,7 @@ const ALL_PERMISSIONS: CaregiverPermissions = {
   canExportData: true,
 }
 
-// Options de statut juridique
-const legalStatusOptions: { value: CaregiverLegalStatus | 'none'; label: string }[] = [
-  { value: 'none', label: 'Aucun statut particulier' },
-  { value: 'tutor', label: 'Tuteur' },
-  { value: 'curator', label: 'Curateur' },
-  { value: 'safeguard_justice', label: 'Sauvegarde de justice' },
-  { value: 'family_caregiver', label: 'Aidant familial reconnu' },
-]
+const legalStatusOptions = CAREGIVER_LEGAL_STATUS_OPTIONS
 
 // ============================================
 // COMPONENT

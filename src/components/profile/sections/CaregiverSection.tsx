@@ -49,13 +49,9 @@ const relationshipOptions: { value: CaregiverRelationship; label: string }[] = [
   { value: 'other', label: 'Autre' },
 ]
 
-const legalStatusOptions: { value: CaregiverLegalStatus; label: string }[] = [
-  { value: 'none', label: 'Aucun statut particulier' },
-  { value: 'tutor', label: 'Tuteur' },
-  { value: 'curator', label: 'Curateur' },
-  { value: 'safeguard_justice', label: 'Sauvegarde de justice' },
-  { value: 'family_caregiver', label: 'Aidant familial reconnu' },
-]
+import { CAREGIVER_LEGAL_STATUS_OPTIONS } from '@/lib/constants/statusMaps'
+
+const legalStatusOptions = CAREGIVER_LEGAL_STATUS_OPTIONS
 
 export function CaregiverSection({ profileId }: CaregiverSectionProps) {
   const [isLoading, setIsLoading] = useState(false)
