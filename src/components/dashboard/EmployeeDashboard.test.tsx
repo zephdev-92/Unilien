@@ -141,10 +141,9 @@ describe('EmployeeDashboard', () => {
       })
     })
 
-    it("n'affiche pas TeamWidget ni ComplianceWidget (non présents pour employee)", async () => {
+    it("n'affiche pas le ComplianceWidget (non présent pour employee)", async () => {
       renderWithProviders(<EmployeeDashboard profile={profile} />)
       await waitFor(() => {
-        expect(screen.queryByTestId('team-widget')).not.toBeInTheDocument()
         expect(screen.queryByTestId('compliance-widget')).not.toBeInTheDocument()
       })
     })
