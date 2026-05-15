@@ -133,10 +133,9 @@ export const logger = {
     const sanitizedArgs = formatArgs(args)
     console.error(`[ERROR] ${redactString(message)}`, ...sanitizedArgs)
 
-    // En production, on pourrait envoyer à Sentry/LogRocket
+    // Point d'extension monitoring : brancher un service (Sentry/LogRocket) ici si besoin
     if (IS_PROD && args[0] instanceof Error) {
-      // TODO: Sentry.captureException(args[0])
-      void args[0] // Prêt pour intégration Sentry
+      void args[0]
     }
   },
 

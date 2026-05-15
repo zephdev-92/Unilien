@@ -145,17 +145,6 @@ describe('EmployerDashboard', () => {
       })
     })
 
-    // TODO: réactiver quand les widgets seront remis
-    // it('affiche le TeamWidget avec le bon employerId', async () => {
-    //   renderWithProviders(<EmployerDashboard profile={profile} />)
-    //   await waitFor(() => {
-    //     expect(screen.getByTestId('team-widget')).toHaveAttribute(
-    //       'data-employer-id',
-    //       'employer-1'
-    //     )
-    //   })
-    // })
-
     it('affiche le ComplianceWidget avec le bon employerId', async () => {
       renderWithProviders(<EmployerDashboard profile={profile} />)
       await waitFor(() => {
@@ -165,28 +154,7 @@ describe('EmployerDashboard', () => {
         )
       })
     })
-
-    // TODO: réactiver quand les widgets seront remis
-    // it('affiche le RecentLogsWidget avec le bon employerId', async () => {
-    //   renderWithProviders(<EmployerDashboard profile={profile} />)
-    //   await waitFor(() => {
-    //     expect(screen.getByTestId('recent-logs-widget')).toHaveAttribute(
-    //       'data-employer-id',
-    //       'employer-1'
-    //     )
-    //   })
-    // })
   })
-
-  // TODO: réactiver quand UpcomingShiftsWidget sera remis
-  // describe('Chargement des shifts', () => {
-  //   it('passe loading=true pendant le chargement', () => { ... })
-  //   it('passe loading=false après chargement', async () => { ... })
-  //   it('filtre les shifts non-planifiés et passe seulement les planned', async () => { ... })
-  //   it('limite les shifts à 5 au maximum', async () => { ... })
-  //   it('passe un tableau vide si le service échoue', async () => { ... })
-  //   it('appelle getShifts avec le bon profileId et rôle employer', async () => { ... })
-  // })
 
   describe('Monitoring conformité', () => {
     it('active useComplianceMonitor avec le bon employerId', () => {
