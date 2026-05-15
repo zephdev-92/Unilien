@@ -112,6 +112,8 @@ Points clés :
 | `liaison_messages_read_rls_test.sql` | RPC `mark_liaison_messages_read` (mig 061) |
 | `log_entries_read_rls_test.sql` | RPC `mark_log_entry_read` (mig 062) |
 | `leave_balances_rls_test.sql` | RPC `initialize_leave_balance` (mig 063) |
+| `employer_health_data_rls_test.sql` | isolation des données de santé (mig 058, RGPD art. 9) |
+| `file_upload_audit_rls_test.sql` | INSERT audit réservé à `service_role` (mig 065) |
 
 Chaque test RPC vérifie les trois faces du bug : l'écriture directe bloquée par
 la RLS, le RPC `SECURITY DEFINER` qui débloque le cas légitime, et le refus
