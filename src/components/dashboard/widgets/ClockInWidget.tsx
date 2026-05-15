@@ -132,7 +132,8 @@ export function ClockInWidget({ hasActiveShift = false, activeShiftLabel, varian
           transition="background 0.15s"
           _hover={{ bg: 'rgba(255,255,255,.15)' }}
           onClick={() => {
-            // TODO: implémenter la fin d'intervention
+            // Fin d'intervention : déférée au pointage QR (V2).
+            // Spec : docs/QR_CLOCKIN_IMPLEMENTATION.md — clock-in désactivé en v1.
           }}
         >
           {endLabel}
