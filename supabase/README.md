@@ -104,8 +104,18 @@ Points clés :
   qu'à l'intérieur du helper, et le restaurer (`reset role`) avant de rendre
 - nommer les fichiers `<sujet>_test.sql`
 
-Voir `conversations_rls_test.sql` comme modèle (régression de la migration 064 :
-fuite des conversations privées).
+### Couverture actuelle
+
+| Fichier | Régression couverte |
+|---|---|
+| `conversations_rls_test.sql` | fuite des conversations privées (mig 064, RGPD art. 9) |
+| `liaison_messages_read_rls_test.sql` | RPC `mark_liaison_messages_read` (mig 061) |
+| `log_entries_read_rls_test.sql` | RPC `mark_log_entry_read` (mig 062) |
+| `leave_balances_rls_test.sql` | RPC `initialize_leave_balance` (mig 063) |
+
+Chaque test RPC vérifie les trois faces du bug : l'écriture directe bloquée par
+la RLS, le RPC `SECURITY DEFINER` qui débloque le cas légitime, et le refus
+(`42501`) pour un utilisateur non autorisé.
 
 ## Limites connues
 
