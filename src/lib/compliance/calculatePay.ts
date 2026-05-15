@@ -19,6 +19,26 @@ export const MAJORATION_RATES = {
   OVERTIME_BEYOND_8H: 0.50, // +50% au-delà de 8h supplémentaires
 }
 
+// Seuils & coefficients réglementaires (Convention Collective IDCC 3239)
+export const IDCC_RULES = {
+  /** Seuil du 1er palier d'heures sup : les 8 premières sont à +25%, au-delà à +50% */
+  OVERTIME_FIRST_TIER_HOURS: 8,
+  /** Présence responsable jour : 1h vaut 2/3h de travail effectif (Art. 137.1) */
+  PRESENCE_DAY_COEFFICIENT: 2 / 3,
+  /** Présence responsable nuit non requalifiée : indemnité forfaitaire ×1/4 (Art. 148) */
+  PRESENCE_NIGHT_COEFFICIENT: 1 / 4,
+  /** Nombre d'interventions de nuit à partir duquel la présence nuit est requalifiée en travail effectif (Art. 148) */
+  NIGHT_REQUALIFICATION_THRESHOLD: 4,
+}
+
+// Paramètres d'estimation du coût mensuel
+export const PAYROLL_ESTIMATE = {
+  /** Nombre moyen de semaines par mois (52 / 12) */
+  WEEKS_PER_MONTH: 4.33,
+  /** Coefficient charges sociales particuliers employeurs (~+42%) */
+  EMPLOYER_CHARGE_RATE: 1.42,
+}
+
 /**
  * Calcule la rémunération complète d'une intervention avec toutes les majorations
  */
@@ -74,11 +94,11 @@ export function calculateShiftPay(
   )
   if (overtimeHours > 0) {
     // Premières 8h supplémentaires : +25%
-    const first8h = Math.min(8, overtimeHours)
+    const first8h = Math.min(IDCC_RULES.OVERTIME_FIRST_TIER_HOURS, overtimeHours)
     overtimeMajoration += first8h * hourlyRate * MAJORATION_RATES.OVERTIME_FIRST_8H
 
     // Au-delà de 8h : +50%
-    const beyond8h = Math.max(0, overtimeHours - 8)
+    const beyond8h = Math.max(0, overtimeHours - IDCC_RULES.OVERTIME_FIRST_TIER_HOURS)
     overtimeMajoration += beyond8h * hourlyRate * MAJORATION_RATES.OVERTIME_BEYOND_8H
   }
 
@@ -98,12 +118,13 @@ export function calculateShiftPay(
     const dayH = mix.dayHours * breakRatio
     const nightH = mix.nightHours * breakRatio
     const isRequalified =
-      shiftType === 'presence_night' && (shift.nightInterventionsCount ?? 0) >= 4
+      shiftType === 'presence_night' &&
+      (shift.nightInterventionsCount ?? 0) >= IDCC_RULES.NIGHT_REQUALIFICATION_THRESHOLD
 
-    presenceResponsiblePay = dayH * (2 / 3) * hourlyRate
+    presenceResponsiblePay = dayH * IDCC_RULES.PRESENCE_DAY_COEFFICIENT * hourlyRate
     nightPresenceAllowance = isRequalified
       ? nightH * hourlyRate
-      : nightH * hourlyRate * 0.25
+      : nightH * hourlyRate * IDCC_RULES.PRESENCE_NIGHT_COEFFICIENT
 
     // Majorations dimanche/férié sur la base réellement payée
     const totalPaid = presenceResponsiblePay + nightPresenceAllowance
@@ -121,7 +142,8 @@ export function calculateShiftPay(
     // basePay recalculé : seulement les segments effectifs (hors pause)
     // presenceResponsiblePay : seulement les segments présence_day (×2/3)
     nightMajoration = 0
-    const isNightRequalified = (shift.nightInterventionsCount ?? 0) >= 4
+    const isNightRequalified =
+      (shift.nightInterventionsCount ?? 0) >= IDCC_RULES.NIGHT_REQUALIFICATION_THRESHOLD
     const segs = shift.guardSegments
     let guard24hEffectivePay = 0
 
@@ -142,13 +164,13 @@ export function calculateShiftPay(
 
       } else if (seg.type === 'presence_day') {
         // Présence jour : coefficient 2/3 (Art. 137.1 IDCC 3239)
-        presenceResponsiblePay += durH * (2 / 3) * hourlyRate
+        presenceResponsiblePay += durH * IDCC_RULES.PRESENCE_DAY_COEFFICIENT * hourlyRate
 
       } else if (seg.type === 'presence_night') {
         // Présence nuit : forfaitaire 1/4 ou 100% si requalifié (Art. 148 IDCC 3239)
         nightPresenceAllowance += isNightRequalified
           ? durH * hourlyRate
-          : durH * hourlyRate * 0.25
+          : durH * hourlyRate * IDCC_RULES.PRESENCE_NIGHT_COEFFICIENT
       }
     }
 
@@ -249,7 +271,7 @@ export function calculateMonthlyEstimate(
   employerCost: number
 } {
   // Nombre moyen de semaines par mois
-  const weeksPerMonth = 4.33
+  const weeksPerMonth = PAYROLL_ESTIMATE.WEEKS_PER_MONTH
 
   // Salaire de base
   const baseSalary = weeklyHours * weeksPerMonth * hourlyRate
@@ -262,7 +284,7 @@ export function calculateMonthlyEstimate(
   const totalEstimate = baseSalary + estimatedMajorations
 
   // Coût employeur (charges sociales ~42% pour particuliers employeurs)
-  const employerCost = totalEstimate * 1.42
+  const employerCost = totalEstimate * PAYROLL_ESTIMATE.EMPLOYER_CHARGE_RATE
 
   return {
     baseSalary: Math.round(baseSalary * 100) / 100,
