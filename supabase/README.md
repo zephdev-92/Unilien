@@ -7,7 +7,8 @@ supabase/
 ├── README.md                     ← ce fichier
 ├── migrations/
 │   └── 000_baseline_schema.sql   ← schéma de référence (source unique pour un reset)
-└── migrations_archive/           ← 64 migrations historiques (001 → 065), référence seule
+├── migrations_archive/           ← 64 migrations historiques (001 → 065), référence seule
+└── tests/                        ← tests RLS pgTAP (`npm run test:db`)
 ```
 
 ## Pourquoi un baseline
@@ -61,6 +62,50 @@ ssh unilien-test "docker exec supabase-db pg_dump -U postgres -d postgres \
 
 Puis : retirer les lignes `\restrict` / `\unrestrict`, rendre `CREATE SCHEMA
 public` idempotent (`IF NOT EXISTS`), conserver l'en-tête `CREATE EXTENSION`.
+
+## Tests RLS (pgTAP)
+
+Les policies Row Level Security sont testées avec [pgTAP](https://pgtap.org/),
+dans `supabase/tests/`. Objectif : verrouiller en régression les bugs RLS
+passés (fuites de données entre utilisateurs, RGPD art. 9).
+
+```bash
+npx supabase start    # le stack local doit tourner
+npm run test:db       # lance tous les supabase/tests/*_test.sql
+```
+
+### Écrire un test
+
+Un fichier de test est auto-suffisant : il crée ses fixtures, teste, puis
+`rollback` (aucune donnée ne persiste).
+
+```sql
+begin;
+select plan(N);            -- nombre d'assertions attendues
+
+-- fixtures : insert auth.users → profiles → employers/employees → ...
+
+-- helper local : exécute une requête sous l'identité d'un user (RLS appliquée)
+-- (bascule sur le rôle `authenticated` + claims JWT, puis restaure)
+
+select is( <valeur obtenue>, <attendu>, 'description' );
+-- ...
+
+select * from finish();
+rollback;
+```
+
+Points clés :
+
+- le rôle `postgres` (propriétaire des tables) **bypass la RLS** — il faut
+  exécuter les requêtes testées sous le rôle `authenticated`
+- `auth.uid()` lit les claims JWT : `set_config('request.jwt.claims', …)`
+- `plan()` / `finish()` doivent tourner sous `postgres` : ne basculer le rôle
+  qu'à l'intérieur du helper, et le restaurer (`reset role`) avant de rendre
+- nommer les fichiers `<sujet>_test.sql`
+
+Voir `conversations_rls_test.sql` comme modèle (régression de la migration 064 :
+fuite des conversations privées).
 
 ## Limites connues
 
