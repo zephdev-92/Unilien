@@ -21,6 +21,7 @@ coverage
 
 # Supabase
 supabase/.temp/
+supabase/.branches/
 
 # Editor directories and files
 .vscode/*
