@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAccessibilityStore } from '@/stores/authStore'
 import { useVoiceDiagnosticsStore } from '@/stores/voiceDiagnosticsStore'
 import { useAuth } from '@/hooks/useAuth'
-import { matchCommand, type VoiceCommand } from '@/lib/voice/voiceCommands'
+import { matchCommand, getCommandCandidates, type VoiceCommand } from '@/lib/voice/voiceCommands'
 import { formatVoiceError } from '@/lib/voice/errors'
 import { logger } from '@/lib/logger'
 
@@ -53,7 +53,12 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
   const speechEndAtRef = useRef<number | null>(null)
 
   const handleResult = useCallback(
-    (heard: string | string[]) => {
+    async (
+      heard: string | string[],
+      // Secours acoustique (chemin Whisper uniquement) : invoqué quand aucune
+      // alternative texte ne matche. Re-score l'audio contre les commandes.
+      rescue?: () => Promise<VoiceCommand | null>,
+    ) => {
       // Latence perçue : depuis la fin de parole jusqu'à l'affichage du
       // résultat. Utile pour comparer engine natif vs Whisper en prod.
       if (speechEndAtRef.current !== null) {
@@ -68,19 +73,26 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       setTranscript(primary)
 
       // Tente toutes les alternatives ; la 1ère qui matche gagne.
-      let cmd = null
+      let cmd: VoiceCommand | null = null
       for (const alt of candidates) {
         cmd = matchCommand(alt, profile?.role ?? null)
         if (cmd) break
       }
+
+      // Échec du matching texte → secours par scoring acoustique (Whisper).
+      // La transcription a beau être fausse ("Plague"), l'audio est re-scoré
+      // contre chaque commande et la mieux notée l'emporte.
+      if (!cmd && rescue) {
+        cmd = await rescue()
+      }
+
       setMatched(cmd)
       if (cmd) {
         navigate(cmd.path)
       } else if (primary) {
         setError(`Commande non reconnue : "${primary}"`)
         // Log dans le panneau diagnostic (Paramètres > Assistance) pour permettre
-        // à l'utilisateur d'identifier ce que Whisper a réellement entendu et
-        // d'ajuster les variantes phonétiques si besoin.
+        // à l'utilisateur d'identifier ce que Whisper a réellement entendu.
         useVoiceDiagnosticsStore.getState().pushEntry({
           primary,
           alternatives: candidates,
@@ -110,7 +122,8 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       if (!result) return
       const alternatives = Array.from({ length: result.length }, (_, i) => result[i]?.transcript ?? '')
         .filter(Boolean)
-      handleResult(alternatives)
+      // Moteur natif : pas d'audio brut → pas de secours acoustique.
+      void handleResult(alternatives)
     }
     recognition.onspeechstart = () => setSpeechDetected(true)
     recognition.onspeechend = () => {
@@ -211,14 +224,23 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       setStatus('transcribing')
       const { transcribe } = await import('@/lib/voice/whisperEngine')
       const heard = await transcribe(audio)
-      handleResult(heard)
+      await handleResult(heard, async () => {
+        // Secours : transcription + matchCommand ont échoué. On re-score
+        // l'audio contre chaque commande par forced-decoding Whisper.
+        const { recognizeCommand } = await import('@/lib/voice/whisperClassifier')
+        const { command } = await recognizeCommand(
+          audio,
+          getCommandCandidates(profile?.role ?? null),
+        )
+        return command
+      })
       setStatus('idle')
     } catch (err) {
       logger.error('Whisper voice flow error', err)
       setError(formatVoiceError(err))
       setStatus('error')
     }
-  }, [handleResult])
+  }, [handleResult, profile?.role])
 
   // Garde la dernière référence à startWhisper pour la bascule depuis onerror native.
   useEffect(() => {
