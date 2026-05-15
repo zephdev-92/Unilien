@@ -19,30 +19,8 @@ vi.mock('./widgets', () => ({
   QuickActionsWidget: ({ userRole }: { userRole: string }) => (
     <div data-testid="quick-actions-widget" data-role={userRole} />
   ),
-  UpcomingShiftsWidget: ({
-    loading,
-    userRole,
-    shifts,
-  }: {
-    loading?: boolean
-    userRole: string
-    shifts: unknown[]
-  }) => (
-    <div
-      data-testid="upcoming-shifts-widget"
-      data-loading={String(loading)}
-      data-role={userRole}
-      data-count={shifts.length}
-    />
-  ),
-  TeamWidget: ({ employerId }: { employerId: string }) => (
-    <div data-testid="team-widget" data-employer-id={employerId} />
-  ),
   ComplianceWidget: ({ employerId }: { employerId: string }) => (
     <div data-testid="compliance-widget" data-employer-id={employerId} />
-  ),
-  RecentLogsWidget: ({ employerId }: { employerId: string }) => (
-    <div data-testid="recent-logs-widget" data-employer-id={employerId} />
   ),
   PchEnvelopeWidget: ({ employerId }: { employerId: string }) => (
     <div data-testid="pch-envelope-widget" data-employer-id={employerId} />
