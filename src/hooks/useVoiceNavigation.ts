@@ -84,6 +84,11 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
       // contre chaque commande et la mieux notée l'emporte.
       if (!cmd && rescue) {
         cmd = await rescue()
+      } else if (import.meta.env.DEV && rescue) {
+        // [DEBUG TEMP — à retirer après calibration] Lance quand même le
+        // classifier alors qu'une commande a déjà matché, pour capturer son
+        // classement à chaque essai pendant la phase de calibration du scoring.
+        await rescue()
       }
 
       setMatched(cmd)
@@ -228,10 +233,13 @@ export function useVoiceNavigation(): UseVoiceNavigationReturn {
         // Secours : transcription + matchCommand ont échoué. On re-score
         // l'audio contre chaque commande par forced-decoding Whisper.
         const { recognizeCommand } = await import('@/lib/voice/whisperClassifier')
-        const { command } = await recognizeCommand(
+        const { command, scores } = await recognizeCommand(
           audio,
           getCommandCandidates(profile?.role ?? null),
         )
+        // Remonte le classement dans le panneau diagnostic (Paramètres >
+        // Assistance) pour calibrer le scoring sans la console devtools.
+        useVoiceDiagnosticsStore.getState().pushClassification(scores)
         return command
       })
       setStatus('idle')
