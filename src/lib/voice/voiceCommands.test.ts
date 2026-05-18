@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { matchCommand, normalize, listAvailableCommands, VOICE_COMMANDS } from './voiceCommands'
+import {
+  matchCommand,
+  normalize,
+  listAvailableCommands,
+  getCommandCandidates,
+  VOICE_COMMANDS,
+} from './voiceCommands'
 
 describe('voiceCommands.normalize', () => {
   it('lowercases, removes diacritics and punctuation', () => {
@@ -181,5 +187,28 @@ describe('voiceCommands.listAvailableCommands', () => {
   it('returns only unrestricted commands for null role', () => {
     const list = listAvailableCommands(null)
     expect(list.every((c) => !c.roles)).toBe(true)
+  })
+})
+
+describe('voiceCommands.getCommandCandidates', () => {
+  it('excludes submenu (#) and action (?) commands', () => {
+    const candidates = getCommandCandidates('employer')
+    expect(
+      candidates.every(
+        (c) => !c.command.path.includes('#') && !c.command.path.includes('?'),
+      ),
+    ).toBe(true)
+  })
+
+  it('uses the first phrase of each command as the canonical one', () => {
+    const planning = getCommandCandidates('employer').find(
+      (c) => c.command.path === '/planning',
+    )
+    expect(planning?.phrase).toBe('planning')
+  })
+
+  it('respects role gating (employee does not get /equipe)', () => {
+    const candidates = getCommandCandidates('employee')
+    expect(candidates.find((c) => c.command.path === '/equipe')).toBeUndefined()
   })
 })

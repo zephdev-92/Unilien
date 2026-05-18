@@ -130,3 +130,24 @@ export function matchCommand(
 export function listAvailableCommands(role?: UserRole | null): VoiceCommand[] {
   return VOICE_COMMANDS.filter((c) => !c.roles || (role && c.roles.includes(role)))
 }
+
+export interface CommandCandidate {
+  /** Phrase canonique (1re de la liste) — celle scorée par le classifier Whisper. */
+  phrase: string
+  command: VoiceCommand
+}
+
+// Candidats pour le classifier acoustique (whisperClassifier) : une phrase
+// canonique par commande accessible au rôle. Le classifier force-décode chaque
+// phrase sur l'audio et garde la mieux scorée — utilisé en secours quand la
+// transcription + matchCommand échoue.
+//
+// Restreint aux destinations de navigation principales : les sous-menus
+// (`#...`) et actions (`?action=...`) sont des phrases multi-mots que Whisper
+// transcrit correctement et que matchCommand attrape déjà — les inclure ne
+// ferait qu'alourdir le scoring (1 forward décodeur par candidat).
+export function getCommandCandidates(role?: UserRole | null): CommandCandidate[] {
+  return listAvailableCommands(role)
+    .filter((command) => !command.path.includes('#') && !command.path.includes('?'))
+    .map((command) => ({ phrase: command.phrases[0], command }))
+}
