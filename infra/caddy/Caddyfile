@@ -57,7 +57,9 @@ staging.unilien.app {
     # Le hash se génère SUR LE VPS : caddy hash-password --plaintext 'MOT_DE_PASSE'
     # puis on colle le hash bcrypt ci-dessous. Cf. PREPROD_SETUP.md §5.
     basic_auth {
-        staging REMPLACER_PAR_LE_HASH_BCRYPT
+        marie REMPLACER_PAR_LE_HASH_MARIE
+        fred REMPLACER_PAR_LE_HASH_FRED
+        zeph REMPLACER_PAR_LE_HASH_ZEPH
     }
 
     header {
