@@ -1,10 +1,11 @@
 import { Box, Button, Card, HStack, Stack, Text, VStack } from '@chakra-ui/react'
 import { useAccessibilityStore } from '@/stores/authStore'
 import { useVoiceDiagnosticsStore } from '@/stores/voiceDiagnosticsStore'
+import { isProdHost } from '@/lib/env'
 
 /**
- * Carte "Diagnostic vocal" — visible uniquement quand le contrôle vocal
- * est activé. Affiche :
+ * Carte "Diagnostic vocal" — masquée en production, visible en préprod et en
+ * dev quand le contrôle vocal est activé. Affiche :
  *  - les 10 dernières transcriptions Whisper qui n'ont pas matché une
  *    commande (variantes phonétiques manquantes) ;
  *  - les 5 derniers classements du classifier acoustique : pour chaque
@@ -21,7 +22,8 @@ export function VoiceDiagnosticsCard() {
   const classifications = useVoiceDiagnosticsStore((s) => s.classifications)
   const clear = useVoiceDiagnosticsStore((s) => s.clear)
 
-  if (!voiceEnabled) return null
+  // Outil de calibration : masqué en prod, gardé en préprod et en dev.
+  if (!voiceEnabled || isProdHost()) return null
 
   const hasData = entries.length > 0 || classifications.length > 0
 
