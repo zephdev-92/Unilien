@@ -40,3 +40,48 @@ plausible.unilien.app {
     encode zstd gzip
     reverse_proxy localhost:8001
 }
+
+# =============================================================================
+# Préprod — environnement de test de branches non mergées (cf. PREPROD_SETUP.md)
+# =============================================================================
+# Isolé de la prod : build statique séparé (/var/www/unilien-staging), instance
+# Supabase dédiée (localhost:8100), accès protégé par basic auth, non indexé.
+
+staging.unilien.app {
+    encode zstd gzip
+    root * /var/www/unilien-staging
+    try_files {path} /index.html
+    file_server
+
+    # Accès restreint aux testeurs (un seul couple identifiant / mot de passe).
+    # Le hash se génère SUR LE VPS : caddy hash-password --plaintext 'MOT_DE_PASSE'
+    # puis on colle le hash bcrypt ci-dessous. Cf. PREPROD_SETUP.md §5.
+    basic_auth {
+        staging REMPLACER_PAR_LE_HASH_BCRYPT
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(self), geolocation=()"
+        # Préprod jamais indexée par les moteurs de recherche.
+        X-Robots-Tag "noindex, nofollow"
+        # CSP identique à la prod, mais pointée vers le backend staging
+        # (api-staging) au lieu d'api.unilien.app. 'unsafe-eval' requis par
+        # onnxruntime-web (nav vocale Whisper) — cf. bloc prod ci-dessus.
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api-staging.unilien.app wss://api-staging.unilien.app https://huggingface.co https://*.huggingface.co https://*.hf.co; img-src 'self' data: blob: https://api-staging.unilien.app; font-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    }
+
+    @assets path /assets/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+
+    @sw path /sw.js /workbox-*.js
+    header @sw Cache-Control "public, max-age=0, must-revalidate"
+}
+
+api-staging.unilien.app {
+    encode zstd gzip
+    reverse_proxy localhost:8100
+}
