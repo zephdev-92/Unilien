@@ -1,0 +1,123 @@
+name: Deploy to Staging
+
+# Déploie une branche arbitraire sur la préprod (staging.unilien.app).
+# Déclenchement MANUEL uniquement : Actions > Deploy to Staging > Run workflow,
+# en choisissant la branche à tester. Cf. docs/PREPROD_SETUP.md.
+#
+# Volontairement SANS étape de tests : la préprod sert à faire tester des
+# branches en cours (potentiellement imparfaites) à des utilisateurs non-dev.
+# La CI sur les PR couvre déjà lint + tests.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branche à déployer en préprod'
+        required: true
+        default: 'main'
+
+jobs:
+  deploy-staging:
+    name: Deploy ${{ inputs.branch }} to staging
+    runs-on: ubuntu-latest
+    environment:
+      name: env_unilien_staging
+      url: https://staging.unilien.app
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_NAME: 'Unilien (préprod)'
+          VITE_APP_URL: https://staging.unilien.app
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: staging-build
+          path: dist/
+          retention-days: 7
+
+      - name: Check secret presence
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "ERROR: VPS_SSH_PRIVATE_KEY is empty"
+            exit 1
+          fi
+          echo "SSH_KEY length: ${#SSH_KEY}"
+          echo "VPS_HOST set: ${VPS_HOST:+yes}"
+          echo "VPS_USER set: ${VPS_USER:+yes}"
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "Key fingerprint:"
+          ssh-keygen -l -f ~/.ssh/deploy_key || (echo "INVALID KEY FORMAT" && exit 1)
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to VPS (staging)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien-staging/"
+
+      - name: Deploy Edge Functions to VPS (staging)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          # Sync Edge Functions vers la stack Supabase staging (preserve les
+          # entrypoints runtime main/ et hello/).
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            --exclude='*.test.ts' \
+            --exclude='main/' \
+            --exclude='hello/' \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            supabase/functions/ "$VPS_USER@$VPS_HOST:/opt/supabase-staging/docker/volumes/functions/"
+
+          # Redémarre le conteneur edge-runtime de la stack staging.
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
+            "sudo -n docker compose --project-directory /opt/supabase-staging/docker restart functions"
+
+      - name: Health check
+        run: |
+          sleep 3
+          # La préprod est protégée par basic auth : sans identifiants Caddy
+          # renvoie 401. Un 200 OU un 401 prouvent que le site répond.
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" https://staging.unilien.app)
+          echo "HTTP $CODE"
+          if [ "$CODE" != "200" ] && [ "$CODE" != "401" ]; then
+            echo "Health check failed (attendu 200 ou 401)"
+            exit 1
+          fi
