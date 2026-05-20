@@ -14,12 +14,7 @@ describe('DevelopmentBanner', () => {
   describe('Rendu initial', () => {
     it('affiche le bandeau par défaut', () => {
       renderWithProviders(<DevelopmentBanner />)
-      expect(screen.getByText(/application en cours de développement/i)).toBeInTheDocument()
-    })
-
-    it('affiche le lien de feedback', () => {
-      renderWithProviders(<DevelopmentBanner />)
-      expect(screen.getByText(/donnez votre avis/i)).toBeInTheDocument()
+      expect(screen.getByText(/beta 1\.0/i)).toBeInTheDocument()
     })
 
     it('affiche le bouton de fermeture', () => {
@@ -49,7 +44,7 @@ describe('DevelopmentBanner', () => {
 
       await user.click(screen.getByRole('button', { name: /fermer le bandeau/i }))
 
-      expect(screen.queryByText(/application en cours de développement/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/beta 1\.0/i)).not.toBeInTheDocument()
     })
 
     it('persiste le rejet dans localStorage après clic', async () => {

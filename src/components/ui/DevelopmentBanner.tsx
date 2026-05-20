@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Flex, Text, Link, IconButton } from '@chakra-ui/react'
+import { Box, Flex, Text, IconButton } from '@chakra-ui/react'
 
 interface DevelopmentBannerProps {
   /** Clé unique pour le localStorage */
@@ -31,9 +31,7 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
 
   return (
     <Box
-      bg="warm.subtle"
-      borderBottomWidth="1px"
-      borderColor="warm.200"
+      bg="gray.800"
       py={3}
       px={4}
       position="fixed"
@@ -44,46 +42,27 @@ export function DevelopmentBanner({ storageKey = 'unilien_dev_banner_dismissed',
     >
       <Flex
         align="center"
-        justify="space-between"
+        justify="center"
         maxW="container.xl"
         mx="auto"
         gap={3}
+        position="relative"
       >
-        <Flex align="center" gap={3} flex={1}>
-          <Text fontSize="xl" aria-hidden="true">
-            ⚠️
-          </Text>
-          <Box flex={1}>
-            <Text fontSize="sm" fontWeight="semibold" color="warm.700">
-              Application en cours de développement
-            </Text>
-            <Text fontSize="sm" color="warm.600">
-              Nous travaillons activement sur Unilien. Vos retours sont précieux !{' '}
-              <Link
-                href="https://airtable.com/apphPLBwuWxsAq75J/pag4GuwcKDs4nw1C6/form"
-                target="_blank"
-                rel="noopener noreferrer"
-                color="warm.500"
-                fontWeight="semibold"
-                textDecoration="underline"
-                _hover={{
-                  color: 'warm.700',
-                }}
-              >
-                Donnez votre avis ici
-              </Link>
-            </Text>
-          </Box>
-        </Flex>
+        <Text fontSize="sm" fontWeight="semibold" color="white">
+          Unilien <Text as="span" color="green.300">Beta 1.0</Text>
+        </Text>
         <IconButton
+          position="absolute"
+          right={0}
           aria-label="Fermer le bandeau"
           variant="ghost"
           size="sm"
           onClick={handleDismiss}
-          color="warm.600"
+          color="gray.300"
           borderRadius="10px"
           _hover={{
-            bg: 'warm.100',
+            bg: 'gray.700',
+            color: 'white',
           }}
         >
           ✕

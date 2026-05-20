@@ -193,7 +193,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
         zIndex={9999}
         transition="top 0.15s ease"
         _focusVisible={{
-          top: showBanner ? 'calc(80px + 16px)' : '16px',
+          top: showBanner ? 'calc(44px + 16px)' : '16px',
         }}
         css={{
           '@media (prefers-reduced-motion: reduce)': {
@@ -209,7 +209,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
         as="header"
         role="banner"
         position="fixed"
-        top={showBanner ? '80px' : 0}
+        top={showBanner ? '44px' : 0}
         left={0}
         right={0}
         h="60px"
@@ -507,7 +507,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
         aria-label="Navigation principale"
         position="fixed"
         left={0}
-        top={showBanner ? 'calc(60px + 80px)' : '60px'}
+        top={showBanner ? 'calc(60px + 44px)' : '60px'}
         bottom={0}
         w={{ base: isSidebarOpen ? '240px' : '0', md: '240px' }}
         bg="bg.surface"
@@ -652,7 +652,7 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
         <Box
           position="fixed"
           inset={0}
-          top={showBanner ? 'calc(60px + 80px)' : '60px'}
+          top={showBanner ? 'calc(60px + 44px)' : '60px'}
           bg="rgba(0,0,0,0.4)"
           zIndex={199}
           display={{ base: 'block', md: 'none' }}
@@ -667,9 +667,9 @@ export function DashboardLayout({ children, title = 'Tableau de bord', topbarRig
         id="main-content"
         direction="column"
         ml={{ base: 0, md: '240px' }}
-        mt={showBanner ? 'calc(60px + 80px)' : '60px'}
+        mt={showBanner ? 'calc(60px + 44px)' : '60px'}
         p={6}
-        h={showBanner ? 'calc(100vh - 60px - 80px)' : 'calc(100vh - 60px)'}
+        h={showBanner ? 'calc(100vh - 60px - 44px)' : 'calc(100vh - 60px)'}
         minH={0}
         overflow={fillHeight ? 'hidden' : 'auto'}
       >
