@@ -1128,12 +1128,6 @@ export function HomePage() {
               <Link asChild color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 <RouterLink to="/contact">Contact</RouterLink>
               </Link>
-              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
-                Documentation
-              </Link>
-              <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
-                Accessibilité (DSFR)
-              </Link>
             </Stack>
           </Box>
         </Grid>
