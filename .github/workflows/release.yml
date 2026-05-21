@@ -1,0 +1,204 @@
+name: Release (staging → prod)
+
+# Workflow de release : push sur main → deploy auto staging → approbation
+# manuelle → deploy prod. Cf. docs/DEPLOYMENT_WORKFLOW.md.
+#
+# Pré-requis GitHub Environments :
+#   - env_unilien_staging : secrets + VPS_PORT, pas de required reviewers
+#   - env_unilien          : secrets prod + VPS_PORT, Required reviewers = zephdev-92
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  staging:
+    name: Build & deploy to staging
+    runs-on: ubuntu-latest
+    environment:
+      name: env_unilien_staging
+      url: https://staging.unilien.app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test:run
+
+      - name: Build (staging env)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_NAME: 'Unilien (préprod)'
+          VITE_APP_URL: https://staging.unilien.app
+          VITE_PLAUSIBLE_DOMAIN: ${{ vars.VITE_PLAUSIBLE_DOMAIN }}
+          VITE_PLAUSIBLE_SRC: ${{ vars.VITE_PLAUSIBLE_SRC }}
+
+      - name: Upload staging artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: staging-build
+          path: dist/
+          retention-days: 7
+
+      - name: Check secret presence
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "ERROR: VPS_SSH_PRIVATE_KEY is empty"
+            exit 1
+          fi
+          echo "SSH_KEY length: ${#SSH_KEY}"
+          echo "VPS_HOST set: ${VPS_HOST:+yes}"
+          echo "VPS_USER set: ${VPS_USER:+yes}"
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keygen -l -f ~/.ssh/deploy_key || (echo "INVALID KEY FORMAT" && exit 1)
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy dist to VPS (staging)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            -e "ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien-staging/"
+
+      - name: Deploy Edge Functions to VPS (staging)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            --exclude='*.test.ts' \
+            --exclude='main/' \
+            --exclude='hello/' \
+            -e "ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            supabase/functions/ "$VPS_USER@$VPS_HOST:/opt/supabase-staging/docker/volumes/functions/"
+
+          ssh -p "$VPS_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
+            "sudo -n docker compose --project-directory /opt/supabase-staging/docker restart functions"
+
+      - name: Health check (staging)
+        run: |
+          sleep 3
+          # Basic auth Caddy : 401 OU 200 prouvent que le site répond.
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" https://staging.unilien.app)
+          echo "HTTP $CODE"
+          if [ "$CODE" != "200" ] && [ "$CODE" != "401" ]; then
+            echo "Staging unreachable (code $CODE)"
+            exit 1
+          fi
+
+  production:
+    name: Build & deploy to production
+    needs: staging
+    runs-on: ubuntu-latest
+    environment:
+      name: env_unilien
+      url: ${{ vars.VITE_APP_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (prod env)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_NAME: Unilien
+          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
+          VITE_PLAUSIBLE_DOMAIN: ${{ vars.VITE_PLAUSIBLE_DOMAIN }}
+          VITE_PLAUSIBLE_SRC: ${{ vars.VITE_PLAUSIBLE_SRC }}
+
+      - name: Upload prod artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-build
+          path: dist/
+          retention-days: 30
+
+      - name: Setup SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keygen -l -f ~/.ssh/deploy_key || (echo "INVALID KEY FORMAT" && exit 1)
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy dist to VPS (prod)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            -e "ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien/"
+
+      - name: Deploy Edge Functions to VPS (prod)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.DS_Store' \
+            --exclude='*.test.ts' \
+            --exclude='main/' \
+            --exclude='hello/' \
+            -e "ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            supabase/functions/ "$VPS_USER@$VPS_HOST:/opt/supabase/docker/volumes/functions/"
+
+          ssh -p "$VPS_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
+            "sudo -n docker compose --project-directory /opt/supabase/docker restart functions"
+
+      - name: Health check (prod)
+        run: |
+          sleep 3
+          curl -fsS -o /dev/null -w "HTTP %{http_code}\n" https://unilien.app || (echo "Health check failed" && exit 1)
