@@ -72,6 +72,7 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
@@ -79,22 +80,24 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           echo "Key fingerprint:"
           ssh-keygen -l -f ~/.ssh/deploy_key || (echo "INVALID KEY FORMAT" && exit 1)
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy to VPS (staging)
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
         run: |
           rsync -avz --delete \
             --exclude='.DS_Store' \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             dist/ "$VPS_USER@$VPS_HOST:/var/www/unilien-staging/"
 
       - name: Deploy Edge Functions to VPS (staging)
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '52022' }}
         run: |
           # Sync Edge Functions vers la stack Supabase staging (preserve les
           # entrypoints runtime main/ et hello/).
@@ -103,11 +106,11 @@ jobs:
             --exclude='*.test.ts' \
             --exclude='main/' \
             --exclude='hello/' \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -p $VPS_PORT -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             supabase/functions/ "$VPS_USER@$VPS_HOST:/opt/supabase-staging/docker/volumes/functions/"
 
           # Redémarre le conteneur edge-runtime de la stack staging.
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
+          ssh -p "$VPS_PORT" -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$VPS_USER@$VPS_HOST" \
             "sudo -n docker compose --project-directory /opt/supabase-staging/docker restart functions"
 
       - name: Health check
