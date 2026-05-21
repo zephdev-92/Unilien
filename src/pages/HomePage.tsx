@@ -1134,9 +1134,6 @@ export function HomePage() {
               <Link href="#" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
                 Accessibilité (DSFR)
               </Link>
-              <Link href="https://github.com/zephdev-92/Unilien" color="text.muted" fontSize="sm" _hover={{ color: 'text.default' }}>
-                GitHub
-              </Link>
             </Stack>
           </Box>
         </Grid>
