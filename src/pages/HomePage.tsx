@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
+import { track } from '@/lib/analytics/track'
 import {
   Box,
   Container,
@@ -328,7 +329,7 @@ export function HomePage() {
               transform: 'translateY(0)',
             }}
           >
-            <RouterLink to="/inscription">Essai gratuit</RouterLink>
+            <RouterLink to="/inscription" onClick={() => track('CTA Signup Click', { location: 'nav' })}>Essai gratuit</RouterLink>
           </Button>
         </Flex>
       </Flex>
@@ -406,7 +407,7 @@ export function HomePage() {
                 _hover={{ bg: 'brand.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
                 _active={{ transform: 'translateY(0)' }}
               >
-                <RouterLink to="/inscription">
+                <RouterLink to="/inscription" onClick={() => track('CTA Signup Click', { location: 'hero' })}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" />
                   </svg>
@@ -975,7 +976,7 @@ export function HomePage() {
                 _active={{ transform: 'translateY(0)' }}
                 mb={4}
               >
-                <RouterLink to="/inscription">
+                <RouterLink to="/inscription" onClick={() => track('CTA Signup Click', { location: 'pricing' })}>
                   Commencer gratuitement
                 </RouterLink>
               </Button>
@@ -1053,7 +1054,7 @@ export function HomePage() {
           _hover={{ bg: 'accent.600', boxShadow: 'md', transform: 'translateY(-1px)' }}
           _active={{ transform: 'translateY(0)' }}
         >
-          <RouterLink to="/inscription">
+          <RouterLink to="/inscription" onClick={() => track('CTA Signup Click', { location: 'cta_banner' })}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18" aria-hidden="true" style={{ flexShrink: 0 }}>
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>

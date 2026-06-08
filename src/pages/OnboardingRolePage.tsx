@@ -15,6 +15,7 @@ import {
 import { AccessibleButton, AccessibleInput } from '@/components/ui'
 import { supabase } from '@/lib/supabase/client'
 import { logger } from '@/lib/logger'
+import { track } from '@/lib/analytics/track'
 import { sanitizeText } from '@/lib/sanitize'
 import { useAuth } from '@/hooks/useAuth'
 import { consumePendingRole } from '@/lib/auth/pendingRole'
@@ -137,6 +138,8 @@ export default function OnboardingRolePage() {
       }
 
       if (rpcError) throw rpcError
+
+      track('Onboarding Completed', { role: selectedRole })
 
       // Recharger pour que useAuth récupère le profil à jour
       window.location.href = '/tableau-de-bord'
