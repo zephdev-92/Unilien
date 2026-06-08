@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserRole } from '@/types'
 import { logger } from '@/lib/logger'
+import { track } from '@/lib/analytics/track'
 import { createDefaultProfile } from '@/lib/mappers'
 import { getProfileById, createFallbackProfile } from '@/services/profileService'
 
@@ -242,6 +243,8 @@ export function useAuth() {
 
         // Le profil sera créé automatiquement par le trigger Supabase
         // lors de la confirmation de l'email
+
+        track('Signup', { role: data.role })
 
         return { success: true, user: authData.user }
       } catch (err) {

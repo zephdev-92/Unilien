@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import { resolveAvatarUrl } from '@/lib/supabase/avatars'
 import { logger } from '@/lib/logger'
 import { sanitizeText } from '@/lib/sanitize'
+import { track } from '@/lib/analytics/track'
 import type { Shift, ShiftType, GuardSegment, UserRole } from '@/types'
 import type { ShiftDbRow } from '@/types/database'
 import {
@@ -184,6 +185,8 @@ export async function createShift(
     logger.error('Erreur création shift:', error)
     throw new Error(error.message)
   }
+
+  track('Shift Created')
 
   // Notifier l'auxiliaire de la nouvelle intervention
   try {
