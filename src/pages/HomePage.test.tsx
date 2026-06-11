@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/helpers'
 import { HomePage } from './HomePage'
 
-// ─── Tests ───────────────────────────────────────────────────────────────────
+// ─── Tests (landing v4 « moderne ») ──────────────────────────────────────────
 
 describe('HomePage', () => {
   describe('Navigation', () => {
@@ -13,18 +12,16 @@ describe('HomePage', () => {
       expect(screen.getAllByAltText('Unilien').length).toBeGreaterThanOrEqual(1)
     })
 
-    it('affiche les liens ancres de navigation (nav + footer)', () => {
+    it('affiche les liens ancres de navigation', () => {
       renderWithProviders(<HomePage />)
-      // Nav + footer = liens dupliques
-      expect(screen.getAllByText(/^fonctionnalit[ée]s$/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText(/^produit$/i).length).toBeGreaterThanOrEqual(1)
       expect(screen.getAllByText(/^tarifs$/i).length).toBeGreaterThanOrEqual(1)
       expect(screen.getAllByText(/^faq$/i).length).toBeGreaterThanOrEqual(1)
     })
 
     it('affiche le lien de connexion et le bouton essai gratuit', () => {
       renderWithProviders(<HomePage />)
-      const connectLinks = screen.getAllByRole('link', { name: /se connecter/i })
-      expect(connectLinks.length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByRole('link', { name: /se connecter/i })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: /^essai gratuit$/i })).toBeInTheDocument()
     })
   })
@@ -32,169 +29,118 @@ describe('HomePage', () => {
   describe('Section Hero', () => {
     it('affiche le titre principal', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/g[ée]rez vos auxiliaires/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/l'emploi à domicile/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText(/enfin serein/i)).toBeInTheDocument()
     })
 
-    it('affiche le CTA "Essayer gratuitement 30 jours"', () => {
+    it('affiche le CTA "Essayer gratuitement" et la réassurance', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByRole('link', { name: /essayer gratuitement 30 jours/i })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /essayer gratuitement/i })).toBeInTheDocument()
+      expect(screen.getAllByText(/sans carte bancaire/i).length).toBeGreaterThanOrEqual(1)
     })
 
-    it('affiche les items de reassurance', () => {
+    it('affiche le mockup planning avec alerte de pause', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getAllByText(/aucune carte bancaire/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText(/accessible et simplifi[ée]/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText(/conforme idcc 3239/i).length).toBeGreaterThanOrEqual(1)
-    })
-
-    it('affiche le mockup bouclier juridique', () => {
-      renderWithProviders(<HomePage />)
-      // Bouclier apparait dans hero + conformite
-      expect(screen.getAllByText(/repos 11h non respect[ée]/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText(/planning de la semaine/i)).toBeInTheDocument()
+      expect(screen.getByText(/pause 20 min manquante/i)).toBeInTheDocument()
     })
   })
 
-  describe('Section Chiffres cles', () => {
-    it('affiche les 4 statistiques', () => {
+  describe('Section Produit (bento)', () => {
+    it('affiche le titre de section', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText('280 000')).toBeInTheDocument()
-      expect(screen.getByText('2 000+')).toBeInTheDocument()
-      expect(screen.getByText('-40 %')).toBeInTheDocument()
-      expect(screen.getByText('8 000 €')).toBeInTheDocument()
-    })
-  })
-
-  describe('Section Problemes', () => {
-    it('affiche les 3 pain points', () => {
-      renderWithProviders(<HomePage />)
-      expect(screen.getByText(/je veux [êe]tre s[ûu]r de bien faire/i)).toBeInTheDocument()
-      expect(screen.getByText(/mes outils ne sont pas adapt[ée]s/i)).toBeInTheDocument()
-      expect(screen.getByText(/je manque de visibilit[ée]/i)).toBeInTheDocument()
-    })
-  })
-
-  describe('Section Fonctionnalites', () => {
-    it('affiche le titre "Tout ce dont vous avez besoin"', () => {
-      renderWithProviders(<HomePage />)
-      expect(screen.getByText(/tout ce dont vous avez besoin/i)).toBeInTheDocument()
+      expect(screen.getByText(/réuni au même endroit/i)).toBeInTheDocument()
     })
 
-    it('affiche les 6 feature cards', () => {
+    it('affiche les cellules de fonctionnalités', () => {
       renderWithProviders(<HomePage />)
+      expect(screen.getByText('Le copilote conformité')).toBeInTheDocument()
       expect(screen.getByText('Planning intelligent')).toBeInTheDocument()
-      expect(screen.getByText('Bouclier juridique')).toBeInTheDocument()
-      expect(screen.getByText('Calcul de paie automatique')).toBeInTheDocument()
-      expect(screen.getAllByText('Cahier de liaison').length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByText('Notifications')).toBeInTheDocument()
-      expect(screen.getByText('Tableaux PCH')).toBeInTheDocument()
+      expect(screen.getByText('Récap des heures Cesu')).toBeInTheDocument()
+      expect(screen.getByText('Tableau PCH')).toBeInTheDocument()
     })
   })
 
-  describe('Section Conformite', () => {
-    it('affiche le titre de la section conformite', () => {
+  describe('Section Pour qui (personas)', () => {
+    it('affiche les deux profils', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/une protection automatique/i)).toBeInTheDocument()
+      expect(screen.getByText(/vous pilotez votre propre équipe/i)).toBeInTheDocument()
+      expect(screen.getByText(/vous accompagnez un proche/i)).toBeInTheDocument()
     })
+  })
 
-    it('affiche les alertes IDCC 3239', () => {
+  describe('Section Témoignages', () => {
+    it('affiche le titre et les trois témoignages', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getAllByText(/pause 20 min/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getAllByText(/planning de la semaine/i).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText('Témoignages')).toBeInTheDocument()
+      expect(screen.getByText('Sophie M., 41 ans')).toBeInTheDocument()
+      expect(screen.getByText('Jean-Dominique M., 38 ans')).toBeInTheDocument()
+      // « Sébastien B., 35 ans » apparaît aussi dans le badge persona
+      expect(screen.getAllByText('Sébastien B., 35 ans').length).toBeGreaterThanOrEqual(1)
     })
   })
 
   describe('Section Tarifs', () => {
-    it('affiche le plan Essentiel', () => {
+    it('affiche le plan Essentiel et son prix', () => {
       renderWithProviders(<HomePage />)
       expect(screen.getByText('Essentiel')).toBeInTheDocument()
+      expect(screen.getByText('9,90')).toBeInTheDocument()
     })
 
-    it('affiche le prix et le badge essai', () => {
-      renderWithProviders(<HomePage />)
-      expect(screen.getByText('9,90 €')).toBeInTheDocument()
-      expect(screen.getByText('30 jours offerts')).toBeInTheDocument()
-    })
-
-    it('affiche les features du plan Essentiel', () => {
+    it('affiche les features du plan', () => {
       renderWithProviders(<HomePage />)
       expect(screen.getByText('Auxiliaires illimités')).toBeInTheDocument()
-      expect(screen.getByText('Bulletins de paie PDF')).toBeInTheDocument()
-      expect(screen.getByText('Conformité IDCC 3239 automatique')).toBeInTheDocument()
+      expect(screen.getByText(/copilote conformité idcc 3239 inclus/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('Section Comment ça marche', () => {
+    it('affiche les trois étapes', () => {
+      renderWithProviders(<HomePage />)
+      expect(screen.getByText('Créez votre espace')).toBeInTheDocument()
+      expect(screen.getByText("Le copilote s'active")).toBeInTheDocument()
+      expect(screen.getByText('Vous reprenez votre temps')).toBeInTheDocument()
     })
   })
 
   describe('Section FAQ', () => {
-    it('affiche "Questions frequentes"', () => {
+    it('affiche "Questions fréquentes" et les questions', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/questions fr[ée]quentes/i)).toBeInTheDocument()
+      expect(screen.getByText(/questions fréquentes/i)).toBeInTheDocument()
+      expect(screen.getByText(/qu'est-ce que la convention idcc 3239/i)).toBeInTheDocument()
+      expect(screen.getByText(/mes données sont-elles bien protégées/i)).toBeInTheDocument()
     })
 
-    it('affiche les questions FAQ', () => {
+    it('affiche la réponse de la première question (ouverte par défaut)', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/qu.est-ce que la convention/i)).toBeInTheDocument()
-      // "vraiment accessible" apparait dans FAQ + temoignage
-      expect(screen.getAllByText(/vraiment accessible/i).length).toBeGreaterThanOrEqual(1)
-      expect(screen.getByText(/donn[ée]es sont-elles s[ée]curis[ée]es/i)).toBeInTheDocument()
-    })
-
-    it('deplie une question au clic', async () => {
-      const user = userEvent.setup()
-      renderWithProviders(<HomePage />)
-
-      const faqButton = screen.getByText(/qu'est-ce que la convention/i).closest('button')!
-      expect(faqButton).toHaveAttribute('aria-expanded', 'false')
-
-      await user.click(faqButton)
-      expect(faqButton).toHaveAttribute('aria-expanded', 'true')
-      expect(screen.getByText(/particuliers employeurs et de l'emploi a domicile/i)).toBeInTheDocument()
-    })
-  })
-
-  describe('Section Temoignages', () => {
-    it('affiche "Ils nous font confiance"', () => {
-      renderWithProviders(<HomePage />)
-      expect(screen.getByText(/ils nous font confiance/i)).toBeInTheDocument()
-    })
-
-    it('affiche les 3 temoignages', () => {
-      renderWithProviders(<HomePage />)
-      expect(screen.getByText('Claire Fontaine')).toBeInTheDocument()
-      expect(screen.getByText('Jean-Dominique Moreau')).toBeInTheDocument()
-      expect(screen.getByText('Sophie Martin')).toBeInTheDocument()
+      expect(screen.getByText(/convention collective qui encadre l'emploi à/i)).toBeInTheDocument()
     })
   })
 
   describe('CTA & Footer', () => {
-    it('affiche le CTA final', () => {
+    it('affiche les deux CTA', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText(/simplifiez votre quotidien/i)).toBeInTheDocument()
+      expect(screen.getByText(/reprenez votre dimanche/i)).toBeInTheDocument()
+      expect(screen.getByText(/prêt à reprendre du temps/i)).toBeInTheDocument()
     })
 
-    it('affiche le footer avec categories', () => {
+    it('affiche le footer avec catégories', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByText('Produit')).toBeInTheDocument()
       expect(screen.getByText('Légal')).toBeInTheDocument()
       expect(screen.getByText('Support')).toBeInTheDocument()
+      expect(screen.getAllByText(/^produit$/i).length).toBeGreaterThanOrEqual(1)
     })
 
-    it('affiche les liens legaux', () => {
+    it('affiche les liens légaux', () => {
       renderWithProviders(<HomePage />)
       expect(screen.getByText('Mentions légales')).toBeInTheDocument()
-      expect(screen.getByText('Politique de confidentialité')).toBeInTheDocument()
       expect(screen.getByText('CGU')).toBeInTheDocument()
       expect(screen.getByText('RGPD')).toBeInTheDocument()
     })
 
-    it('affiche le copyright avec l\'annee en cours', () => {
+    it('affiche le copyright', () => {
       renderWithProviders(<HomePage />)
-      const year = new Date().getFullYear().toString()
-      expect(screen.getByText(new RegExp(year))).toBeInTheDocument()
-    })
-
-    it('affiche le lien de contact', () => {
-      renderWithProviders(<HomePage />)
-      const contactLinks = screen.getAllByRole('link', { name: /contact/i })
-      expect(contactLinks.length).toBeGreaterThanOrEqual(1)
+      expect(screen.getByText(/2026 Unilien/i)).toBeInTheDocument()
     })
   })
 })
