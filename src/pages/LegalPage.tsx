@@ -29,7 +29,7 @@ export default function LegalPage() {
             Mentions légales
           </Text>
           <Text fontSize="sm" color="text.inactive" mt={1}>
-            Dernière mise à jour : mars 2026
+            Dernière mise à jour : juin 2026
           </Text>
         </Container>
       </Box>

@@ -51,7 +51,7 @@ export function LandingBento() {
           <div className="cell span-2">
             <div className="bignum" style={{ color: 'var(--slate)' }}>+40%</div>
             <h3 style={{ fontSize: '17px' }}>de temps retrouvé</h3>
-            <p>dès le premier mois, les tâches administratives se font toutes seules. Vos soirées vous reviennent.</p>
+            <p>Dès le premier mois, les tâches administratives se font toutes seules. Vos soirées vous reviennent.</p>
           </div>
 
           <div className="cell span-2">
