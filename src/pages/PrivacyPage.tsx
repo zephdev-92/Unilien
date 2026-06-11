@@ -29,7 +29,7 @@ export default function PrivacyPage() {
             Politique de confidentialité
           </Text>
           <Text fontSize="sm" color="text.inactive" mt={1}>
-            Dernière mise à jour : avril 2026 — brouillon, projet en développement
+            Dernière mise à jour : juin 2026 — brouillon, projet en développement
           </Text>
         </Container>
       </Box>
