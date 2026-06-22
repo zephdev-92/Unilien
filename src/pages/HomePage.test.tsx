@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from '@/test/helpers'
 import { HomePage } from './HomePage'
 
@@ -21,8 +22,24 @@ describe('HomePage', () => {
 
     it('affiche le lien de connexion et le bouton essai gratuit', () => {
       renderWithProviders(<HomePage />)
-      expect(screen.getByRole('link', { name: /se connecter/i })).toBeInTheDocument()
-      expect(screen.getByRole('link', { name: /^essai gratuit$/i })).toBeInTheDocument()
+      // Liens dupliqués entre la nav desktop et le menu mobile (panneau inert tant qu'il est fermé)
+      expect(screen.getAllByRole('link', { name: /se connecter/i }).length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByRole('link', { name: /^essai gratuit$/i }).length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('ouvre et ferme le menu mobile via le bouton burger', async () => {
+      const user = userEvent.setup()
+      renderWithProviders(<HomePage />)
+
+      const burger = screen.getByRole('button', { name: /ouvrir le menu/i })
+      expect(burger).toHaveAttribute('aria-expanded', 'false')
+
+      await user.click(burger)
+      const burgerOpen = screen.getByRole('button', { name: /fermer le menu/i })
+      expect(burgerOpen).toHaveAttribute('aria-expanded', 'true')
+
+      await user.click(burgerOpen)
+      expect(screen.getByRole('button', { name: /ouvrir le menu/i })).toHaveAttribute('aria-expanded', 'false')
     })
   })
 

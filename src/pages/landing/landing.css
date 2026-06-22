@@ -94,7 +94,65 @@ html:has(.landing-v4) { scroll-behavior: smooth; }
 .landing-v4 .nav-links a:hover { color: var(--ink); background: var(--bg-soft); }
 @media (max-width: 960px) { .landing-v4 .nav-links { display: none; } }
 .landing-v4 .nav-actions { display: flex; gap: 10px; align-items: center; }
-@media (max-width: 540px) { .landing-v4 .nav-actions .btn.ghost { display: none; } }
+/* ≤ 960px : seul le burger reste dans la barre, les CTA passent dans le panneau */
+@media (max-width: 960px) { .landing-v4 .nav-actions .btn { display: none; } }
+
+/* Burger (mobile ≤ 960px) */
+.landing-v4 .nav-burger {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 42px; height: 42px;
+  border: 1px solid var(--rule-2);
+  border-radius: 12px;
+  background: transparent; color: var(--ink);
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.landing-v4 .nav-burger:hover { background: var(--bg-soft); }
+
+/* Panneau déroulant mobile : replié par défaut, animé via grid-rows */
+.landing-v4 .mobile-menu { display: none; }
+@media (max-width: 960px) {
+  .landing-v4 .nav-burger { display: inline-flex; }
+  .landing-v4 .mobile-menu {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    border-bottom: 1px solid transparent;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(18px) saturate(1.4);
+    transition: grid-template-rows .28s cubic-bezier(.2,.7,.3,1), border-color .28s ease;
+  }
+  .landing-v4 .mobile-menu[data-open="true"] {
+    grid-template-rows: 1fr;
+    border-bottom-color: var(--rule);
+  }
+  .landing-v4 .mobile-menu > .container-wide {
+    /* overflow:hidden ramène le minimum automatique de l'élément de grille à 0,
+       sans quoi la piste 0fr ne se réduit pas et le panneau « dépasse » fermé */
+    overflow: hidden;
+    min-height: 0;
+    /* l'item hérite de `margin: 0 auto` (.container-wide) qui, en contexte grid,
+       le rétrécit au contenu et le centre → forcer la pleine largeur */
+    width: 100%;
+    margin-inline: 0;
+    display: flex; flex-direction: column; gap: 6px;
+    /* padding nul fermé (sinon il reste visible), appliqué à l'ouverture */
+    padding-block: 0;
+    transition: padding-block .28s cubic-bezier(.2,.7,.3,1);
+  }
+  .landing-v4 .mobile-menu[data-open="true"] > .container-wide {
+    padding-block: 14px 20px;
+  }
+  .landing-v4 .mobile-menu a:not(.btn) {
+    text-decoration: none; color: var(--ink-soft);
+    font-size: 16px; font-weight: 500;
+    padding: 12px 8px; border-radius: 12px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .landing-v4 .mobile-menu a:not(.btn):hover { background: var(--bg-soft); color: var(--ink); }
+  .landing-v4 .mobile-menu .btn { width: 100%; margin-top: 4px; }
+}
 
 /* ---------- HERO ---------- */
 .landing-v4 .hero {
