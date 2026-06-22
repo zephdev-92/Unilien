@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ASSET } from './constants'
 
 export function LandingFooter() {
@@ -23,16 +24,16 @@ export function LandingFooter() {
           <div>
             <h5>Légal</h5>
             <ul>
-              <li><a href="/mentions-legales">Mentions légales</a></li>
-              <li><a href="/politique-confidentialite">Confidentialité</a></li>
-              <li><a href="/conditions-utilisation">CGU</a></li>
-              <li><a href="/politique-confidentialite">RGPD</a></li>
+              <li><Link to="/mentions-legales">Mentions légales</Link></li>
+              <li><Link to="/politique-confidentialite">Confidentialité</Link></li>
+              <li><Link to="/conditions-utilisation">CGU</Link></li>
+              <li><Link to="/politique-confidentialite">RGPD</Link></li>
             </ul>
           </div>
           <div>
             <h5>Support</h5>
             <ul>
-              <li><a href="/contact">Contact</a></li>
+              <li><Link to="/contact">Contact</Link></li>
             </ul>
           </div>
         </div>

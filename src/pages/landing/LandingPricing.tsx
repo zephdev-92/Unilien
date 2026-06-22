@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { track } from '@/lib/analytics/track'
 import { Check, Shield } from './icons'
 
@@ -34,13 +35,13 @@ export function LandingPricing() {
               <li><Check size={19} sw={2.4} /> Des réponses sous 24h <span style={noteStyle}>(* hors jours fériés et week-ends)</span></li>
             </ul>
             <div className="price-cta">
-              <a
-                href="/inscription"
+              <Link
+                to="/inscription"
                 className="btn green lg"
                 onClick={() => track('CTA Signup Click', { location: 'pricing' })}
               >
                 Commencer gratuitement
-              </a>
+              </Link>
             </div>
           </div>
 

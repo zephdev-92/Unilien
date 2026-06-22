@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { track } from '@/lib/analytics/track'
 import { ASSET } from './constants'
 import { Check, Clock, Search, Bell, Grid, Calendar, Users, Chat, Book, Shield, FileDoc, BarChart } from './icons'
@@ -17,13 +18,13 @@ export function LandingHero() {
           Un outil pensé avec et pour les personnes en situation de handicap et leurs proches.
         </p>
         <div className="hero-actions">
-          <a
-            href="/inscription"
+          <Link
+            to="/inscription"
             className="btn lg"
             onClick={() => track('CTA Signup Click', { location: 'hero' })}
           >
             Essayer gratuitement
-          </a>
+          </Link>
           <a href="#produit" className="btn ghost lg">Découvrir les fonctionnalités</a>
         </div>
         <div className="hero-fineprint">
