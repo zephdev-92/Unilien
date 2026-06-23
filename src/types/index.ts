@@ -154,10 +154,10 @@ export interface TimeSlot {
 export type ContractCategory = 'employment' | 'caregiver_pch'
 export type CaregiverContractStatus = 'active' | 'full_time' | 'voluntary'
 
-// Taux PCH CNSA 2026
+// Taux PCH CNSA — au 01/06/2026
 export const PCH_RATES = {
-  active: 4.78,     // Aidant maintenant une activité pro (50% SMIC net)
-  full_time: 7.16,  // Aidant ayant cessé son activité (75% SMIC net)
+  active: 4.93,     // Aidant maintenant une activité pro (50% SMIC net)
+  full_time: 7.39,  // Aidant ayant cessé son activité (75% SMIC net)
 } as const
 
 // Contrat
