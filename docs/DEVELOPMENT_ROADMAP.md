@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Développement - Unilien
 
-**Dernière mise à jour**: 30 avril 2026 (2286 tests / 133 fichiers — listes courses multi-templates + auto-reload chunk error + harmonisation libellés absence)
+**Dernière mise à jour**: 23 juin 2026 (2334 tests / 139 fichiers — mise à jour des tarifs PCH au barème CNSA 1er juin 2026)
 **Version**: 1.17.0
 **Statut projet**: 🟡 En développement actif
 
@@ -38,6 +38,18 @@
 ---
 
 ## ✅ Réalisations Récentes (Semaines 6-22 - Février/Avril 2026)
+
+### 23 juin 2026 — Tarifs PCH 1er juin 2026 (PR #422 ✅)
+
+Mise à jour des tarifs horaires PCH Élément 1 (aide humaine) au barème CNSA en vigueur au **1er juin 2026** (relèvement du SMIC + extension de l'avenant n°10 à la convention IDCC 3239).
+
+- Emploi direct : 19,34 → **19,92 €/h**
+- Mandataire : 21,27 → **21,91 €/h**
+- Prestataire : 25,00 €/h (inchangé)
+- Aidant familial : 4,78 → **4,93 €/h** (dédommagement, 50 % SMIC net)
+- Aidant familial cessation d'activité : 7,16 → **7,39 €/h** (75 % SMIC net)
+- Fichiers : `lib/pch/pchTariffs.ts` (+ labels), `types/index.ts` (`PCH_RATES`), tests `pchTariffs.test.ts` alignés
+- Consommateurs (`NewCaregiverContractModal`, `EditCaregiverModal`, hooks, widgets PCH) lisent les constantes → aucun changement supplémentaire
 
 ### Semaine 22 — 24-30 avril 2026 (PRs #305–#330)
 
