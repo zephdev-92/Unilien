@@ -1,6 +1,6 @@
 // Types de base pour Unilien
 
-import type { PchType } from '@/lib/pch/pchTariffs'
+import { PCH_TARIFFS_2026, type PchType } from '@/lib/pch/pchTariffs'
 export type { PchType }
 
 // Rôles utilisateur
@@ -154,10 +154,12 @@ export interface TimeSlot {
 export type ContractCategory = 'employment' | 'caregiver_pch'
 export type CaregiverContractStatus = 'active' | 'full_time' | 'voluntary'
 
-// Taux PCH CNSA — au 01/06/2026
+// Taux PCH CNSA — dérivés de PCH_TARIFFS_2026 (source unique des tarifs)
+// active = aidant familial dédommagé (50% SMIC net)
+// full_time = aidant ayant cessé son activité (75% SMIC net)
 export const PCH_RATES = {
-  active: 4.93,     // Aidant maintenant une activité pro (50% SMIC net)
-  full_time: 7.39,  // Aidant ayant cessé son activité (75% SMIC net)
+  active: PCH_TARIFFS_2026.aidantFamilial,
+  full_time: PCH_TARIFFS_2026.aidantFamilialCessation,
 } as const
 
 // Contrat
