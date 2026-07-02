@@ -84,20 +84,34 @@ serve(async (req: Request) => {
       )
     }
 
-    // Check if a profile with this email already exists
+    // Identity match is not enough: an employee/caregiver account could pass
+    // its own id as employerId. Only the employer role may send invitations.
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', caller.id)
+      .maybeSingle()
+
+    if (callerProfile?.role !== 'employer') {
+      console.error('Role check failed: caller', caller.id, 'has role', callerProfile?.role)
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: caller must be the employer' }),
+        { status: 403, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // Check if a profile with this email already exists.
+    // Do not echo the existing profile's id or role back to the caller:
+    // that would let any employer enumerate accounts and harvest UUIDs.
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .select('id, role')
+      .select('id')
       .eq('email', email.toLowerCase().trim())
       .maybeSingle()
 
     if (existingProfile) {
       return new Response(
-        JSON.stringify({
-          error: 'Un compte existe deja avec cette adresse email.',
-          existingProfileId: existingProfile.id,
-          existingRole: existingProfile.role,
-        }),
+        JSON.stringify({ error: 'Un compte existe deja avec cette adresse email.' }),
         { status: 409, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } },
       )
     }
