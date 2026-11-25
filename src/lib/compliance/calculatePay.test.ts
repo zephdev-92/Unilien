@@ -651,3 +651,31 @@ describe('getPayBreakdown', () => {
     expect(nightEntry?.percentage).toBe(20)
   })
 })
+
+describe('calculateShiftPay — intervention effective découpée (jour/nuit)', () => {
+  // Jeudi 18h → vendredi 8h : 18-21 effectif | 21-06 présence nuit | 06-08 effectif
+  const segmented: ShiftForValidation = {
+    ...createShift('2025-01-16', '18:00', '08:00'),
+    shiftType: 'effective',
+    guardSegments: [
+      { startTime: '18:00', type: 'effective', breakMinutes: 0 },
+      { startTime: '21:00', type: 'presence_night' },
+      { startTime: '06:00', type: 'effective', breakMinutes: 0 },
+    ],
+  }
+
+  it('paie chaque segment à son régime, le dernier se terminant à endTime', () => {
+    const pay = calculateShiftPay(segmented, createContract(12, 35))
+    expect(pay.basePay).toBe(60) // (3h + 2h) × 12€
+    expect(pay.nightPresenceAllowance).toBe(27) // 9h × 12€ × 1/4
+    expect(pay.nightMajoration).toBe(0)
+    expect(pay.totalPay).toBe(87)
+  })
+
+  it('ne compte que les heures effectives dans les heures sup', () => {
+    // contrat 2h/semaine : 5h effectives → 3h sup à +25%
+    const pay = calculateShiftPay(segmented, createContract(12, 2))
+    expect(pay.overtimeMajoration).toBe(9) // 3h × 12€ × 0.25
+    expect(pay.totalPay).toBe(96)
+  })
+})

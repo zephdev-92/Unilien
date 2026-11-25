@@ -41,6 +41,9 @@ export {
   groupShiftsByDay,
   calculateTotalHours,
   getShiftDurationMinutes,
+  isSegmented,
+  getSegmentEnd,
+  hasStoredEffectiveHours,
 } from './utils'
 
 // Validations individuelles

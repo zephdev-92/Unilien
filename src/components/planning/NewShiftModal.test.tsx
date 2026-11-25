@@ -192,7 +192,7 @@ describe('NewShiftModal', () => {
   })
 
   // 6. Le formulaire a les champs Date, Heure de début, Heure de fin
-  it('affiche les champs Date, Heure de debut et Heure de fin', async () => {
+  it('affiche les champs façon agenda : début et fin (date + heure)', async () => {
     setupWithContracts()
 
     renderWithProviders(<NewShiftModal {...defaultOpenProps} />)
@@ -201,19 +201,14 @@ describe('NewShiftModal', () => {
       expect(screen.getByText('Nouvelle intervention')).toBeInTheDocument()
     })
 
-    // Chakra v3 AccessibleInput rend un <input> — queryable via getByLabelText
-    // Champ date
-    expect(screen.getByLabelText(/^date/i)).toBeInTheDocument()
-
-    // Heure de début
+    expect(screen.getByLabelText(/^début/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/heure de début/i)).toBeInTheDocument()
-
-    // Heure de fin
+    expect(screen.getByLabelText(/^fin/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/heure de fin/i)).toBeInTheDocument()
   })
 
-  // 7. Champ "Type d'intervention" présent avec les options attendues
-  it('affiche le champ type d\'intervention avec les options attendues', async () => {
+  // 7. Plus de choix de type : le découpage est suggéré à partir des horaires
+  it('ne demande plus le type et suggère le découpage jour/nuit', async () => {
     setupWithContracts()
 
     renderWithProviders(<NewShiftModal {...defaultOpenProps} />)
@@ -222,13 +217,20 @@ describe('NewShiftModal', () => {
       expect(screen.getByText('Nouvelle intervention')).toBeInTheDocument()
     })
 
-    // Le select "Type d'intervention" doit être présent
-    const typeSelect = screen.getByRole('combobox', { name: /type d'intervention/i })
-    expect(typeSelect).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /type d'intervention/i })).not.toBeInTheDocument()
+    // 09:00–12:00 : effectif simple, découpage repliable
+    expect(screen.queryByText('Découpage suggéré')).not.toBeInTheDocument()
 
-    // Vérifier que les options clés sont présentes dans le DOM
-    expect(screen.getByText('Travail effectif')).toBeInTheDocument()
-    expect(screen.getByText(/^présence responsable$/i)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/heure de début/i), { target: { value: '18:00' } })
+    fireEvent.change(screen.getByLabelText(/heure de fin/i), { target: { value: '08:00' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Découpage suggéré')).toBeInTheDocument()
+    })
+    // Date de fin passée au lendemain
+    const start = (screen.getByLabelText(/^début/i) as HTMLInputElement).value
+    const end = (screen.getByLabelText(/^fin/i) as HTMLInputElement).value
+    expect(Date.parse(end) - Date.parse(start)).toBe(86_400_000)
   })
 
   // 8. createShift est appelée lors de la soumission d'un formulaire valide
@@ -324,6 +326,43 @@ describe('NewShiftModal', () => {
         'employer',
         expect.any(Date),
         expect.any(Date)
+      )
+    })
+  })
+})
+
+describe('NewShiftModal — création découpée', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('envoie une intervention effective découpée pour 18:00 → 08:00', async () => {
+    setupWithContracts()
+    mockCreateShift.mockResolvedValue(null)
+
+    renderWithProviders(<NewShiftModal {...defaultOpenProps} />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: /intervenant/i })).toBeInTheDocument()
+    })
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /intervenant/i }), 'c-1')
+    fireEvent.change(screen.getByLabelText(/heure de début/i), { target: { value: '18:00' } })
+    fireEvent.change(screen.getByLabelText(/heure de fin/i), { target: { value: '08:00' } })
+    await waitFor(() => expect(screen.getByText('Découpage suggéré')).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /créer l'intervention|vérifiez les avertissements/i }))
+
+    await waitFor(() => {
+      expect(mockCreateShift).toHaveBeenCalledWith(
+        'c-1',
+        expect.objectContaining({
+          startTime: '18:00',
+          endTime: '08:00',
+          shiftType: 'effective',
+          guardSegments: [
+            expect.objectContaining({ startTime: '18:00', type: 'effective' }),
+            expect.objectContaining({ startTime: '21:00', type: 'presence_night' }),
+            expect.objectContaining({ startTime: '06:00', type: 'effective' }),
+          ],
+        }),
       )
     })
   })

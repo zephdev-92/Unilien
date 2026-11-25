@@ -29,10 +29,10 @@ function shiftDurationMinutes(startTime: string, endTime: string): number {
   return endTotal - startTotal
 }
 
-function breakRuleRefine(data: { startTime: string; endTime: string; breakDuration: number; shiftType?: string }) {
-  // La règle des 20 min s'applique au travail effectif simple. La garde 24h
-  // est validée segment par segment via useGuardSegments / validateBreak.
-  if (data.shiftType === 'guard_24h') return true
+function breakRuleRefine(data: { startTime: string; endTime: string; breakDuration: number; shiftType?: string; segmented?: boolean }) {
+  // La règle des 20 min s'applique au travail effectif simple. La garde 24h et
+  // les interventions découpées sont validées segment par segment (validateBreak).
+  if (data.shiftType === 'guard_24h' || data.segmented) return true
   const duration = shiftDurationMinutes(data.startTime, data.endTime)
   if (duration <= MANDATORY_BREAK_THRESHOLD_MINUTES) return true
   return (data.breakDuration ?? 0) >= MANDATORY_BREAK_MINIMUM_MINUTES
@@ -56,14 +56,20 @@ export const shiftDetailSchema = z.object({
 export const newShiftSchema = z.object({
   ...shiftBaseFields,
   contractId: z.string().min(1, 'Veuillez sélectionner un auxiliaire'),
+  endDate: z.string().min(1, 'La date de fin est requise'),
   shiftType: z.enum(SHIFT_TYPE_VALUES).default('effective'),
+  segmented: z.boolean().optional(),
 }).refine((data) => {
-  // Pour guard_24h : endTime = startTime = 24h, c'est intentionnel
-  if (data.shiftType === 'guard_24h') return true
-  return data.startTime !== data.endTime
+  // Fin le jour même (après le début) ou le lendemain (24h max, fin = début → garde 24h)
+  const days = Math.round((Date.parse(data.endDate) - Date.parse(data.date)) / 86_400_000)
+  const [sh, sm] = data.startTime.split(':').map(Number)
+  const [eh, em] = data.endTime.split(':').map(Number)
+  const start = sh * 60 + sm
+  const end = eh * 60 + em
+  return days === 0 ? end > start : days === 1 ? end <= start : false
 }, {
-  message: "L'heure de fin doit être différente de l'heure de début",
-  path: ['endTime'],
+  message: 'La fin doit être après le début, 24 h maximum',
+  path: ['endDate'],
 }).refine(breakRuleRefine, {
   message: breakRuleMessage,
   path: ['breakDuration'],

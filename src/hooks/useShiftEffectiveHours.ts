@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { calculateShiftDuration } from '@/lib/compliance'
+import { calculateShiftDuration, isSegmented, getSegmentEnd } from '@/lib/compliance'
 import { getPresenceMix } from '@/lib/presence/detectPresenceType'
 import type { ShiftType, GuardSegment } from '@/types'
 
@@ -64,9 +64,9 @@ export function useShiftEffectiveHours({
         return durationHours
       }
 
-      if (shiftType === 'guard_24h' && guardSegments && guardSegments.length > 0) {
+      if (guardSegments && isSegmented({ shiftType, guardSegments })) {
         const total = guardSegments.reduce((sum, seg, i) => {
-          const end = guardSegments[i + 1]?.startTime ?? startTime
+          const end = getSegmentEnd(guardSegments, i, endTime)
           const mins = calculateShiftDuration(seg.startTime, end, 0)
           return seg.type === 'effective'
             ? sum + Math.max(0, mins - (seg.breakMinutes ?? 0)) / 60

@@ -4,7 +4,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
-import { calculateShiftDuration } from '@/lib/compliance/utils'
+import { calculateShiftDuration, hasStoredEffectiveHours } from '@/lib/compliance/utils'
 
 export interface MonthlyData {
   month: string // 'YYYY-MM'
@@ -257,7 +257,7 @@ export async function getEmployeeAnalytics(
     for (const shift of [...completed, ...planned]) {
       const contract = contracts?.find(c => c.id === shift.contract_id)
       if (contract) {
-        const hours = (shift.shift_type === 'guard_24h' && shift.effective_hours != null)
+        const hours = (hasStoredEffectiveHours(shift.shift_type, shift.effective_hours))
           ? shift.effective_hours
           : calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
         revenue += hours * (contract.hourly_rate || 0)
@@ -312,7 +312,7 @@ function calculateTotalHours(
   shifts: Array<{ start_time: string; end_time: string; break_duration: number | null; shift_type?: string; effective_hours?: number | null }>,
 ): number {
   return shifts.reduce((total, shift) => {
-    if (shift.shift_type === 'guard_24h' && shift.effective_hours != null) {
+    if (hasStoredEffectiveHours(shift.shift_type, shift.effective_hours)) {
       return total + shift.effective_hours
     }
     const duration = calculateShiftDuration(

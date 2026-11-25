@@ -224,8 +224,8 @@ export async function updateShift(
     shiftType: ShiftType
     nightInterventionsCount: number
     isRequalified: boolean
-    effectiveHours: number
-    guardSegments: GuardSegment[]
+    effectiveHours: number | null
+    guardSegments: GuardSegment[] | null
     status: Shift['status']
     lateEntry: boolean
   }>
@@ -247,9 +247,11 @@ export async function updateShift(
   if (updates.effectiveHours !== undefined) payload.effective_hours = updates.effectiveHours
   if (updates.guardSegments !== undefined) {
     payload.guard_segments = updates.guardSegments
-    // Recalculer break_duration à partir des segments effectifs
-    payload.break_duration = updates.guardSegments.reduce((sum, seg) =>
-      seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
+    // Recalculer break_duration à partir des segments effectifs (null = découpage retiré)
+    if (updates.guardSegments) {
+      payload.break_duration = updates.guardSegments.reduce((sum, seg) =>
+        seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
+    }
   }
   if (updates.status) payload.status = updates.status
   if (updates.lateEntry !== undefined) payload.late_entry = updates.lateEntry

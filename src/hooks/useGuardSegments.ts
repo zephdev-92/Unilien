@@ -11,11 +11,11 @@ import type { GuardSegment } from '@/types'
  * à 20 min — la règle du cumul journalier ne s'applique donc pas.
  * Seul un segment individuel > 6h continus déclenche l'obligation.
  */
-export function getMinBreakForSegment(index: number, segments: GuardSegment[]): number {
+export function getMinBreakForSegment(index: number, segments: GuardSegment[], shiftEnd?: string): number {
   const seg = segments[index]
   if (seg.type !== 'effective') return 0
 
-  const segEnd = segments[index + 1]?.startTime ?? segments[0].startTime
+  const segEnd = segments[index + 1]?.startTime ?? shiftEnd ?? segments[0].startTime
   const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
 
   // Segment effectif continu > 6h → 20 min minimum (Art. L3121-16)
@@ -29,10 +29,10 @@ export function getMinBreakForSegment(index: number, segments: GuardSegment[]): 
  * Remet toujours à jour la pause (à la hausse ET à la baisse) en fonction
  * de la durée réelle du segment — ex. segment raccourci sous 6h → pause à 0.
  */
-export function applyMinBreaks(segments: GuardSegment[]): GuardSegment[] {
+export function applyMinBreaks(segments: GuardSegment[], shiftEnd?: string): GuardSegment[] {
   return segments.map((seg, i) => {
     if (seg.type !== 'effective') return seg
-    const minBreak = getMinBreakForSegment(i, segments)
+    const minBreak = getMinBreakForSegment(i, segments, shiftEnd)
     return { ...seg, breakMinutes: minBreak }
   })
 }
@@ -41,10 +41,10 @@ export function applyMinBreaks(segments: GuardSegment[]): GuardSegment[] {
  * Re-detect presence_day/presence_night for presence segments based on time range.
  * A segment is presence_night if majority of its hours fall in 21h-6h window.
  */
-function redetectPresenceTypes(segments: GuardSegment[]): GuardSegment[] {
+function redetectPresenceTypes(segments: GuardSegment[], shiftEnd?: string): GuardSegment[] {
   return segments.map((seg, i) => {
     if (seg.type !== 'presence_day' && seg.type !== 'presence_night') return seg
-    const segEnd = segments[i + 1]?.startTime ?? segments[0].startTime
+    const segEnd = segments[i + 1]?.startTime ?? shiftEnd ?? segments[0].startTime
     const totalHours = calculateShiftDuration(seg.startTime, segEnd, 0) / 60
     if (totalHours <= 0) return seg
     const nightHours = calculateNightHours(new Date(), seg.startTime, segEnd)
@@ -59,9 +59,10 @@ const DEFAULT_SEGMENTS: GuardSegment[] = [
 ]
 
 /**
- * Gère les segments de garde 24h : état, ajout, suppression et modification.
+ * Gère les segments d'une intervention découpée : état, ajout, suppression et modification.
+ * @param shiftEnd fin de l'intervention (défaut : début du 1er segment = garde 24h)
  */
-export function useGuardSegments() {
+export function useGuardSegments(shiftEnd?: string) {
   const [guardSegments, setGuardSegments] = useState<GuardSegment[]>(() =>
     applyMinBreaks(DEFAULT_SEGMENTS)
   )
@@ -74,7 +75,7 @@ export function useGuardSegments() {
     setGuardSegments(prev => {
       const next = [...prev]
       const segStart = next[afterIndex].startTime
-      const segEnd = next[afterIndex + 1]?.startTime ?? next[0].startTime
+      const segEnd = next[afterIndex + 1]?.startTime ?? shiftEnd ?? next[0].startTime
       const [sh, sm] = segStart.split(':').map(Number)
       const [eh, em] = segEnd.split(':').map(Number)
       let endTotal = eh * 60 + em
@@ -83,16 +84,16 @@ export function useGuardSegments() {
       const midTotal = Math.floor((startTotal + endTotal) / 2) % 1440
       const midTime = `${Math.floor(midTotal / 60).toString().padStart(2, '0')}:${(midTotal % 60).toString().padStart(2, '0')}`
       next.splice(afterIndex + 1, 0, { startTime: midTime, type: 'effective', breakMinutes: 0 })
-      return applyMinBreaks(next)
+      return applyMinBreaks(next, shiftEnd)
     })
-  }, [])
+  }, [shiftEnd])
 
   const removeGuardSegment = useCallback((index: number) => {
     setGuardSegments(prev => {
-      if (prev.length <= 2) return prev
-      return applyMinBreaks(prev.filter((_, i) => i !== index))
+      if (prev.length <= 1) return prev
+      return applyMinBreaks(prev.filter((_, i) => i !== index), shiftEnd)
     })
-  }, [])
+  }, [shiftEnd])
 
   const updateGuardSegmentEnd = useCallback((index: number, newEndTime: string) => {
     setGuardSegments(prev => {
@@ -100,26 +101,26 @@ export function useGuardSegments() {
       if (index + 1 < next.length) {
         next[index + 1] = { ...next[index + 1], startTime: newEndTime }
       }
-      return applyMinBreaks(redetectPresenceTypes(next))
+      return applyMinBreaks(redetectPresenceTypes(next, shiftEnd), shiftEnd)
     })
-  }, [])
+  }, [shiftEnd])
 
   const updateGuardSegmentType = useCallback((index: number, type: GuardSegment['type']) => {
     setGuardSegments(prev => {
       const next = [...prev]
       next[index] = { ...next[index], type, breakMinutes: type === 'effective' ? (next[index].breakMinutes ?? 0) : undefined }
-      return applyMinBreaks(next)
+      return applyMinBreaks(next, shiftEnd)
     })
-  }, [])
+  }, [shiftEnd])
 
   const updateGuardSegmentBreak = useCallback((index: number, breakMinutes: number) => {
     setGuardSegments(prev => {
       const next = [...prev]
-      const minBreak = getMinBreakForSegment(index, next)
+      const minBreak = getMinBreakForSegment(index, next, shiftEnd)
       next[index] = { ...next[index], breakMinutes: Math.max(minBreak, breakMinutes) }
       return next
     })
-  }, [])
+  }, [shiftEnd])
 
   return {
     guardSegments,

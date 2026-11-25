@@ -6,7 +6,7 @@
 import type { ComputedPay } from '@/types'
 import type { ShiftForValidation, ContractForCalculation } from './types'
 import { isPublicHoliday, isSunday } from './types'
-import { calculateShiftDuration, calculateNightHours, getWeekStart, calculateTotalHours } from './utils'
+import { calculateShiftDuration, calculateNightHours, getWeekStart, calculateTotalHours, isSegmented, getSegmentEnd, getEffectiveHours } from './utils'
 import { getPresenceMix } from '@/lib/presence/detectPresenceType'
 
 // Taux de majoration (Convention Collective IDCC 3239)
@@ -137,8 +137,8 @@ export function calculateShiftPay(
         : MAJORATION_RATES.PUBLIC_HOLIDAY_EXCEPTIONAL
       holidayMajoration = totalPaid * rate
     }
-  } else if (shiftType === 'guard_24h' && shift.guardSegments?.length) {
-    // ── Garde 24h N segments libres ───────────────────────────────
+  } else if (shift.guardSegments && isSegmented(shift)) {
+    // ── N segments libres (garde 24h ou intervention découpée jour/nuit) ──
     // basePay recalculé : seulement les segments effectifs (hors pause)
     // presenceResponsiblePay : seulement les segments présence_day (×2/3)
     nightMajoration = 0
@@ -149,8 +149,7 @@ export function calculateShiftPay(
 
     for (let i = 0; i < segs.length; i++) {
       const seg = segs[i]
-      // La fin du segment = début du suivant ; pour le dernier → startTime du shift (+24h)
-      const segEnd = segs[i + 1]?.startTime ?? segs[0].startTime
+      const segEnd = getSegmentEnd(segs, i, shift.endTime)
       const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
       const durH = durMins / 60
 
@@ -190,12 +189,16 @@ export function calculateShiftPay(
   }
 
   // Total
+  // Effective découpée : segments (présence incluse) + heures sup ; garde 24h : segments seuls
+  const segmentsPay = basePay + presenceResponsiblePay + nightPresenceAllowance + sundayMajoration + holidayMajoration + nightMajoration
   const totalPay = shiftType === 'effective'
-    ? basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
+    ? isSegmented(shift)
+      ? segmentsPay + overtimeMajoration
+      : basePay + sundayMajoration + holidayMajoration + nightMajoration + overtimeMajoration
     : (shiftType === 'presence_day' || shiftType === 'presence_night')
       ? presenceResponsiblePay + nightPresenceAllowance + sundayMajoration + holidayMajoration
       : shiftType === 'guard_24h'
-        ? basePay + presenceResponsiblePay + nightPresenceAllowance + sundayMajoration + holidayMajoration + nightMajoration
+        ? segmentsPay
         : 0
 
   return {
@@ -231,12 +234,10 @@ export function calculateOvertimeHours(
   // Total des heures AVANT cette intervention
   const previousHours = calculateTotalHours(weekShifts)
 
-  // Durée de cette intervention
-  const thisShiftHours = calculateShiftDuration(
-    newShift.startTime,
-    newShift.endTime,
-    newShift.breakDuration
-  ) / 60
+  // Durée de cette intervention (découpée : seules les heures effectives comptent)
+  const thisShiftHours = isSegmented(newShift)
+    ? getEffectiveHours(newShift)
+    : calculateShiftDuration(newShift.startTime, newShift.endTime, newShift.breakDuration) / 60
 
   // Heures totales après cette intervention
   const totalHours = previousHours + thisShiftHours

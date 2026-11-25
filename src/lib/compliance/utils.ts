@@ -221,8 +221,29 @@ export function calculateTotalHours(
 }
 
 /**
+ * Une intervention est « découpée » si elle porte des segments :
+ * garde 24h, ou intervention effective découpée automatiquement (jour/nuit).
+ */
+export function isSegmented(shift: { shiftType?: string; guardSegments?: unknown[] }): boolean {
+  const type = shift.shiftType || 'effective'
+  return (type === 'guard_24h' || type === 'effective') && !!shift.guardSegments?.length
+}
+
+/**
+ * Fin du segment i = début du suivant ; pour le dernier = fin de l'intervention.
+ * (Garde 24h : endTime === startTime, donc +24h implicite.)
+ */
+export function getSegmentEnd(
+  segs: Array<{ startTime: string }>,
+  i: number,
+  shiftEndTime: string,
+): string {
+  return segs[i + 1]?.startTime ?? shiftEndTime
+}
+
+/**
  * Calcule les heures effectives d'une intervention selon son type
- * - effective (défaut) : 100% du temps
+ * - effective (défaut) : 100% du temps (ou somme des segments effectifs si découpée)
  * - presence_day : 2/3 du temps (Art. 137.1 IDCC 3239)
  * - presence_night : 0 (repos sur place, pas du travail — Art. 148 IDCC 3239)
  */
@@ -240,14 +261,14 @@ export function getEffectiveHours(
 
   if (type === 'presence_night') return 0
   if (type === 'presence_day') return rawHours * (2 / 3)
-  if (type === 'guard_24h') {
+  if (type === 'guard_24h' && !shift.guardSegments?.length) {
+    // Garde 24h sans segments : si start === end, c'est une garde complète de 24h
+    return rawHours === 0 ? 24 : rawHours
+  }
+  if (shift.guardSegments && isSegmented(shift)) {
     // Somme des heures effectives de tous les segments de type 'effective' (hors pause)
-    if (!shift.guardSegments?.length) {
-      // Garde 24h sans segments : si start === end, c'est une garde complète de 24h
-      return rawHours === 0 ? 24 : rawHours
-    }
     return shift.guardSegments.reduce((total, seg, i, arr) => {
-      const end = arr[i + 1]?.startTime ?? shift.startTime
+      const end = getSegmentEnd(arr, i, shift.endTime)
       const mins = calculateShiftDuration(seg.startTime, end, 0)
       return seg.type === 'effective'
         ? total + Math.max(0, mins - (seg.breakMinutes ?? 0)) / 60
@@ -258,13 +279,25 @@ export function getEffectiveHours(
 }
 
 /**
+ * Heures effectives stockées à utiliser à la place de la durée brute :
+ * garde 24h, ou intervention effective découpée (seul cas où une effective
+ * porte un effective_hours — sinon null).
+ */
+export function hasStoredEffectiveHours(
+  shiftType: string | null | undefined,
+  effectiveHours: number | null | undefined,
+): effectiveHours is number {
+  return (shiftType === 'guard_24h' || shiftType === 'effective') && effectiveHours != null
+}
+
+/**
  * Durée brute d'un shift en minutes — gère les gardes 24h via effectiveHours
  * À utiliser dans les composants d'affichage au lieu de calculateShiftDuration
  */
 export function getShiftDurationMinutes(
   shift: { startTime: string; endTime: string; breakDuration: number; shiftType?: string; effectiveHours?: number }
 ): number {
-  if (shift.shiftType === 'guard_24h' && shift.effectiveHours != null) {
+  if (hasStoredEffectiveHours(shift.shiftType, shift.effectiveHours)) {
     return shift.effectiveHours * 60
   }
   return calculateShiftDuration(shift.startTime, shift.endTime, shift.breakDuration)

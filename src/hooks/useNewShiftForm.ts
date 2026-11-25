@@ -7,7 +7,7 @@ import {
   MANDATORY_BREAK_MINIMUM_MINUTES,
   MANDATORY_BREAK_THRESHOLD_MINUTES,
 } from '@/lib/validation/shiftSchemas'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import { createShift } from '@/services/shiftService'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
 import { logger } from '@/lib/logger'
@@ -18,6 +18,21 @@ import { useShiftRequalification } from '@/hooks/useShiftRequalification'
 import { useShiftEffectiveHours } from '@/hooks/useShiftEffectiveHours'
 import { useGuardSegments } from '@/hooks/useGuardSegments'
 import { useShiftValidationData } from '@/hooks/useShiftValidationData'
+import { suggestSegments, collapseSegments } from '@/lib/presence/suggestBreakdown'
+
+const defaultFormValues = (defaultDate?: Date) => {
+  const date = format(defaultDate ?? new Date(), 'yyyy-MM-dd')
+  return {
+    shiftType: 'effective' as const,
+    date,
+    endDate: date,
+    startTime: '09:00',
+    endTime: '12:00',
+    breakDuration: 0,
+    tasks: '',
+    notes: '',
+  }
+}
 
 interface UseNewShiftFormProps {
   isOpen: boolean
@@ -39,22 +54,10 @@ export function useNewShiftForm({
     employerId,
     defaultDate,
   })
-  const {
-    guardSegments,
-    setGuardSegments,
-    resetToDefaults: resetGuardSegments,
-    addGuardSegment,
-    removeGuardSegment,
-    updateGuardSegmentEnd,
-    updateGuardSegmentType,
-    updateGuardSegmentBreak,
-  } = useGuardSegments()
-
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [acknowledgeWarnings, setAcknowledgeWarnings] = useState(false)
   const [hasNightAction, setHasNightAction] = useState(false)
-  const [shiftType, setShiftType] = useState<ShiftType>('effective')
   const [nightInterventionsCount, setNightInterventionsCount] = useState(0)
 
   const {
@@ -66,47 +69,69 @@ export function useNewShiftForm({
     formState: { errors },
   } = useForm<ShiftFormData>({
     resolver: zodResolver(shiftSchema),
-    defaultValues: {
-      shiftType: 'effective',
-      date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-      startTime: '09:00',
-      endTime: '12:00',
-      breakDuration: 0,
-      tasks: '',
-      notes: '',
-    },
+    defaultValues: defaultFormValues(defaultDate),
   })
 
   const watchedValues = useWatch({ control })
+  const { startTime, endTime, date } = watchedValues
+
+  const {
+    guardSegments,
+    setGuardSegments,
+    addGuardSegment,
+    removeGuardSegment,
+    updateGuardSegmentEnd,
+    updateGuardSegmentType,
+    updateGuardSegmentBreak,
+  } = useGuardSegments(endTime)
+
+  // Agenda : la date de fin suit les horaires (fin ≤ début → lendemain, 24h max)
+  // et le découpage est re-suggéré à chaque changement de bornes.
+  useEffect(() => {
+    if (!date || !startTime || !endTime) return
+    const end = endTime <= startTime ? addDays(new Date(`${date}T00:00`), 1) : new Date(`${date}T00:00`)
+    setValue('endDate', format(end, 'yyyy-MM-dd'), { shouldValidate: true })
+  }, [date, startTime, endTime, setValue])
+
+  useEffect(() => {
+    if (startTime && endTime) setGuardSegments(suggestSegments(startTime, endTime))
+  }, [startTime, endTime, setGuardSegments])
+
+  // Ce qui sera stocké : type + segments éventuels (cf. collapseSegments)
+  const { shiftType, guardSegments: savedSegments } = useMemo(
+    () => (startTime && endTime && guardSegments.length
+      ? collapseSegments(guardSegments, startTime, endTime)
+      : { shiftType: 'effective' as ShiftType, guardSegments: undefined }),
+    [guardSegments, startTime, endTime],
+  )
+  const isSegmentedShift = !!savedSegments
+  const hasNightPresence = shiftType === 'presence_night' || shiftType === 'guard_24h'
+    || !!savedSegments?.some((seg) => seg.type === 'presence_night')
+
+  useEffect(() => {
+    setValue('shiftType', shiftType)
+    setValue('segmented', isSegmentedShift)
+    if (!hasNightPresence) setNightInterventionsCount(0)
+    if (shiftType !== 'effective' || isSegmentedShift) setHasNightAction(false)
+  }, [shiftType, isSegmentedShift, hasNightPresence, setValue])
 
   const selectedContract = useMemo(() => {
     return contracts.find((c) => c.id === watchedValues.contractId)
   }, [contracts, watchedValues.contractId])
 
-  // Pour guard_24h : endTime = startTime + synchroniser le premier segment
+  // Intervention découpée : breakDuration = somme des pauses des segments effectifs
   useEffect(() => {
-    if (shiftType === 'guard_24h' && watchedValues.startTime) {
-      setValue('endTime', watchedValues.startTime)
-      setGuardSegments(prev => {
-        if (prev[0]?.startTime === watchedValues.startTime) return prev
-        return [{ ...prev[0], startTime: watchedValues.startTime }, ...prev.slice(1)]
-      })
-    }
-  }, [shiftType, watchedValues.startTime, setValue, setGuardSegments])
-
-  // Pour guard_24h : synchroniser breakDuration avec la somme des pauses des segments effectifs
-  useEffect(() => {
-    if (shiftType === 'guard_24h') {
-      const totalBreak = guardSegments.reduce((sum, seg) =>
+    if (savedSegments) {
+      const totalBreak = savedSegments.reduce((sum, seg) =>
         seg.type === 'effective' ? sum + (seg.breakMinutes ?? 0) : sum, 0)
       setValue('breakDuration', totalBreak)
     }
-  }, [shiftType, guardSegments, setValue])
+  }, [savedSegments, setValue])
 
   // Auto-bump de la pause à 20 min quand la durée dépasse 6 h (art. L3121-16).
-  // Skip pour guard_24h : règle gérée segment par segment via useGuardSegments.
+  // Skip si découpée : règle gérée segment par segment via useGuardSegments.
   useEffect(() => {
-    if (shiftType === 'guard_24h') return
+    if (isSegmentedShift) return
     if (!watchedValues.startTime || !watchedValues.endTime) return
     const [sh, sm] = watchedValues.startTime.split(':').map(Number)
     const [eh, em] = watchedValues.endTime.split(':').map(Number)
@@ -119,7 +144,7 @@ export function useNewShiftForm({
     if (durationMinutes > MANDATORY_BREAK_THRESHOLD_MINUTES && current < MANDATORY_BREAK_MINIMUM_MINUTES) {
       setValue('breakDuration', MANDATORY_BREAK_MINIMUM_MINUTES, { shouldValidate: true })
     }
-  }, [shiftType, watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, setValue])
+  }, [isSegmentedShift, watchedValues.startTime, watchedValues.endTime, watchedValues.breakDuration, setValue])
 
   const { nightHoursCount, hasNightHours } = useShiftNightHours({
     startTime: watchedValues.startTime,
@@ -135,7 +160,7 @@ export function useNewShiftForm({
     breakDuration: watchedValues.breakDuration || 0,
     shiftType,
     isRequalified,
-    guardSegments,
+    guardSegments: savedSegments,
   })
 
   const shiftForCompliance = useMemo(() => {
@@ -152,12 +177,12 @@ export function useNewShiftForm({
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,
       breakDuration: watchedValues.breakDuration || 0,
-      hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+      hasNightAction: shiftType === 'effective' && !isSegmentedShift && hasNightHours ? hasNightAction : undefined,
       shiftType,
-      nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
-      guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+      nightInterventionsCount: hasNightPresence ? nightInterventionsCount : undefined,
+      guardSegments: savedSegments,
     }
-  }, [watchedValues, contracts, hasNightHours, hasNightAction, shiftType, nightInterventionsCount, guardSegments])
+  }, [watchedValues, contracts, hasNightHours, hasNightAction, shiftType, isSegmentedShift, hasNightPresence, nightInterventionsCount, savedSegments])
 
   const {
     complianceResult,
@@ -178,23 +203,13 @@ export function useNewShiftForm({
   // Reset du formulaire à l'ouverture
   useEffect(() => {
     if (isOpen) {
-      reset({
-        shiftType: 'effective',
-        date: defaultDate ? format(defaultDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-        startTime: '09:00',
-        endTime: '12:00',
-        breakDuration: 0,
-        tasks: '',
-        notes: '',
-      })
+      reset(defaultFormValues(defaultDate))
       setSubmitError(null)
       setAcknowledgeWarnings(false)
       setHasNightAction(false)
-      setShiftType('effective')
       setNightInterventionsCount(0)
-      resetGuardSegments()
     }
-  }, [isOpen, defaultDate, reset, resetGuardSegments])
+  }, [isOpen, defaultDate, reset])
 
   const onSubmit = async (data: ShiftFormData) => {
     if (hasErrors) {
@@ -217,12 +232,12 @@ export function useNewShiftForm({
         breakDuration: data.breakDuration,
         tasks: data.tasks ? data.tasks.split('\n').filter(Boolean) : [],
         notes: data.notes || undefined,
-        hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+        hasNightAction: shiftType === 'effective' && !isSegmentedShift && hasNightHours ? hasNightAction : undefined,
         shiftType,
-        nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
+        nightInterventionsCount: hasNightPresence ? nightInterventionsCount : undefined,
         isRequalified,
         effectiveHours: effectiveHoursComputed ?? undefined,
-        guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+        guardSegments: savedSegments,
       })
 
       toaster.success({ title: 'Intervention créée avec succès' })
@@ -276,7 +291,9 @@ export function useNewShiftForm({
     hasNightAction,
     setHasNightAction,
     shiftType,
-    setShiftType,
+    isSegmentedShift,
+    savedSegments,
+    hasNightPresence,
     nightInterventionsCount,
     setNightInterventionsCount,
     // guard segments

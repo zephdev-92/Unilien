@@ -16,6 +16,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { AccessibleButton, StatusPill, GhostButton, PrimaryButton } from '@/components/ui'
 import { ComplianceBadge } from '@/components/compliance'
+import { hasStoredEffectiveHours } from '@/lib/compliance/utils'
 import { PlanningModal } from './PlanningModal'
 import { updateShift, deleteShift, validateShift } from '@/services/shiftService'
 import { toaster } from '@/lib/toaster'
@@ -254,6 +255,7 @@ export function ShiftDetailModal({
     hasNightHours,
     isRequalified,
     effectiveHoursComputed,
+    editSegments,
     complianceResult,
     computedPay,
     durationHours,
@@ -274,7 +276,7 @@ export function ShiftDetailModal({
   // Durée brute en mode lecture (sans compliance check)
   const displayDuration = useMemo(() => {
     if (!shift) return 0
-    if (shift.shiftType === 'guard_24h' && shift.effectiveHours != null) {
+    if (hasStoredEffectiveHours(shift.shiftType, shift.effectiveHours)) {
       return shift.effectiveHours
     }
     const start = shift.startTime.split(':').map(Number)
@@ -319,7 +321,10 @@ export function ShiftDetailModal({
         nightInterventionsCount:
           shiftType === 'presence_night' ? nightInterventionsCount : undefined,
         isRequalified,
-        effectiveHours: effectiveHoursComputed ?? undefined,
+        // Garde 24h : effective_hours conservé (segments non édités ici)
+        effectiveHours: shiftType === 'guard_24h' ? undefined : (effectiveHoursComputed ?? null),
+        // Hors garde 24h : découpage effectif conservé/re-suggéré, sinon retiré (pas de segments périmés)
+        guardSegments: shiftType === 'guard_24h' ? undefined : (editSegments ?? null),
         status: data.status,
       })
 

@@ -14,7 +14,7 @@
 
 import type { ShiftForValidation, RuleValidationResult } from '../types'
 import { COMPLIANCE_RULES, COMPLIANCE_MESSAGES } from '../types'
-import { calculateShiftDuration } from '../utils'
+import { calculateShiftDuration, getSegmentEnd } from '../utils'
 
 const MAX_EFFECTIVE_HOURS = 12
 const NIGHT_WARNING_HOURS = 12
@@ -46,8 +46,7 @@ export function validateGuard24h(
 
   for (let i = 0; i < segs.length; i++) {
     const seg = segs[i]
-    // La fin du segment = début du suivant ; pour le dernier → startTime du shift (+24h)
-    const segEnd = segs[i + 1]?.startTime ?? segs[0].startTime
+    const segEnd = getSegmentEnd(segs, i, newShift.endTime)
     const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
 
     if (seg.type === 'effective') {

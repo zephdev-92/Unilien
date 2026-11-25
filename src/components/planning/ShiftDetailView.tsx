@@ -7,6 +7,7 @@
 import { Box, Stack, Flex, Text } from '@chakra-ui/react'
 import { AccessibleButton } from '@/components/ui'
 import { PaySummary } from '@/components/compliance'
+import { isSegmented, hasStoredEffectiveHours } from '@/lib/compliance/utils'
 import { formatHoursCompact } from '@/lib/formatHours'
 import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
 import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
@@ -85,7 +86,7 @@ export function ShiftDetailView({
             : `${shift.startTime.slice(0, 5)} - ${shift.endTime.slice(0, 5)}`}
         </Text>
         <Text fontSize="12px" color="text.muted" mt="2px">
-          {shift.shiftType === 'guard_24h'
+          {hasStoredEffectiveHours(shift.shiftType, shift.effectiveHours)
             ? `${formatHoursCompact(displayDuration)} travail effectif`
             : formatHoursCompact(displayDuration)}
           {shift.breakDuration > 0 && ` (pause ${shift.breakDuration} min)`}
@@ -115,11 +116,13 @@ export function ShiftDetailView({
         </Flex>
       </DetailRow>
 
-      {/* Détail garde 24h — récap segments + totaux */}
-      {shift.shiftType === 'guard_24h' && shift.guardSegments && shift.guardSegments.length > 0 && (
+      {/* Détail garde 24h ou intervention découpée — récap segments + totaux */}
+      {shift.guardSegments && isSegmented(shift) && (
         <Box py={3} borderBottomWidth="1px" borderColor="border.default">
           <Guard24hRecap
             guardSegments={shift.guardSegments}
+            endTime={shift.endTime}
+            title={shift.shiftType === 'guard_24h' ? undefined : 'Découpage'}
             effectiveHoursComputed={shift.effectiveHours}
             nightInterventionsCount={shift.nightInterventionsCount}
             isRequalified={shift.isRequalified}

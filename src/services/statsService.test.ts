@@ -27,6 +27,8 @@ vi.mock('@/lib/compliance/utils', () => ({
     const [eh, em] = end.split(':').map(Number)
     return (eh * 60 + em) - (sh * 60 + sm) - breakMin
   }),
+  hasStoredEffectiveHours: vi.fn((type: string, hours: number | null | undefined) =>
+    (type === 'guard_24h' || type === 'effective') && hours != null),
 }))
 
 function mockSupabaseQuerySequence(results: Array<{ data?: unknown; error?: unknown; count?: number | null }>) {

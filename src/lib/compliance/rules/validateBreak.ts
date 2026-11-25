@@ -6,7 +6,7 @@
 
 import type { ShiftForValidation, RuleValidationResult } from '../types'
 import { COMPLIANCE_RULES, COMPLIANCE_MESSAGES } from '../types'
-import { calculateShiftDuration } from '../utils'
+import { calculateShiftDuration, isSegmented, getSegmentEnd } from '../utils'
 
 const MAX_WORK_WITHOUT_BREAK_MINUTES = 6 * 60 // 6 heures
 const MINIMUM_BREAK_MINUTES = 20
@@ -18,7 +18,7 @@ export function validateBreak(shift: ShiftForValidation): RuleValidationResult {
   let durationMinutes: number
   let breakDuration: number
 
-  if (shift.shiftType === 'guard_24h' && shift.guardSegments?.length) {
+  if (shift.guardSegments && isSegmented(shift)) {
     // Modèle N-segments : la règle s'applique segment par segment.
     // Les périodes de présence (jour/nuit) entre les segments effectifs
     // constituent des pauses naturelles — seul un segment effectif > 6h
@@ -29,7 +29,7 @@ export function validateBreak(shift: ShiftForValidation): RuleValidationResult {
     for (let i = 0; i < segs.length; i++) {
       const seg = segs[i]
       if (seg.type !== 'effective') continue
-      const segEnd = segs[i + 1]?.startTime ?? segs[0].startTime
+      const segEnd = getSegmentEnd(segs, i, shift.endTime)
       const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
       const netMins = Math.max(0, durMins - (seg.breakMinutes ?? 0))
       if (netMins > maxSegNetMins) {
