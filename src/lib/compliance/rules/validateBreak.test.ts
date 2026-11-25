@@ -215,3 +215,31 @@ describe('getRecommendedBreak', () => {
     expect(getRecommendedBreak(11 * 60)).toBe(45)
   })
 })
+
+describe('validateBreak — intervention effective découpée', () => {
+  it('applique la règle par segment effectif (présence = pause naturelle)', () => {
+    const shift: ShiftForValidation = {
+      ...createShift('18:00', '08:00', 0),
+      shiftType: 'effective',
+      guardSegments: [
+        { startTime: '18:00', type: 'effective' },
+        { startTime: '21:00', type: 'presence_night' },
+        { startTime: '06:00', type: 'effective' },
+      ],
+    }
+    expect(validateBreak(shift).valid).toBe(true)
+  })
+
+  it('le dernier segment se termine à endTime, pas à startTime', () => {
+    // 07-14 effectif (7h) : sans pause → avertissement
+    const shift: ShiftForValidation = {
+      ...createShift('06:00', '14:00', 0),
+      shiftType: 'effective',
+      guardSegments: [
+        { startTime: '06:00', type: 'presence_night' },
+        { startTime: '07:00', type: 'effective' },
+      ],
+    }
+    expect(validateBreak(shift).valid).toBe(false)
+  })
+})

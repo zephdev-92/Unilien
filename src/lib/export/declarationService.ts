@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
-import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance/utils'
+import { calculateShiftDuration, calculateNightHours, hasStoredEffectiveHours } from '@/lib/compliance/utils'
 import { isPublicHoliday, isSunday } from '@/lib/compliance/types'
 import { calculateShiftPay, calculateOvertimeHours, MAJORATION_RATES } from '@/lib/compliance/calculatePay'
 import type { ShiftForValidation, ContractForCalculation, GuardSegment } from '@/lib/compliance/types'
@@ -282,6 +282,8 @@ function calculateEmployeeDeclaration(
     const shift = shifts[i]
     const shiftDate = new Date(shift.date)
     const shiftType = shift.shift_type || 'effective'
+    // Garde 24h ou effective découpée : heures effectives = somme des segments (stockée)
+    const usesSegments = shiftType === 'guard_24h' || hasStoredEffectiveHours(shiftType, shift.effective_hours)
     const fullDurationHours =
       calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
     const shiftNightHours = calculateNightHours(shiftDate, shift.start_time, shift.end_time)
@@ -307,7 +309,7 @@ function calculateEmployeeDeclaration(
       presenceDayHours += fullDurationHours
     } else if (shiftType === 'presence_night') {
       presenceNightHours += fullDurationHours
-    } else if (shiftType === 'guard_24h') {
+    } else if (usesSegments) {
       effectiveWorkHours += shift.effective_hours ?? 0
     } else {
       effectiveWorkHours += fullDurationHours
@@ -342,7 +344,7 @@ function calculateEmployeeDeclaration(
       effectiveHours:
         shiftType === 'presence_day'
           ? (shift.effective_hours ?? fullDurationHours * (2 / 3))
-          : shiftType === 'guard_24h'
+          : usesSegments
             ? (shift.effective_hours ?? 0)
             : fullDurationHours,
       isSunday: isSundayShift,

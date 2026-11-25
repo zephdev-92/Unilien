@@ -224,3 +224,33 @@ describe('calculateTotalEffectiveHours', () => {
     expect(calculateTotalEffectiveHours([])).toBe(0)
   })
 })
+
+describe('getEffectiveHours — intervention effective découpée', () => {
+  it('somme uniquement les segments effectifs, le dernier finissant à endTime', () => {
+    expect(
+      getEffectiveHours({
+        startTime: '18:00',
+        endTime: '08:00',
+        breakDuration: 0,
+        shiftType: 'effective',
+        guardSegments: [
+          { startTime: '18:00', type: 'effective' },
+          { startTime: '21:00', type: 'presence_night' },
+          { startTime: '06:00', type: 'effective' },
+        ],
+      }),
+    ).toBe(5)
+  })
+
+  it('ignore des segments présents sur une présence responsable', () => {
+    expect(
+      getEffectiveHours({
+        startTime: '21:00',
+        endTime: '06:00',
+        breakDuration: 0,
+        shiftType: 'presence_night',
+        guardSegments: [{ startTime: '21:00', type: 'effective' }],
+      }),
+    ).toBe(0)
+  })
+})

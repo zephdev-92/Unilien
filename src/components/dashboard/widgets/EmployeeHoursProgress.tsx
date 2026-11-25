@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Box, Flex, Text, Skeleton } from '@chakra-ui/react'
 import { supabase } from '@/lib/supabase/client'
-import { calculateShiftDuration } from '@/lib/compliance/utils'
+import { calculateShiftDuration, hasStoredEffectiveHours } from '@/lib/compliance/utils'
 import { logger } from '@/lib/logger'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 
@@ -59,7 +59,7 @@ export function EmployeeHoursProgress({ employeeId }: EmployeeHoursProgressProps
           .in('status', ['completed', 'planned'])
 
         const totalHours = (shifts || []).reduce((sum, s) => {
-          if (s.shift_type === 'guard_24h' && s.effective_hours != null) {
+          if (hasStoredEffectiveHours(s.shift_type, s.effective_hours)) {
             return sum + s.effective_hours
           }
           const dur = calculateShiftDuration(s.start_time, s.end_time, s.break_duration || 0)

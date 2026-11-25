@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns'
-import { calculateShiftDuration } from '@/lib/compliance/utils'
+import { calculateShiftDuration, hasStoredEffectiveHours } from '@/lib/compliance/utils'
 import { isPublicHoliday, isSunday } from '@/lib/compliance/types'
 import { MAJORATION_RATES } from '@/lib/compliance/calculatePay'
 import { logger } from '@/lib/logger'
@@ -215,7 +215,7 @@ function buildEmployeeData(
 
   const planningShifts: PlanningShiftEntry[] = shifts.map((s) => {
     const shiftDate = parseISO(s.date)
-    const effectiveMinutes = (s.shift_type === 'guard_24h' && s.effective_hours != null)
+    const effectiveMinutes = (hasStoredEffectiveHours(s.shift_type, s.effective_hours))
       ? s.effective_hours * 60
       : calculateShiftDuration(s.start_time, s.end_time, s.break_duration || 0)
     const effectiveHours = effectiveMinutes / 60

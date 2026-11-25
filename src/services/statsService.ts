@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase/client'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
-import { calculateShiftDuration } from '@/lib/compliance/utils'
+import { calculateShiftDuration, hasStoredEffectiveHours } from '@/lib/compliance/utils'
 
 // Types pour les statistiques
 export interface EmployerStats {
@@ -232,7 +232,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
         startTime: nextUpcoming.start_time.slice(0, 5),
         endTime: nextUpcoming.end_time.slice(0, 5),
         durationHours:
-          nextUpcoming.shift_type === 'guard_24h' && nextUpcoming.effective_hours != null
+          hasStoredEffectiveHours(nextUpcoming.shift_type, nextUpcoming.effective_hours)
             ? nextUpcoming.effective_hours
             : calculateShiftDuration(
                 nextUpcoming.start_time,
@@ -247,7 +247,7 @@ export async function getEmployeeStats(employeeId: string): Promise<EmployeeStat
   for (const shift of (shiftsThisMonth || [])) {
     const contract = contracts?.find(c => c.id === shift.contract_id)
     if (contract) {
-      const hours = (shift.shift_type === 'guard_24h' && shift.effective_hours != null)
+      const hours = (hasStoredEffectiveHours(shift.shift_type, shift.effective_hours))
         ? shift.effective_hours
         : calculateShiftDuration(shift.start_time, shift.end_time, shift.break_duration || 0) / 60
       estimatedRevenue += hours * (contract.hourly_rate || 0)
@@ -367,7 +367,7 @@ export async function getCaregiverStats(caregiverId: string): Promise<CaregiverS
 
   let hoursThisMonth = 0
   for (const s of monthShiftsWithHours || []) {
-    if ((s as { shift_type?: string }).shift_type === 'guard_24h' && (s as { effective_hours?: number | null }).effective_hours != null) {
+    if (hasStoredEffectiveHours((s as { shift_type?: string }).shift_type, (s as { effective_hours?: number | null }).effective_hours)) {
       hoursThisMonth += (s as { effective_hours: number }).effective_hours
     } else {
       const [sh, sm] = (s.start_time as string).split(':').map(Number)
@@ -480,7 +480,7 @@ function calculateTotalHours(
   shifts: Array<{ start_time: string; end_time: string; break_duration: number | null; shift_type?: string; effective_hours?: number | null }>
 ): number {
   return shifts.reduce((total, shift) => {
-    if (shift.shift_type === 'guard_24h' && shift.effective_hours != null) {
+    if (hasStoredEffectiveHours(shift.shift_type, shift.effective_hours)) {
       return total + shift.effective_hours
     }
     const duration = calculateShiftDuration(
