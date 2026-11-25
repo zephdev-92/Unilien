@@ -14,6 +14,12 @@ import { calculateShiftDuration, calculateNightHours } from '@/lib/compliance'
 interface Guard24hSectionProps {
   guardSegments: GuardSegment[]
   startTime: string | undefined
+  /** Fin de l'intervention (défaut : début du 1er segment = garde 24h) */
+  endTime?: string
+  title?: string
+  /** false : pause gérée par le champ global (intervention non découpée) */
+  showBreaks?: boolean
+  showNightInterventions?: boolean
   effectiveHoursComputed: number | null | undefined
   nightInterventionsCount: number
   onAddSegment: (afterIndex: number) => void
@@ -43,6 +49,10 @@ function toSelectValue(type: GuardSegment['type']): string {
 export function Guard24hSection({
   guardSegments,
   startTime,
+  endTime,
+  title = 'Découpage des 24h',
+  showBreaks = true,
+  showNightInterventions = true,
   effectiveHoursComputed,
   nightInterventionsCount,
   onAddSegment,
@@ -52,6 +62,10 @@ export function Guard24hSection({
   onUpdateSegmentBreak,
   onInterventionCountChange,
 }: Guard24hSectionProps) {
+  const shiftEnd = endTime ?? guardSegments[0]?.startTime ?? ''
+  const spanH = guardSegments.length
+    ? (calculateShiftDuration(guardSegments[0].startTime, shiftEnd, 0) / 60) || 24
+    : 0
   return (
     <Box
       p={4}
@@ -69,13 +83,13 @@ export function Guard24hSection({
         color="text.muted"
         mb={3}
       >
-        Découpage des 24h
+        {title}
       </Text>
 
       {/* Barre visuelle — proto: guard-bar (10px, full radius) */}
       <Flex gap="2px" mb={4} borderRadius="full" overflow="hidden" h="10px">
         {guardSegments.map((seg, i) => {
-          const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+          const segEnd = guardSegments[i + 1]?.startTime ?? shiftEnd
           const durMins = calculateShiftDuration(seg.startTime, segEnd, 0)
           return (
             <Box
@@ -93,7 +107,7 @@ export function Guard24hSection({
       <Stack gap={2} mb={4}>
         {guardSegments.map((seg, i) => {
           const isLast = i === guardSegments.length - 1
-          const canDelete = guardSegments.length > 2
+          const canDelete = guardSegments.length > 1
 
           return (
             <Flex
@@ -115,7 +129,7 @@ export function Guard24hSection({
                 <Text as="span">–</Text>
                 <input
                   type="time"
-                  value={isLast ? guardSegments[0].startTime : (guardSegments[i + 1]?.startTime ?? '')}
+                  value={isLast ? shiftEnd : (guardSegments[i + 1]?.startTime ?? '')}
                   onChange={(e) => onUpdateSegmentEnd(i, e.target.value)}
                   disabled={isLast}
                   style={{
@@ -138,7 +152,7 @@ export function Guard24hSection({
                 onChange={(e) => {
                   const val = e.target.value
                   if (val === 'presence') {
-                    const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+                    const segEnd = guardSegments[i + 1]?.startTime ?? shiftEnd
                     onUpdateSegmentType(i, detectPresenceType(seg.startTime, segEnd))
                   } else {
                     onUpdateSegmentType(i, val as GuardSegment['type'])
@@ -162,7 +176,7 @@ export function Guard24hSection({
               </select>
 
               {/* Break — inline petit input + "min" */}
-              {seg.type === 'effective' ? (
+              {seg.type === 'effective' && showBreaks ? (
                 <Flex align="center" gap={1} fontSize="12px" color="text.muted">
                   <Text fontSize="12px" color="text.muted">Pause</Text>
                   <input
@@ -183,7 +197,7 @@ export function Guard24hSection({
                   <Text fontSize="12px" color="text.muted">min</Text>
                 </Flex>
               ) : (() => {
-                const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+                const segEnd = guardSegments[i + 1]?.startTime ?? shiftEnd
                 const totalMins = calculateShiftDuration(seg.startTime, segEnd, 0)
                 const totalH = totalMins / 60
                 const nightH = calculateNightHours(new Date(), seg.startTime, segEnd)
@@ -261,7 +275,7 @@ export function Guard24hSection({
         let presenceNightH = 0
         guardSegments.forEach((seg, i) => {
           if (seg.type !== 'presence_day' && seg.type !== 'presence_night') return
-          const segEnd = guardSegments[i + 1]?.startTime ?? guardSegments[0].startTime
+          const segEnd = guardSegments[i + 1]?.startTime ?? shiftEnd
           const totalH = calculateShiftDuration(seg.startTime, segEnd, 0) / 60
           const nightH = calculateNightHours(new Date(), seg.startTime, segEnd)
           presenceDayH += Math.max(0, totalH - nightH)
@@ -325,16 +339,17 @@ export function Guard24hSection({
 
             <Text fontSize="13px" color="text.default" fontWeight="600">
               Total cumulé :{' '}
-              <Text as="span" color={totalCumul > 24 ? '#DC2626' : 'text.default'}>
+              <Text as="span" color={totalCumul > spanH ? '#DC2626' : 'text.default'}>
                 {formatHoursCompact(totalCumul)}
               </Text>
-              {' '}/ 24h
+              {' '}/ {formatHoursCompact(spanH)}
             </Text>
           </Stack>
         )
       })()}
 
       {/* Nombre d'interventions nocturnes */}
+      {showNightInterventions && (<>
       <Box mb={nightInterventionsCount >= REQUALIFICATION_THRESHOLD ? 3 : 0}>
         <AccessibleInput
           label="Interventions pendant la présence de nuit"
@@ -364,6 +379,7 @@ export function Guard24hSection({
           </Text>
         </Box>
       )}
+      </>)}
 
       {startTime && <input type="hidden" value={startTime} readOnly />}
     </Box>

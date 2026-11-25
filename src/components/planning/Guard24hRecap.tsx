@@ -5,6 +5,9 @@ import type { GuardSegment } from '@/types'
 
 interface Guard24hRecapProps {
   guardSegments: GuardSegment[]
+  /** Fin de l'intervention (défaut : début du 1er segment = garde 24h) */
+  endTime?: string
+  title?: string
   effectiveHoursComputed: number | null | undefined
   nightInterventionsCount: number | null | undefined
   isRequalified: boolean | null | undefined
@@ -30,10 +33,10 @@ interface SegmentInfo {
   nightH: number
 }
 
-function buildSegmentInfos(segments: GuardSegment[]): SegmentInfo[] {
+function buildSegmentInfos(segments: GuardSegment[], shiftEnd?: string): SegmentInfo[] {
   const ref = new Date()
   return segments.map((seg, i) => {
-    const endTime = segments[i + 1]?.startTime ?? segments[0].startTime
+    const endTime = segments[i + 1]?.startTime ?? shiftEnd ?? segments[0].startTime
     const durationH = calculateShiftDuration(seg.startTime, endTime, 0) / 60
     const nightH = calculateNightHours(ref, seg.startTime, endTime)
     return { startTime: seg.startTime, endTime, type: seg.type, durationH, nightH }
@@ -42,13 +45,15 @@ function buildSegmentInfos(segments: GuardSegment[]): SegmentInfo[] {
 
 export function Guard24hRecap({
   guardSegments,
+  endTime,
+  title = 'Découpage des 24h',
   effectiveHoursComputed,
   nightInterventionsCount,
   isRequalified,
 }: Guard24hRecapProps) {
   if (!guardSegments || guardSegments.length === 0) return null
 
-  const infos = buildSegmentInfos(guardSegments)
+  const infos = buildSegmentInfos(guardSegments, endTime)
 
   let presenceDayH = 0
   let presenceNightH = 0
@@ -84,7 +89,7 @@ export function Guard24hRecap({
         color="text.muted"
         mb={3}
       >
-        Découpage des 24h
+        {title}
       </Text>
 
       <Flex gap="2px" mb={3} borderRadius="full" overflow="hidden" h="10px">

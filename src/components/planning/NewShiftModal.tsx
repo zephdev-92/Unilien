@@ -10,9 +10,6 @@ import {
 import { AccessibleInput, AccessibleSelect, AccessibleButton, GhostButton, PrimaryButton } from '@/components/ui'
 import { ComplianceAlert, PaySummary, ComplianceBadge } from '@/components/compliance'
 import { PlanningModal } from './PlanningModal'
-import type { ShiftType } from '@/types'
-import { PresenceResponsibleDaySection } from './PresenceResponsibleDaySection'
-import { PresenceResponsibleNightSection } from './PresenceResponsibleNightSection'
 import { NightActionToggle } from './NightActionToggle'
 import { Guard24hSection } from './Guard24hSection'
 import { ShiftHoursSummary } from './ShiftHoursSummary'
@@ -26,23 +23,11 @@ import { TaskSelector } from './TaskSelector'
 import { logger } from '@/lib/logger'
 import { toaster } from '@/lib/toaster'
 import { formatHoursCompact } from '@/lib/formatHours'
-import { detectPresenceType, getPresenceMix } from '@/lib/presence/detectPresenceType'
-import { PresenceMixedWarning } from './PresenceMixedWarning'
+import { format, addDays } from 'date-fns'
 import {
   MANDATORY_BREAK_MINIMUM_MINUTES,
   MANDATORY_BREAK_THRESHOLD_MINUTES,
 } from '@/lib/validation/shiftSchemas'
-
-const SHIFT_TYPE_OPTIONS = [
-  { value: 'effective', label: 'Travail effectif' },
-  { value: 'presence', label: 'Présence responsable' },
-  { value: 'guard_24h', label: 'Garde 24h' },
-]
-
-const isPresenceType = (t: ShiftType): t is 'presence_day' | 'presence_night' =>
-  t === 'presence_day' || t === 'presence_night'
-
-const toSelectValue = (t: ShiftType): string => (isPresenceType(t) ? 'presence' : t)
 
 interface NewShiftModalProps {
   isOpen: boolean
@@ -71,7 +56,9 @@ export function NewShiftModal({
     hasNightAction,
     setHasNightAction,
     shiftType,
-    setShiftType,
+    isSegmentedShift,
+    savedSegments,
+    hasNightPresence,
     setValue,
     nightInterventionsCount,
     setNightInterventionsCount,
@@ -104,17 +91,16 @@ export function NewShiftModal({
   const baseDate = watchedValues.date ? new Date(watchedValues.date) : defaultDate
   const repeatConfig = useRepeatConfig(baseDate)
 
-  // Re-détecter presence_day / presence_night quand les horaires changent
+  // Découpage visible d'office s'il n'est pas trivial ; sinon sur demande
+  const [showBreakdown, setShowBreakdown] = useState(false)
   useEffect(() => {
-    if (!isPresenceType(shiftType)) return
-    if (!watchedValues.startTime || !watchedValues.endTime) return
-    const detected = detectPresenceType(watchedValues.startTime, watchedValues.endTime)
-    if (detected !== shiftType) {
-      setShiftType(detected)
-      setValue('shiftType', detected)
-      if (detected !== 'presence_night') setNightInterventionsCount(0)
-    }
-  }, [watchedValues.startTime, watchedValues.endTime, shiftType, setShiftType, setValue, setNightInterventionsCount])
+    if (isOpen) setShowBreakdown(false)
+  }, [isOpen])
+  const isPlainEffective = shiftType === 'effective' && !isSegmentedShift
+  // Heures effectives affichées dans le découpage (présence seule → 0)
+  const breakdownEffectiveHours = isPlainEffective
+    ? durationHours
+    : savedSegments ? effectiveHoursComputed : 0
 
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false)
@@ -132,9 +118,9 @@ export function NewShiftModal({
     endTime: watchedValues.endTime ?? '12:00',
     breakDuration: watchedValues.breakDuration ?? 0,
     shiftType: shiftType,
-    hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
-    nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
-    guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+    hasNightAction: isPlainEffective && hasNightHours ? hasNightAction : undefined,
+    nightInterventionsCount: hasNightPresence ? nightInterventionsCount : undefined,
+    guardSegments: savedSegments,
   })
 
   // Inclure le shift original (baseDate) + toutes les répétitions
@@ -156,12 +142,12 @@ export function NewShiftModal({
           breakDuration: watchedValues.breakDuration ?? 0,
           tasks: watchedValues.tasks ? watchedValues.tasks.split('\n').filter(Boolean) : [],
           notes: watchedValues.notes || undefined,
-          hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+          hasNightAction: isPlainEffective && hasNightHours ? hasNightAction : undefined,
           shiftType,
-          nightInterventionsCount: (shiftType === 'presence_night' || shiftType === 'guard_24h') ? nightInterventionsCount : undefined,
+          nightInterventionsCount: hasNightPresence ? nightInterventionsCount : undefined,
           isRequalified,
           effectiveHours: effectiveHoursComputed ?? undefined,
-          guardSegments: shiftType === 'guard_24h' ? guardSegments : undefined,
+          guardSegments: savedSegments,
         }))
       )
       if (failed.length > 0) {
@@ -187,7 +173,7 @@ export function NewShiftModal({
   const baseShiftSummary = (() => {
     if (!watchedValues.date) return ''
     const typeLabel = SHIFT_TYPE_LABELS[shiftType]
-    return `${watchedValues.date} · ${watchedValues.startTime ?? ''}–${watchedValues.endTime ?? ''} · ${typeLabel}`
+    return `${watchedValues.date} · ${watchedValues.startTime ?? ''}–${watchedValues.endTime ?? ''} · ${typeLabel}${isSegmentedShift ? ' (découpée)' : ''}`
   })()
 
   const footerContent = (
@@ -253,46 +239,19 @@ export function NewShiftModal({
                     />
                   )}
 
-                  {/* Type d'intervention */}
                   <input type="hidden" {...register('shiftType')} />
-                  <AccessibleSelect
-                    label="Type d'intervention"
-                    options={SHIFT_TYPE_OPTIONS}
-                    value={toSelectValue(shiftType)}
-                    onChange={(e) => {
-                      const selected = e.target.value
-                      // "presence" = choix unifié → auto-détection jour/nuit selon horaires
-                      const newType: ShiftType =
-                        selected === 'presence'
-                          ? detectPresenceType(
-                              watchedValues.startTime ?? '09:00',
-                              watchedValues.endTime ?? '12:00',
-                            )
-                          : (selected as ShiftType)
-                      setShiftType(newType)
-                      setValue('shiftType', newType)
-                      if (newType !== 'presence_night' && newType !== 'guard_24h') {
-                        setNightInterventionsCount(0)
-                      }
-                      if (newType !== 'effective') {
-                        setHasNightAction(false)
-                      }
-                      // Horaires conservés quel que soit le type choisi
-                      // (garde_24h : end_time auto à +24h via useEffect du hook)
-                    }}
-                  />
 
-                  {/* Date */}
-                  <AccessibleInput
-                    label="Date"
-                    type="date"
-                    error={errors.date?.message}
-                    required
-                    {...register('date')}
-                  />
-
-                  {/* Horaires */}
+                  {/* Début / fin — façon agenda */}
                   <Flex gap={4}>
+                    <Box flex={1}>
+                      <AccessibleInput
+                        label="Début"
+                        type="date"
+                        error={errors.date?.message}
+                        required
+                        {...register('date')}
+                      />
+                    </Box>
                     <Box flex={1}>
                       <AccessibleInput
                         label="Heure de début"
@@ -302,44 +261,42 @@ export function NewShiftModal({
                         {...register('startTime')}
                       />
                     </Box>
-                    {shiftType === 'guard_24h' ? (
-                      <Box flex={1}>
-                        <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>
-                          Heure de fin
-                        </Text>
-                        <Box p={2} borderWidth="2px" borderColor="border.default" borderRadius="10px" bg="bg.page">
-                          <Text fontSize="sm" color="text.muted">
-                            {watchedValues.startTime || '—'}{' '}
-                            <Text as="span" fontWeight="bold" color="text.secondary">+24h</Text> (auto)
-                          </Text>
-                        </Box>
-                        <input type="hidden" {...register('endTime')} />
-                      </Box>
-                    ) : (
-                      <Box flex={1}>
-                        <AccessibleInput
-                          label="Heure de fin"
-                          type="time"
-                          error={errors.endTime?.message}
-                          required
-                          {...register('endTime')}
-                        />
-                      </Box>
-                    )}
+                  </Flex>
+                  <Flex gap={4}>
+                    <Box flex={1}>
+                      <AccessibleInput
+                        label="Fin"
+                        type="date"
+                        min={watchedValues.date}
+                        max={watchedValues.date ? format(addDays(new Date(`${watchedValues.date}T00:00`), 1), 'yyyy-MM-dd') : undefined}
+                        error={errors.endDate?.message}
+                        required
+                        {...register('endDate')}
+                      />
+                    </Box>
+                    <Box flex={1}>
+                      <AccessibleInput
+                        label="Heure de fin"
+                        type="time"
+                        error={errors.endTime?.message}
+                        required
+                        {...register('endTime')}
+                      />
+                    </Box>
                   </Flex>
 
                   {/* Durée affichée */}
                   {durationHours > 0 && (
                     <Text fontSize="sm" color="text.muted">
-                      Durée : {formatHoursCompact(durationHours)}
-                      {watchedValues.breakDuration > 0 &&
+                      Durée : {shiftType === 'guard_24h' ? '24h (garde)' : formatHoursCompact(durationHours)}
+                      {!isSegmentedShift && watchedValues.breakDuration > 0 &&
                         ` (pause de ${watchedValues.breakDuration} min déduite)`
                       }
                     </Text>
                   )}
 
-                  {/* Pause globale — masquée pour guard_24h */}
-                  {shiftType !== 'guard_24h' && (() => {
+                  {/* Pause globale — si non découpée (sinon pause par segment) */}
+                  {!isSegmentedShift && (() => {
                     const breakRequired = durationHours * 60 > MANDATORY_BREAK_THRESHOLD_MINUTES
                     return (
                       <Box>
@@ -360,39 +317,16 @@ export function NewShiftModal({
                     )
                   })()}
 
-                  {/* Avertissement présence à cheval jour/nuit */}
-                  {isPresenceType(shiftType) && watchedValues.startTime && watchedValues.endTime && (() => {
-                    const mix = getPresenceMix(watchedValues.startTime, watchedValues.endTime)
-                    return mix.isMixed ? (
-                      <PresenceMixedWarning dayHours={mix.dayHours} nightHours={mix.nightHours} />
-                    ) : null
-                  })()}
-
-                  {/* Section présence responsable JOUR */}
-                  {shiftType === 'presence_day' && (
-                    <PresenceResponsibleDaySection
-                      durationHours={durationHours}
-                      effectiveHoursComputed={effectiveHoursComputed}
-                    />
-                  )}
-
-                  {/* Section présence responsable NUIT */}
-                  {shiftType === 'presence_night' && (
-                    <PresenceResponsibleNightSection
-                      mode="edit"
-                      durationHours={durationHours}
-                      nightInterventionsCount={nightInterventionsCount}
-                      isRequalified={isRequalified}
-                      onInterventionCountChange={setNightInterventionsCount}
-                    />
-                  )}
-
-                  {/* Section Garde 24h */}
-                  {shiftType === 'guard_24h' && (
+                  {/* Découpage suggéré (effectif / présence / nuit) — modifiable */}
+                  {guardSegments.length > 0 && (showBreakdown || !isPlainEffective) ? (
                     <Guard24hSection
+                      title="Découpage suggéré"
                       guardSegments={guardSegments}
                       startTime={watchedValues.startTime}
-                      effectiveHoursComputed={effectiveHoursComputed}
+                      endTime={watchedValues.endTime}
+                      showBreaks={isSegmentedShift}
+                      showNightInterventions={hasNightPresence}
+                      effectiveHoursComputed={breakdownEffectiveHours}
                       nightInterventionsCount={nightInterventionsCount}
                       onAddSegment={addGuardSegment}
                       onRemoveSegment={removeGuardSegment}
@@ -401,10 +335,14 @@ export function NewShiftModal({
                       onUpdateSegmentBreak={updateGuardSegmentBreak}
                       onInterventionCountChange={setNightInterventionsCount}
                     />
+                  ) : guardSegments.length > 0 && (
+                    <GhostButton size="sm" alignSelf="flex-start" onClick={() => setShowBreakdown(true)}>
+                      Découper l'intervention (présence responsable, nuit…)
+                    </GhostButton>
                   )}
 
                   {/* Toggle action de nuit */}
-                  {shiftType === 'effective' && hasNightHours && (
+                  {isPlainEffective && hasNightHours && (
                     <NightActionToggle
                       mode="edit"
                       nightHoursCount={nightHoursCount}

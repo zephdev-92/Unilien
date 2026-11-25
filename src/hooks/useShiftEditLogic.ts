@@ -13,6 +13,8 @@ import { useShiftNightHours } from '@/hooks/useShiftNightHours'
 import { useShiftRequalification } from '@/hooks/useShiftRequalification'
 import { useShiftEffectiveHours } from '@/hooks/useShiftEffectiveHours'
 import { useComplianceCheck } from '@/hooks/useComplianceCheck'
+import { suggestSegments, collapseSegments } from '@/lib/presence/suggestBreakdown'
+import type { GuardSegment } from '@/types'
 
 interface UseShiftEditLogicProps {
   isEditing: boolean
@@ -30,6 +32,8 @@ export interface UseShiftEditLogicResult {
   hasNightHours: boolean
   isRequalified: boolean
   effectiveHoursComputed: number | undefined
+  /** Segments d'une intervention effective découpée (re-suggérés si les horaires changent) */
+  editSegments: GuardSegment[] | undefined
   complianceResult: ComplianceResult | null
   computedPay: ComputedPay | null
   durationHours: number
@@ -66,12 +70,21 @@ export function useShiftEditLogic({
 
   const { isRequalified } = useShiftRequalification({ shiftType, nightInterventionsCount })
 
+  // Intervention effective découpée : on garde son découpage, re-suggéré si les bornes bougent.
+  // shortcut: l'édition ne permet pas de retoucher les segments — passer par une recréation.
+  const editSegments = useMemo(() => {
+    if (shiftType !== 'effective' || !shift?.guardSegments?.length || !stForHooks || !etForHooks) return undefined
+    if (stForHooks === shift.startTime && etForHooks === shift.endTime) return shift.guardSegments
+    return collapseSegments(suggestSegments(stForHooks, etForHooks), stForHooks, etForHooks).guardSegments
+  }, [shiftType, shift, stForHooks, etForHooks])
+
   const { effectiveHoursComputed } = useShiftEffectiveHours({
     startTime: stForHooks,
     endTime: etForHooks,
     breakDuration: bdForHooks,
     shiftType,
     isRequalified,
+    guardSegments: editSegments,
   })
 
   const shiftForCompliance = useMemo(() => {
@@ -92,12 +105,14 @@ export function useShiftEditLogic({
       startTime: watchedValues.startTime,
       endTime: watchedValues.endTime,
       breakDuration: watchedValues.breakDuration || 0,
-      hasNightAction: shiftType === 'effective' && hasNightHours ? hasNightAction : undefined,
+      hasNightAction: shiftType === 'effective' && !editSegments && hasNightHours ? hasNightAction : undefined,
       shiftType,
       nightInterventionsCount:
-        shiftType === 'presence_night' ? nightInterventionsCount : undefined,
+        shiftType === 'presence_night' || editSegments ? nightInterventionsCount : undefined,
+      guardSegments: editSegments,
     }
   }, [
+    editSegments,
     watchedValues,
     contract,
     shift,
@@ -128,6 +143,7 @@ export function useShiftEditLogic({
     hasNightHours,
     isRequalified,
     effectiveHoursComputed,
+    editSegments,
     complianceResult,
     computedPay,
     durationHours,
