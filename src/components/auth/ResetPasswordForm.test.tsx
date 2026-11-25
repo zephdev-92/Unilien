@@ -10,6 +10,8 @@ const mockGetSession = vi.fn()
 const mockUpdateUser = vi.fn()
 const mockOnAuthStateChange = vi.fn()
 const mockUnsubscribe = vi.fn()
+const mockGetAal = vi.fn()
+const mockListFactors = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
@@ -19,6 +21,11 @@ vi.mock('@/lib/supabase/client', () => ({
       onAuthStateChange: (cb: unknown) => {
         mockOnAuthStateChange(cb)
         return { data: { subscription: { unsubscribe: mockUnsubscribe } } }
+      },
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: () => mockGetAal(),
+        listFactors: () => mockListFactors(),
       },
     },
   },
@@ -33,6 +40,34 @@ describe('ResetPasswordForm', () => {
     mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } } })
     mockUpdateUser.mockResolvedValue({ error: null })
     mockOnAuthStateChange.mockReturnValue(undefined)
+    // Par défaut : pas de 2FA
+    mockGetAal.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    mockListFactors.mockResolvedValue({ data: { totp: [] } })
+  })
+
+  describe('2FA activée (session de récupération AAL1)', () => {
+    beforeEach(() => {
+      mockGetAal.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+      mockListFactors.mockResolvedValue({
+        data: { totp: [{ id: 'factor-1', status: 'verified' }] },
+      })
+    })
+
+    it('affiche le challenge 2FA au lieu du formulaire', async () => {
+      renderWithProviders(<ResetPasswordForm />)
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText(/minimum 8 caractères/i)).not.toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /code de vérification/i })).toBeInTheDocument()
+      })
+    })
+
+    it('affiche le formulaire si la session est déjà AAL2', async () => {
+      mockGetAal.mockResolvedValue({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+      renderWithProviders(<ResetPasswordForm />)
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/minimum 8 caractères/i)).toBeInTheDocument()
+      })
+    })
   })
 
   describe('État de chargement initial', () => {

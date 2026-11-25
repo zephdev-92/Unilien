@@ -16,6 +16,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom'
 import { AccessibleInput, AccessibleButton, PasswordToggleButton } from '@/components/ui'
 import { supabase } from '@/lib/supabase/client'
+import { MfaChallenge } from './MfaChallenge'
 
 const resetPasswordSchema = z.object({
   password: z
@@ -52,6 +53,7 @@ export function ResetPasswordForm() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null)
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null)
 
   const {
     register,
@@ -79,6 +81,27 @@ export function ResetPasswordForm() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Le lien de récupération donne une session AAL1. Si le compte a la 2FA,
+  // GoTrue refuse updateUser tant que la session n'est pas AAL2 → challenge TOTP d'abord.
+  useEffect(() => {
+    if (!isValidSession) return
+    let cancelled = false
+
+    const checkMfa = async () => {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (cancelled || aal?.currentLevel !== 'aal1' || aal?.nextLevel !== 'aal2') return
+
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      const totp = factors?.totp?.find((f) => f.status === 'verified')
+      if (!cancelled && totp) setMfaFactorId(totp.id)
+    }
+    checkMfa()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isValidSession])
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
@@ -133,6 +156,20 @@ export function ResetPasswordForm() {
           </Link>
         </Stack>
       </Box>
+    )
+  }
+
+  // 2FA activée : élever la session en AAL2 avant de pouvoir changer le mot de passe
+  if (mfaFactorId) {
+    return (
+      <MfaChallenge
+        factorId={mfaFactorId}
+        onSuccess={() => setMfaFactorId(null)}
+        onCancel={async () => {
+          await supabase.auth.signOut()
+          navigate('/connexion')
+        }}
+      />
     )
   }
 
